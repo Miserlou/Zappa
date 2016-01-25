@@ -1,3 +1,4 @@
+![Logo placeholder](http://i.imgur.com/vLflpND.gif)
 # Zappa
 #### Serverless WSGI with AWS Lambda + API Gateway
 
