@@ -21,9 +21,9 @@ This project is for the Zappa core library, which can be used by an WSGI-compati
 
 If you are looking for the version for your favorite web frameworks, you should probably try here:
 
-* [django-zappa](https://github.com/Miserlou/django-zappa)
-* flask-zappa (Coming soon!)
-* pyramid-zappa (Coming.. maybe?)
+* **[django-zappa](https://github.com/Miserlou/django-zappa)**
+* **flask-zappa** (Coming soon!)
+* **pyramid-zappa** (Coming.. maybe?)
 
 ## Usage
 
@@ -44,11 +44,19 @@ project_name = "MyProject"
 api_stage = "Production"
 s3_bucket_name = 'MyLambdaBucket'
 
+# Create the Lambda zip package (includes project and virtualenvironment)
 zip_path = zappa.create_lambda_zip(project_name)
+
+# Upload it to S3
 zip_arn = zappa.upload_to_s3(zip_path, s3_bucket_name)
+
+# Register the Lambda function with that Zip as the Source
 lambda_arn = zappa.create_lambda_function(s3_bucket_name, zip_path, project_name, 'runme.lambda_handler')
 
+# Create and configure the API Gateway
 api_id = zappa.create_api_gateway_routes(lambda_arn)
+
+# Deploy the API!
 endpoint_url = zappa.deploy_api_gateway(api_id, api_stage)
 
 print("Your Zappa deployment is live!: " + endpoint_url)
@@ -70,3 +78,4 @@ Things that need work right now:
 * Fix the "hot-start" problem
 * Feedback
 * A nifty logo
+* Real documentation / website!
