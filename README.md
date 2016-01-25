@@ -12,7 +12,7 @@ That means:
 
 __Awesome!__
 
-This project is for the Zappa core library, which can be used by an WSGI-compatible web framework (which is pretty much all of them.) This library also handles:
+This project is for the Zappa core library, which can be used by any WSGI-compatible web framework (which is pretty much all of them.) This library also handles:
 
 * Packaging projects into Lambda-ready zip files and uploading them to S3
 * Correctly setting up IAM roles and permissions

@@ -14,12 +14,12 @@ with open(os.path.join(os.path.dirname(__file__), 'requirements.txt')) as f:
 
 setup(
     name='zappa',
-    version='0.1.0',
+    version='0.2.0',
     packages=['zappa'],
     install_requires=required,  
     include_package_data=True,
     license='MIT License',
-    description='Deploy WSGI Web Applications on AWS Lambda + API Gateway',
+    description='Serverless WSGI With AWS Lambda + API Gateway',
     long_description=README,
     url='https://github.com/Miserlou/Zappa',
     author='Rich Jones',
