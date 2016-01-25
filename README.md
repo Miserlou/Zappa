@@ -1,16 +1,16 @@
 # Zappa
-#### Easily WSGI Web Applications on AWS Lambda + API Gateway
+#### Serverless WSGI with AWS Lambda + API Gateway
 
 Zappa makes it super easy to deploy Python WSGI applications on on AWS Lambda + API Gateway. Think of it as "serverless" web hosting for your Python web apps.
 
 That means:
 
-* No more having to fiddle with web servers to deploy your applications!
-* No more worrying about **keeping servers online**!
-* No more paying for 24/7 server uptime!
-* No more worrying about load balancing / scalability!
+* **No more** tedious web server configuration!
+* **No more** paying for 24/7 server uptime!
+* **No more** worrying about load balancing / scalability!
+* **No more** worrying about keeping servers online!
 
-Awesome!
+__Awesome!__
 
 This project is for the Zappa core library, which can be used by an WSGI-compatible web framework (which is pretty much all of them.) This library also handles:
 
@@ -67,5 +67,6 @@ Things that need work right now:
 * SSL Integration
 * Clients for frameworks besides Django
 * Package size/speed optimization
+* Fix the "hot-start" problem
 * Feedback
 * A nifty logo
