@@ -13,6 +13,9 @@ import json
 # Key derivation functions. See:
 # http://docs.aws.amazon.com/general/latest/gr/signature-v4-examples.html#signature-v4-examples-python
 
+# This code was pinched from braahyan's PAWS project: https://github.com/braahyan/PAWS.
+# Thanks Bryan!
+
 def sign(key, msg):
     return hmac.new(key, msg.encode('utf-8'), hashlib.sha256).digest()
 
