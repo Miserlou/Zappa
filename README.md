@@ -36,13 +36,20 @@ You can install Zappa through pip:
 Then, you'll want to call its main capabilities in order:
 
 ```python
-zappa = Zappa()
-zappa.load_credentials()
-zappa.create_iam_roles()
 
+# Set your configuration
 project_name = "MyProject"
 api_stage = "Production"
 s3_bucket_name = 'MyLambdaBucket'
+
+# Make your Zappa object
+zappa = Zappa()
+
+# Load your AWS credentials from ~/.aws/credentials
+zappa.load_credentials()
+
+# Make sure the necessary IAM execution roles are available
+zappa.create_iam_roles()
 
 # Create the Lambda zip package (includes project and virtualenvironment)
 zip_path = zappa.create_lambda_zip(project_name)
