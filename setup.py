@@ -24,7 +24,6 @@ setup(
     url='https://github.com/Miserlou/Zappa',
     author='Rich Jones',
     author_email='rich@openwatch.net',
-    },
     classifiers=[
         'Environment :: Console',
         'License :: OSI Approved :: Apache Software License',

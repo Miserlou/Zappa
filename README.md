@@ -1,7 +1,7 @@
 # Zappa
 #### Serverless WSGI with AWS Lambda + API Gateway
 
-Zappa makes it super easy to deploy Python WSGI applications on on AWS Lambda + API Gateway. Think of it as "serverless" web hosting for your Python web apps.
+Zappa makes it super easy to deploy all Python WSGI applications on on AWS Lambda + API Gateway. Think of it as "serverless" web hosting for your Python web apps.
 
 That means:
 
@@ -57,7 +57,8 @@ zip_path = zappa.create_lambda_zip(project_name)
 # Upload it to S3
 zip_arn = zappa.upload_to_s3(zip_path, s3_bucket_name)
 
-# Register the Lambda function with that Zip as the Source
+# Register the Lambda function with that zip as the source
+# You'll also need to define the path to your lambda_handler code.
 lambda_arn = zappa.create_lambda_function(s3_bucket_name, zip_path, project_name, 'runme.lambda_handler')
 
 # Create and configure the API Gateway
