@@ -1,8 +1,8 @@
 ![Logo placeholder](http://i.imgur.com/vLflpND.gif)
-# Zappa
+# Zappa [![Build Status](https://travis-ci.org/Miserlou/Zappa.svg)](https://travis-ci.org/Miserlou/Zappa) [![PyPI](https://img.shields.io/pypi/dm/Zappa.svg?style=flat)](https://pypi.python.org/pypi/zappa/) [![Python 2](https://img.shields.io/badge/Python-2-brightgreen.svg)](https://pypi.python.org/pypi/zappa/) [![Python 3](https://img.shields.io/badge/Python-3-brightgreen.svg)](https://pypi.python.org/pypi/zappa/)
 #### Serverless WSGI with AWS Lambda + API Gateway
 
-Zappa makes it super easy to deploy all Python WSGI applications on on AWS Lambda + API Gateway. Think of it as "serverless" web hosting for your Python web apps.
+Zappa makes it super easy to deploy all Python WSGI applications on AWS Lambda + API Gateway. Think of it as "serverless" web hosting for your Python web apps.
 
 That means:
 
