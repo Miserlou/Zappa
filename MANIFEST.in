@@ -1,0 +1,2 @@
+include README.md LICENSE requirements.txt
+recursive-include zappa *.py
