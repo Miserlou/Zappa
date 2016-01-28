@@ -16,23 +16,6 @@ from tqdm import tqdm
 from sign_request import sign_request
 
 ##
-# Configurables
-##
-
-HTTP_METHODS = [
-    'DELETE', 
-    'GET',
-    'HEAD',
-    'OPTIONS',
-    'PATCH',
-    'POST'
-]
-PARAMETER_DEPTH = 1
-INTEGRATION_RESPONSE_METHODS = [200, 404, 500]
-ROLE_NAME = "ZappaLambdaExecution"
-AWS_REGION = "us-east-1"
-
-##
 # Policies And Template Mappings
 ##
 
@@ -111,6 +94,28 @@ class Zappa(object):
     Makes it easy to run Python web applications on AWS Lambda/API Gateway.
 
     """
+
+    ##
+    # Configurables
+    ##
+
+    http_methods = [
+        'DELETE', 
+        'GET',
+        'HEAD',
+        'OPTIONS',
+        'PATCH',
+        'POST'
+    ]
+    parameter_depth = 3
+    integration_response_codes = [200, 404, 500]
+    method_response_codes = [200, 404, 500]
+    role_name = "ZappaLambdaExecution"
+    aws_region = "us-east-1"
+
+    ##
+    # Credentials
+    ##
 
     access_key = None
     secret_key = None
@@ -276,9 +281,8 @@ class Zappa(object):
 
     def create_lambda_function(self, bucket, s3_key, function_name, handler, description="Zappa Deployment", timeout=30, memory_size=512, publish=True):
         """
-
         Given a bucket and key of a valid Lambda-zip, a function name and a handler, register that Lambda function.
-        
+
         """
 
         client = boto3.client('lambda')
@@ -298,6 +302,23 @@ class Zappa(object):
         )
 
         return response['FunctionArn']
+
+    def invoke_lambda_function(self, function_name, payload, invocation_type='Event', log_type='Tail', client_context=None, qualifier=None):
+        """
+        Directly invoke a named Lambda function with a payload.
+        Returns the response.
+
+        """
+
+        client = boto3.client('lambda')
+        response = client.invoke(
+            FunctionName=function_name,
+            InvocationType=invocation_type,
+            LogType=log_type,
+            Payload=payload
+        )
+
+        return response
 
     ##
     # API Gateway
@@ -351,7 +372,7 @@ class Zappa(object):
         self.create_and_setup_methods(api_id, root_id, lambda_arn)
 
         parent_id = root_id
-        for i in range(1,PARAMETER_DEPTH):
+        for i in range(1,self.parameter_depth):
 
             response = client.create_resource(
                 restApiId=api_id,
@@ -375,7 +396,7 @@ class Zappa(object):
 
         client = boto3.client('apigateway')
 
-        for method in HTTP_METHODS:
+        for method in self.http_methods:
 
                 response = client.put_method(
                     restApiId=api_id,
@@ -389,7 +410,7 @@ class Zappa(object):
                 template_mapping = TEMPLATE_MAPPING
                 content_mapping_templates = {'application/json': template_mapping}
                 credentials = self.credentials_arn # This must be a Role ARN
-                uri='arn:aws:apigateway:' + AWS_REGION + ':lambda:path/2015-03-31/functions/' + lambda_arn + '/invocations'
+                uri='arn:aws:apigateway:' + self.aws_region + ':lambda:path/2015-03-31/functions/' + lambda_arn + '/invocations'
                 url = "/restapis/{0}/resources/{1}/methods/{2}/integration".format(
                     api_id,
                     resource_id,
@@ -411,7 +432,9 @@ class Zappa(object):
                         "requestTemplates": content_mapping_templates,
                         "cacheNamespace": "none",
                         "cacheKeyParameters": []
-                    }
+                    },
+                    host='apigateway.' + self.aws_region + '.amazonaws.com',
+                    region=self.aws_region,
                 )
 
                 ##
@@ -419,7 +442,7 @@ class Zappa(object):
                 ##
 
                 response_template = RESPONSE_TEMPLATE
-                for response in INTEGRATION_RESPONSE_METHODS:
+                for response in self.integration_response_codes:
                     status_code = str(response)
                     response = client.put_integration_response(
                         restApiId=api_id,
@@ -438,7 +461,7 @@ class Zappa(object):
                 # Method Response
                 ##
 
-                for response in [200, 404, 500]:
+                for response in self.method_response_codes:
                     status_code = str(response)
                     response = client.put_method_response(
                         restApiId=api_id,
@@ -475,7 +498,7 @@ class Zappa(object):
             variables=variables
         )
 
-        endpoint_url = "https://" + api_id + ".execute-api." + AWS_REGION + ".amazonaws.com/" + stage_name
+        endpoint_url = "https://" + api_id + ".execute-api." + self.aws_region + ".amazonaws.com/" + stage_name
         return endpoint_url
 
     ##
@@ -495,17 +518,17 @@ class Zappa(object):
 
         try:
             role = iam.meta.client.get_role(
-                RoleName=ROLE_NAME)
+                RoleName=self.role_name)
             self.credentials_arn = role['Role']['Arn']
             return self.credentials_arn
 
         except botocore.client.ClientError:
-            print("Creating " + ROLE_NAME + " IAM..")
+            print("Creating " + self.role_name + " IAM..")
 
             role = iam.create_role(
-                RoleName=ROLE_NAME,
+                RoleName=self.role_name,
                 AssumeRolePolicyDocument=assume_policy_s)
-            iam.RolePolicy(ROLE_NAME, 'zappa-permissions').put(
+            iam.RolePolicy(self.role_name, 'zappa-permissions').put(
                 PolicyDocument=attach_policy_s)
 
         self.credentials_arn = role.arn
