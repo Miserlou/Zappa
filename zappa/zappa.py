@@ -120,7 +120,7 @@ class Zappa(object):
     # Packaging
     ##
 
-    def create_lambda_zip(self, prefix='lambda_package'):
+    def create_lambda_zip(self, prefix='lambda_package', handler_file=None, minify=True):
         """
         Creates a Lambda-ready zip file of the current virtualenvironment and working directory.
 
@@ -169,16 +169,37 @@ class Zappa(object):
             for filen in files:
                 to_write = os.path.join(root, filen)
 
-                # And don't package boto, because AWS gives us that for free:
-                if 'boto' in to_write:
-                    continue
-                if ".exe" in to_write:
-                    continue
-                if '.DS_Store' in to_write:
-                    continue
+                # There are few things we can do to reduce the filesize
+                if minify:
+
+                    # And don't package boto, because AWS gives us that for free:
+                    if 'boto' in to_write:
+                        continue
+                    if ".exe" in to_write:
+                        continue
+                    if '.DS_Store' in to_write:
+                        continue
+
+                    # If there is a .pyc file in this package,
+                    # we can skip the python source code as we'll just
+                    # use the compiled bytecode anyway.
+                    if to_write[-3:] == '.py':
+                        if os.path.isfile(to_write + 'c'):
+                            continue
+
+                    # Our package has already been installed,
+                    # so we can skip the distribution information.
+                    if '.dist-info' in to_write:
+                        continue
 
                 arc_write = to_write.split(site_packages)[1]
                 zipf.write(to_write, arc_write)
+
+        # If a handler_file is supplied, copy that to the root of the zip,
+        # because that's where AWS Lambda looks for it. It can't be inside a package.
+        if handler_file:
+            filename = handler_file.split(os.sep)[-1]
+            zipf.write(handler_file, filename)
 
         zipf.close()
         return output_path
@@ -219,17 +240,16 @@ class Zappa(object):
         try:
             bucket = self.s3_connection.get_bucket(bucket_name)
             source_size = os.stat(source_path).st_size
-
             dest_path = os.path.split(source_path)[1]
 
             # Create a multipart upload request
             mpu = bucket.initiate_multipart_upload(dest_path)
 
-            # Use a chunk size of 50 MiB
+            # Use a chunk size of 5 MiB
             chunk_size = 5242880
             chunk_count = int(math.ceil(source_size / float(chunk_size)))
 
-            print("Uploading Zip..")
+            print("Uploading zip (" + str(self.human_size(source_size)) + ")..")
 
             # Send the file parts, using FileChunkIO to create a file-like object
             # that points to a certain byte range within the original file. We
@@ -530,6 +550,13 @@ class Zappa(object):
         self.access_key = config.get('default', 'aws_access_key_id')
         self.secret_key = config.get('default', 'aws_secret_access_key')
         return
+
+    def human_size(self, num, suffix='B'):
+        for unit in ['','Ki','Mi','Gi','Ti','Pi','Ei','Zi']:
+            if abs(num) < 1024.0:
+                return "%3.1f%s%s" % (num, unit, suffix)
+            num /= 1024.0
+        return "%.1f%s%s" % (num, 'Yi', suffix)
 
 ##
 # Main
