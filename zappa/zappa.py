@@ -107,7 +107,7 @@ class Zappa(object):
         'PATCH',
         'POST'
     ]
-    parameter_depth = 3
+    parameter_depth = 5
     integration_response_codes = [200, 404, 500]
     method_response_codes = [200, 404, 500]
     role_name = "ZappaLambdaExecution"
@@ -302,6 +302,23 @@ class Zappa(object):
         )
 
         return response['FunctionArn']
+
+    def update_lambda_function(self, bucket, s3_key, function_name, publish=True):
+        """
+        Given a bucket and key of a valid Lambda-zip, a function name and a handler, update that Lambda function's code.
+
+        """
+
+        client = boto3.client('lambda')
+        response = client.update_function_code(
+            FunctionName=function_name,
+            S3Bucket=bucket,
+            S3Key=s3_key,
+            Publish=publish
+        )
+
+        return response['FunctionArn']
+
 
     def invoke_lambda_function(self, function_name, payload, invocation_type='Event', log_type='Tail', client_context=None, qualifier=None):
         """
@@ -500,6 +517,25 @@ class Zappa(object):
 
         endpoint_url = "https://" + api_id + ".execute-api." + self.aws_region + ".amazonaws.com/" + stage_name
         return endpoint_url
+
+    def get_api_url(self, stage_name):
+        """
+        Given a stage_name, return a valid API URL.
+
+        """
+
+        client = boto3.client('apigateway')
+
+        response = client.get_rest_apis(
+            limit=500
+        )
+
+        for item in response['items']:
+            if item['description'] == stage_name:
+                endpoint_url = "https://" + item['id'] + ".execute-api." + self.aws_region + ".amazonaws.com/" + stage_name
+                return endpoint_url
+
+        return ''
 
     ##
     # IAM
