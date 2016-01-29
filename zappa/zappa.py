@@ -275,6 +275,35 @@ class Zappa(object):
 
         return True
 
+    def remove_from_s3(self, file_name, bucket_name):
+        """
+        Given a file name and a bucket, remove it from S3.
+
+        There's no reason to keep the file hosted on S3 once its been made into a Lambda function, so we can delete it from S3.
+
+        Returns True on success, False on failure.
+
+        """
+
+        s3 = boto3.resource('s3')
+        bucket = s3.Bucket(bucket_name)
+
+        try:
+            s3.meta.client.head_bucket(Bucket=bucket_name)
+        except botocore.exceptions.ClientError as e:
+            # If a client error is thrown, then check that it was a 404 error.
+            # If it was a 404 error, then the bucket does not exist.
+            error_code = int(e.response['Error']['Code'])
+            if error_code == 404:
+                return False
+
+        delete_keys={'Objects': [{'Key': file_name}]}
+        response = bucket.delete_objects(Delete=delete_keys)
+        if response['ResponseMetadata']['HTTPStatusCode'] == 200:
+            return True
+        else:
+            return False
+
     ##
     # Lambda
     ##
