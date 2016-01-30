@@ -1,3 +1,4 @@
+import base64
 import boto3
 import botocore
 import ConfigParser
@@ -82,6 +83,9 @@ ATTACH_POLICY = """{
 }"""
 
 RESPONSE_TEMPLATE = """#set($inputRoot = $input.path('$'))\n$inputRoot.Content"""
+#ERROR_RESPONSE_TEMPLATE = """#set($inputRoot = $input.json('$.errorMessage'))\n$inputRoot.Content"""
+# This very nearly worked:
+ERROR_RESPONSE_TEMPLATE = """#set($inputRoot = $input.path('$.errorMessage'))\n$util.base64Decode($inputRoot)"""
 
 ##
 # Classes
@@ -523,18 +527,30 @@ class Zappa(object):
                 # Integration Response
                 ##
 
-                response_template = RESPONSE_TEMPLATE
                 for response in self.integration_response_codes:
                     status_code = str(response)
 
                     response_parameters = {"method.response.header." + header_type: "integration.response.body." + header_type for header_type in self.method_header_types}
-                    response_templates = {content_type: response_template for content_type in self.integration_content_types}
+
+                    # Error code matching RegEx
+                    # Thanks to @KevinHornschemeier and @jayway
+                    # for the discussion on this.
+                    if status_code == '200':
+                        selection_pattern = ''
+                        response_templates = {content_type: RESPONSE_TEMPLATE for content_type in self.integration_content_types}
+                    
+                    else:
+                        #selection_pattern = '\{\"AAA\"\: \"' + status_code + '.*'
+                        selection_pattern =  base64.b64encode("<!DOCTYPE html>" + str(status_code)) + '.*'
+                        selection_pattern = selection_pattern.replace('+', "\+")
+                        response_templates = {content_type: ERROR_RESPONSE_TEMPLATE for content_type in self.integration_content_types}
+
                     integration_response = client.put_integration_response(
                         restApiId=api_id,
                         resourceId=resource_id,
                         httpMethod=method,
                         statusCode=status_code,
-                        selectionPattern='',
+                        selectionPattern=selection_pattern,
                         responseParameters=response_parameters,
                         responseTemplates=response_templates
                     )
