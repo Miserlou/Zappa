@@ -83,9 +83,8 @@ ATTACH_POLICY = """{
 }"""
 
 RESPONSE_TEMPLATE = """#set($inputRoot = $input.path('$'))\n$inputRoot.Content"""
-#ERROR_RESPONSE_TEMPLATE = """#set($inputRoot = $input.json('$.errorMessage'))\n$inputRoot.Content"""
-# This very nearly worked:
 ERROR_RESPONSE_TEMPLATE = """#set($inputRoot = $input.path('$.errorMessage'))\n$util.base64Decode($inputRoot)"""
+REDIRECT_RESPONSE_TEMPLATE = ""
 
 ##
 # Classes
@@ -112,7 +111,7 @@ class Zappa(object):
         'POST'
     ]
     parameter_depth = 5
-    integration_response_codes = [200, 301, 302, 400, 404, 500]
+    integration_response_codes = [200, 301, 400, 404, 500]
     integration_content_types = [
         'text/html',
         # 'application/atom+xml',
@@ -538,9 +537,11 @@ class Zappa(object):
                     if status_code == '200':
                         selection_pattern = ''
                         response_templates = {content_type: RESPONSE_TEMPLATE for content_type in self.integration_content_types}
-                    
+                    elif status_code in ['301', '302']:
+                        selection_pattern = '\/.*'
+                        response_templates = {content_type: REDIRECT_RESPONSE_TEMPLATE for content_type in self.integration_content_types}
+                        response_parameters["method.response.header.Location"] = "integration.response.body.errorMessage"
                     else:
-                        #selection_pattern = '\{\"AAA\"\: \"' + status_code + '.*'
                         selection_pattern =  base64.b64encode("<!DOCTYPE html>" + str(status_code)) + '.*'
                         selection_pattern = selection_pattern.replace('+', "\+")
                         response_templates = {content_type: ERROR_RESPONSE_TEMPLATE for content_type in self.integration_content_types}
