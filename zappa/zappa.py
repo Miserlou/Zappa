@@ -81,7 +81,7 @@ ATTACH_POLICY = """{
     ]
 }"""
 
-RESPONSE_TEMPLATE = """#set($inputRoot = $input.path('$'))\n$inputRoot.Body"""
+RESPONSE_TEMPLATE = """#set($inputRoot = $input.path('$'))\n$inputRoot.Content"""
 
 ##
 # Classes
@@ -108,8 +108,25 @@ class Zappa(object):
         'POST'
     ]
     parameter_depth = 5
-    integration_response_codes = [200, 404, 500]
-    method_response_codes = [200, 404, 500]
+    integration_response_codes = [200, 301, 302, 400, 404, 500]
+    integration_content_types = [
+        'text/html',
+        # 'application/atom+xml',
+        # 'application/json',
+        # 'application/jwt',
+        # 'application/xml',
+    ]
+    method_response_codes = [200, 301, 404, 500]
+    method_content_types = [
+        'text/html',
+    ]
+    method_header_types = [
+        'Content-Type',
+        'Location',
+        'Status',
+        'X-Frame-Options'
+    ]
+
     role_name = "ZappaLambdaExecution"
     aws_region = "us-east-1"
 
@@ -483,6 +500,25 @@ class Zappa(object):
                     region=self.aws_region,
                 )
 
+                ## 
+                # Method Response
+                ##
+
+                for response in self.method_response_codes:
+                    status_code = str(response)
+
+                    response_parameters = {"method.response.header." + header_type: False for header_type in self.method_header_types}
+                    response_models = {content_type: 'Empty' for content_type in self.method_content_types}
+
+                    method_response = client.put_method_response(
+                        restApiId=api_id,
+                        resourceId=resource_id,
+                        httpMethod=method,
+                        statusCode=status_code,
+                        responseParameters=response_parameters,
+                        responseModels=response_models
+                    )
+
                 ##
                 # Integration Response
                 ##
@@ -490,35 +526,17 @@ class Zappa(object):
                 response_template = RESPONSE_TEMPLATE
                 for response in self.integration_response_codes:
                     status_code = str(response)
-                    response = client.put_integration_response(
+
+                    response_parameters = {"method.response.header." + header_type: "integration.response.body." + header_type for header_type in self.method_header_types}
+                    response_templates = {content_type: response_template for content_type in self.integration_content_types}
+                    integration_response = client.put_integration_response(
                         restApiId=api_id,
                         resourceId=resource_id,
                         httpMethod=method,
                         statusCode=status_code,
                         selectionPattern='',
-                        responseParameters={
-                        },
-                        responseTemplates={
-                            'text/html': response_template
-                        }
-                    )
-
-                ## 
-                # Method Response
-                ##
-
-                for response in self.method_response_codes:
-                    status_code = str(response)
-                    response = client.put_method_response(
-                        restApiId=api_id,
-                        resourceId=resource_id,
-                        httpMethod=method,
-                        statusCode=status_code,
-                        responseParameters={
-                        },
-                        responseModels={
-                            'text/html': 'Empty'
-                        }
+                        responseParameters=response_parameters,
+                        responseTemplates=response_templates
                     )
 
         return resource_id
