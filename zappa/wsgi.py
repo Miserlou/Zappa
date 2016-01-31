@@ -1,4 +1,5 @@
 from urllib import urlencode
+from StringIO import StringIO
 
 # Event format:
 # event = {
@@ -29,14 +30,14 @@ from urllib import urlencode
 #     }
 # }
 
-def create_wsgi_request(event_info, server_name='zappa'):
+def create_wsgi_request(event_info, server_name='zappa', script_name=None):
         """
         Given some event_info,
         create and return a valid WSGI request environ.
         """
 
         method = event_info['method']
-        body = event_info['body']
+        body = str(event_info['body'])
         params = event_info['params']
         query = event_info['query']
 
@@ -57,15 +58,27 @@ def create_wsgi_request(event_info, server_name='zappa'):
             'SERVER_PROTOCOL': str('HTTP/1.1'),
             'wsgi.version': (1, 0),
             'wsgi.url_scheme': str('http'),
-            'wsgi.input': str(body),
+            'wsgi.input': body,
             'wsgi.errors': str(''),
             'wsgi.multiprocess': False,
             'wsgi.multithread': False,
             'wsgi.run_once': False,
         }
 
+        # Input processing
+        if method == "POST":
+            environ['wsgi.input'] = StringIO(body)
+            environ['CONTENT_TYPE'] = event_info["headers"]['Content-Type']
+            environ['CONTENT_LENGTH'] = str(len(body))
+
         for header in event_info["headers"]:
             wsgi_name = "HTTP_" + header.upper().replace('-', '_')
-            environ[wsgi_name] = event_info["headers"][header]
+            environ[wsgi_name] = str(event_info["headers"][header])
+
+        if script_name:
+            environ['SCRIPT_NAME'] = script_name
+            path_info = environ['PATH_INFO']
+            # if path_info.startswith(script_name):
+            #     environ['PATH_INFO'] = path_info[len(script_name):]
 
         return environ

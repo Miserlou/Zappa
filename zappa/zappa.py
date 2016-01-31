@@ -43,6 +43,30 @@ TEMPLATE_MAPPING = """{
   }  
 }"""
 
+POST_TEMPLATE_MAPPING = """#set($rawPostData = $input.path('$'))
+{
+  "body" : "$rawPostData",
+  "headers": {
+    #foreach($header in $input.params().header.keySet())
+    "$header": "$util.escapeJavaScript($input.params().header.get($header))" #if($foreach.hasNext),#end
+    
+    #end
+  },
+  "method": "$context.httpMethod",
+  "params": {
+    #foreach($param in $input.params().path.keySet())
+    "$param": "$util.escapeJavaScript($input.params().path.get($param))" #if($foreach.hasNext),#end
+    
+    #end
+  },
+  "query": {
+    #foreach($queryParam in $input.params().querystring.keySet())
+    "$queryParam": "$util.escapeJavaScript($input.params().querystring.get($queryParam))" #if($foreach.hasNext),#end
+    
+    #end
+  }  
+}"""
+
 ASSUME_POLICY = """{
   "Version": "2012-10-17",
   "Statement": [
@@ -111,7 +135,7 @@ class Zappa(object):
         'POST'
     ]
     parameter_depth = 5
-    integration_response_codes = [200, 301, 400, 404, 500]
+    integration_response_codes = [200, 301, 400, 401, 403, 404, 500]
     integration_content_types = [
         'text/html',
         # 'application/atom+xml',
@@ -474,7 +498,8 @@ class Zappa(object):
 
                 # Gotta do this one dirty.. thanks Boto..
                 template_mapping = TEMPLATE_MAPPING
-                content_mapping_templates = {'application/json': template_mapping}
+                post_template_mapping = POST_TEMPLATE_MAPPING
+                content_mapping_templates = {'application/json': template_mapping, 'application/x-www-form-urlencoded': post_template_mapping}
                 credentials = self.credentials_arn # This must be a Role ARN
                 uri='arn:aws:apigateway:' + self.aws_region + ':lambda:path/2015-03-31/functions/' + lambda_arn + '/invocations'
                 url = "/restapis/{0}/resources/{1}/methods/{2}/integration".format(
