@@ -89,11 +89,8 @@ This project is very young, so there is still plenty to be done. Contributions a
 Things that need work right now:
 
 * Testing
-* Route53 Integration
-* SSL Integration
+* Route53/SSL Integration
 * Clients for frameworks besides Django
-* Package size/speed optimization
 * Fix the "hot-start" problem
 * Feedback
-* A nifty logo
 * Real documentation / website!
