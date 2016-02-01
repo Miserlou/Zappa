@@ -30,6 +30,9 @@ from StringIO import StringIO
 #     }
 # }
 
+def combine_cookies(cookies):
+    return
+
 def create_wsgi_request(event_info, server_name='zappa', script_name=None):
         """
         Given some event_info,
@@ -68,7 +71,8 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None):
         # Input processing
         if method == "POST":
             environ['wsgi.input'] = StringIO(body)
-            environ['CONTENT_TYPE'] = event_info["headers"]['Content-Type']
+            if event_info["headers"].has_key('Content-Type'):
+                environ['CONTENT_TYPE'] = event_info["headers"]['Content-Type']
             environ['CONTENT_LENGTH'] = str(len(body))
 
         for header in event_info["headers"]:
@@ -78,7 +82,7 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None):
         if script_name:
             environ['SCRIPT_NAME'] = script_name
             path_info = environ['PATH_INFO']
-            # if path_info.startswith(script_name):
-            #     environ['PATH_INFO'] = path_info[len(script_name):]
+            if script_name in path_info: #path_info.startswith(script_name):
+                environ['PATH_INFO'].replace(script_name, '')# = path_info[len(script_name):]
 
         return environ

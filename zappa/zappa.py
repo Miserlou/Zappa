@@ -143,7 +143,7 @@ class Zappa(object):
         # 'application/jwt',
         # 'application/xml',
     ]
-    method_response_codes = [200, 301, 404, 500]
+    method_response_codes = [200, 301, 400, 401, 403, 404, 500]
     method_content_types = [
         'text/html',
     ]
@@ -151,7 +151,8 @@ class Zappa(object):
         'Content-Type',
         'Location',
         'Status',
-        'X-Frame-Options'
+        'X-Frame-Options',
+        'Set-Cookie'
     ]
 
     role_name = "ZappaLambdaExecution"
