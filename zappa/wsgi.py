@@ -30,9 +30,6 @@ from StringIO import StringIO
 #     }
 # }
 
-def combine_cookies(cookies):
-    return
-
 def create_wsgi_request(event_info, server_name='zappa', script_name=None):
         """
         Given some event_info,
