@@ -91,6 +91,5 @@ Things that need work right now:
 * Testing
 * Route53/SSL Integration
 * Clients for frameworks besides Django
-* Fix the "hot-start" problem
 * Feedback
 * Real documentation / website!
