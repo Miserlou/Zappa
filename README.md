@@ -82,6 +82,12 @@ Zappa goes quite far beyond what Lambda and API Gateway were ever intended to ha
 * Packing and _Base58_ encoding multiple cookies into a single cookie because we can only map one kind.
 * Turning cookie-setting 301/302 responses into 200 responses with HTML redirects, because we have no way to set headers on redirects.
 
+## Sites Using Zappa
+
+* [zappa.gun.io](https://zappa.gun.io) - A Zappa "Hello, World" (real homepage coming.. soon..)
+* [spheres.gun.io](https://spheres.gun.io)  - Spheres, a photosphere host and viewer
+* Your site here? 
+
 ## TODO
 
 This project is very young, so there is still plenty to be done. Contributions are more than welcome! Please file tickets before submitting patches, and submit your patches to the 'dev' branch.
