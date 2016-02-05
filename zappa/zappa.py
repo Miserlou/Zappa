@@ -15,7 +15,6 @@ from os.path import expanduser
 from tqdm import tqdm
 
 from sign_request import sign_request
-
 ##
 # Policies And Template Mappings
 ##
@@ -121,13 +120,12 @@ class Zappa(object):
     Makes it easy to run Python web applications on AWS Lambda/API Gateway.
 
     """
-
     ##
     # Configurables
     ##
 
     http_methods = [
-        'DELETE', 
+        'DELETE',
         'GET',
         'HEAD',
         'OPTIONS',
@@ -138,10 +136,10 @@ class Zappa(object):
     integration_response_codes = [200, 301, 400, 401, 403, 404, 500]
     integration_content_types = [
         'text/html',
-        # 'application/atom+xml',
-        # 'application/json',
-        # 'application/jwt',
-        # 'application/xml',
+    # 'application/atom+xml',
+    # 'application/json',
+    # 'application/jwt',
+    # 'application/xml',
     ]
     method_response_codes = [200, 301, 400, 401, 403, 404, 500]
     method_content_types = [
@@ -157,7 +155,6 @@ class Zappa(object):
 
     role_name = "ZappaLambdaExecution"
     aws_region = "us-east-1"
-
     ##
     # Credentials
     ##
@@ -165,7 +162,6 @@ class Zappa(object):
     access_key = None
     secret_key = None
     credentials_arn = None
-
     ##
     # Packaging
     ##
@@ -186,13 +182,13 @@ class Zappa(object):
         path = os.getcwd()
 
         def splitpath(path):
-            parts=[]
-            (path, tail)=os.path.split(path)
+            parts = []
+            (path, tail) = os.path.split(path)
             while path and tail:
-                 parts.append( tail)
-                 (path,tail)=os.path.split(path)
-            parts.append( os.path.join(path,tail) )
-            return map( os.path.normpath, parts)[::-1]
+                parts.append(tail)
+                (path, tail) = os.path.split(path)
+            parts.append(os.path.join(path, tail))
+            return map(os.path.normpath, parts)[::-1]
         split_venv = splitpath(venv)
 
         # First, do the project..
@@ -213,7 +209,7 @@ class Zappa(object):
                 zipf.write(to_write)
 
         # Then, do the site-packages..
-        # TODO Windows: %VIRTUAL_ENV%\Lib\site-packages 
+        # TODO Windows: %VIRTUAL_ENV%\Lib\site-packages
         site_packages = os.path.join(venv, 'lib', 'python2.7', 'site-packages')
         for root, dirs, files in os.walk(site_packages):
             for filen in files:
@@ -253,7 +249,6 @@ class Zappa(object):
 
         zipf.close()
         return output_path
-
     ##
     # S3
     ##
@@ -342,13 +337,12 @@ class Zappa(object):
             if error_code == 404:
                 return False
 
-        delete_keys={'Objects': [{'Key': file_name}]}
+        delete_keys = {'Objects': [{'Key': file_name}]}
         response = bucket.delete_objects(Delete=delete_keys)
         if response['ResponseMetadata']['HTTPStatusCode'] == 200:
             return True
         else:
             return False
-
     ##
     # Lambda
     ##
@@ -393,7 +387,6 @@ class Zappa(object):
 
         return response['FunctionArn']
 
-
     def invoke_lambda_function(self, function_name, payload, invocation_type='Event', log_type='Tail', client_context=None, qualifier=None):
         """
         Directly invoke a named Lambda function with a payload.
@@ -410,7 +403,6 @@ class Zappa(object):
         )
 
         return response
-
     ##
     # API Gateway
     ##
@@ -443,7 +435,6 @@ class Zappa(object):
             )
 
         api_id = response['id']
-
         ##
         # The Resources
         ##
@@ -463,7 +454,7 @@ class Zappa(object):
         self.create_and_setup_methods(api_id, root_id, lambda_arn)
 
         parent_id = root_id
-        for i in range(1,self.parameter_depth):
+        for i in range(1, self.parameter_depth):
 
             response = client.create_resource(
                 restApiId=api_id,
@@ -489,27 +480,27 @@ class Zappa(object):
 
         for method in self.http_methods:
 
-                response = client.put_method(
+            response = client.put_method(
                     restApiId=api_id,
                     resourceId=resource_id,
                     httpMethod=method,
                     authorizationType='none',
                     apiKeyRequired=False
-                )
+            )
 
-                # Gotta do this one dirty.. thanks Boto..
-                template_mapping = TEMPLATE_MAPPING
-                post_template_mapping = POST_TEMPLATE_MAPPING
-                content_mapping_templates = {'application/json': template_mapping, 'application/x-www-form-urlencoded': post_template_mapping}
-                credentials = self.credentials_arn # This must be a Role ARN
-                uri='arn:aws:apigateway:' + self.aws_region + ':lambda:path/2015-03-31/functions/' + lambda_arn + '/invocations'
-                url = "/restapis/{0}/resources/{1}/methods/{2}/integration".format(
+            # Gotta do this one dirty.. thanks Boto..
+            template_mapping = TEMPLATE_MAPPING
+            post_template_mapping = POST_TEMPLATE_MAPPING
+            content_mapping_templates = {'application/json': template_mapping, 'application/x-www-form-urlencoded': post_template_mapping}
+            credentials = self.credentials_arn  # This must be a Role ARN
+            uri = 'arn:aws:apigateway:' + self.aws_region + ':lambda:path/2015-03-31/functions/' + lambda_arn + '/invocations'
+            url = "/restapis/{0}/resources/{1}/methods/{2}/integration".format(
                     api_id,
                     resource_id,
                     method.upper()
-                )
+            )
 
-                response = sign_request(
+            response = sign_request(
                     self.access_key,
                     self.secret_key,
                     canonical_uri=url,
@@ -527,52 +518,52 @@ class Zappa(object):
                     },
                     host='apigateway.' + self.aws_region + '.amazonaws.com',
                     region=self.aws_region,
-                )
+            )
 
-                ## 
-                # Method Response
-                ##
+            ##
+            # Method Response
+            ##
 
-                for response in self.method_response_codes:
-                    status_code = str(response)
+            for response in self.method_response_codes:
+                status_code = str(response)
 
-                    response_parameters = {"method.response.header." + header_type: False for header_type in self.method_header_types}
-                    response_models = {content_type: 'Empty' for content_type in self.method_content_types}
+                response_parameters = {"method.response.header." + header_type: False for header_type in self.method_header_types}
+                response_models = {content_type: 'Empty' for content_type in self.method_content_types}
 
-                    method_response = client.put_method_response(
+                method_response = client.put_method_response(
                         restApiId=api_id,
                         resourceId=resource_id,
                         httpMethod=method,
                         statusCode=status_code,
                         responseParameters=response_parameters,
                         responseModels=response_models
-                    )
+                )
 
-                ##
-                # Integration Response
-                ##
+            ##
+            # Integration Response
+            ##
 
-                for response in self.integration_response_codes:
-                    status_code = str(response)
+            for response in self.integration_response_codes:
+                status_code = str(response)
 
-                    response_parameters = {"method.response.header." + header_type: "integration.response.body." + header_type for header_type in self.method_header_types}
+                response_parameters = {"method.response.header." + header_type: "integration.response.body." + header_type for header_type in self.method_header_types}
 
-                    # Error code matching RegEx
-                    # Thanks to @KevinHornschemeier and @jayway
-                    # for the discussion on this.
-                    if status_code == '200':
-                        selection_pattern = ''
-                        response_templates = {content_type: RESPONSE_TEMPLATE for content_type in self.integration_content_types}
-                    elif status_code in ['301', '302']:
-                        selection_pattern = '\/.*'
-                        response_templates = {content_type: REDIRECT_RESPONSE_TEMPLATE for content_type in self.integration_content_types}
-                        response_parameters["method.response.header.Location"] = "integration.response.body.errorMessage"
-                    else:
-                        selection_pattern =  base64.b64encode("<!DOCTYPE html>" + str(status_code)) + '.*'
-                        selection_pattern = selection_pattern.replace('+', "\+")
-                        response_templates = {content_type: ERROR_RESPONSE_TEMPLATE for content_type in self.integration_content_types}
+                # Error code matching RegEx
+                # Thanks to @KevinHornschemeier and @jayway
+                # for the discussion on this.
+                if status_code == '200':
+                    selection_pattern = ''
+                    response_templates = {content_type: RESPONSE_TEMPLATE for content_type in self.integration_content_types}
+                elif status_code in ['301', '302']:
+                    selection_pattern = '\/.*'
+                    response_templates = {content_type: REDIRECT_RESPONSE_TEMPLATE for content_type in self.integration_content_types}
+                    response_parameters["method.response.header.Location"] = "integration.response.body.errorMessage"
+                else:
+                    selection_pattern = base64.b64encode("<!DOCTYPE html>" + str(status_code)) + '.*'
+                    selection_pattern = selection_pattern.replace('+', "\+")
+                    response_templates = {content_type: ERROR_RESPONSE_TEMPLATE for content_type in self.integration_content_types}
 
-                    integration_response = client.put_integration_response(
+                integration_response = client.put_integration_response(
                         restApiId=api_id,
                         resourceId=resource_id,
                         httpMethod=method,
@@ -580,7 +571,7 @@ class Zappa(object):
                         selectionPattern=selection_pattern,
                         responseParameters=response_parameters,
                         responseTemplates=response_templates
-                    )
+                )
 
         return resource_id
 
@@ -626,7 +617,6 @@ class Zappa(object):
                 return endpoint_url
 
         return ''
-
     ##
     # IAM
     ##
@@ -659,7 +649,6 @@ class Zappa(object):
 
         self.credentials_arn = role.arn
         return self.credentials_arn
-
     ##
     # Utility
     ##
@@ -701,7 +690,7 @@ class Zappa(object):
         return
 
     def human_size(self, num, suffix='B'):
-        for unit in ['','Ki','Mi','Gi','Ti','Pi','Ei','Zi']:
+        for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
             if abs(num) < 1024.0:
                 return "%3.1f%s%s" % (num, unit, suffix)
             num /= 1024.0
@@ -728,4 +717,3 @@ if __name__ == "__main__":
     endpoint_url = zappa.deploy_api_gateway(api_id, "PRODUCTION", stage_description=timestamp, description=timestamp, cache_cluster_enabled=False, cache_cluster_size='0.5', variables={})
 
     print("Your Zappa deployment is live!: " + endpoint_url)
-
