@@ -575,7 +575,7 @@ class Zappa(object):
 
         return resource_id
 
-    def deploy_api_gateway(self, api_id, stage_name, stage_description="", description="", cache_cluster_enabled=False, cache_cluster_size='0.5', variables={}):
+    def deploy_api_gateway(self, api_id, stage_name, stage_description="", description="", cache_cluster_enabled=False, cache_cluster_size='0.5', variables=None):
         """
         Deploy the API Gateway!
 
@@ -584,6 +584,8 @@ class Zappa(object):
         """
 
         print("Deploying API Gateway..")
+
+        variables = variables or {}
 
         client = boto3.client('apigateway')
         response = client.create_deployment(
