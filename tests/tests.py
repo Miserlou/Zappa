@@ -40,7 +40,7 @@ class TestZappa(unittest.TestCase):
         z = Zappa()
 
         credentials = '[default]\naws_access_key_id = AK123\naws_secret_access_key = JKL456'
-        config = '[default]\noutput = json\nregion = ap-east-1'
+        config = '[default]\noutput = json\nregion = us-east-1'
 
         credentials_file = open('credentials','w')
         credentials_file.write(credentials) 
