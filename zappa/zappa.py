@@ -578,7 +578,7 @@ class Zappa(object):
 
         return resource_id
 
-    def deploy_api_gateway(self, api_id, stage_name, stage_description="", description="", cache_cluster_enabled=False, cache_cluster_size='0.5', variables={}):
+    def deploy_api_gateway(self, api_id, stage_name, stage_description="", description="", cache_cluster_enabled=False, cache_cluster_size='0.5', variables=None):
         """
         Deploy the API Gateway!
 
@@ -587,6 +587,8 @@ class Zappa(object):
         """
 
         print("Deploying API Gateway..")
+
+        variables = variables or {}
 
         client = boto3.client('apigateway')
         response = client.create_deployment(
@@ -686,10 +688,14 @@ class Zappa(object):
         """
 
         user_home = expanduser("~")
+        credentials = ConfigParser.ConfigParser()
         config = ConfigParser.ConfigParser()
-        config.read([str(user_home + "/.aws/credentials")])
-        self.access_key = config.get('default', 'aws_access_key_id')
-        self.secret_key = config.get('default', 'aws_secret_access_key')
+        credentials.read([str(user_home + "/.aws/credentials")])
+        config.read([str(user_home + "/.aws/config")])
+        self.access_key = credentials.get('default', 'aws_access_key_id')
+        self.secret_key = credentials.get('default', 'aws_secret_access_key')
+        self.aws_region = config.get('default', 'region')
+
         return
 
     def human_size(self, num, suffix='B'):
