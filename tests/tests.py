@@ -35,6 +35,30 @@ class TestZappa(unittest.TestCase):
         path = z.create_lambda_zip()
         self.assertTrue(os.path.isfile(path))
         os.remove(path)
+
+    def test_load_credentials(self):
+        z = Zappa()
+
+        credentials = '[default]\naws_access_key_id = AK123\naws_secret_access_key = JKL456'
+        config = '[default]\noutput = json\nregion = ap-east-1'
+
+        credentials_file = open('credentials','w')
+        credentials_file.write(credentials) 
+        credentials_file.close()
+
+        config_file = open('config','w')
+        config_file.write(config) 
+        config_file.close()
+
+        z.load_credentials('credentials', 'config')
+
+        os.remove('credentials')
+        os.remove('config')
+
+        self.assertTrue((z.access_key == "AK123"))
+        self.assertTrue((z.secret_key == "JKL456"))
+        self.assertTrue((z.aws_region == 'us-east-1'))
+
     ##
     # WSGI
     ##

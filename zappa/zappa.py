@@ -679,7 +679,7 @@ class Zappa(object):
             )
         return
 
-    def load_credentials(self):
+    def load_credentials(self, credentials_path=None, config_path=None):
         """
 
         Loads AWS Credentials from the .aws/credentials file.
@@ -687,14 +687,29 @@ class Zappa(object):
 
         """
 
-        user_home = expanduser("~")
         credentials = ConfigParser.ConfigParser()
         config = ConfigParser.ConfigParser()
-        credentials.read([str(user_home + "/.aws/credentials")])
-        config.read([str(user_home + "/.aws/config")])
+
+        if not credentials_path:
+            user_home = expanduser("~")
+            credentials_path = str(user_home + "/.aws/credentials")
+        if not config_path:
+            user_home = expanduser("~")
+            config_path = str(user_home + "/.aws/config")
+            
+        credentials.read(credentials_path)
+        config.read(config_path)
+
         self.access_key = credentials.get('default', 'aws_access_key_id')
         self.secret_key = credentials.get('default', 'aws_secret_access_key')
-        self.aws_region = config.get('default', 'region')
+        if config.has_option('default', 'region'):
+            self.aws_region = config.get('default', 'region')
+
+        if self.aws_region not in LAMBDA_REGIONS:
+            print("Warning! AWS Lambda may not be available in this AWS Region!")
+
+        if self.aws_region not in API_GATEWAY_REGIONS:
+            print("Warning! AWS API Gateway may not be available in this AWS Region!")
 
         return
 
