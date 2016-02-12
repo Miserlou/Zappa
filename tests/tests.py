@@ -84,8 +84,8 @@ class TestZappa(unittest.TestCase):
                 "CloudFront-Is-Desktop-Viewer": "true"
             },
             "params": {
-                "a_path": "asdf1",
-                "b_path": "asdf2",
+                "parameter_1": "asdf1",
+                "parameter_2": "asdf2",
             },
             "method": "GET",
             "query": {

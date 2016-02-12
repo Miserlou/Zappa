@@ -410,9 +410,11 @@ class Zappa(object):
     # API Gateway
     ##
 
-    def create_api_gateway_routes(self, lambda_arn, api_name=None):
+    def create_api_gateway_routes(self, lambda_arn, api_name=None, delay=1):
         """
         Creates the API Gateway for this Zappa deployment.
+
+        Delay is taken to avoid hammering AWS too much and having a silent failure that prevents deployment.
 
         Returns the new API's api_id.
 
@@ -467,11 +469,11 @@ class Zappa(object):
             resource_id = response['id']
             parent_id = resource_id
 
-            self.create_and_setup_methods(api_id, resource_id, lambda_arn)
+            self.create_and_setup_methods(api_id, resource_id, lambda_arn, delay)
 
         return api_id
 
-    def create_and_setup_methods(self, api_id, resource_id, lambda_arn):
+    def create_and_setup_methods(self, api_id, resource_id, lambda_arn, delay=1):
         """
         Sets up the methods, integration responses and method responses for a given API Gateway resource.
 
@@ -523,6 +525,8 @@ class Zappa(object):
                     region=self.aws_region,
             )
 
+            time.sleep(delay)
+
             ##
             # Method Response
             ##
@@ -541,6 +545,8 @@ class Zappa(object):
                         responseParameters=response_parameters,
                         responseModels=response_models
                 )
+
+                time.sleep(delay)
 
             ##
             # Integration Response
@@ -575,6 +581,8 @@ class Zappa(object):
                         responseParameters=response_parameters,
                         responseTemplates=response_templates
                 )
+
+                time.sleep(delay)
 
         return resource_id
 
@@ -696,7 +704,7 @@ class Zappa(object):
         if not config_path:
             user_home = expanduser("~")
             config_path = str(user_home + "/.aws/config")
-            
+
         credentials.read(credentials_path)
         config.read(config_path)
 
