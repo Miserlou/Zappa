@@ -23,7 +23,7 @@ This project is for the Zappa core library, which can be used by any WSGI-compat
 If you are looking for the version for your favorite web frameworks, you should probably try here:
 
 * **[django-zappa](https://github.com/Miserlou/django-zappa)**
-* **flask-zappa** (Coming soon!)
+* **[flask-zappa](https://github.com/Miserlou/flask-zappa**
 * **pyramid-zappa** (Coming.. maybe?)
 
 ## Usage
