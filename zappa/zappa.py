@@ -181,7 +181,14 @@ class Zappa(object):
         venv = os.environ['VIRTUAL_ENV']
 
         output_path = prefix + '-' + str(int(time.time())) + '.zip'
-        zipf = zipfile.ZipFile(output_path, 'w')
+
+        try:
+            import zlib
+            compression_method = zipfile.ZIP_DEFLATED
+        except Exception as e:
+            compression_method = zipfile.ZIP_STORED
+
+        zipf = zipfile.ZipFile(output_path, 'w', compression_method)
         path = os.getcwd()
 
         def splitpath(path):
