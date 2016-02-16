@@ -13,8 +13,8 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None):
         query = event_info['query']
 
         path = "/"
-        for key in sorted(params.keys()):
-            path = path + params[key] + "/"
+        sorted_params = sorted(params.iteritems(), key=lambda (x,_): x)
+        path += "/".join([value for (_, value) in sorted_params])
 
         query_string = urlencode(query)
 

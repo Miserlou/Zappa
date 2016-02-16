@@ -94,5 +94,22 @@ class TestZappa(unittest.TestCase):
         }
         request = create_wsgi_request(event)
 
+    def test_wsgi_path_info(self):
+
+        event = {
+            "body": {},
+            "headers": {},
+            "params": {
+                "parameter_1": "asdf1",
+                "parameter_2": "asdf2",
+            },
+            "method": "GET",
+            "query": {}
+        }
+        request = create_wsgi_request(event)
+
+        self.assertEqual("/asdf1/asdf2", request['PATH_INFO'])
+
+
 if __name__ == '__main__':
     unittest.main()
