@@ -101,7 +101,14 @@ ATTACH_POLICY = """{
             "Resource": [
                 "*"
             ]
-        }
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ec2:CreateNetworkInterface"
+            ],
+            "Resource": "*"
+        },
     ]
 }"""
 
