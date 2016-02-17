@@ -101,7 +101,14 @@ ATTACH_POLICY = """{
             "Resource": [
                 "*"
             ]
-        }
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ec2:CreateNetworkInterface"
+            ],
+            "Resource": "*"
+        },
     ]
 }"""
 
@@ -363,7 +370,7 @@ class Zappa(object):
     # Lambda
     ##
 
-    def create_lambda_function(self, bucket, s3_key, function_name, handler, description="Zappa Deployment", timeout=30, memory_size=512, publish=True):
+    def create_lambda_function(self, bucket, s3_key, function_name, handler, description="Zappa Deployment", timeout=30, memory_size=512, publish=True, vpc_config={}):
         """
         Given a bucket and key of a valid Lambda-zip, a function name and a handler, register that Lambda function.
 
@@ -382,7 +389,8 @@ class Zappa(object):
             Description=description,
             Timeout=timeout,
             MemorySize=memory_size,
-            Publish=publish
+            Publish=publish,
+            VpcConfig=vpc_config
         )
 
         return response['FunctionArn']
