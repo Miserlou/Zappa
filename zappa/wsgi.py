@@ -1,7 +1,8 @@
 from urllib import urlencode
 from StringIO import StringIO
 
-def create_wsgi_request(event_info, server_name='zappa', script_name=None):
+def create_wsgi_request(event_info, server_name='zappa', script_name=None,
+                        trailing_slash=True):
         """
         Given some event_info,
         create and return a valid WSGI request environ.
@@ -15,6 +16,16 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None):
         path = "/"
         for key in sorted(params.keys()):
             path = path + params[key] + "/"
+
+        # This determines if we should return
+        # site.com/resource/ : site.com/resource
+        # site.com/resource : site.com/resource
+        # vs.
+        # site.com/resource/ : site.com/resource/
+        # site.com/resource : site.com/resource/
+        # If no params are present, keep the slash.
+        if not trailing_slash and params.keys():
+            path = path[:-1]
 
         query_string = urlencode(query)
 
