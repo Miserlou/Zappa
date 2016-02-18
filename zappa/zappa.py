@@ -376,7 +376,8 @@ class Zappa(object):
 
         """
 
-        client = boto3.client('lambda')
+        boto_session = self.get_boto_session()
+        client = boto_session.client('lambda')
         response = client.create_function(
             FunctionName=function_name,
             Runtime='python2.7',
@@ -401,7 +402,8 @@ class Zappa(object):
 
         """
 
-        client = boto3.client('lambda')
+        boto_session = self.get_boto_session()
+        client = boto_session.client('lambda')
         response = client.update_function_code(
             FunctionName=function_name,
             S3Bucket=bucket,
@@ -418,7 +420,8 @@ class Zappa(object):
 
         """
 
-        client = boto3.client('lambda')
+        boto_session = self.get_boto_session()
+        client = boto_session.client('lambda')
         response = client.invoke(
             FunctionName=function_name,
             InvocationType=invocation_type,
@@ -443,7 +446,8 @@ class Zappa(object):
 
         print("Creating API Gateway routes..")
 
-        client = boto3.client('apigateway')
+        boto_session = self.get_boto_session()
+        client = boto_session.client('apigateway')
 
         if not api_name:
             api_name = str(int(time.time()))
@@ -502,7 +506,8 @@ class Zappa(object):
 
         """
 
-        client = boto3.client('apigateway')
+        boto_session = self.get_boto_session()
+        client = boto_session.client('apigateway')
 
         for method in self.http_methods:
 
@@ -619,7 +624,8 @@ class Zappa(object):
 
         variables = variables or {}
 
-        client = boto3.client('apigateway')
+        boto_session = self.get_boto_session()
+        client = boto_session.client('apigateway')
         response = client.create_deployment(
             restApiId=api_id,
             stageName=stage_name,
@@ -639,8 +645,8 @@ class Zappa(object):
 
         """
 
-        client = boto3.client('apigateway')
-
+        boto_session = self.get_boto_session()
+        client = boto_session.client('apigateway')
         response = client.get_rest_apis(
             limit=500
         )
@@ -695,7 +701,8 @@ class Zappa(object):
 
         """
 
-        client = boto3.client('apigateway')
+        boto_session = self.get_boto_session()
+        client = boto_session.client('apigateway')
         response = client.get_rest_apis()
         for item in response['items']:
             try:
@@ -741,6 +748,13 @@ class Zappa(object):
             print("Warning! AWS API Gateway may not be available in this AWS Region!")
 
         return
+
+    def get_boto_session(self):
+        return boto3.session.Session(
+            aws_access_key_id=self.access_key,
+            aws_secret_access_key=self.secret_key,
+            region_name=self.aws_region
+        )
 
     def human_size(self, num, suffix='B'):
         for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
