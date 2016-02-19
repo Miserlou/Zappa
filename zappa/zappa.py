@@ -7,6 +7,7 @@ import math
 import os
 import time
 import zipfile
+import requests
 
 from boto.s3.connection import S3Connection
 from boto.s3.key import Key
@@ -638,6 +639,36 @@ class Zappa(object):
 
         endpoint_url = "https://" + api_id + ".execute-api." + self.aws_region + ".amazonaws.com/" + stage_name
         return endpoint_url
+
+    def rollback_function_version(self, function_name, versions_back=1, publish=True):
+        """
+        Rollback the lambda function code 'versions_back' number of revisions.
+
+        Returns the Function ARN.
+
+        """
+        boto_session = self.get_boto_session()
+        client = boto_session.client('lambda')
+
+        response = client.list_versions_by_function(FunctionName=function_name)
+        #Take into account $LATEST
+        if len(response['Versions']) < versions_back + 1:
+            print("We do not have {} revisions. Aborting".format(str(versions_back)))
+            return False
+
+        revisions = [int(revision['Version']) for revision in response['Versions'] if revision['Version'] != '$LATEST']
+        revisions.sort(reverse=True)
+
+        response = client.get_function(FunctionName='function:{}:{}'.format(function_name, revisions[versions_back]))
+        response = requests.get(response['Code']['Location'])
+
+        if response.status_code != 200:
+            print("Failed to get version {} of {} code".format(versions_back, function_name))
+            return False
+
+        response = client.update_function_code(FunctionName=function_name, ZipFile=response.content, Publish=publish)
+
+        return response['FunctionArn']
 
     def get_api_url(self, stage_name):
         """
