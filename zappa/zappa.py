@@ -2,14 +2,13 @@ import base64
 import boto3
 import botocore
 import ConfigParser
-import httplib
 import math
 import os
 import time
 import zipfile
+import requests
 
 from boto.s3.connection import S3Connection
-from boto.s3.key import Key
 from filechunkio import FileChunkIO
 from os.path import expanduser
 from tqdm import tqdm
@@ -101,7 +100,14 @@ ATTACH_POLICY = """{
             "Resource": [
                 "*"
             ]
-        }
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ec2:CreateNetworkInterface"
+            ],
+            "Resource": "*"
+        },
     ]
 }"""
 
@@ -363,13 +369,14 @@ class Zappa(object):
     # Lambda
     ##
 
-    def create_lambda_function(self, bucket, s3_key, function_name, handler, description="Zappa Deployment", timeout=30, memory_size=512, publish=True):
+    def create_lambda_function(self, bucket, s3_key, function_name, handler, description="Zappa Deployment", timeout=30, memory_size=512, publish=True, vpc_config={}):
         """
         Given a bucket and key of a valid Lambda-zip, a function name and a handler, register that Lambda function.
 
         """
 
-        client = boto3.client('lambda')
+        boto_session = self.get_boto_session()
+        client = boto_session.client('lambda')
         response = client.create_function(
             FunctionName=function_name,
             Runtime='python2.7',
@@ -382,7 +389,8 @@ class Zappa(object):
             Description=description,
             Timeout=timeout,
             MemorySize=memory_size,
-            Publish=publish
+            Publish=publish,
+            VpcConfig=vpc_config
         )
 
         return response['FunctionArn']
@@ -393,7 +401,8 @@ class Zappa(object):
 
         """
 
-        client = boto3.client('lambda')
+        boto_session = self.get_boto_session()
+        client = boto_session.client('lambda')
         response = client.update_function_code(
             FunctionName=function_name,
             S3Bucket=bucket,
@@ -410,7 +419,8 @@ class Zappa(object):
 
         """
 
-        client = boto3.client('lambda')
+        boto_session = self.get_boto_session()
+        client = boto_session.client('lambda')
         response = client.invoke(
             FunctionName=function_name,
             InvocationType=invocation_type,
@@ -419,6 +429,37 @@ class Zappa(object):
         )
 
         return response
+
+    def rollback_lambda_function_version(self, function_name, versions_back=1, publish=True):
+        """
+        Rollback the lambda function code 'versions_back' number of revisions.
+
+        Returns the Function ARN.
+
+        """
+        boto_session = self.get_boto_session()
+        client = boto_session.client('lambda')
+
+        response = client.list_versions_by_function(FunctionName=function_name)
+        #Take into account $LATEST
+        if len(response['Versions']) < versions_back + 1:
+            print("We do not have {} revisions. Aborting".format(str(versions_back)))
+            return False
+
+        revisions = [int(revision['Version']) for revision in response['Versions'] if revision['Version'] != '$LATEST']
+        revisions.sort(reverse=True)
+
+        response = client.get_function(FunctionName='function:{}:{}'.format(function_name, revisions[versions_back]))
+        response = requests.get(response['Code']['Location'])
+
+        if response.status_code != 200:
+            print("Failed to get version {} of {} code".format(versions_back, function_name))
+            return False
+
+        response = client.update_function_code(FunctionName=function_name, ZipFile=response.content, Publish=publish)
+
+        return response['FunctionArn']
+
     ##
     # API Gateway
     ##
@@ -435,7 +476,8 @@ class Zappa(object):
 
         print("Creating API Gateway routes..")
 
-        client = boto3.client('apigateway')
+        boto_session = self.get_boto_session()
+        client = boto_session.client('apigateway')
 
         if not api_name:
             api_name = str(int(time.time()))
@@ -494,7 +536,8 @@ class Zappa(object):
 
         """
 
-        client = boto3.client('apigateway')
+        boto_session = self.get_boto_session()
+        client = boto_session.client('apigateway')
 
         for method in self.http_methods:
 
@@ -611,7 +654,8 @@ class Zappa(object):
 
         variables = variables or {}
 
-        client = boto3.client('apigateway')
+        boto_session = self.get_boto_session()
+        client = boto_session.client('apigateway')
         response = client.create_deployment(
             restApiId=api_id,
             stageName=stage_name,
@@ -631,8 +675,8 @@ class Zappa(object):
 
         """
 
-        client = boto3.client('apigateway')
-
+        boto_session = self.get_boto_session()
+        client = boto_session.client('apigateway')
         response = client.get_rest_apis(
             limit=500
         )
@@ -643,6 +687,7 @@ class Zappa(object):
                 return endpoint_url
 
         return ''
+
     ##
     # IAM
     ##
@@ -719,7 +764,8 @@ class Zappa(object):
 
         """
 
-        client = boto3.client('apigateway')
+        boto_session = self.get_boto_session()
+        client = boto_session.client('apigateway')
         response = client.get_rest_apis()
         for item in response['items']:
             try:
@@ -765,6 +811,13 @@ class Zappa(object):
             print("Warning! AWS API Gateway may not be available in this AWS Region!")
 
         return
+
+    def get_boto_session(self):
+        return boto3.session.Session(
+            aws_access_key_id=self.access_key,
+            aws_secret_access_key=self.secret_key,
+            region_name=self.aws_region
+        )
 
     def human_size(self, num, suffix='B'):
         for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
