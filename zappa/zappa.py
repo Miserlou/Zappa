@@ -2,7 +2,6 @@ import base64
 import boto3
 import botocore
 import ConfigParser
-import httplib
 import math
 import os
 import time
@@ -10,7 +9,6 @@ import zipfile
 import requests
 
 from boto.s3.connection import S3Connection
-from boto.s3.key import Key
 from filechunkio import FileChunkIO
 from os.path import expanduser
 from tqdm import tqdm
