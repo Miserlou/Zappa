@@ -262,7 +262,7 @@ class Zappa(object):
         # Warn if this is too large for Lambda.
         file_stats = os.stat(output_path)
         if file_stats.st_size > 52428800:
-            print("\n\nWarning: Application zip package is likely to be too large for AWS Lambda.\n\n   ")
+            print("\n\nWarning: Application zip package is likely to be too large for AWS Lambda.\n\n")
 
         return output_path
     ##
@@ -423,7 +423,7 @@ class Zappa(object):
     # API Gateway
     ##
 
-    def create_api_gateway_routes(self, lambda_arn, api_name=None, delay=1):
+    def create_api_gateway_routes(self, lambda_arn, api_name=None, delay=.25):
         """
         Creates the API Gateway for this Zappa deployment.
 
@@ -486,7 +486,7 @@ class Zappa(object):
 
         return api_id
 
-    def create_and_setup_methods(self, api_id, resource_id, lambda_arn, delay=1):
+    def create_and_setup_methods(self, api_id, resource_id, lambda_arn, delay=.25):
         """
         Sets up the methods, integration responses and method responses for a given API Gateway resource.
 
@@ -675,6 +675,38 @@ class Zappa(object):
 
         self.credentials_arn = role.arn
         return self.credentials_arn
+
+    ##
+    # CloudWatch Logging
+    ##
+
+    def tail_logs(self, lambda_name):
+        """
+        Fetch the CloudWatch logs for a given Lambda name.
+
+        """
+
+        client = boto3.client('logs')
+
+        log_name = '/aws/lambda/' + lambda_name
+        streams = client.describe_log_streams(logGroupName=log_name,
+                                            descending=True,
+                                            orderBy='LastEventTime')
+        all_streams = streams['logStreams']
+        stream_ids = [a['logStreamName'] for a in all_streams]
+        event_count = 0
+        stream_id = stream_ids[0]
+        logs = client.get_log_events(logGroupName=log_name,
+                                   logStreamName=stream_id,
+                                   startFromHead=False,
+                                   limit=1000)
+        events = logs['events']
+        for event in events:
+            event_count += 1
+            print event['message']
+
+        return events
+
     ##
     # Utility
     ##
@@ -740,25 +772,3 @@ class Zappa(object):
                 return "%3.1f%s%s" % (num, unit, suffix)
             num /= 1024.0
         return "%.1f%s%s" % (num, 'Yi', suffix)
-
-##
-# Main
-##
-
-if __name__ == "__main__":
-
-    zappa = Zappa()
-    zappa.load_credentials()
-    zappa.create_iam_roles()
-
-    zappa.nuke_old_apis()
-
-    zip_path = zappa.create_lambda_zip()
-    timestamp = zip_path.replace('.zip', '')
-    zip_arn = zappa.upload_to_s3(zip_path, 'lmbda')
-    lambda_arn = zappa.create_lambda_function('lmbda', zip_path, timestamp, 'runme.lambda_handler')
-
-    api_id = zappa.create_api_gateway_routes(lambda_arn)
-    endpoint_url = zappa.deploy_api_gateway(api_id, "PRODUCTION", stage_description=timestamp, description=timestamp, cache_cluster_enabled=False, cache_cluster_size='0.5', variables={})
-
-    print("Your Zappa deployment is live!: " + endpoint_url)

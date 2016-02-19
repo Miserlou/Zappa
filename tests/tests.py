@@ -60,6 +60,17 @@ class TestZappa(unittest.TestCase):
         self.assertTrue((z.aws_region == 'us-east-1'))
 
     ##
+    # Logging
+    ##
+
+    def test_logging(self):
+        """
+        TODO
+        """
+        z = Zappa()
+        z.load_credentials()
+
+    ##
     # WSGI
     ##
 
