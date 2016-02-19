@@ -1,4 +1,7 @@
+import logging
+
 from urllib import urlencode
+from requestlogger import ApacheFormatter
 from StringIO import StringIO
 
 def create_wsgi_request(event_info, server_name='zappa', script_name=None,
@@ -65,3 +68,23 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
                 environ['PATH_INFO'].replace(script_name, '')
 
         return environ
+
+def common_log(environ, response, response_time=None):
+    """
+    Given the WSGI environ and the response,
+    log this event in Common Log Format.
+
+    """
+
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+
+    if response_time:
+        formatter = ApacheFormatter(with_response_time=True)
+    else:
+        formatter = ApacheFormatter(with_response_time=False)
+
+    log_entry = formatter(response.status_code, environ, len(response.content), rt_ms=response_time)
+    logger.info(log_entry)
+
+    return
