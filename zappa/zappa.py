@@ -690,19 +690,6 @@ class Zappa(object):
 
         return ''
 
-    def rollback_api_gateway(self, function_name, stage_name, version_back):
-        """
-        Rollback a stage to a given function version
-        #TODO: look to see if it's possible to get the function name from the API gateway
-
-        """
-
-        lambda_arn = self.rollback_lambda_function_version(function_name, versions_back=version_back)
-        api_id = self.create_api_gateway_routes(lambda_arn)
-        endpoint_url = self.deploy_api_gateway(api_id, stage_name, stage_description='Rollback {} versions'.format(version_back),
-                                               description='Rollback {} versions'.format(version_back))
-        return endpoint_url
-
     ##
     # IAM
     ##
