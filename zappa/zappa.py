@@ -693,6 +693,7 @@ class Zappa(object):
     def rollback_api_gateway(self, function_name, stage_name, version_back):
         """
         Rollback a stage to a given function version
+        #TODO: look to see if it's possible to get the function name from the API gateway
 
         """
 
