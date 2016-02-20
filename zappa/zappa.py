@@ -13,7 +13,6 @@ from filechunkio import FileChunkIO
 from os.path import expanduser
 from tqdm import tqdm
 
-from sign_request import sign_request
 ##
 # Policies And Template Mappings
 ##
@@ -464,11 +463,9 @@ class Zappa(object):
     # API Gateway
     ##
 
-    def create_api_gateway_routes(self, lambda_arn, api_name=None, delay=.25):
+    def create_api_gateway_routes(self, lambda_arn, api_name=None):
         """
         Creates the API Gateway for this Zappa deployment.
-
-        Delay is taken to avoid hammering AWS too much and having a silent failure that prevents deployment.
 
         Returns the new API's api_id.
 
@@ -503,6 +500,17 @@ class Zappa(object):
             restApiId=api_id,
         )
 
+        # count how many put requests we'll be reporting for progress bar
+        progress_total = self.parameter_depth * len(self.http_methods) * (
+                             2 + len(self.integration_response_codes) + len(self.method_response_codes))
+        progress_iter = iter(tqdm(range(progress_total)))
+
+        def report_progress():
+            try:
+                progress_iter.next()
+            except StopIteration:
+                pass
+
         # AWS seems to create this by default,
         # but not sure if that'll be the case forever.
         parent_id = None
@@ -511,7 +519,7 @@ class Zappa(object):
                 root_id = item['id']
         if not root_id:
             return False
-        self.create_and_setup_methods(api_id, root_id, lambda_arn)
+        self.create_and_setup_methods(api_id, root_id, lambda_arn, report_progress)
 
         parent_id = root_id
         for i in range(1, self.parameter_depth):
@@ -524,11 +532,12 @@ class Zappa(object):
             resource_id = response['id']
             parent_id = resource_id
 
-            self.create_and_setup_methods(api_id, resource_id, lambda_arn, delay)
+            self.create_and_setup_methods(api_id, resource_id, lambda_arn, report_progress)
+        report_progress() # clear out the progress bar
 
         return api_id
 
-    def create_and_setup_methods(self, api_id, resource_id, lambda_arn, delay=.25):
+    def create_and_setup_methods(self, api_id, resource_id, lambda_arn, report_progress):
         """
         Sets up the methods, integration responses and method responses for a given API Gateway resource.
 
@@ -548,41 +557,29 @@ class Zappa(object):
                     authorizationType='none',
                     apiKeyRequired=False
             )
+            report_progress()
 
-            # Gotta do this one dirty.. thanks Boto..
             template_mapping = TEMPLATE_MAPPING
             post_template_mapping = POST_TEMPLATE_MAPPING
             content_mapping_templates = {'application/json': template_mapping, 'application/x-www-form-urlencoded': post_template_mapping}
             credentials = self.credentials_arn  # This must be a Role ARN
             uri = 'arn:aws:apigateway:' + self.aws_region + ':lambda:path/2015-03-31/functions/' + lambda_arn + '/invocations'
-            url = "/restapis/{0}/resources/{1}/methods/{2}/integration".format(
-                    api_id,
-                    resource_id,
-                    method.upper()
+
+            client.put_integration(
+                restApiId=api_id,
+                resourceId=resource_id,
+                httpMethod=method.upper(),
+                type='AWS',
+                integrationHttpMethod='POST',
+                uri=uri,
+                credentials=credentials,
+                requestParameters={},
+                requestTemplates=content_mapping_templates,
+                cacheNamespace='none',
+                cacheKeyParameters=[]
             )
-
-            response = sign_request(
-                    self.access_key,
-                    self.secret_key,
-                    canonical_uri=url,
-                    method='put',
-                    request_body={
-                        "type": "AWS",
-                        "httpMethod": "POST",
-                        "uri": uri,
-                        "credentials": credentials,
-                        "requestParameters": {
-                        },
-                        "requestTemplates": content_mapping_templates,
-                        "cacheNamespace": "none",
-                        "cacheKeyParameters": []
-                    },
-                    host='apigateway.' + self.aws_region + '.amazonaws.com',
-                    region=self.aws_region,
-            )
-
-            time.sleep(delay)
-
+            report_progress()
+                
             ##
             # Method Response
             ##
@@ -601,8 +598,7 @@ class Zappa(object):
                         responseParameters=response_parameters,
                         responseModels=response_models
                 )
-
-                time.sleep(delay)
+                report_progress()
 
             ##
             # Integration Response
@@ -637,8 +633,7 @@ class Zappa(object):
                         responseParameters=response_parameters,
                         responseTemplates=response_templates
                 )
-
-                time.sleep(delay)
+                report_progress()
 
         return resource_id
 
