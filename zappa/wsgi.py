@@ -32,10 +32,16 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
 
         query_string = urlencode(query)
 
+        x_forwarded_for = headers.get('X-Forwarded-For', None)
+        if ',' in x_forwarded_for:
+            remote_addr = x_forwarded_for.split(', ')[0]
+        else:
+            remote_addr = '127.0.0.1'
+
         environ = {
             'PATH_INFO': path,
             'QUERY_STRING': query_string,
-            'REMOTE_ADDR': str('127.0.0.1'),
+            'REMOTE_ADDR': remote_addr,
             'REQUEST_METHOD': method,
             'SCRIPT_NAME': str(''),
             'SERVER_NAME': str(server_name),
