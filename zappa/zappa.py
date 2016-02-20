@@ -500,6 +500,17 @@ class Zappa(object):
             restApiId=api_id,
         )
 
+        # count how many put requests we'll be reporting for progress bar
+        progress_total = self.parameter_depth * len(self.http_methods) * (
+                             2 + len(self.integration_response_codes) + len(self.method_response_codes))
+        progress_iter = iter(tqdm(range(progress_total)))
+
+        def report_progress():
+            try:
+                progress_iter.next()
+            except StopIteration:
+                pass
+
         # AWS seems to create this by default,
         # but not sure if that'll be the case forever.
         parent_id = None
@@ -508,7 +519,7 @@ class Zappa(object):
                 root_id = item['id']
         if not root_id:
             return False
-        self.create_and_setup_methods(api_id, root_id, lambda_arn)
+        self.create_and_setup_methods(api_id, root_id, lambda_arn, report_progress)
 
         parent_id = root_id
         for i in range(1, self.parameter_depth):
@@ -521,11 +532,12 @@ class Zappa(object):
             resource_id = response['id']
             parent_id = resource_id
 
-            self.create_and_setup_methods(api_id, resource_id, lambda_arn)
+            self.create_and_setup_methods(api_id, resource_id, lambda_arn, report_progress)
+        report_progress() # clear out the progress bar
 
         return api_id
 
-    def create_and_setup_methods(self, api_id, resource_id, lambda_arn):
+    def create_and_setup_methods(self, api_id, resource_id, lambda_arn, report_progress):
         """
         Sets up the methods, integration responses and method responses for a given API Gateway resource.
 
@@ -545,6 +557,7 @@ class Zappa(object):
                     authorizationType='none',
                     apiKeyRequired=False
             )
+            report_progress()
 
             template_mapping = TEMPLATE_MAPPING
             post_template_mapping = POST_TEMPLATE_MAPPING
@@ -565,6 +578,7 @@ class Zappa(object):
                 cacheNamespace='none',
                 cacheKeyParameters=[]
             )
+            report_progress()
                 
             ##
             # Method Response
@@ -584,6 +598,7 @@ class Zappa(object):
                         responseParameters=response_parameters,
                         responseModels=response_models
                 )
+                report_progress()
 
             ##
             # Integration Response
@@ -618,6 +633,7 @@ class Zappa(object):
                         responseParameters=response_parameters,
                         responseTemplates=response_templates
                 )
+                report_progress()
 
         return resource_id
 
