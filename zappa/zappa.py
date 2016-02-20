@@ -725,7 +725,7 @@ class Zappa(object):
     # CloudWatch Logging
     ##
 
-    def tail_logs(self, lambda_name):
+    def fetch_logs(self, lambda_name, filter_pattern='', limit=10000):
         """
         Fetch the CloudWatch logs for a given Lambda name.
 
@@ -737,20 +737,15 @@ class Zappa(object):
         streams = client.describe_log_streams(logGroupName=log_name,
                                             descending=True,
                                             orderBy='LastEventTime')
-        all_streams = streams['logStreams']
-        stream_ids = [a['logStreamName'] for a in all_streams]
-        event_count = 0
-        stream_id = stream_ids[0]
-        logs = client.get_log_events(logGroupName=log_name,
-                                   logStreamName=stream_id,
-                                   startFromHead=False,
-                                   limit=1000)
-        events = logs['events']
-        for event in events:
-            event_count += 1
-            print event['message']
 
-        return events
+        all_streams = streams['logStreams']
+        all_names = [stream['logStreamName'] for stream in all_streams]
+        response = client.filter_log_events(logGroupName=log_name, 
+                            logStreamNames=all_names,
+                            filterPattern=filter_pattern,
+                            limit=limit)
+
+        return response['events']
 
     ##
     # Utility
