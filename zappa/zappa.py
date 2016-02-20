@@ -13,7 +13,6 @@ from filechunkio import FileChunkIO
 from os.path import expanduser
 from tqdm import tqdm
 
-from sign_request import sign_request
 ##
 # Policies And Template Mappings
 ##
@@ -464,11 +463,9 @@ class Zappa(object):
     # API Gateway
     ##
 
-    def create_api_gateway_routes(self, lambda_arn, api_name=None, delay=.25):
+    def create_api_gateway_routes(self, lambda_arn, api_name=None):
         """
         Creates the API Gateway for this Zappa deployment.
-
-        Delay is taken to avoid hammering AWS too much and having a silent failure that prevents deployment.
 
         Returns the new API's api_id.
 
@@ -524,11 +521,11 @@ class Zappa(object):
             resource_id = response['id']
             parent_id = resource_id
 
-            self.create_and_setup_methods(api_id, resource_id, lambda_arn, delay)
+            self.create_and_setup_methods(api_id, resource_id, lambda_arn)
 
         return api_id
 
-    def create_and_setup_methods(self, api_id, resource_id, lambda_arn, delay=.25):
+    def create_and_setup_methods(self, api_id, resource_id, lambda_arn):
         """
         Sets up the methods, integration responses and method responses for a given API Gateway resource.
 
@@ -549,40 +546,26 @@ class Zappa(object):
                     apiKeyRequired=False
             )
 
-            # Gotta do this one dirty.. thanks Boto..
             template_mapping = TEMPLATE_MAPPING
             post_template_mapping = POST_TEMPLATE_MAPPING
             content_mapping_templates = {'application/json': template_mapping, 'application/x-www-form-urlencoded': post_template_mapping}
             credentials = self.credentials_arn  # This must be a Role ARN
             uri = 'arn:aws:apigateway:' + self.aws_region + ':lambda:path/2015-03-31/functions/' + lambda_arn + '/invocations'
-            url = "/restapis/{0}/resources/{1}/methods/{2}/integration".format(
-                    api_id,
-                    resource_id,
-                    method.upper()
+
+            client.put_integration(
+                restApiId=api_id,
+                resourceId=resource_id,
+                httpMethod=method.upper(),
+                type='AWS',
+                integrationHttpMethod='POST',
+                uri=uri,
+                credentials=credentials,
+                requestParameters={},
+                requestTemplates=content_mapping_templates,
+                cacheNamespace='none',
+                cacheKeyParameters=[]
             )
-
-            response = sign_request(
-                    self.access_key,
-                    self.secret_key,
-                    canonical_uri=url,
-                    method='put',
-                    request_body={
-                        "type": "AWS",
-                        "httpMethod": "POST",
-                        "uri": uri,
-                        "credentials": credentials,
-                        "requestParameters": {
-                        },
-                        "requestTemplates": content_mapping_templates,
-                        "cacheNamespace": "none",
-                        "cacheKeyParameters": []
-                    },
-                    host='apigateway.' + self.aws_region + '.amazonaws.com',
-                    region=self.aws_region,
-            )
-
-            time.sleep(delay)
-
+                
             ##
             # Method Response
             ##
@@ -601,8 +584,6 @@ class Zappa(object):
                         responseParameters=response_parameters,
                         responseModels=response_models
                 )
-
-                time.sleep(delay)
 
             ##
             # Integration Response
@@ -637,8 +618,6 @@ class Zappa(object):
                         responseParameters=response_parameters,
                         responseTemplates=response_templates
                 )
-
-                time.sleep(delay)
 
         return resource_id
 
