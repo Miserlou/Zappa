@@ -15,6 +15,7 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
         body = str(event_info['body'])
         params = event_info['params']
         query = event_info['query']
+        headers = event_info['headers']
 
         path = "/"
         for key in sorted(params.keys()):

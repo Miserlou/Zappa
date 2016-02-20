@@ -36,32 +36,28 @@ class TestZappa(unittest.TestCase):
         self.assertTrue(os.path.isfile(path))
         os.remove(path)
 
-    ##
-    # THIS IS BROKEN ON TRAVIS AND I DONT KNOW WHY
-    ##
+    def test_load_credentials(self):
+        z = Zappa()
 
-    # def test_load_credentials(self):
-    #     z = Zappa()
+        credentials = '[default]\naws_access_key_id = AK123\naws_secret_access_key = JKL456'
+        config = '[default]\noutput = json\nregion = us-east-1'
 
-    #     credentials = '[default]\naws_access_key_id = AK123\naws_secret_access_key = JKL456'
-    #     config = '[default]\noutput = json\nregion = us-east-1'
+        credentials_file = open('credentials','w')
+        credentials_file.write(credentials) 
+        credentials_file.close()
 
-    #     credentials_file = open('credentials','w')
-    #     credentials_file.write(credentials) 
-    #     credentials_file.close()
+        config_file = open('config','w')
+        config_file.write(config) 
+        config_file.close()
 
-    #     config_file = open('config','w')
-    #     config_file.write(config) 
-    #     config_file.close()
+        z.load_credentials('credentials', 'config')
 
-    #     z.load_credentials('credentials', 'config')
+        os.remove('credentials')
+        os.remove('config')
 
-    #     os.remove('credentials')
-    #     os.remove('config')
-
-    #     self.assertTrue((z.access_key == "AK123"))
-    #     self.assertTrue((z.secret_key == "JKL456"))
-    #     self.assertTrue((z.aws_region == 'us-east-1'))
+        self.assertTrue((z.access_key == "AK123"))
+        self.assertTrue((z.secret_key == "JKL456"))
+        self.assertTrue((z.aws_region == 'us-east-1'))
 
     ##
     # Logging
@@ -72,7 +68,6 @@ class TestZappa(unittest.TestCase):
         TODO
         """
         z = Zappa()
-        z.load_credentials()
 
     ##
     # WSGI
