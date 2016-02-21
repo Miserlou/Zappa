@@ -3,6 +3,6 @@ python:
   - "2.7"
 # command to install dependencies
 install:
-  - "pip install setuptools --upgrade; python setup.py install"
+  - "pip install setuptools --upgrade; pip install -U pip; python setup.py install"
 # command to run tests
 script: nosetests
