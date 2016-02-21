@@ -12,4 +12,4 @@ six==1.10.0
 tqdm==3.7.1
 wheel==0.24.0
 wsgi-request-logger==0.4.4
--e git://github.com/hufman/HTTPretty.git@3b09b51ff7d71450c0f5c43557fc92d177df9465#egg=httpretty-origin/use_tempfile
+git+https://github.com/hufman/HTTPretty.git@use_tempfile#egg=httpretty==8.4.14.1
