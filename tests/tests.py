@@ -1,14 +1,6 @@
-import glob
 import os
-import re
-import string
-import sys
 import unittest
 
-import nose
-from nose import case
-from nose.pyversion import unbound_method
-from nose import util
 
 from zappa.wsgi import create_wsgi_request
 from zappa.zappa import Zappa
@@ -27,7 +19,7 @@ class TestZappa(unittest.TestCase):
 
     def test_zappa(self):
         self.assertTrue(True)
-        z = Zappa()
+        Zappa()
 
     def test_create_lambda_package(self):
         self.assertTrue(True)
@@ -42,12 +34,12 @@ class TestZappa(unittest.TestCase):
         credentials = '[default]\naws_access_key_id = AK123\naws_secret_access_key = JKL456'
         config = '[default]\noutput = json\nregion = us-east-1'
 
-        credentials_file = open('credentials','w')
-        credentials_file.write(credentials) 
+        credentials_file = open('credentials', 'w')
+        credentials_file.write(credentials)
         credentials_file.close()
 
-        config_file = open('config','w')
-        config_file.write(config) 
+        config_file = open('config', 'w')
+        config_file.write(config)
         config_file.close()
 
         z.load_credentials('credentials', 'config')
