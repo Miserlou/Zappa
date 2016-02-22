@@ -1,14 +1,8 @@
-import glob
 import os
-import re
-import string
-import sys
 import unittest
 
-import nose
-from nose import case
-from nose.pyversion import unbound_method
-from nose import util
+import boto3
+from moto import mock_s3
 
 from zappa.wsgi import create_wsgi_request
 from zappa.zappa import Zappa
@@ -27,7 +21,7 @@ class TestZappa(unittest.TestCase):
 
     def test_zappa(self):
         self.assertTrue(True)
-        z = Zappa()
+        Zappa()
 
     def test_create_lambda_package(self):
         self.assertTrue(True)
@@ -42,12 +36,12 @@ class TestZappa(unittest.TestCase):
         credentials = '[default]\naws_access_key_id = AK123\naws_secret_access_key = JKL456'
         config = '[default]\noutput = json\nregion = us-east-1'
 
-        credentials_file = open('credentials','w')
-        credentials_file.write(credentials) 
+        credentials_file = open('credentials', 'w')
+        credentials_file.write(credentials)
         credentials_file.close()
 
-        config_file = open('config','w')
-        config_file.write(config) 
+        config_file = open('config', 'w')
+        config_file.write(config)
         config_file.close()
 
         z.load_credentials('credentials', 'config')
@@ -58,6 +52,25 @@ class TestZappa(unittest.TestCase):
         self.assertTrue((z.access_key == "AK123"))
         self.assertTrue((z.secret_key == "JKL456"))
         self.assertTrue((z.aws_region == 'us-east-1'))
+
+    @mock_s3
+    def test_upload_s3(self):
+        bucket_name = 'test_zappa_bucket'
+        z = Zappa()
+        zip_path = z.create_lambda_zip()
+        res = z.upload_to_s3(zip_path, bucket_name)
+        os.remove(zip_path)
+        self.assertTrue(res)
+        s3 = boto3.resource('s3')
+
+        # will throw ClientError with 404 if bucket doesn't exist
+        s3.meta.client.head_bucket(Bucket=bucket_name)
+
+        # will throw ClientError with 404 if object doesn't exist
+        s3.meta.client.head_object(
+            Bucket=bucket_name,
+            Key=zip_path,
+        )
 
     ##
     # Logging
