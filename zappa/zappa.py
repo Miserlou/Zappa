@@ -272,7 +272,7 @@ class Zappa(object):
     # S3
     ##
 
-    def upload_to_s3(self, source_path, bucket_name):
+    def upload_to_s3(self, source_path, bucket_name, session=None):
         """
         Given a file, upload it to S3.
         Credentials should be stored in environment variables or ~/.aws/credentials (%USERPROFILE%\.aws\credentials on Windows).
@@ -280,13 +280,14 @@ class Zappa(object):
         Returns True on success, false on failure.
 
         """
+        session = session or boto3.session.Session()
         try:
-            s3 = boto3.resource('s3')
+            s3 = session.resource('s3')
             s3.create_bucket(Bucket=bucket_name)
         except Exception as e:
-                print(e)
-                print("Couldn't create bucket.")
-                return False
+            print(e)
+            print("Couldn't create bucket.")
+            return False
 
         if not os.path.isfile(source_path) or os.stat(source_path).st_size == 0:
             print("Problem with source file {}".format(source_path))
@@ -307,7 +308,7 @@ class Zappa(object):
             return False
         return True
 
-    def remove_from_s3(self, file_name, bucket_name):
+    def remove_from_s3(self, file_name, bucket_name, session=None):
         """
         Given a file name and a bucket, remove it from S3.
 
@@ -316,8 +317,8 @@ class Zappa(object):
         Returns True on success, False on failure.
 
         """
-
-        s3 = boto3.resource('s3')
+        session = session or boto3.session.Session()
+        s3 = session.resource('s3')
         bucket = s3.Bucket(bucket_name)
 
         try:
