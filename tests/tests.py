@@ -81,6 +81,12 @@ class TestZappa(unittest.TestCase):
         res = z.remove_from_s3(zip_path, bucket_name, session)
         self.assertTrue(res)
 
+    def test_create_iam_roles(self):
+        session = self.get_placebo_session()
+        z = Zappa()
+        arn = z.create_iam_roles(session)
+        self.assertEqual(arn, "arn:aws:iam::123:role/{}".format(z.role_name))
+
     ##
     # Logging
     ##

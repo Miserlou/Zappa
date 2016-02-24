@@ -652,16 +652,16 @@ class Zappa(object):
     # IAM
     ##
 
-    def create_iam_roles(self):
+    def create_iam_roles(self, session=None):
         """
         Creates and defines the IAM roles and policies necessary for Zappa.
 
         """
-
         assume_policy_s = ASSUME_POLICY
         attach_policy_s = ATTACH_POLICY
 
-        iam = boto3.resource('iam')
+        session = session or boto3.session.Session()
+        iam = session.resource('iam')
 
         try:
             role = iam.meta.client.get_role(
@@ -670,7 +670,7 @@ class Zappa(object):
             return self.credentials_arn
 
         except botocore.client.ClientError:
-            print("Creating " + self.role_name + " IAM..")
+            print("Creating " + self.role_name + " IAM...")
 
             role = iam.create_role(
                 RoleName=self.role_name,
