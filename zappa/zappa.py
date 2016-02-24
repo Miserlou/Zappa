@@ -106,7 +106,7 @@ ATTACH_POLICY = """{
                 "ec2:CreateNetworkInterface"
             ],
             "Resource": "*"
-        },
+        }
     ]
 }"""
 
