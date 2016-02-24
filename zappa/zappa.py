@@ -502,14 +502,8 @@ class Zappa(object):
 
         # count how many put requests we'll be reporting for progress bar
         progress_total = self.parameter_depth * len(self.http_methods) * (
-                             2 + len(self.integration_response_codes) + len(self.method_response_codes))
-        progress_iter = iter(tqdm(range(progress_total)))
-
-        def report_progress():
-            try:
-                progress_iter.next()
-            except StopIteration:
-                pass
+                             2 + len(self.integration_response_codes) + len(self.method_response_codes)) - 1
+        progress = tqdm(total=progress_total)
 
         # AWS seems to create this by default,
         # but not sure if that'll be the case forever.
@@ -519,7 +513,7 @@ class Zappa(object):
                 root_id = item['id']
         if not root_id:
             return False
-        self.create_and_setup_methods(api_id, root_id, lambda_arn, report_progress)
+        self.create_and_setup_methods(api_id, root_id, lambda_arn, progress.update)
 
         parent_id = root_id
         for i in range(1, self.parameter_depth):
@@ -532,8 +526,7 @@ class Zappa(object):
             resource_id = response['id']
             parent_id = resource_id
 
-            self.create_and_setup_methods(api_id, resource_id, lambda_arn, report_progress)
-        report_progress() # clear out the progress bar
+            self.create_and_setup_methods(api_id, resource_id, lambda_arn, progress.update)
 
         return api_id
 
