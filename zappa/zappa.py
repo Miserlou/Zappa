@@ -6,6 +6,7 @@ import os
 import time
 import zipfile
 import requests
+import json
 
 from os.path import expanduser
 from tqdm import tqdm
@@ -656,29 +657,39 @@ class Zappa(object):
         """
         Creates and defines the IAM roles and policies necessary for Zappa.
 
+        If the IAM role already exists, it will be updated if necessary.
         """
 
         assume_policy_s = ASSUME_POLICY
         attach_policy_s = ATTACH_POLICY
 
+        attach_policy_obj = json.loads(attach_policy_s)
+
         iam = boto3.resource('iam')
 
+        # create the role if needed
+        role = iam.Role(self.role_name)
         try:
-            role = iam.meta.client.get_role(
-                RoleName=self.role_name)
-            self.credentials_arn = role['Role']['Arn']
-            return self.credentials_arn
+            self.credentials_arn = role.arn
 
         except botocore.client.ClientError:
-            print("Creating " + self.role_name + " IAM..")
+            print("Creating " + self.role_name + " IAM Role.")
 
-            role = iam.create_role(
-                RoleName=self.role_name,
-                AssumeRolePolicyDocument=assume_policy_s)
-            iam.RolePolicy(self.role_name, 'zappa-permissions').put(
-                PolicyDocument=attach_policy_s)
+            role = iam.create_role(RoleName=self.role_name,
+                                   AssumeRolePolicyDocument=assume_policy_s)
+            self.credentials_arn = role.arn
 
-        self.credentials_arn = role.arn
+        # create or update the role's policy if needed
+        policy = iam.RolePolicy(self.role_name, 'zappa-permissions')
+        try:
+            if policy.policy_document != attach_policy_obj:
+                print("Updating zappa-permissions policy on " + self.role_name + " IAM Role.")
+                policy.put(PolicyDocument=attach_policy_s)
+
+        except botocore.client.ClientError:
+            print("Creating zappa-permissions policy on " + self.role_name + " IAM Role.")
+            policy.put(PolicyDocument=attach_policy_s)
+
         return self.credentials_arn
 
     ##
