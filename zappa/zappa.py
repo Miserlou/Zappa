@@ -2,20 +2,18 @@ import base64
 import boto3
 import botocore
 import ConfigParser
-import math
 import os
 import time
 import zipfile
 import requests
 
-from boto.s3.connection import S3Connection
-from filechunkio import FileChunkIO
 from os.path import expanduser
 from tqdm import tqdm
 
 ##
 # Policies And Template Mappings
 ##
+
 
 TEMPLATE_MAPPING = """{
   "body" : $input.json('$'),
@@ -274,69 +272,43 @@ class Zappa(object):
     # S3
     ##
 
-    def upload_to_s3(self, source_path, bucket_name):
+    def upload_to_s3(self, source_path, bucket_name, session=None):
         """
-
         Given a file, upload it to S3.
         Credentials should be stored in environment variables or ~/.aws/credentials (%USERPROFILE%\.aws\credentials on Windows).
 
         Returns True on success, false on failure.
 
         """
-
+        session = session or boto3.session.Session()
         try:
-            self.s3_connection = S3Connection()
+            s3 = session.resource('s3')
+            s3.create_bucket(Bucket=bucket_name)
         except Exception as e:
             print(e)
+            print("Couldn't create bucket.")
             return False
 
-        all_buckets = self.s3_connection.get_all_buckets()
-        if bucket_name not in [bucket.name for bucket in all_buckets]:
-            try:
-                self.s3_connection.create_bucket(bucket_name)
-            except Exception as e:
-                print(e)
-                print("Couldn't create bucket.")
-                return False
-
-        if (not os.path.isfile(source_path) or os.stat(source_path).st_size == 0):
-            print(e)
+        if not os.path.isfile(source_path) or os.stat(source_path).st_size == 0:
+            print("Problem with source file {}".format(source_path))
             return False
 
+        dest_path = os.path.split(source_path)[1]
         try:
-            bucket = self.s3_connection.get_bucket(bucket_name)
             source_size = os.stat(source_path).st_size
-            dest_path = os.path.split(source_path)[1]
-
-            # Create a multipart upload request
-            mpu = bucket.initiate_multipart_upload(dest_path)
-
-            # Use a chunk size of 5 MiB
-            chunk_size = 5242880
-            chunk_count = int(math.ceil(source_size / float(chunk_size)))
-
-            print("Uploading zip (" + str(self.human_size(source_size)) + ")..")
-
-            # Send the file parts, using FileChunkIO to create a file-like object
-            # that points to a certain byte range within the original file. We
-            # set bytes to never exceed the original file size.
-            for i in tqdm(range(chunk_count)):
-                offset = chunk_size * i
-                bytes = min(chunk_size, source_size - offset)
-                with FileChunkIO(source_path, 'r', offset=offset,
-                                     bytes=bytes) as fp:
-                    mpu.upload_part_from_file(fp, part_num=i + 1)
-
-            # Finish the upload
-            mpu.complete_upload()
-
+            print("Uploading zip (" + str(self.human_size(source_size)) + ")...")
+            progress = tqdm(total=float(os.path.getsize(source_path)))
+            s3.meta.client.upload_file(
+                source_path, bucket_name, dest_path,
+                Callback=progress.update
+            )
+            progress.close()
         except Exception as e:
             print(e)
             return False
-
         return True
 
-    def remove_from_s3(self, file_name, bucket_name):
+    def remove_from_s3(self, file_name, bucket_name, session=None):
         """
         Given a file name and a bucket, remove it from S3.
 
@@ -345,8 +317,8 @@ class Zappa(object):
         Returns True on success, False on failure.
 
         """
-
-        s3 = boto3.resource('s3')
+        session = session or boto3.session.Session()
+        s3 = session.resource('s3')
         bucket = s3.Bucket(bucket_name)
 
         try:
