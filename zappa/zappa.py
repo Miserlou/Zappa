@@ -653,19 +653,19 @@ class Zappa(object):
     # IAM
     ##
 
-    def create_iam_roles(self):
+    def create_iam_roles(self, session=None):
         """
         Creates and defines the IAM roles and policies necessary for Zappa.
 
         If the IAM role already exists, it will be updated if necessary.
         """
-
         assume_policy_s = ASSUME_POLICY
         attach_policy_s = ATTACH_POLICY
 
         attach_policy_obj = json.loads(attach_policy_s)
 
-        iam = boto3.resource('iam')
+        session = session or boto3.session.Session()
+        iam = session.resource('iam')
 
         # create the role if needed
         role = iam.Role(self.role_name)
@@ -673,7 +673,7 @@ class Zappa(object):
             self.credentials_arn = role.arn
 
         except botocore.client.ClientError:
-            print("Creating " + self.role_name + " IAM Role.")
+            print("Creating " + self.role_name + " IAM Role...")
 
             role = iam.create_role(RoleName=self.role_name,
                                    AssumeRolePolicyDocument=assume_policy_s)
