@@ -2,7 +2,7 @@ import os
 import unittest
 import json
 
-from .utils import placebo_test
+from .utils import placebo_session
 
 from zappa.wsgi import create_wsgi_request
 from zappa.zappa import Zappa, ASSUME_POLICY, ATTACH_POLICY
@@ -53,7 +53,7 @@ class TestZappa(unittest.TestCase):
         self.assertTrue((z.secret_key == "JKL456"))
         self.assertTrue((z.aws_region == 'us-east-1'))
 
-    @placebo_test
+    @placebo_session
     def test_upload_remove_s3(self, session):
         bucket_name = 'test_zappa_upload_s3'
         z = Zappa()
@@ -74,7 +74,7 @@ class TestZappa(unittest.TestCase):
         res = z.remove_from_s3(zip_path, bucket_name, session)
         self.assertTrue(res)
 
-    @placebo_test
+    @placebo_session
     def test_create_iam_roles(self, session):
         z = Zappa()
         arn = z.create_iam_roles(session)
