@@ -1,0 +1,14 @@
+{
+    "status_code": 404, 
+    "data": {
+        "ResponseMetadata": {
+            "HTTPStatusCode": 404, 
+            "RequestId": "0d24322f-db5f-11e5-9d89-67e11bce6785"
+        }, 
+        "Error": {
+            "Message": "The role with name ZappaLambdaExecution cannot be found.", 
+            "Code": "NoSuchEntity", 
+            "Type": "Sender"
+        }
+    }
+}

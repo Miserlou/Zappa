@@ -1,21 +1,15 @@
-import boto3
 import collections
+import json
 import os
-import placebo
 import unittest
 
+from .utils import placebo_session
+
 from zappa.wsgi import create_wsgi_request, common_log
-from zappa.zappa import Zappa
+from zappa.zappa import Zappa, ASSUME_POLICY, ATTACH_POLICY
 
 
 class TestZappa(unittest.TestCase):
-    def get_placebo_session(self):
-        session = boto3.Session()
-        placebo_dir = os.path.join(os.path.dirname(__file__), 'placebo')
-        pill = placebo.attach(session, data_path=placebo_dir)
-        pill.playback()
-        return session
-
     ##
     # Sanity Tests
     ##
@@ -60,8 +54,8 @@ class TestZappa(unittest.TestCase):
         self.assertTrue((z.secret_key == "JKL456"))
         self.assertTrue((z.aws_region == 'us-east-1'))
 
-    def test_upload_remove_s3(self):
-        session = self.get_placebo_session()
+    @placebo_session
+    def test_upload_remove_s3(self, session):
         bucket_name = 'test_zappa_upload_s3'
         z = Zappa()
         zip_path = z.create_lambda_zip()
@@ -81,6 +75,17 @@ class TestZappa(unittest.TestCase):
         res = z.remove_from_s3(zip_path, bucket_name, session)
         self.assertTrue(res)
 
+    @placebo_session
+    def test_create_iam_roles(self, session):
+        z = Zappa()
+        arn = z.create_iam_roles(session)
+        self.assertEqual(arn, "arn:aws:iam::123:role/{}".format(z.role_name))
+
+    def test_policy_json(self):
+        # ensure the policy docs are valid JSON
+        json.loads(ASSUME_POLICY)
+        json.loads(ATTACH_POLICY)
+
     ##
     # Logging
     ##
@@ -89,7 +94,7 @@ class TestZappa(unittest.TestCase):
         """
         TODO
         """
-        z = Zappa()
+        Zappa()
 
     ##
     # WSGI

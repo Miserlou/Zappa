@@ -1,0 +1,26 @@
+{
+    "status_code": 200, 
+    "data": {
+        "Role": {
+            "AssumeRolePolicyDocument": "%7B%0A%20%20%22Version%22%3A%20%222012-10-17%22%2C%0A%20%20%22Statement%22%3A%20%5B%0A%20%20%20%20%7B%0A%20%20%20%20%20%20%22Sid%22%3A%20%22%22%2C%0A%20%20%20%20%20%20%22Effect%22%3A%20%22Allow%22%2C%0A%20%20%20%20%20%20%22Principal%22%3A%20%7B%0A%20%20%20%20%20%20%20%20%22Service%22%3A%20%5B%0A%20%20%20%20%20%20%20%20%20%20%22lambda.amazonaws.com%22%2C%0A%20%20%20%20%20%20%20%20%20%20%22apigateway.amazonaws.com%22%0A%20%20%20%20%20%20%20%20%5D%0A%20%20%20%20%20%20%7D%2C%0A%20%20%20%20%20%20%22Action%22%3A%20%22sts%3AAssumeRole%22%0A%20%20%20%20%7D%0A%20%20%5D%0A%7D", 
+            "RoleId": "AROAIJTKAN7OBBD7BF25O", 
+            "CreateDate": {
+                "hour": 1, 
+                "__class__": "datetime", 
+                "month": 2, 
+                "second": 20, 
+                "microsecond": 221000, 
+                "year": 2016, 
+                "day": 25, 
+                "minute": 28
+            }, 
+            "RoleName": "ZappaLambdaExecution", 
+            "Path": "/", 
+            "Arn": "arn:aws:iam::123:role/ZappaLambdaExecution"
+        }, 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "RequestId": "0da2623f-db5f-11e5-9d89-67e11bce6785"
+        }
+    }
+}
