@@ -8,3 +8,5 @@ install:
 script: nosetests --with-coverage --cover-package=zappa
 after_success:
   coveralls
+notifications:
+  slack: zappateam:TTJ0mfHunDK0IBweKkEXjGpR
