@@ -88,10 +88,11 @@ def common_log(environ, response, response_time=None):
 
     if response_time:
         formatter = ApacheFormatter(with_response_time=True)
+        log_entry = formatter(response.status_code, environ, len(response.content), rt_ms=response_time)
     else:
         formatter = ApacheFormatter(with_response_time=False)
-
-    log_entry = formatter(response.status_code, environ, len(response.content), rt_ms=response_time)
+        log_entry = formatter(response.status_code, environ, len(response.content))
+    
     logger.info(log_entry)
 
-    return
+    return log_entry

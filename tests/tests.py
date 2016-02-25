@@ -1,10 +1,11 @@
+import collections
+import json
 import os
 import unittest
-import json
 
 from .utils import placebo_session
 
-from zappa.wsgi import create_wsgi_request
+from zappa.wsgi import create_wsgi_request, common_log
 from zappa.zappa import Zappa, ASSUME_POLICY, ATTACH_POLICY
 
 
@@ -163,6 +164,23 @@ class TestZappa(unittest.TestCase):
 
         request = create_wsgi_request(event, trailing_slash=False)
         self.assertEqual("/asdf1/asdf2", request['PATH_INFO'])
+
+    def test_wsgi_logging(self):
+        event = {
+            "body": {},
+            "headers": {},
+            "params": {
+                "parameter_1": "asdf1",
+                "parameter_2": "asdf2",
+            },
+            "method": "GET",
+            "query": {}
+        }
+        environ = create_wsgi_request(event, trailing_slash=False)
+        response_tuple = collections.namedtuple('Response', ['status_code', 'content'])
+        response = response_tuple(200, 'hello')
+        le = common_log(environ, response, response_time=True)
+        le = common_log(environ, response, response_time=False)
 
 
 if __name__ == '__main__':
