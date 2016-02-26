@@ -25,32 +25,22 @@ class ZappaWSGIMiddleware(object):
         self.application = application
 
     def __call__(self, environ, start_response):
-        # print "ZappaWSGIMiddleware environ = ", environ
-
-        # print 'unparsed environ', environ
-        
-        # Parse cookies from WSGI environment
+        # Parse cookies from the WSGI environment
         encoded = parse_cookie(environ)
-        print 'encoded', encoded
-        # Decode Zappa cookie if present
+
+        # Decode the special zappa cookie if present
         if 'zappa' in encoded:
             decoded_zappa = base58.b58decode(encoded['zappa'])
-            # Set the WSGI environments cookie to be the decoded value.
+            # Set the WSGI environment cookie to be the decoded value.
             environ[u'HTTP_COOKIE'] = decoded_zappa
+            # Save the parsed cookies. We need to send them back on every update.
             request_cookies = parse_cookie(decoded_zappa)
         else:
             request_cookies = dict()
-        print 'request_cookies start', request_cookies
-        print 'parsed environ', environ
+
 
         def injecting_start_response(status, headers, exc_info=None):
-
-        # Call the wrapped WSGI-application with the modified WSGI environment
-        # response = Response.from_app(self.application, environ)
-        # print "got response", response.headers
-
-            # Encode cookies into Zappa cookie
-            cookies = []
+            # Iterate through the headers looking for Set-Cookie
             updates = False
             for idx, (header, value)  in enumerate(headers):
                 if header == 'Set-Cookie':
@@ -61,29 +51,20 @@ class ZappaWSGIMiddleware(object):
                         del(headers[idx])
                         del(cookie['zappa'])
                         print 'deleted zappa set-cooke header'
-                    # cookies = {k: v for k,v in cookie.items()}
+                        print 'remaining cookie', cookie
                     if cookie:
-                        request_cookies.update(cookie)
                         updates = True
-                        # cookies.extend(cookie_vals)
-                        # print 'cookies', cookies
-                        # zappa_cookie = json.dumps(cookies)
-                        # print 'zappa_cookie', zappa_cookie
-                        # zappa_cookies.append(value)
+                        request_cookies.update(cookie)
                         print 'setting cookie', cookie
-            # print 'cookies', cookies
 
-            print 'request_cookies', json.dumps(request_cookies, indent=4)
+            # Encode cookies into Zappa cookie
             if updates and request_cookies:
                 final_cookies = ["{cookie}={value}".format(cookie=k, value=v) for k, v in request_cookies.items()]
                 encoded = base58.b58encode(';'.join(final_cookies))
-                # print 'encoded', encoded
                 headers.append(('Set-Cookie', dump_cookie('zappa', value=encoded)))
+
             return start_response(status, headers, exc_info)
 
+        # Call the wrapped WSGI-application with the modified WSGI environment
+        # and propagate the response to caller
         return ClosingIterator(self.application(environ, injecting_start_response))
-
-        # print "final headers =", headers
-
-        # Propagate the response to caller
-        # return response(environ, start_response)
