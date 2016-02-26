@@ -2,6 +2,7 @@ import collections
 import json
 import os
 import unittest
+import mock
 
 from .utils import placebo_session
 
@@ -33,33 +34,36 @@ class TestZappa(unittest.TestCase):
 
     def test_load_credentials(self):
         z = Zappa()
+        z.aws_region = 'us-east-1'
+        z.load_credentials()
+        self.assertEqual(z.boto_session.region_name, 'us-east-1')
+        self.assertEqual(z.aws_region, 'us-east-1')
 
-        credentials = '[default]\naws_access_key_id = AK123\naws_secret_access_key = JKL456'
-        config = '[default]\noutput = json\nregion = us-east-1'
+        z.aws_region = 'eu-west-1'
+        z.load_credentials()
+        self.assertEqual(z.boto_session.region_name, 'eu-west-1')
+        self.assertEqual(z.aws_region, 'eu-west-1')
 
-        credentials_file = open('credentials', 'w')
-        credentials_file.write(credentials)
-        credentials_file.close()
+        creds = {
+            'AWS_ACCESS_KEY_ID': 'AK123',
+            'AWS_SECRET_ACCESS_KEY': 'JKL456',
+            'AWS_DEFAULT_REGION': 'us-west-1'
+        }
+        with mock.patch.dict('os.environ', creds):
+            z.aws_region = None
+            z.load_credentials()
+            loaded_creds = z.boto_session._session.get_credentials()
 
-        config_file = open('config', 'w')
-        config_file.write(config)
-        config_file.close()
-
-        z.load_credentials('credentials', 'config')
-
-        os.remove('credentials')
-        os.remove('config')
-
-        self.assertTrue((z.access_key == "AK123"))
-        self.assertTrue((z.secret_key == "JKL456"))
-        self.assertTrue((z.aws_region == 'us-east-1'))
+        self.assertEqual(loaded_creds.access_key, 'AK123')
+        self.assertEqual(loaded_creds.secret_key, 'JKL456')
+        self.assertEqual(z.boto_session.region_name, 'us-west-1')
 
     @placebo_session
     def test_upload_remove_s3(self, session):
         bucket_name = 'test_zappa_upload_s3'
-        z = Zappa()
+        z = Zappa(session)
         zip_path = z.create_lambda_zip()
-        res = z.upload_to_s3(zip_path, bucket_name, session)
+        res = z.upload_to_s3(zip_path, bucket_name)
         os.remove(zip_path)
         self.assertTrue(res)
         s3 = session.resource('s3')
@@ -72,13 +76,13 @@ class TestZappa(unittest.TestCase):
             Bucket=bucket_name,
             Key=zip_path,
         )
-        res = z.remove_from_s3(zip_path, bucket_name, session)
+        res = z.remove_from_s3(zip_path, bucket_name)
         self.assertTrue(res)
 
     @placebo_session
     def test_create_iam_roles(self, session):
-        z = Zappa()
-        arn = z.create_iam_roles(session)
+        z = Zappa(session)
+        arn = z.create_iam_roles()
         self.assertEqual(arn, "arn:aws:iam::123:role/{}".format(z.role_name))
 
     def test_policy_json(self):
