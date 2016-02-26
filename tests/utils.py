@@ -21,7 +21,9 @@ def placebo_session(function):
 
     @functools.wraps(function)
     def wrapper(*args, **kwargs):
-        session_kwargs = {}
+        session_kwargs = {
+            'region_name': os.environ.get('AWS_DEFAULT_REGION', 'us-east-1')
+        }
         profile_name = os.environ.get('PLACEBO_PROFILE', None)
         if profile_name:
             session_kwargs['profile_name'] = profile_name
