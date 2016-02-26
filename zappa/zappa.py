@@ -6,14 +6,17 @@ import time
 import zipfile
 import requests
 import json
+import logging
 
 from os.path import expanduser
 from tqdm import tqdm
 
+logger = logging.getLogger(__name__)
+
+
 ##
 # Policies And Template Mappings
 ##
-
 
 TEMPLATE_MAPPING = """{
   "body" : $input.json('$'),
@@ -742,9 +745,12 @@ class Zappa(object):
             # set aws_region to None to use the system's region instead
             if self.aws_region is None:
                 self.aws_region = boto3.Session().region_name
+                logger.debug("Set region from boto: %s", self.aws_region)
 
             self.boto_session = boto3.Session(region_name=self.aws_region)
+            logger.debug("Loaded boto session from config: %s", boto_session)
         else:
+            logger.debug("Using provided boto session: %s", boto_session)
             self.boto_session = boto_session
 
         # use provided session's region in case it differs
