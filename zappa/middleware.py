@@ -1,6 +1,4 @@
 import base58
-import json
-from werkzeug.wrappers import Request, Response
 from werkzeug.http import parse_cookie, dump_cookie
 from werkzeug.wsgi import ClosingIterator
 
