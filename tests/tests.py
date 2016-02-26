@@ -85,6 +85,19 @@ class TestZappa(unittest.TestCase):
         arn = z.create_iam_roles()
         self.assertEqual(arn, "arn:aws:iam::123:role/{}".format(z.role_name))
 
+    @placebo_session
+    def test_create_api_gateway_routes(self, session):
+        z = Zappa(session)
+        z.parameter_depth = 1
+        z.integration_response_codes = [200]
+        z.method_response_codes = [200]
+        z.http_methods = ['GET']
+        z.credentials_arn = 'arn:aws:iam::12345:role/ZappaLambdaExecution'
+        lambda_arn = 'arn:aws:lambda:us-east-1:12345:function:helloworld'
+        with mock.patch('time.time', return_value=123.456):
+            api_id = z.create_api_gateway_routes(lambda_arn)
+        self.assertEqual(api_id, 'j27idab94h')
+
     def test_policy_json(self):
         # ensure the policy docs are valid JSON
         json.loads(ASSUME_POLICY)
