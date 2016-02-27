@@ -1,19 +1,19 @@
 import base64
 import boto3
 import botocore
-import ConfigParser
-import math
 import os
 import time
 import zipfile
 import requests
+import json
+import logging
 
-from boto.s3.connection import S3Connection
-from filechunkio import FileChunkIO
 from os.path import expanduser
 from tqdm import tqdm
 
-from sign_request import sign_request
+logger = logging.getLogger(__name__)
+
+
 ##
 # Policies And Template Mappings
 ##
@@ -107,7 +107,7 @@ ATTACH_POLICY = """{
                 "ec2:CreateNetworkInterface"
             ],
             "Resource": "*"
-        },
+        }
     ]
 }"""
 
@@ -163,14 +163,17 @@ class Zappa(object):
     ]
 
     role_name = "ZappaLambdaExecution"
-    aws_region = "us-east-1"
+    aws_region = 'us-east-1'
     ##
     # Credentials
     ##
 
-    access_key = None
-    secret_key = None
+    boto_session = None
     credentials_arn = None
+
+    def __init__(self, boto_session=None):
+        self.load_credentials(boto_session)
+
     ##
     # Packaging
     ##
@@ -277,64 +280,38 @@ class Zappa(object):
 
     def upload_to_s3(self, source_path, bucket_name):
         """
-
         Given a file, upload it to S3.
         Credentials should be stored in environment variables or ~/.aws/credentials (%USERPROFILE%\.aws\credentials on Windows).
 
         Returns True on success, false on failure.
 
         """
+        s3 = self.boto_session.resource('s3')
 
         try:
-            self.s3_connection = S3Connection()
+            s3.create_bucket(Bucket=bucket_name)
         except Exception as e:
             print(e)
+            print("Couldn't create bucket.")
             return False
 
-        all_buckets = self.s3_connection.get_all_buckets()
-        if bucket_name not in [bucket.name for bucket in all_buckets]:
-            try:
-                self.s3_connection.create_bucket(bucket_name)
-            except Exception as e:
-                print(e)
-                print("Couldn't create bucket.")
-                return False
-
-        if (not os.path.isfile(source_path) or os.stat(source_path).st_size == 0):
-            print(e)
+        if not os.path.isfile(source_path) or os.stat(source_path).st_size == 0:
+            print("Problem with source file {}".format(source_path))
             return False
 
+        dest_path = os.path.split(source_path)[1]
         try:
-            bucket = self.s3_connection.get_bucket(bucket_name)
             source_size = os.stat(source_path).st_size
-            dest_path = os.path.split(source_path)[1]
-
-            # Create a multipart upload request
-            mpu = bucket.initiate_multipart_upload(dest_path)
-
-            # Use a chunk size of 5 MiB
-            chunk_size = 5242880
-            chunk_count = int(math.ceil(source_size / float(chunk_size)))
-
-            print("Uploading zip (" + str(self.human_size(source_size)) + ")..")
-
-            # Send the file parts, using FileChunkIO to create a file-like object
-            # that points to a certain byte range within the original file. We
-            # set bytes to never exceed the original file size.
-            for i in tqdm(range(chunk_count)):
-                offset = chunk_size * i
-                bytes = min(chunk_size, source_size - offset)
-                with FileChunkIO(source_path, 'r', offset=offset,
-                                     bytes=bytes) as fp:
-                    mpu.upload_part_from_file(fp, part_num=i + 1)
-
-            # Finish the upload
-            mpu.complete_upload()
-
+            print("Uploading zip (" + str(self.human_size(source_size)) + ")...")
+            progress = tqdm(total=float(os.path.getsize(source_path)))
+            s3.meta.client.upload_file(
+                source_path, bucket_name, dest_path,
+                Callback=progress.update
+            )
+            progress.close()
         except Exception as e:
             print(e)
             return False
-
         return True
 
     def remove_from_s3(self, file_name, bucket_name):
@@ -346,8 +323,7 @@ class Zappa(object):
         Returns True on success, False on failure.
 
         """
-
-        s3 = boto3.resource('s3')
+        s3 = self.boto_session.resource('s3')
         bucket = s3.Bucket(bucket_name)
 
         try:
@@ -375,8 +351,7 @@ class Zappa(object):
 
         """
 
-        boto_session = self.get_boto_session()
-        client = boto_session.client('lambda')
+        client = self.boto_session.client('lambda')
         response = client.create_function(
             FunctionName=function_name,
             Runtime='python2.7',
@@ -401,8 +376,7 @@ class Zappa(object):
 
         """
 
-        boto_session = self.get_boto_session()
-        client = boto_session.client('lambda')
+        client = self.boto_session.client('lambda')
         response = client.update_function_code(
             FunctionName=function_name,
             S3Bucket=bucket,
@@ -419,8 +393,7 @@ class Zappa(object):
 
         """
 
-        boto_session = self.get_boto_session()
-        client = boto_session.client('lambda')
+        client = self.boto_session.client('lambda')
         response = client.invoke(
             FunctionName=function_name,
             InvocationType=invocation_type,
@@ -437,8 +410,7 @@ class Zappa(object):
         Returns the Function ARN.
 
         """
-        boto_session = self.get_boto_session()
-        client = boto_session.client('lambda')
+        client = self.boto_session.client('lambda')
 
         response = client.list_versions_by_function(FunctionName=function_name)
         #Take into account $LATEST
@@ -464,11 +436,9 @@ class Zappa(object):
     # API Gateway
     ##
 
-    def create_api_gateway_routes(self, lambda_arn, api_name=None, delay=.25):
+    def create_api_gateway_routes(self, lambda_arn, api_name=None):
         """
         Creates the API Gateway for this Zappa deployment.
-
-        Delay is taken to avoid hammering AWS too much and having a silent failure that prevents deployment.
 
         Returns the new API's api_id.
 
@@ -476,8 +446,7 @@ class Zappa(object):
 
         print("Creating API Gateway routes..")
 
-        boto_session = self.get_boto_session()
-        client = boto_session.client('apigateway')
+        client = self.boto_session.client('apigateway')
 
         if not api_name:
             api_name = str(int(time.time()))
@@ -503,6 +472,11 @@ class Zappa(object):
             restApiId=api_id,
         )
 
+        # count how many put requests we'll be reporting for progress bar
+        progress_total = self.parameter_depth * len(self.http_methods) * (
+                             2 + len(self.integration_response_codes) + len(self.method_response_codes)) - 1
+        progress = tqdm(total=progress_total)
+
         # AWS seems to create this by default,
         # but not sure if that'll be the case forever.
         parent_id = None
@@ -511,7 +485,7 @@ class Zappa(object):
                 root_id = item['id']
         if not root_id:
             return False
-        self.create_and_setup_methods(api_id, root_id, lambda_arn)
+        self.create_and_setup_methods(api_id, root_id, lambda_arn, progress.update)
 
         parent_id = root_id
         for i in range(1, self.parameter_depth):
@@ -524,11 +498,11 @@ class Zappa(object):
             resource_id = response['id']
             parent_id = resource_id
 
-            self.create_and_setup_methods(api_id, resource_id, lambda_arn, delay)
+            self.create_and_setup_methods(api_id, resource_id, lambda_arn, progress.update)
 
         return api_id
 
-    def create_and_setup_methods(self, api_id, resource_id, lambda_arn, delay=.25):
+    def create_and_setup_methods(self, api_id, resource_id, lambda_arn, report_progress):
         """
         Sets up the methods, integration responses and method responses for a given API Gateway resource.
 
@@ -536,8 +510,7 @@ class Zappa(object):
 
         """
 
-        boto_session = self.get_boto_session()
-        client = boto_session.client('apigateway')
+        client = self.boto_session.client('apigateway')
 
         for method in self.http_methods:
 
@@ -548,41 +521,29 @@ class Zappa(object):
                     authorizationType='none',
                     apiKeyRequired=False
             )
+            report_progress()
 
-            # Gotta do this one dirty.. thanks Boto..
             template_mapping = TEMPLATE_MAPPING
             post_template_mapping = POST_TEMPLATE_MAPPING
             content_mapping_templates = {'application/json': template_mapping, 'application/x-www-form-urlencoded': post_template_mapping}
             credentials = self.credentials_arn  # This must be a Role ARN
-            uri = 'arn:aws:apigateway:' + self.aws_region + ':lambda:path/2015-03-31/functions/' + lambda_arn + '/invocations'
-            url = "/restapis/{0}/resources/{1}/methods/{2}/integration".format(
-                    api_id,
-                    resource_id,
-                    method.upper()
+            uri = 'arn:aws:apigateway:' + self.boto_session.region_name + ':lambda:path/2015-03-31/functions/' + lambda_arn + '/invocations'
+
+            client.put_integration(
+                restApiId=api_id,
+                resourceId=resource_id,
+                httpMethod=method.upper(),
+                type='AWS',
+                integrationHttpMethod='POST',
+                uri=uri,
+                credentials=credentials,
+                requestParameters={},
+                requestTemplates=content_mapping_templates,
+                cacheNamespace='none',
+                cacheKeyParameters=[]
             )
-
-            response = sign_request(
-                    self.access_key,
-                    self.secret_key,
-                    canonical_uri=url,
-                    method='put',
-                    request_body={
-                        "type": "AWS",
-                        "httpMethod": "POST",
-                        "uri": uri,
-                        "credentials": credentials,
-                        "requestParameters": {
-                        },
-                        "requestTemplates": content_mapping_templates,
-                        "cacheNamespace": "none",
-                        "cacheKeyParameters": []
-                    },
-                    host='apigateway.' + self.aws_region + '.amazonaws.com',
-                    region=self.aws_region,
-            )
-
-            time.sleep(delay)
-
+            report_progress()
+                
             ##
             # Method Response
             ##
@@ -601,8 +562,7 @@ class Zappa(object):
                         responseParameters=response_parameters,
                         responseModels=response_models
                 )
-
-                time.sleep(delay)
+                report_progress()
 
             ##
             # Integration Response
@@ -637,8 +597,7 @@ class Zappa(object):
                         responseParameters=response_parameters,
                         responseTemplates=response_templates
                 )
-
-                time.sleep(delay)
+                report_progress()
 
         return resource_id
 
@@ -654,8 +613,7 @@ class Zappa(object):
 
         variables = variables or {}
 
-        boto_session = self.get_boto_session()
-        client = boto_session.client('apigateway')
+        client = self.boto_session.client('apigateway')
         response = client.create_deployment(
             restApiId=api_id,
             stageName=stage_name,
@@ -666,7 +624,7 @@ class Zappa(object):
             variables=variables
         )
 
-        endpoint_url = "https://" + api_id + ".execute-api." + self.aws_region + ".amazonaws.com/" + stage_name
+        endpoint_url = "https://" + api_id + ".execute-api." + self.boto_session.region_name + ".amazonaws.com/" + stage_name
         return endpoint_url
 
     def get_api_url(self, stage_name):
@@ -675,15 +633,14 @@ class Zappa(object):
 
         """
 
-        boto_session = self.get_boto_session()
-        client = boto_session.client('apigateway')
+        client = self.boto_session.client('apigateway')
         response = client.get_rest_apis(
             limit=500
         )
 
         for item in response['items']:
             if item['description'] == stage_name:
-                endpoint_url = "https://" + item['id'] + ".execute-api." + self.aws_region + ".amazonaws.com/" + stage_name
+                endpoint_url = "https://" + item['id'] + ".execute-api." + self.boto_session.region_name + ".amazonaws.com/" + stage_name
                 return endpoint_url
 
         return ''
@@ -696,29 +653,38 @@ class Zappa(object):
         """
         Creates and defines the IAM roles and policies necessary for Zappa.
 
+        If the IAM role already exists, it will be updated if necessary.
         """
-
         assume_policy_s = ASSUME_POLICY
         attach_policy_s = ATTACH_POLICY
 
-        iam = boto3.resource('iam')
+        attach_policy_obj = json.loads(attach_policy_s)
 
+        iam = self.boto_session.resource('iam')
+
+        # create the role if needed
+        role = iam.Role(self.role_name)
         try:
-            role = iam.meta.client.get_role(
-                RoleName=self.role_name)
-            self.credentials_arn = role['Role']['Arn']
-            return self.credentials_arn
+            self.credentials_arn = role.arn
 
         except botocore.client.ClientError:
-            print("Creating " + self.role_name + " IAM..")
+            print("Creating " + self.role_name + " IAM Role...")
 
-            role = iam.create_role(
-                RoleName=self.role_name,
-                AssumeRolePolicyDocument=assume_policy_s)
-            iam.RolePolicy(self.role_name, 'zappa-permissions').put(
-                PolicyDocument=attach_policy_s)
+            role = iam.create_role(RoleName=self.role_name,
+                                   AssumeRolePolicyDocument=assume_policy_s)
+            self.credentials_arn = role.arn
 
-        self.credentials_arn = role.arn
+        # create or update the role's policy if needed
+        policy = iam.RolePolicy(self.role_name, 'zappa-permissions')
+        try:
+            if policy.policy_document != attach_policy_obj:
+                print("Updating zappa-permissions policy on " + self.role_name + " IAM Role.")
+                policy.put(PolicyDocument=attach_policy_s)
+
+        except botocore.client.ClientError:
+            print("Creating zappa-permissions policy on " + self.role_name + " IAM Role.")
+            policy.put(PolicyDocument=attach_policy_s)
+
         return self.credentials_arn
 
     ##
@@ -759,8 +725,7 @@ class Zappa(object):
 
         """
 
-        boto_session = self.get_boto_session()
-        client = boto_session.client('apigateway')
+        client = self.boto_session.client('apigateway')
         response = client.get_rest_apis()
         for item in response['items']:
             try:
@@ -773,46 +738,29 @@ class Zappa(object):
             )
         return
 
-    def load_credentials(self, credentials_path=None, config_path=None):
-        """
+    def load_credentials(self, boto_session=None):
+        if not boto_session:
+            # automatically load credentials from config or environment
 
-        Loads AWS Credentials from the .aws/credentials file.
-        Ideally, this should use ENV as well.
+            # set aws_region to None to use the system's region instead
+            if self.aws_region is None:
+                self.aws_region = boto3.Session().region_name
+                logger.debug("Set region from boto: %s", self.aws_region)
 
-        """
+            self.boto_session = boto3.Session(region_name=self.aws_region)
+            logger.debug("Loaded boto session from config: %s", boto_session)
+        else:
+            logger.debug("Using provided boto session: %s", boto_session)
+            self.boto_session = boto_session
 
-        credentials = ConfigParser.ConfigParser()
-        config = ConfigParser.ConfigParser()
+        # use provided session's region in case it differs
+        self.aws_region = self.boto_session.region_name
 
-        if not credentials_path:
-            user_home = expanduser("~")
-            credentials_path = str(user_home + "/.aws/credentials")
-        if not config_path:
-            user_home = expanduser("~")
-            config_path = str(user_home + "/.aws/config")
-
-        credentials.read(credentials_path)
-        config.read(config_path)
-
-        self.access_key = credentials.get('default', 'aws_access_key_id')
-        self.secret_key = credentials.get('default', 'aws_secret_access_key')
-        if config.has_option('default', 'region'):
-            self.aws_region = config.get('default', 'region')
-
-        if self.aws_region not in LAMBDA_REGIONS:
+        if self.boto_session.region_name not in LAMBDA_REGIONS:
             print("Warning! AWS Lambda may not be available in this AWS Region!")
 
-        if self.aws_region not in API_GATEWAY_REGIONS:
+        if self.boto_session.region_name not in API_GATEWAY_REGIONS:
             print("Warning! AWS API Gateway may not be available in this AWS Region!")
-
-        return
-
-    def get_boto_session(self):
-        return boto3.session.Session(
-            aws_access_key_id=self.access_key,
-            aws_secret_access_key=self.secret_key,
-            region_name=self.aws_region
-        )
 
     def human_size(self, num, suffix='B'):
         for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
