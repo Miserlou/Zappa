@@ -187,23 +187,23 @@ class Zappa(object):
         Returns path to that file.
 
         """
-        print("Packaging project as zip..")
+        print("Packaging project as zip....")
 
         venv = os.environ['VIRTUAL_ENV']
 
         cwd = os.getcwd()
-        output_path = os.path.join(cwd, prefix + '-' + str(int(time.time())) + '.zip')
+        zip_fname = prefix + '-' + str(int(time.time())) + '.zip'
+        zip_path = os.path.join(cwd, zip_fname)
 
         # Files that should be excluded from the zip
         if exclude is None:
             exclude = list()
-            exclude = ['/Users/askedorge/Projects/panoramapatterns/static/*']
 
-        # Expand . and ~ in exclude list
-
+        # Convert relative patterns to absolute
+        exclude = [os.path.abspath(pattern) for pattern in exclude]
 
         # Exclude the zip itself
-        exclude.append(output_path)
+        exclude.append(zip_path)
 
         try:
             import zlib
@@ -211,7 +211,7 @@ class Zappa(object):
         except Exception as e:
             compression_method = zipfile.ZIP_STORED
 
-        zipf = zipfile.ZipFile(output_path, 'w', compression_method)
+        zipf = zipfile.ZipFile(zip_path, 'w', compression_method)
 
 
         def splitpath(path):
@@ -232,7 +232,7 @@ class Zappa(object):
                 # Don't put our package or our entire venv in the package.
                 for pattern in exclude:
                     if fnmatch.fnmatchcase(to_write, pattern):
-                        print "skipping", to_write, pattern
+                        # print "skipping", to_write, pattern
                         break
                 else:
                     # Don't put the venv in the package..
@@ -240,7 +240,7 @@ class Zappa(object):
                     if set(split_venv).issubset(set(split_to_write)):
                         continue
 
-                    print 'writing', to_write, 'to zip'
+                    print 'adding', to_write[len(cwd)+1:]
                     to_write = to_write.split(cwd + os.sep)[1]
                     zipf.write(to_write)
 
@@ -286,11 +286,11 @@ class Zappa(object):
         zipf.close()
 
         # Warn if this is too large for Lambda.
-        file_stats = os.stat(output_path)
+        file_stats = os.stat(zip_path)
         if file_stats.st_size > 52428800:
             print("\n\nWarning: Application zip package is likely to be too large for AWS Lambda.\n\n")
 
-        return output_path
+        return zip_fname
     ##
     # S3
     ##
