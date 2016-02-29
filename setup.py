@@ -12,11 +12,16 @@ except ImportError:
 with open(os.path.join(os.path.dirname(__file__), 'requirements.txt')) as f:
     required = f.read().splitlines()
 
+with open(os.path.join(os.path.dirname(__file__), 'test_requirements.txt')) as f:
+    test_required = f.read().splitlines()
+
 setup(
     name='zappa',
     version='0.11.2',
     packages=['zappa'],
-    install_requires=required,  
+    install_requires=required,
+    tests_require=test_required,
+    test_suite='nose.collector',
     include_package_data=True,
     license='MIT License',
     description='Serverless WSGI With AWS Lambda + API Gateway',

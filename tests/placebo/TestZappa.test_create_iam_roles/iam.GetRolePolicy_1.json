@@ -1,0 +1,14 @@
+{
+    "status_code": 404, 
+    "data": {
+        "ResponseMetadata": {
+            "HTTPStatusCode": 404, 
+            "RequestId": "0e11c69f-db5f-11e5-aa20-65c7ceb91dfa"
+        }, 
+        "Error": {
+            "Message": "The role policy with name zappa-permissions cannot be found.", 
+            "Code": "NoSuchEntity", 
+            "Type": "Sender"
+        }
+    }
+}
