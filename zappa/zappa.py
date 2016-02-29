@@ -697,7 +697,7 @@ class Zappa(object):
 
         """
 
-        client = boto3.client('logs')
+        client = self.boto_session.client('logs')
 
         log_name = '/aws/lambda/' + lambda_name
         streams = client.describe_log_streams(logGroupName=log_name,
