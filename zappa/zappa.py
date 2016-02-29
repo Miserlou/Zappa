@@ -225,7 +225,8 @@ class Zappa(object):
         split_venv = splitpath(venv)
 
         # First, do the project..
-        for root, dirs, files in os.walk(cwd):
+
+        for root, dirs, files in os.walk(cwd, followlinks=True):
             for filen in files:
                 to_write = os.path.join(root, filen)
 
@@ -260,6 +261,10 @@ class Zappa(object):
                     if ".exe" in to_write:
                         continue
                     if '.DS_Store' in to_write:
+                        continue
+                    if '.Python' in to_write:
+                        continue
+                    if '.git' in to_write:
                         continue
 
                     # If there is a .pyc file in this package,
@@ -320,12 +325,16 @@ class Zappa(object):
         try:
             source_size = os.stat(source_path).st_size
             print("Uploading zip (" + str(self.human_size(source_size)) + ")...")
-            progress = tqdm(total=float(os.path.getsize(source_path)))
+            progress = tqdm(total=float(os.path.getsize(source_path)), unit_scale=True)
+
             s3.meta.client.upload_file(
                 source_path, bucket_name, dest_path,
                 Callback=progress.update
             )
+
             progress.close()
+        except (KeyboardInterrupt, SystemExit):
+            raise
         except Exception as e:
             print(e)
             return False
@@ -714,7 +723,7 @@ class Zappa(object):
 
         """
 
-        client = boto3.client('logs')
+        client = self.boto_session.client('logs')
 
         log_name = '/aws/lambda/' + lambda_name
         streams = client.describe_log_streams(logGroupName=log_name,
