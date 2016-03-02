@@ -4,8 +4,10 @@ import json
 import os
 import unittest
 import mock
+import base58
 
 from werkzeug.wrappers import Response
+from werkzeug.http import parse_cookie, dump_cookie
 
 from .utils import placebo_session
 
@@ -244,8 +246,7 @@ class TestWSGIMiddleWare(unittest.TestCase):
             status = '200 OK'
             response_headers = [('Set-Cookie', 'foo=123'),
                                 ('Set-Cookie', 'bar=456'),
-                                ('Set-Cookie', 'baz=789'),
-                                ('Set-Cookie', 'xyz=zappalicious')]
+                                ('Set-Cookie', 'baz=789')]
             start_response(status, response_headers)
             return ['Set cookies!']
 
@@ -274,14 +275,12 @@ class TestWSGIMiddleWare(unittest.TestCase):
         resp = app({'HTTP_COOKIE': zappa_cookie}, self._start_response)
 
         # Assert that the simple_app, received the decoded cookies
-        excpected = {'foo': '123', 'bar': '456', 'baz': '789',
-                     'xyz': 'zappalicious'}
+        excpected = {'foo': '123', 'bar': '456', 'baz': '789'}
         received = ''.join(resp)
         # Split the response on ';', then on '=', then convert to dict for
         # comparison
         received = dict([cookie.split('=') for cookie in received.split(';')])
         self.assertDictEqual(received, excpected)
-
 
     def test_wsgi_middleware_cookieoverwrite(self):
         """ This method do:
@@ -296,8 +295,7 @@ class TestWSGIMiddleWare(unittest.TestCase):
             status = '200 OK'
             response_headers = [('Set-Cookie', 'foo=123'),
                                 ('Set-Cookie', 'bar=456'),
-                                ('Set-Cookie', 'baz=789'),
-                                ('Set-Cookie', 'xyz=zappalicious')]
+                                ('Set-Cookie', 'baz=789')]
             start_response(status, response_headers)
             return ['Set cookies!']
 
@@ -313,7 +311,7 @@ class TestWSGIMiddleWare(unittest.TestCase):
         def change_cookies(environ, start_response):
             status = '200 OK'
             response_headers = [('Set-Cookie', 'foo=sdf'),
-                                ('Set-Cookie', 'xyz=jkl')]
+                                ('Set-Cookie', 'baz=jkl')]
             start_response(status, response_headers)
             return ['Set cookies!']
 
@@ -340,8 +338,7 @@ class TestWSGIMiddleWare(unittest.TestCase):
         resp = app({'HTTP_COOKIE': zappa_cookie}, self._start_response)
 
         # Assert that read_cookies received the corrected decoded cookies
-        excpected = {'foo': 'sdf', 'bar': '456', 'baz': '789',
-                     'xyz': 'jkl'}
+        excpected = {'foo': 'sdf', 'bar': '456', 'baz': 'jkl'}
         received = ''.join(resp)
         # Split the response on ';', then on '=', then convert to dict for
         # comparison
@@ -375,8 +372,7 @@ class TestWSGIMiddleWare(unittest.TestCase):
             print environ
             response_headers = [('Set-Cookie', 'foo=123'),
                                 ('Set-Cookie', 'bar=456'),
-                                ('Set-Cookie', 'baz=789'),
-                                ('Set-Cookie', 'xyz=zappalicious')]
+                                ('Set-Cookie', 'baz=789')]
             start_response(status, response_headers)
             return ['Set cookies!']
 
@@ -427,6 +423,16 @@ class TestWSGIMiddleWare(unittest.TestCase):
         self.assertEqual(len(zappa_cookie), 1)
         zappa_cookie1 = zappa_cookie[0]
         self.assertTrue(zappa_cookie1.startswith('zappa='))
+        zdict = parse_cookie(zappa_cookie1)
+        print 'zdict', zdict
+        zdict2 = [parse_cookie(base58.b58decode(x)) for x in zdict.values()]
+        print 'zdict2', zdict2
+        self.assertEqual(len(zdict2), 1)
+        zdict2 = zdict2[0]
+        self.assertEqual(len(zdict2), 3)
+        self.assertEqual(zdict2['foo'], 'new_value')
+        self.assertEqual(zdict2['bar'], '456')
+        self.assertEqual(zdict2['baz'], '789')
 
         # We have changed foo, so they should be different
         print zappa_cookie0
@@ -451,13 +457,8 @@ class TestWSGIMiddleWare(unittest.TestCase):
         response = Response.from_app(app, environ)
         cookies = dict([x.split('=') for x in response.data.split(';')])
         self.assertEqual(cookies['foo'], 'new_value')
-        print cookies
-
-        print("4: zappa cookie")
-
-
-        raise Exception("the end")
-
+        self.assertEqual(cookies['bar'], '456')
+        self.assertEqual(cookies['baz'], '789')
 
     def test_wsgi_middleware_redirect(self):
         url = 'http://bogus.com/target'
@@ -517,21 +518,42 @@ class TestWSGIMiddleWare(unittest.TestCase):
 
         self.assertEqual(''.join(resp), body)
 
-    # TODO: This test breaks in the middleware with weird unicode chars
-    def test_wsgi_middleware_unicode(self):
-        # Pass some unicode through the middleware
+    def test_wsgi_middleware_uglystring(self):
+        ugly_string = (unicode("˝ÓÔÒÚÆ☃ЗИЙКЛМФХЦЧШ차를 타고 온 펲시맨(╯°□°）╯︵ ┻━┻)"
+                             "לֹהִים, אֵת הַשָּׁמַיִם, וְאֵת הָt͔̦h̞̲e̢̤ ͍̬̲͖f̴̘͕̣è͖ẹ̥̩l͖͔͚i͓͚̦͠n͖͍̗͓̳̮g͍ ̨ 𝕢𝕦𝕚𝕔𝕜 𝕓𝕣𝕠𝕨"
+                             , encoding='utf8')
+        )
+
+        # Pass some unicode through the middleware body
         def simple_app(environ, start_response):
             # String of weird characters
             status = '200 OK'
             response_headers = []
             start_response(status, response_headers)
-            return [unicode('asåøæd', encoding='utf8')]
+            return [ugly_string]
 
         # Wrap the app with the middleware
         app = ZappaWSGIMiddleware(simple_app)
 
         # Call with empty WSGI Environment
         _ = app(dict(), self._start_response)
+
+
+        # Pass some unicode through the middleware headers
+        def simple_app(environ, start_response):
+            # String of weird characters
+            status = '301 Moved Permanently'
+            response_headers = [('Location', 'htttp://zappa.com/elsewhere' + ugly_string)]
+            start_response(status, response_headers)
+            return [ugly_string]
+
+        # Wrap the app with the middleware
+        app = ZappaWSGIMiddleware(simple_app)
+
+        # Call with empty WSGI Environment
+        resp = app(dict(), self._start_response)
+        resp = ''.join(resp)
+
 
 
 if __name__ == '__main__':
