@@ -7,6 +7,7 @@ import zipfile
 import requests
 import json
 import logging
+import fnmatch
 
 from os.path import expanduser
 from tqdm import tqdm
@@ -178,18 +179,31 @@ class Zappa(object):
     # Packaging
     ##
 
-    def create_lambda_zip(self, prefix='lambda_package', handler_file=None, minify=True):
+    def create_lambda_zip(self, prefix='lambda_package', handler_file=None,
+                          minify=True, exclude=None):
         """
         Creates a Lambda-ready zip file of the current virtualenvironment and working directory.
 
         Returns path to that file.
 
         """
-        print("Packaging project as zip..")
+        print("Packaging project as zip....")
 
         venv = os.environ['VIRTUAL_ENV']
 
-        output_path = prefix + '-' + str(int(time.time())) + '.zip'
+        cwd = os.getcwd()
+        zip_fname = prefix + '-' + str(int(time.time())) + '.zip'
+        zip_path = os.path.join(cwd, zip_fname)
+
+        # Files that should be excluded from the zip
+        if exclude is None:
+            exclude = list()
+
+        # Convert relative patterns to absolute
+        exclude = [os.path.abspath(pattern) for pattern in exclude]
+
+        # Exclude the zip itself
+        exclude.append(zip_path)
 
         try:
             import zlib
@@ -197,8 +211,8 @@ class Zappa(object):
         except Exception as e:
             compression_method = zipfile.ZIP_STORED
 
-        zipf = zipfile.ZipFile(output_path, 'w', compression_method)
-        path = os.getcwd()
+        zipf = zipfile.ZipFile(zip_path, 'w', compression_method)
+
 
         def splitpath(path):
             parts = []
@@ -211,21 +225,25 @@ class Zappa(object):
         split_venv = splitpath(venv)
 
         # First, do the project..
-        for root, dirs, files in os.walk(path, followlinks=True):
+
+        for root, dirs, files in os.walk(cwd, followlinks=True):
             for filen in files:
                 to_write = os.path.join(root, filen)
 
                 # Don't put our package or our entire venv in the package.
-                if prefix in to_write:
-                    continue
+                for pattern in exclude:
+                    if fnmatch.fnmatchcase(to_write, pattern):
+                        # print "skipping", to_write, pattern
+                        break
+                else:
+                    # Don't put the venv in the package..
+                    split_to_write = splitpath(to_write)
+                    if set(split_venv).issubset(set(split_to_write)):
+                        continue
 
-                # Don't put the venv in the package..
-                split_to_write = splitpath(to_write)
-                if set(split_venv).issubset(set(split_to_write)):
-                    continue
-
-                to_write = to_write.split(path + os.sep)[1]
-                zipf.write(to_write)
+                    print 'adding', to_write[len(cwd)+1:]
+                    to_write = to_write.split(cwd + os.sep)[1]
+                    zipf.write(to_write)
 
         # Then, do the site-packages..
         # TODO Windows: %VIRTUAL_ENV%\Lib\site-packages
@@ -270,11 +288,11 @@ class Zappa(object):
         zipf.close()
 
         # Warn if this is too large for Lambda.
-        file_stats = os.stat(output_path)
+        file_stats = os.stat(zip_path)
         if file_stats.st_size > 52428800:
             print("\n\nWarning: Application zip package is likely to be too large for AWS Lambda.\n\n")
 
-        return output_path
+        return zip_fname
     ##
     # S3
     ##
