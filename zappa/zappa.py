@@ -237,9 +237,6 @@ class Zappa(object):
                 # There are few things we can do to reduce the filesize
                 if minify:
 
-                    # And don't package boto, because AWS gives us that for free:
-                    if 'boto' in to_write:
-                        continue
                     if ".exe" in to_write:
                         continue
                     if '.DS_Store' in to_write:
