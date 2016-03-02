@@ -237,9 +237,6 @@ class Zappa(object):
                 # There are few things we can do to reduce the filesize
                 if minify:
 
-                    # And don't package boto, because AWS gives us that for free:
-                    if 'boto' in to_write:
-                        continue
                     if ".exe" in to_write:
                         continue
                     if '.DS_Store' in to_write:
@@ -585,15 +582,11 @@ class Zappa(object):
                 # Thanks to @KevinHornschemeier and @jayway
                 # for the discussion on this.
                 if status_code == '200':
-                    selection_pattern = ''
                     response_templates = {content_type: RESPONSE_TEMPLATE for content_type in self.integration_content_types}
                 elif status_code in ['301', '302']:
-                    selection_pattern = '\/.*'
                     response_templates = {content_type: REDIRECT_RESPONSE_TEMPLATE for content_type in self.integration_content_types}
                     response_parameters["method.response.header.Location"] = "integration.response.body.errorMessage"
                 else:
-                    selection_pattern = base64.b64encode("<!DOCTYPE html>" + str(status_code)) + '.*'
-                    selection_pattern = selection_pattern.replace('+', "\+")
                     response_templates = {content_type: ERROR_RESPONSE_TEMPLATE for content_type in self.integration_content_types}
 
                 integration_response = client.put_integration_response(
@@ -601,13 +594,29 @@ class Zappa(object):
                         resourceId=resource_id,
                         httpMethod=method,
                         statusCode=status_code,
-                        selectionPattern=selection_pattern,
+                        selectionPattern=self.selection_pattern(status_code),
                         responseParameters=response_parameters,
                         responseTemplates=response_templates
                 )
                 report_progress()
 
         return resource_id
+
+    @staticmethod
+    def selection_pattern(status_code):
+        """
+        Generate a regex to match a given status code in a response.
+        """
+
+        pattern = ''
+
+        if status_code in ['301', '302']:
+            pattern = 'https://.*|/.*'
+        elif status_code != '200':
+            pattern = base64.b64encode("<!DOCTYPE html>" + str(status_code)) + '.*'
+            pattern = pattern.replace('+', r"\+")
+
+        return pattern
 
     def deploy_api_gateway(self, api_id, stage_name, stage_description="", description="", cache_cluster_enabled=False, cache_cluster_size='0.5', variables=None):
         """

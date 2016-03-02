@@ -1,14 +1,21 @@
 # -*- coding: utf8 -*-
+import base64
 import collections
 import json
-import os
-import unittest
 import mock
+import os
+import random
+import string
+import unittest
 
 from .utils import placebo_session
 
 from zappa.wsgi import create_wsgi_request, common_log
 from zappa.zappa import Zappa, ASSUME_POLICY, ATTACH_POLICY
+
+
+def random_string(length):
+    return ''.join(random.choice(string.printable) for _ in range(length))
 
 
 class TestZappa(unittest.TestCase):
@@ -113,6 +120,43 @@ class TestZappa(unittest.TestCase):
         TODO
         """
         Zappa()
+
+    ##
+    # Mapping and pattern tests
+    ##
+
+    def test_redirect_pattern(self):
+        test_urls = [
+            # a regular endpoint url
+            'https://asdf1234.execute-api.us-east-1.amazonaws.com/env/path/to/thing',
+            # an external url (outside AWS)
+            'https://github.com/Miserlou/zappa/issues?q=is%3Aissue+is%3Aclosed',
+            # a local url
+            '/env/path/to/thing'
+        ]
+
+        for code in ['301', '302']:
+            pattern = Zappa.selection_pattern(code)
+
+            for url in test_urls:
+                self.assertRegexpMatches(url, pattern)
+
+    def test_b64_pattern(self):
+        head = '<!DOCTYPE html>'
+
+        for code in ['400', '401', '402', '403', '404', '500']:
+            pattern = Zappa.selection_pattern(code)
+
+            document = base64.b64encode(head + code + random_string(50))
+            self.assertRegexpMatches(document, pattern)
+
+            for bad_code in ['200', '301', '302']:
+                document = base64.b64encode(head + bad_code + random_string(50))
+                self.assertNotRegexpMatches(document, pattern)
+
+    def test_200_pattern(self):
+        pattern = Zappa.selection_pattern('200')
+        self.assertEqual(pattern, '')
 
     ##
     # WSGI
