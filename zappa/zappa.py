@@ -585,7 +585,7 @@ class Zappa(object):
                     selection_pattern = ''
                     response_templates = {content_type: RESPONSE_TEMPLATE for content_type in self.integration_content_types}
                 elif status_code in ['301', '302']:
-                    selection_pattern = '\/.*'
+                    selection_pattern = 'https://.*|/.*'
                     response_templates = {content_type: REDIRECT_RESPONSE_TEMPLATE for content_type in self.integration_content_types}
                     response_parameters["method.response.header.Location"] = "integration.response.body.errorMessage"
                 else:
