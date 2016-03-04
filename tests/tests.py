@@ -94,8 +94,8 @@ class TestZappa(unittest.TestCase):
 
         z = Zappa(session)
         z.aws_region = 'us-east-1'
+        z.load_credentials(session)
         z.credentials_arn = 'arn:aws:iam::12345:role/ZappaLambdaExecution'
-        z.credentials_arn = 'arn:aws:iam::724336686645:role/ZappaLambdaExecution'
 
         arn = z.create_lambda_function(
             bucket=bucket_name, 
@@ -109,8 +109,6 @@ class TestZappa(unittest.TestCase):
             s3_key=zip_path, 
             function_name='test_lmbda_function55', 
         )
-
-        self.assertTrue(True)
 
     @placebo_session
     def test_create_iam_roles(self, session):
@@ -130,6 +128,13 @@ class TestZappa(unittest.TestCase):
         with mock.patch('time.time', return_value=123.456):
             api_id = z.create_api_gateway_routes(lambda_arn)
         self.assertEqual(api_id, 'j27idab94h')
+
+    @placebo_session
+    def test_fetch_logs(self, session):
+        z = Zappa(session)
+        z.credentials_arn = 'arn:aws:iam::724336686645:role/ZappaLambdaExecution'
+        events = z.fetch_logs('Spheres-demonstration')
+        self.assertTrue(events != None)
 
     def test_policy_json(self):
         # ensure the policy docs are valid JSON

@@ -1,0 +1,116 @@
+{
+    "status_code": 200, 
+    "data": {
+        "searchedLogStreams": [
+            {
+                "searchedCompletely": true, 
+                "logStreamName": "2016/02/16/[$LATEST]e26d3657ce394b688b21bffcaac513d7"
+            }, 
+            {
+                "searchedCompletely": true, 
+                "logStreamName": "2016/02/16/[$LATEST]c208fa908b574538a193cd3e9bc73855"
+            }, 
+            {
+                "searchedCompletely": true, 
+                "logStreamName": "2016/02/16/[$LATEST]3ed41c6bf25b45d8ace1459f5574ad10"
+            }
+        ], 
+        "events": [
+            {
+                "ingestionTime": 1455649425452, 
+                "timestamp": 1455649410417, 
+                "message": "START RequestId: f6d72ba2-d4df-11e5-bf75-3db99fd8bd4d Version: $LATEST\n", 
+                "eventId": "32462066600100845192455856822263785416533790667340972032", 
+                "logStreamName": "2016/02/16/[$LATEST]c208fa908b574538a193cd3e9bc73855"
+            }, 
+            {
+                "ingestionTime": 1455649425452, 
+                "timestamp": 1455649410687, 
+                "message": "END RequestId: f6d72ba2-d4df-11e5-bf75-3db99fd8bd4d\n", 
+                "eventId": "32462066606122046396059125070478429350148848273955684353", 
+                "logStreamName": "2016/02/16/[$LATEST]c208fa908b574538a193cd3e9bc73855"
+            }, 
+            {
+                "ingestionTime": 1455649425452, 
+                "timestamp": 1455649410687, 
+                "message": "REPORT RequestId: f6d72ba2-d4df-11e5-bf75-3db99fd8bd4d\tDuration: 257.47 ms\tBilled Duration: 300 ms \tMemory Size: 512 MB\tMax Memory Used: 28 MB\t\n", 
+                "eventId": "32462066606122046396059125070478429350148848273955684354", 
+                "logStreamName": "2016/02/16/[$LATEST]c208fa908b574538a193cd3e9bc73855"
+            }, 
+            {
+                "ingestionTime": 1455649495052, 
+                "timestamp": 1455649480031, 
+                "message": "START RequestId: 20844441-d4e0-11e5-93d5-517f441c2397 Version: $LATEST\n", 
+                "eventId": "32462068152544921442966656281272578021728142002476744704", 
+                "logStreamName": "2016/02/16/[$LATEST]3ed41c6bf25b45d8ace1459f5574ad10"
+            }, 
+            {
+                "ingestionTime": 1455649495052, 
+                "timestamp": 1455649480289, 
+                "message": "END RequestId: 20844441-d4e0-11e5-93d5-517f441c2397\n", 
+                "eventId": "32462068158298513704187557051788793336071419271019692033", 
+                "logStreamName": "2016/02/16/[$LATEST]3ed41c6bf25b45d8ace1459f5574ad10"
+            }, 
+            {
+                "ingestionTime": 1455649495052, 
+                "timestamp": 1455649480289, 
+                "message": "REPORT RequestId: 20844441-d4e0-11e5-93d5-517f441c2397\tDuration: 257.67 ms\tBilled Duration: 300 ms \tMemory Size: 512 MB\tMax Memory Used: 28 MB\t\n", 
+                "eventId": "32462068158298513704187557051788793336071419271019692034", 
+                "logStreamName": "2016/02/16/[$LATEST]3ed41c6bf25b45d8ace1459f5574ad10"
+            }, 
+            {
+                "ingestionTime": 1455650512171, 
+                "timestamp": 1455650497125, 
+                "message": "START RequestId: 7f75c4e9-d4e2-11e5-a695-ad825bd23d32 Version: $LATEST\n", 
+                "eventId": "32462090834499058397272271028023736332668015516235137024", 
+                "logStreamName": "2016/02/16/[$LATEST]c208fa908b574538a193cd3e9bc73855"
+            }, 
+            {
+                "ingestionTime": 1455650512171, 
+                "timestamp": 1455650497148, 
+                "message": "System check identified no issues (0 silenced).\n", 
+                "eventId": "32462090835011975536838475360279057852938927830872686593", 
+                "logStreamName": "2016/02/16/[$LATEST]c208fa908b574538a193cd3e9bc73855"
+            }, 
+            {
+                "ingestionTime": 1455650512171, 
+                "timestamp": 1455650497148, 
+                "message": "END RequestId: 7f75c4e9-d4e2-11e5-a695-ad825bd23d32\n", 
+                "eventId": "32462090835011975536838475360279057852938927830872686594", 
+                "logStreamName": "2016/02/16/[$LATEST]c208fa908b574538a193cd3e9bc73855"
+            }, 
+            {
+                "ingestionTime": 1455650512171, 
+                "timestamp": 1455650497148, 
+                "message": "REPORT RequestId: 7f75c4e9-d4e2-11e5-a695-ad825bd23d32\tDuration: 21.36 ms\tBilled Duration: 100 ms \tMemory Size: 512 MB\tMax Memory Used: 28 MB\t\n", 
+                "eventId": "32462090835011975536838475360279057852938927830872686595", 
+                "logStreamName": "2016/02/16/[$LATEST]c208fa908b574538a193cd3e9bc73855"
+            }, 
+            {
+                "ingestionTime": 1455666694754, 
+                "timestamp": 1455666679725, 
+                "message": "START RequestId: 2c419ba2-d508-11e5-9f1e-2be596b4591e Version: $LATEST\n", 
+                "eventId": "32462451718538308138934340807480632102522048575880101888", 
+                "logStreamName": "2016/02/16/[$LATEST]e26d3657ce394b688b21bffcaac513d7"
+            }, 
+            {
+                "ingestionTime": 1455666694754, 
+                "timestamp": 1455666679958, 
+                "message": "END RequestId: 2c419ba2-d508-11e5-9f1e-2be596b4591e\n", 
+                "eventId": "32462451723734381770191975999458454460049116806773538817", 
+                "logStreamName": "2016/02/16/[$LATEST]e26d3657ce394b688b21bffcaac513d7"
+            }, 
+            {
+                "ingestionTime": 1455666694754, 
+                "timestamp": 1455666679958, 
+                "message": "REPORT RequestId: 2c419ba2-d508-11e5-9f1e-2be596b4591e\tDuration: 232.39 ms\tBilled Duration: 300 ms \tMemory Size: 512 MB\tMax Memory Used: 27 MB\t\n", 
+                "eventId": "32462451723734381770191975999458454460049116806773538818", 
+                "logStreamName": "2016/02/16/[$LATEST]e26d3657ce394b688b21bffcaac513d7"
+            }
+        ], 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "RequestId": "a36395e1-e228-11e5-b098-a7148bebd5d9"
+        }
+    }
+}

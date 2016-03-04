@@ -1,0 +1,41 @@
+{
+    "status_code": 200, 
+    "data": {
+        "logStreams": [
+            {
+                "firstEventTimestamp": 1455666679725, 
+                "lastEventTimestamp": 1455666679958, 
+                "creationTime": 1455666678634, 
+                "uploadSequenceToken": "49540113880921962757517231072874083168075499101109640610", 
+                "logStreamName": "2016/02/16/[$LATEST]e26d3657ce394b688b21bffcaac513d7", 
+                "lastIngestionTime": 1455666694754, 
+                "arn": "arn:aws:logs:us-east-1:724336686645:log-group:/aws/lambda/Spheres-demonstration:log-stream:2016/02/16/[$LATEST]e26d3657ce394b688b21bffcaac513d7", 
+                "storedBytes": 247
+            }, 
+            {
+                "firstEventTimestamp": 1455649410417, 
+                "lastEventTimestamp": 1455650497148, 
+                "creationTime": 1455649409642, 
+                "uploadSequenceToken": "49540113985133345070250697845503862755841532631883736754", 
+                "logStreamName": "2016/02/16/[$LATEST]c208fa908b574538a193cd3e9bc73855", 
+                "lastIngestionTime": 1455650512171, 
+                "arn": "arn:aws:logs:us-east-1:724336686645:log-group:/aws/lambda/Spheres-demonstration:log-stream:2016/02/16/[$LATEST]c208fa908b574538a193cd3e9bc73855", 
+                "storedBytes": 554
+            }, 
+            {
+                "firstEventTimestamp": 1455649480031, 
+                "lastEventTimestamp": 1455649480289, 
+                "creationTime": 1455649479007, 
+                "uploadSequenceToken": "49540751433982745183295759382532773807925310381002604002", 
+                "logStreamName": "2016/02/16/[$LATEST]3ed41c6bf25b45d8ace1459f5574ad10", 
+                "lastIngestionTime": 1455649495052, 
+                "arn": "arn:aws:logs:us-east-1:724336686645:log-group:/aws/lambda/Spheres-demonstration:log-stream:2016/02/16/[$LATEST]3ed41c6bf25b45d8ace1459f5574ad10", 
+                "storedBytes": 246
+            }
+        ], 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "RequestId": "a1385218-e228-11e5-bc06-23d39c48cbaa"
+        }
+    }
+}
