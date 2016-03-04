@@ -208,7 +208,7 @@ class Zappa(object):
         try:
             import zlib
             compression_method = zipfile.ZIP_DEFLATED
-        except Exception as e:
+        except Exception as e: # pragma: no cover
             compression_method = zipfile.ZIP_STORED
 
         zipf = zipfile.ZipFile(zip_path, 'w', compression_method)
@@ -309,7 +309,7 @@ class Zappa(object):
 
         try:
             s3.create_bucket(Bucket=bucket_name)
-        except Exception as e:
+        except Exception as e: # pragma: no cover
             print(e)
             print("Couldn't create bucket.")
             return False
@@ -330,9 +330,9 @@ class Zappa(object):
             )
 
             progress.close()
-        except (KeyboardInterrupt, SystemExit):
+        except (KeyboardInterrupt, SystemExit): # pragma: no cover
             raise
-        except Exception as e:
+        except Exception as e: # pragma: no cover
             print(e)
             return False
         return True
@@ -351,7 +351,7 @@ class Zappa(object):
 
         try:
             s3.meta.client.head_bucket(Bucket=bucket_name)
-        except botocore.exceptions.ClientError as e:
+        except botocore.exceptions.ClientError as e: # pragma: no cover
             # If a client error is thrown, then check that it was a 404 error.
             # If it was a 404 error, then the bucket does not exist.
             error_code = int(e.response['Error']['Code'])
