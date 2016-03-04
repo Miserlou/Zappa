@@ -1,0 +1,27 @@
+{
+    "status_code": 200, 
+    "data": {
+        "Code": {
+            "RepositoryType": "S3", 
+            "Location": "https://prod-04-2014-tasks.s3.amazonaws.com/snapshots/724336686645/django-helloworld-unicode-a0d56d69-de7c-421b-9527-f49e100a8613?x-amz-security-token=AQoDYXdzEEka4AOil22HD1z9lkxZ7yiced%2FbYEWzXJHbMHexq2zxzMQ7%2Fj2a06AP9z3nK0QgGPUADK2A6FUpFFl%2BjO7gBmP%2FKifl9jTvvaf72YhPbZDJTIrFvZZ%2B5NjhkDrfRgyK%2BhBROGNH85L46iJSShwZ5lmKgADTnnVMT9pZ2JXF3uNLUzrWoJTpf%2F7lDBMEoFO%2BNLer7MsLsuCiemzKV4Kcvo0Mu3qhkk1u2BfoRTj4xmiaWE7UfqD%2FeQkINdwkUgXeQ9SA1T2l70omZ1ss2l1y18xeUvCQde5OrE7ue5cVpENyjYr9dEwPYwm1wG9%2B%2FJE%2BMQZ8Lz6CNex%2BTVuBvY09JL8vTV7WpRxGhr96a7OIn5YCCQ7cJfNVIWpdBUrWmqnE8Jh9oL558TVA0e5RFP9YU%2BFYxJcA6fH%2B0DZBAAK9797XPltzhSXrUcB8JuHfa%2FC1n2w8X7HbsMTI8m1OAIkQQtppYHtl4T5o3012VcSTLRSv945sCodMOmueKsEwAZlc1gFflcwGXE4v4hB6YJjvcRj2SQiK7Yzw7ShODOroOsWT18te8p9Qjs2mL6akLt1%2Fo8tddWskKzqrfYfBTvfFL5Y0nU4sI96JUXM0KXmJotPRmCdFEktGk4Fre0wm%2FyAau0NdaDQg7NzmtgU%3D&AWSAccessKeyId=ASIAIQFLXUK7E7GUTQ2A&Expires=1457113092&Signature=%2FH0RMGKWk1tEGnK9R6CCPXQ6Y04%3D"
+        }, 
+        "Configuration": {
+            "Version": "7", 
+            "CodeSha256": "t3pcqjdrLOqd2p0bRsCEOhgvLJ9sLJrVazpGqhDybsc=", 
+            "FunctionName": "django-helloworld-unicode", 
+            "MemorySize": 512, 
+            "CodeSize": 12154784, 
+            "FunctionArn": "arn:aws:lambda:us-east-1:724336686645:function:django-helloworld-unicode:7", 
+            "Handler": "handler.lambda_handler", 
+            "Role": "arn:aws:iam::724336686645:role/ZappaLambdaExecution", 
+            "Timeout": 30, 
+            "LastModified": "2016-03-01T00:24:01.446+0000", 
+            "Runtime": "python2.7", 
+            "Description": "Zappa Deployment"
+        }, 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "RequestId": "78da1863-e22e-11e5-a5ae-01cbfdebdc8f"
+        }
+    }
+}

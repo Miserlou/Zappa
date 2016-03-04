@@ -1,0 +1,137 @@
+{
+    "status_code": 200, 
+    "data": {
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "RequestId": "78c11231-e22e-11e5-bb00-6935e1456f05"
+        }, 
+        "Versions": [
+            {
+                "Version": "$LATEST", 
+                "CodeSha256": "qPyTWxngvz505vUX4v0IbW4H6CdQCSiYSGPsNQHPNTc=", 
+                "FunctionName": "django-helloworld-unicode", 
+                "MemorySize": 512, 
+                "CodeSize": 12154778, 
+                "FunctionArn": "arn:aws:lambda:us-east-1:724336686645:function:django-helloworld-unicode:$LATEST", 
+                "Handler": "handler.lambda_handler", 
+                "Role": "arn:aws:iam::724336686645:role/ZappaLambdaExecution", 
+                "Timeout": 30, 
+                "LastModified": "2016-03-01T00:55:35.845+0000", 
+                "Runtime": "python2.7", 
+                "Description": "Zappa Deployment"
+            }, 
+            {
+                "Version": "1", 
+                "CodeSha256": "eEW6OoZIm1g+3sLnoGqkfG9PcvYcXYoTd8uZYCMhA2U=", 
+                "FunctionName": "django-helloworld-unicode", 
+                "MemorySize": 512, 
+                "CodeSize": 12102921, 
+                "FunctionArn": "arn:aws:lambda:us-east-1:724336686645:function:django-helloworld-unicode:1", 
+                "Handler": "handler.lambda_handler", 
+                "Role": "arn:aws:iam::724336686645:role/ZappaLambdaExecution", 
+                "Timeout": 30, 
+                "LastModified": "2016-02-29T14:39:31.557+0000", 
+                "Runtime": "python2.7", 
+                "Description": "Zappa Deployment"
+            }, 
+            {
+                "Version": "2", 
+                "CodeSha256": "QXwkHDWCmczXTdDi9AYf6Ws74jkAI6zUJ+tf7s5zLzk=", 
+                "FunctionName": "django-helloworld-unicode", 
+                "MemorySize": 512, 
+                "CodeSize": 12152312, 
+                "FunctionArn": "arn:aws:lambda:us-east-1:724336686645:function:django-helloworld-unicode:2", 
+                "Handler": "handler.lambda_handler", 
+                "Role": "arn:aws:iam::724336686645:role/ZappaLambdaExecution", 
+                "Timeout": 30, 
+                "LastModified": "2016-02-29T14:47:04.499+0000", 
+                "Runtime": "python2.7", 
+                "Description": "Zappa Deployment"
+            }, 
+            {
+                "Version": "3", 
+                "CodeSha256": "Hpt/J6gyhnYXm7NVWwzomJoExr0i9II//4zaLm0DYgc=", 
+                "FunctionName": "django-helloworld-unicode", 
+                "MemorySize": 512, 
+                "CodeSize": 12152182, 
+                "FunctionArn": "arn:aws:lambda:us-east-1:724336686645:function:django-helloworld-unicode:3", 
+                "Handler": "handler.lambda_handler", 
+                "Role": "arn:aws:iam::724336686645:role/ZappaLambdaExecution", 
+                "Timeout": 30, 
+                "LastModified": "2016-02-29T14:58:08.443+0000", 
+                "Runtime": "python2.7", 
+                "Description": "Zappa Deployment"
+            }, 
+            {
+                "Version": "4", 
+                "CodeSha256": "1ofpfK2Jonu13iPUBMeNYR962iWcD5vL1YrJazF9tF0=", 
+                "FunctionName": "django-helloworld-unicode", 
+                "MemorySize": 512, 
+                "CodeSize": 12154467, 
+                "FunctionArn": "arn:aws:lambda:us-east-1:724336686645:function:django-helloworld-unicode:4", 
+                "Handler": "handler.lambda_handler", 
+                "Role": "arn:aws:iam::724336686645:role/ZappaLambdaExecution", 
+                "Timeout": 30, 
+                "LastModified": "2016-02-29T16:25:49.425+0000", 
+                "Runtime": "python2.7", 
+                "Description": "Zappa Deployment"
+            }, 
+            {
+                "Version": "5", 
+                "CodeSha256": "bwLhQSjeZOmNC10s2eMO0ljWJBNX5tT4S9MgkvBWjOM=", 
+                "FunctionName": "django-helloworld-unicode", 
+                "MemorySize": 512, 
+                "CodeSize": 12154507, 
+                "FunctionArn": "arn:aws:lambda:us-east-1:724336686645:function:django-helloworld-unicode:5", 
+                "Handler": "handler.lambda_handler", 
+                "Role": "arn:aws:iam::724336686645:role/ZappaLambdaExecution", 
+                "Timeout": 30, 
+                "LastModified": "2016-02-29T16:34:47.988+0000", 
+                "Runtime": "python2.7", 
+                "Description": "Zappa Deployment"
+            }, 
+            {
+                "Version": "6", 
+                "CodeSha256": "uxHYC6Uf/sUl884TWUqlwi0WWE+ixfxhO964yPec5zM=", 
+                "FunctionName": "django-helloworld-unicode", 
+                "MemorySize": 512, 
+                "CodeSize": 12154780, 
+                "FunctionArn": "arn:aws:lambda:us-east-1:724336686645:function:django-helloworld-unicode:6", 
+                "Handler": "handler.lambda_handler", 
+                "Role": "arn:aws:iam::724336686645:role/ZappaLambdaExecution", 
+                "Timeout": 30, 
+                "LastModified": "2016-03-01T00:12:28.708+0000", 
+                "Runtime": "python2.7", 
+                "Description": "Zappa Deployment"
+            }, 
+            {
+                "Version": "7", 
+                "CodeSha256": "t3pcqjdrLOqd2p0bRsCEOhgvLJ9sLJrVazpGqhDybsc=", 
+                "FunctionName": "django-helloworld-unicode", 
+                "MemorySize": 512, 
+                "CodeSize": 12154784, 
+                "FunctionArn": "arn:aws:lambda:us-east-1:724336686645:function:django-helloworld-unicode:7", 
+                "Handler": "handler.lambda_handler", 
+                "Role": "arn:aws:iam::724336686645:role/ZappaLambdaExecution", 
+                "Timeout": 30, 
+                "LastModified": "2016-03-01T00:24:01.446+0000", 
+                "Runtime": "python2.7", 
+                "Description": "Zappa Deployment"
+            }, 
+            {
+                "Version": "8", 
+                "CodeSha256": "qPyTWxngvz505vUX4v0IbW4H6CdQCSiYSGPsNQHPNTc=", 
+                "FunctionName": "django-helloworld-unicode", 
+                "MemorySize": 512, 
+                "CodeSize": 12154778, 
+                "FunctionArn": "arn:aws:lambda:us-east-1:724336686645:function:django-helloworld-unicode:8", 
+                "Handler": "handler.lambda_handler", 
+                "Role": "arn:aws:iam::724336686645:role/ZappaLambdaExecution", 
+                "Timeout": 30, 
+                "LastModified": "2016-03-01T00:55:35.845+0000", 
+                "Runtime": "python2.7", 
+                "Description": "Zappa Deployment"
+            }
+        ]
+    }
+}

@@ -111,6 +111,18 @@ class TestZappa(unittest.TestCase):
         )
 
     @placebo_session
+    def test_rollback_lambda_function_version(self, session):
+        z = Zappa(session)
+        z.credentials_arn = 'arn:aws:iam::724336686645:role/ZappaLambdaExecution'
+
+        function_name = 'django-helloworld-unicode'
+        too_many_versions = z.rollback_lambda_function_version(function_name, 99999)
+        self.assertFalse(too_many_versions)
+
+        function_name = 'django-helloworld-unicode'
+        function_arn = z.rollback_lambda_function_version(function_name, 1)
+
+    @placebo_session
     def test_create_iam_roles(self, session):
         z = Zappa(session)
         arn = z.create_iam_roles()

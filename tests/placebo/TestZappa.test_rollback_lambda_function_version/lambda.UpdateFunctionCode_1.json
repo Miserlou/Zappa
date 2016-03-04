@@ -1,0 +1,21 @@
+{
+    "status_code": 200, 
+    "data": {
+        "CodeSha256": "t3pcqjdrLOqd2p0bRsCEOhgvLJ9sLJrVazpGqhDybsc=", 
+        "FunctionName": "django-helloworld-unicode", 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "RequestId": "8ef0d90e-e22e-11e5-ae73-91491a1737c0"
+        }, 
+        "CodeSize": 12154784, 
+        "MemorySize": 512, 
+        "FunctionArn": "arn:aws:lambda:us-east-1:724336686645:function:django-helloworld-unicode:9", 
+        "Version": "9", 
+        "Role": "arn:aws:iam::724336686645:role/ZappaLambdaExecution", 
+        "Timeout": 30, 
+        "LastModified": "2016-03-04T17:31:54.534+0000", 
+        "Handler": "handler.lambda_handler", 
+        "Runtime": "python2.7", 
+        "Description": "Zappa Deployment"
+    }
+}
