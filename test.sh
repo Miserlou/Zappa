@@ -1,2 +1,2 @@
 #! /bin/bash
-nosetests
+nosetests --with-coverage --cover-package=zappa
