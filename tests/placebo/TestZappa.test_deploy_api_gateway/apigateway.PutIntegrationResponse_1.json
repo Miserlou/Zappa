@@ -1,0 +1,21 @@
+{
+    "status_code": 201, 
+    "data": {
+        "statusCode": "200", 
+        "responseTemplates": {
+            "text/html": "#set($inputRoot = $input.path('$'))\n$inputRoot.Content"
+        }, 
+        "selectionPattern": "", 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 201, 
+            "RequestId": "307d625c-e22c-11e5-9e01-73fb17f4973b"
+        }, 
+        "responseParameters": {
+            "method.response.header.Content-Type": "integration.response.body.Content-Type", 
+            "method.response.header.Location": "integration.response.body.Location", 
+            "method.response.header.X-Frame-Options": "integration.response.body.X-Frame-Options", 
+            "method.response.header.Status": "integration.response.body.Status", 
+            "method.response.header.Set-Cookie": "integration.response.body.Set-Cookie"
+        }
+    }
+}

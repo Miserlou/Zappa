@@ -1,0 +1,13 @@
+{
+    "status_code": 404, 
+    "data": {
+        "ResponseMetadata": {
+            "HTTPStatusCode": 404, 
+            "RequestId": "2f960f7a-e22c-11e5-a1ee-672085005625"
+        }, 
+        "Error": {
+            "Message": "Invalid REST API identifier specified", 
+            "Code": "NotFoundException"
+        }
+    }
+}

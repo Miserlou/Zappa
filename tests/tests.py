@@ -130,9 +130,23 @@ class TestZappa(unittest.TestCase):
         self.assertEqual(api_id, 'j27idab94h')
 
     @placebo_session
+    def test_deploy_api_gateway(self, session):
+        z = Zappa(session)
+        z.credentials_arn = 'arn:aws:iam::12345:role/ZappaLambdaExecution'
+
+        z.parameter_depth = 1
+        z.integration_response_codes = [200]
+        z.method_response_codes = [200]
+        z.http_methods = ['GET']
+
+        lambda_arn = 'arn:aws:lambda:us-east-1:12345:function:django-helloworld-unicode'
+        api_id = z.create_api_gateway_routes(lambda_arn)
+        endpoint_url = z.deploy_api_gateway(api_id, "test_stage")
+
+    @placebo_session
     def test_fetch_logs(self, session):
         z = Zappa(session)
-        z.credentials_arn = 'arn:aws:iam::724336686645:role/ZappaLambdaExecution'
+        z.credentials_arn = 'arn:aws:iam::12345:role/ZappaLambdaExecution'
         events = z.fetch_logs('Spheres-demonstration')
         self.assertTrue(events != None)
 

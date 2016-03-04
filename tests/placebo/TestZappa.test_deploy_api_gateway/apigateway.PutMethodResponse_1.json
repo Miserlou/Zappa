@@ -1,0 +1,20 @@
+{
+    "status_code": 201, 
+    "data": {
+        "responseModels": {
+            "text/html": "Empty"
+        }, 
+        "statusCode": "200", 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 201, 
+            "RequestId": "306287a9-e22c-11e5-ba0a-f9eb2a31cd5c"
+        }, 
+        "responseParameters": {
+            "method.response.header.Content-Type": false, 
+            "method.response.header.Location": false, 
+            "method.response.header.X-Frame-Options": false, 
+            "method.response.header.Status": false, 
+            "method.response.header.Set-Cookie": false
+        }
+    }
+}

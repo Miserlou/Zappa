@@ -1,0 +1,20 @@
+{
+    "status_code": 201, 
+    "data": {
+        "cacheKeyParameters": [], 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 201, 
+            "RequestId": "304ae08c-e22c-11e5-a1ee-672085005625"
+        }, 
+        "uri": "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:12345:function:django-helloworld-unicode/invocations", 
+        "httpMethod": "POST", 
+        "requestTemplates": {
+            "application/json": "{\n  \"body\" : $input.json('$'),\n  \"headers\": {\n    #foreach($header in $input.params().header.keySet())\n    \"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end\n    \n    #end\n  },\n  \"method\": \"$context.httpMethod\",\n  \"params\": {\n    #foreach($param in $input.params().path.keySet())\n    \"$param\": \"$util.escapeJavaScript($input.params().path.get($param))\" #if($foreach.hasNext),#end\n    \n    #end\n  },\n  \"query\": {\n    #foreach($queryParam in $input.params().querystring.keySet())\n    \"$queryParam\": \"$util.escapeJavaScript($input.params().querystring.get($queryParam))\" #if($foreach.hasNext),#end\n    \n    #end\n  }  \n}", 
+            "application/x-www-form-urlencoded": "#set($rawPostData = $input.path('$'))\n{\n  \"body\" : \"$rawPostData\",\n  \"headers\": {\n    #foreach($header in $input.params().header.keySet())\n    \"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end\n    \n    #end\n  },\n  \"method\": \"$context.httpMethod\",\n  \"params\": {\n    #foreach($param in $input.params().path.keySet())\n    \"$param\": \"$util.escapeJavaScript($input.params().path.get($param))\" #if($foreach.hasNext),#end\n    \n    #end\n  },\n  \"query\": {\n    #foreach($queryParam in $input.params().querystring.keySet())\n    \"$queryParam\": \"$util.escapeJavaScript($input.params().querystring.get($queryParam))\" #if($foreach.hasNext),#end\n    \n    #end\n  }  \n}"
+        }, 
+        "cacheNamespace": "none", 
+        "credentials": "arn:aws:iam::12345:role/ZappaLambdaExecution", 
+        "type": "AWS", 
+        "requestParameters": {}
+    }
+}
