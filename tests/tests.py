@@ -164,6 +164,12 @@ class TestZappa(unittest.TestCase):
         endpoint_url = z.deploy_api_gateway(api_id, "test_stage")
 
     @placebo_session
+    def test_get_api_url(self, session):
+        z = Zappa(session)
+        z.credentials_arn = 'arn:aws:iam::724336686645:role/ZappaLambdaExecution'
+        url = z.get_api_url('Spheres-demonstration')
+
+    @placebo_session
     def test_fetch_logs(self, session):
         z = Zappa(session)
         z.credentials_arn = 'arn:aws:iam::12345:role/ZappaLambdaExecution'
