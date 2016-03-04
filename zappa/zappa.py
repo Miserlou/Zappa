@@ -752,27 +752,6 @@ class Zappa(object):
     # Utility
     ##
 
-    def nuke_old_apis(self):
-        """
-
-        Deletes old Zappa APIs.
-        Useful in case of hitting the AWS APIGW upper limit.
-
-        """
-
-        client = self.boto_session.client('apigateway')
-        response = client.get_rest_apis()
-        for item in response['items']:
-            try:
-                int(item['name'])
-            except Exception as e:
-                continue
-
-            client.delete_rest_api(
-                restApiId=item['id']
-            )
-        return
-
     def load_credentials(self, boto_session=None):
         if not boto_session:
             # automatically load credentials from config or environment
