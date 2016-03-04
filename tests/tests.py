@@ -119,8 +119,16 @@ class TestZappa(unittest.TestCase):
         too_many_versions = z.rollback_lambda_function_version(function_name, 99999)
         self.assertFalse(too_many_versions)
 
-        function_name = 'django-helloworld-unicode'
         function_arn = z.rollback_lambda_function_version(function_name, 1)
+
+    @placebo_session
+    def test_invoke_lambda_function(self, session):
+        z = Zappa(session)
+        z.credentials_arn = 'arn:aws:iam::724336686645:role/ZappaLambdaExecution'
+
+        function_name = 'django-helloworld-unicode'
+        payload = '{"event": "hello"}'
+        response = z.invoke_lambda_function(function_name, payload)
 
     @placebo_session
     def test_create_iam_roles(self, session):
