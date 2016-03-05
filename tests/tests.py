@@ -36,7 +36,7 @@ class TestZappa(unittest.TestCase):
     def test_create_lambda_package(self):
         self.assertTrue(True)
         z = Zappa()
-        path = z.create_lambda_zip()
+        path = z.create_lambda_zip(handler_file=os.path.realpath(__file__))
         self.assertTrue(os.path.isfile(path))
         os.remove(path)
 
@@ -86,6 +86,9 @@ class TestZappa(unittest.TestCase):
         )
         res = z.remove_from_s3(zip_path, bucket_name)
         self.assertTrue(res)
+
+        fail = z.upload_to_s3('/tmp/this_isnt_real', bucket_name)
+        self.assertFalse(fail)
 
     @placebo_session
     def test_create_lambda_function(self, session):

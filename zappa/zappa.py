@@ -289,7 +289,7 @@ class Zappa(object):
 
         # Warn if this is too large for Lambda.
         file_stats = os.stat(zip_path)
-        if file_stats.st_size > 52428800:
+        if file_stats.st_size > 52428800: # pragma: no cover
             print("\n\nWarning: Application zip package is likely to be too large for AWS Lambda.\n\n")
 
         return zip_fname
