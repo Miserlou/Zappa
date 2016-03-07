@@ -1,19 +1,21 @@
 import base64
 import boto3
 import botocore
-import os
-import time
-import zipfile
-import requests
+import fnmatch
 import json
 import logging
-import fnmatch
+import os
+import pip
+import requests
+import tarfile
+import time
+import zipfile
 
+from lambda_packages import lambda_packages
 from os.path import expanduser
 from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
-
 
 ##
 # Policies And Template Mappings
@@ -119,6 +121,8 @@ REDIRECT_RESPONSE_TEMPLATE = ""
 API_GATEWAY_REGIONS = ['us-east-1', 'us-west-2', 'eu-west-1', 'ap-northeast-1']
 LAMBDA_REGIONS = ['us-east-1', 'us-west-2', 'eu-west-1', 'ap-northeast-1']
 
+ZIP_EXCLUDES =  ['.exe', '.DS_Store', '.Python', '.git', '.zip', '.tar.gz']
+
 ##
 # Classes
 ##
@@ -180,7 +184,7 @@ class Zappa(object):
     ##
 
     def create_lambda_zip(self, prefix='lambda_package', handler_file=None,
-                          minify=True, exclude=None):
+                          minify=True, exclude=None, use_precompiled_packages=True):
         """
         Creates a Lambda-ready zip file of the current virtualenvironment and working directory.
 
@@ -213,7 +217,6 @@ class Zappa(object):
 
         zipf = zipfile.ZipFile(zip_path, 'w', compression_method)
 
-
         def splitpath(path):
             parts = []
             (path, tail) = os.path.split(path)
@@ -225,15 +228,18 @@ class Zappa(object):
         split_venv = splitpath(venv)
 
         # First, do the project..
-
         for root, dirs, files in os.walk(cwd, followlinks=True):
             for filen in files:
                 to_write = os.path.join(root, filen)
 
+                # Skip compressed assets, git histories, etc.
+                # for zip_exclude in ZIP_EXCLUDES:
+                #     if zip_exclude in to_write:
+                #         continue
+
                 # Don't put our package or our entire venv in the package.
                 for pattern in exclude:
                     if fnmatch.fnmatchcase(to_write, pattern):
-                        # print "skipping", to_write, pattern
                         break
                 else:
                     # Don't put the venv in the package..
@@ -241,9 +247,8 @@ class Zappa(object):
                     if set(split_venv).issubset(set(split_to_write)):
                         continue
 
-                    print 'adding', to_write[len(cwd)+1:]
-                    to_write = to_write.split(cwd + os.sep)[1]
-                    zipf.write(to_write)
+                to_write = to_write.split(cwd + os.sep)[1]
+                zipf.write(to_write)
 
         # Then, do the site-packages..
         # TODO Windows: %VIRTUAL_ENV%\Lib\site-packages
@@ -255,14 +260,10 @@ class Zappa(object):
                 # There are few things we can do to reduce the filesize
                 if minify:
 
-                    if ".exe" in to_write:
-                        continue
-                    if '.DS_Store' in to_write:
-                        continue
-                    if '.Python' in to_write:
-                        continue
-                    if '.git' in to_write:
-                        continue
+                    # Skip compressed assets, git histories, etc.
+                    # for zip_exclude in ZIP_EXCLUDES:
+                    #     if zip_exclude in to_write:
+                    #         continue
 
                     # If there is a .pyc file in this package,
                     # we can skip the python source code as we'll just
@@ -286,6 +287,34 @@ class Zappa(object):
             zipf.write(handler_file, filename)
 
         zipf.close()
+
+        def remove_from_zip(zipfname, *filenames):
+            tempdir = tempfile.mkdtemp()
+            try:
+                tempname = os.path.join(tempdir, 'new.zip')
+                with zipfile.ZipFile(zipfname, 'r') as zipread:
+                    with zipfile.ZipFile(tempname, 'w') as zipwrite:
+                        for item in zipread.infolist():
+                            if item.filename not in filenames:
+                                data = zipread.read(item.filename)
+                                zipwrite.writestr(item, data)
+                shutil.move(tempname, zipfname)
+            finally:
+                shutil.rmtree(tempdir)
+
+        if use_precompiled_packages:
+            installed_packages = pip.get_installed_distributions()
+            for package in installed_packages:
+                package_name = package.project_name.lower()
+                for name, details in lambda_packages.items():
+                    if name.lower() == package_name:
+                        tar = tarfile.open(details['path'], mode="r:gz")
+                        for member in tar.getmembers():
+                            extracted = tar.extractfile(member)
+                            if extracted: # Sometimes is None?
+                                remove_from_zip(zip_path, extracted.name)
+                                zipf.writestr(extracted.name, extracted.read())
+
 
         # Warn if this is too large for Lambda.
         file_stats = os.stat(zip_path)
