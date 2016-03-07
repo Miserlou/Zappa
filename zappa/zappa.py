@@ -9,6 +9,7 @@ import pip
 import requests
 import tarfile
 import time
+import warnings
 import zipfile
 
 from lambda_packages import lambda_packages
@@ -233,9 +234,12 @@ class Zappa(object):
                 to_write = os.path.join(root, filen)
 
                 # Skip compressed assets, git histories, etc.
-                # for zip_exclude in ZIP_EXCLUDES:
-                #     if zip_exclude in to_write:
-                #         continue
+                skip = False
+                for zip_exclude in ZIP_EXCLUDES:
+                    if zip_exclude in to_write:
+                        skip = True
+                if skip:
+                    continue
 
                 # Don't put our package or our entire venv in the package.
                 for pattern in exclude:
@@ -261,9 +265,12 @@ class Zappa(object):
                 if minify:
 
                     # Skip compressed assets, git histories, etc.
-                    # for zip_exclude in ZIP_EXCLUDES:
-                    #     if zip_exclude in to_write:
-                    #         continue
+                    skip = False
+                    for zip_exclude in ZIP_EXCLUDES:
+                        if zip_exclude in to_write:
+                            skip = True
+                    if skip:
+                        continue
 
                     # If there is a .pyc file in this package,
                     # we can skip the python source code as we'll just
@@ -286,22 +293,6 @@ class Zappa(object):
             filename = handler_file.split(os.sep)[-1]
             zipf.write(handler_file, filename)
 
-        zipf.close()
-
-        def remove_from_zip(zipfname, *filenames):
-            tempdir = tempfile.mkdtemp()
-            try:
-                tempname = os.path.join(tempdir, 'new.zip')
-                with zipfile.ZipFile(zipfname, 'r') as zipread:
-                    with zipfile.ZipFile(tempname, 'w') as zipwrite:
-                        for item in zipread.infolist():
-                            if item.filename not in filenames:
-                                data = zipread.read(item.filename)
-                                zipwrite.writestr(item, data)
-                shutil.move(tempname, zipfname)
-            finally:
-                shutil.rmtree(tempdir)
-
         if use_precompiled_packages:
             installed_packages = pip.get_installed_distributions()
             for package in installed_packages:
@@ -311,10 +302,13 @@ class Zappa(object):
                         tar = tarfile.open(details['path'], mode="r:gz")
                         for member in tar.getmembers():
                             extracted = tar.extractfile(member)
-                            if extracted: # Sometimes is None?
-                                remove_from_zip(zip_path, extracted.name)
+                            if extracted: # Sometimes is None
+                                warnings.filterwarnings('ignore', category=UserWarning, append=True)
                                 zipf.writestr(extracted.name, extracted.read())
+                                warnings.filterwarnings('default', category=UserWarning, append=True)
 
+        # And, we're done!
+        zipf.close()
 
         # Warn if this is too large for Lambda.
         file_stats = os.stat(zip_path)
