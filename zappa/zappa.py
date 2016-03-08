@@ -7,11 +7,14 @@ import logging
 import os
 import pip
 import requests
+import shutil
 import tarfile
+import tempfile
 import time
 import warnings
 import zipfile
 
+from distutils.dir_util import copy_tree
 from lambda_packages import lambda_packages
 from os.path import expanduser
 from tqdm import tqdm
@@ -122,7 +125,7 @@ REDIRECT_RESPONSE_TEMPLATE = ""
 API_GATEWAY_REGIONS = ['us-east-1', 'us-west-2', 'eu-west-1', 'ap-northeast-1']
 LAMBDA_REGIONS = ['us-east-1', 'us-west-2', 'eu-west-1', 'ap-northeast-1']
 
-ZIP_EXCLUDES =  ['.exe', '.DS_Store', '.Python', '.git', '.zip', '.tar.gz']
+ZIP_EXCLUDES =  ['*.exe', '*.DS_Store', '*.Python', '*.git', '*.zip', '*.tar.gz', '*.dist-info']
 
 ##
 # Classes
@@ -151,10 +154,6 @@ class Zappa(object):
     integration_response_codes = [200, 301, 400, 401, 403, 404, 500]
     integration_content_types = [
         'text/html',
-    # 'application/atom+xml',
-    # 'application/json',
-    # 'application/jwt',
-    # 'application/xml',
     ]
     method_response_codes = [200, 301, 400, 401, 403, 404, 500]
     method_content_types = [
@@ -210,14 +209,6 @@ class Zappa(object):
         # Exclude the zip itself
         exclude.append(zip_path)
 
-        try:
-            import zlib
-            compression_method = zipfile.ZIP_DEFLATED
-        except Exception as e: # pragma: no cover
-            compression_method = zipfile.ZIP_STORED
-
-        zipf = zipfile.ZipFile(zip_path, 'w', compression_method)
-
         def splitpath(path):
             parts = []
             (path, tail) = os.path.split(path)
@@ -229,71 +220,35 @@ class Zappa(object):
         split_venv = splitpath(venv)
 
         # First, do the project..
-        for root, dirs, files in os.walk(cwd, followlinks=True):
-            for filen in files:
-                to_write = os.path.join(root, filen)
+        project_path = tempfile.mkdtemp()
+        project_path = os.path.join(tempfile.gettempdir(), str(int(time.time())))
 
-                # Skip compressed assets, git histories, etc.
-                skip = False
-                for zip_exclude in ZIP_EXCLUDES:
-                    if zip_exclude in to_write:
-                        skip = True
-                if skip:
-                    continue
-
-                # Don't put our package or our entire venv in the package.
-                for pattern in exclude:
-                    if fnmatch.fnmatchcase(to_write, pattern):
-                        break
-                else:
-                    # Don't put the venv in the package..
-                    split_to_write = splitpath(to_write)
-                    if set(split_venv).issubset(set(split_to_write)):
-                        continue
-
-                to_write = to_write.split(cwd + os.sep)[1]
-                zipf.write(to_write)
+        if minify:
+            excludes = ZIP_EXCLUDES + exclude + [split_venv[-1] + '*']
+            shutil.copytree(cwd, project_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
+        else:
+            shutil.copytree(cwd, project_path, symlinks=False)
 
         # Then, do the site-packages..
         # TODO Windows: %VIRTUAL_ENV%\Lib\site-packages
+        package_path = tempfile.mkdtemp()
+        package_path = os.path.join(tempfile.gettempdir(), str(int(time.time() + 1)))
         site_packages = os.path.join(venv, 'lib', 'python2.7', 'site-packages')
-        for root, dirs, files in os.walk(site_packages):
-            for filen in files:
-                to_write = os.path.join(root, filen)
 
-                # There are few things we can do to reduce the filesize
-                if minify:
+        if minify:
+            excludes = ZIP_EXCLUDES + exclude + [split_venv[-1] + '*']
+            shutil.copytree(site_packages, package_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
+        else:
+            shutil.copytree(site_packages, package_path, symlinks=False)
 
-                    # Skip compressed assets, git histories, etc.
-                    skip = False
-                    for zip_exclude in ZIP_EXCLUDES:
-                        if zip_exclude in to_write:
-                            skip = True
-                    if skip:
-                        continue
+        copy_tree(package_path, project_path, update=True)
 
-                    # If there is a .pyc file in this package,
-                    # we can skip the python source code as we'll just
-                    # use the compiled bytecode anyway.
-                    if to_write[-3:] == '.py':
-                        if os.path.isfile(to_write + 'c'):
-                            continue
-
-                    # Our package has already been installed,
-                    # so we can skip the distribution information.
-                    if '.dist-info' in to_write:
-                        continue
-
-                arc_write = to_write.split(site_packages)[1]
-                zipf.write(to_write, arc_write)
-
-        # If a handler_file is supplied, copy that to the root of the zip,
-        # because that's where AWS Lambda looks for it. It can't be inside a package.
-        if handler_file:
-            filename = handler_file.split(os.sep)[-1]
-            zipf.write(handler_file, filename)
-
+        # Then the pre-compiled packages..
         if use_precompiled_packages:
+
+            precompiled_path = tempfile.mkdtemp()
+            precompiled_path = os.path.join(tempfile.gettempdir(), str(int(time.time() + 2)))
+
             installed_packages = pip.get_installed_distributions()
             for package in installed_packages:
                 package_name = package.project_name.lower()
@@ -301,11 +256,39 @@ class Zappa(object):
                     if name.lower() == package_name:
                         tar = tarfile.open(details['path'], mode="r:gz")
                         for member in tar.getmembers():
-                            extracted = tar.extractfile(member)
-                            if extracted: # Sometimes is None
-                                warnings.filterwarnings('ignore', category=UserWarning, append=True)
-                                zipf.writestr(extracted.name, extracted.read())
-                                warnings.filterwarnings('default', category=UserWarning, append=True)
+
+                            # If we can, trash the local version.
+                            if member.isdir():
+                                shutil.rmtree(os.path.join(project_path, member.name), ignore_errors=True)
+                                continue
+
+                            tar.extract(member, project_path)
+
+        # If a handler_file is supplied, copy that to the root of the package,
+        # because that's where AWS Lambda looks for it. It can't be inside a package.
+        if handler_file:
+            filename = handler_file.split(os.sep)[-1]
+            shutil.copy(handler_file, os.path.join(project_path, filename))
+
+        # Then zip it all up..
+        try:
+            import zlib
+            compression_method = zipfile.ZIP_DEFLATED
+        except Exception as e: # pragma: no cover
+            compression_method = zipfile.ZIP_STORED
+
+        zipf = zipfile.ZipFile(zip_path, 'w', compression_method)
+        for root, dirs, files in os.walk(project_path):
+            for filename in files:
+
+                # If there is a .pyc file in this package,
+                # we can skip the python source code as we'll just
+                # use the compiled bytecode anyway.
+                if filename[-3:] == '.py':
+                    if os.path.isfile(os.path.join(root, filename) + 'c'):
+                        continue
+
+                zipf.write(os.path.join(root, filename), os.path.join(root.replace(project_path, ''), filename))
 
         # And, we're done!
         zipf.close()
