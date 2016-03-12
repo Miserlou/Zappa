@@ -217,34 +217,29 @@ class Zappa(object):
         split_venv = splitpath(venv)
 
         # First, do the project..
-        project_path = tempfile.mkdtemp()
-        project_path = os.path.join(tempfile.gettempdir(), str(int(time.time())))
+        temp_project_path = os.path.join(tempfile.gettempdir(), str(int(time.time())))
 
         if minify:
             excludes = ZIP_EXCLUDES + exclude + [split_venv[-1] + '*']
-            shutil.copytree(cwd, project_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
+            shutil.copytree(cwd, temp_project_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
         else:
-            shutil.copytree(cwd, project_path, symlinks=False)
+            shutil.copytree(cwd, temp_project_path, symlinks=False)
 
         # Then, do the site-packages..
         # TODO Windows: %VIRTUAL_ENV%\Lib\site-packages
-        package_path = tempfile.mkdtemp()
-        package_path = os.path.join(tempfile.gettempdir(), str(int(time.time() + 1)))
+        temp_package_path = os.path.join(tempfile.gettempdir(), str(int(time.time() + 1)))
         site_packages = os.path.join(venv, 'lib', 'python2.7', 'site-packages')
 
         if minify:
             excludes = ZIP_EXCLUDES + exclude + [split_venv[-1] + '*']
-            shutil.copytree(site_packages, package_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
+            shutil.copytree(site_packages, temp_package_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
         else:
-            shutil.copytree(site_packages, package_path, symlinks=False)
+            shutil.copytree(site_packages, temp_package_path, symlinks=False)
 
-        copy_tree(package_path, project_path, update=True)
+        copy_tree(temp_package_path, temp_project_path, update=True)
 
         # Then the pre-compiled packages..
         if use_precompiled_packages:
-
-            precompiled_path = tempfile.mkdtemp()
-            precompiled_path = os.path.join(tempfile.gettempdir(), str(int(time.time() + 2)))
 
             installed_packages = pip.get_installed_distributions()
             for package in installed_packages:
@@ -256,16 +251,16 @@ class Zappa(object):
 
                             # If we can, trash the local version.
                             if member.isdir():
-                                shutil.rmtree(os.path.join(project_path, member.name), ignore_errors=True)
+                                shutil.rmtree(os.path.join(temp_project_path, member.name), ignore_errors=True)
                                 continue
 
-                            tar.extract(member, project_path)
+                            tar.extract(member, temp_project_path)
 
         # If a handler_file is supplied, copy that to the root of the package,
         # because that's where AWS Lambda looks for it. It can't be inside a package.
         if handler_file:
             filename = handler_file.split(os.sep)[-1]
-            shutil.copy(handler_file, os.path.join(project_path, filename))
+            shutil.copy(handler_file, os.path.join(temp_project_path, filename))
 
         # Then zip it all up..
         try:
@@ -275,7 +270,7 @@ class Zappa(object):
             compression_method = zipfile.ZIP_STORED
 
         zipf = zipfile.ZipFile(zip_path, 'w', compression_method)
-        for root, dirs, files in os.walk(project_path):
+        for root, dirs, files in os.walk(temp_project_path):
             for filename in files:
 
                 # If there is a .pyc file in this package,
@@ -285,13 +280,13 @@ class Zappa(object):
                     if os.path.isfile(os.path.join(root, filename) + 'c'):
                         continue
 
-                zipf.write(os.path.join(root, filename), os.path.join(root.replace(project_path, ''), filename))
+                zipf.write(os.path.join(root, filename), os.path.join(root.replace(temp_project_path, ''), filename))
 
         # And, we're done!
         zipf.close()
 
         # Trash the temp directory
-        shutil.rmtree(project_path)
+        shutil.rmtree(temp_project_path)
 
         # Warn if this is too large for Lambda.
         file_stats = os.stat(zip_path)
