@@ -203,9 +203,6 @@ class Zappa(object):
         if exclude is None:
             exclude = list()
 
-        # Convert relative patterns to absolute
-        exclude = [os.path.abspath(pattern) for pattern in exclude]
-
         # Exclude the zip itself
         exclude.append(zip_path)
 
@@ -292,6 +289,9 @@ class Zappa(object):
 
         # And, we're done!
         zipf.close()
+
+        # Trash the temp directory
+        shutil.rmtree(project_path)
 
         # Warn if this is too large for Lambda.
         file_stats = os.stat(zip_path)
@@ -554,7 +554,10 @@ class Zappa(object):
 
             template_mapping = TEMPLATE_MAPPING
             post_template_mapping = POST_TEMPLATE_MAPPING
-            content_mapping_templates = {'application/json': template_mapping, 'application/x-www-form-urlencoded': post_template_mapping}
+            content_mapping_templates = {
+                'application/json': template_mapping, 
+                'application/x-www-form-urlencoded': post_template_mapping
+            }
             credentials = self.credentials_arn  # This must be a Role ARN
             uri = 'arn:aws:apigateway:' + self.boto_session.region_name + ':lambda:path/2015-03-31/functions/' + lambda_arn + '/invocations'
 
