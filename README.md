@@ -95,6 +95,5 @@ This project is very young, so there is still plenty to be done. Contributions a
 Things that need work right now:
 
 * Testing
-* Clients for frameworks besides Django
 * Feedback
 * Real documentation / website!
