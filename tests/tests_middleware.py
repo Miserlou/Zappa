@@ -180,7 +180,8 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
         # Call with empty WSGI Environment
         resp = app(dict(), self._start_response)
 
-        self.assertEqual(self.status[0], '301 Moved Permanently')
+        #self.assertEqual(self.status[0], '301 Moved Permanently')
+        self.assertEqual(self.status[0], '200 OK')
 
         # Assert there is only one zappa cookie
         self.assertEqual(len(self.headers), 2)
@@ -193,7 +194,7 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
 
         self.assertEqual(''.join(resp), body)
 
-        # Same as above but with 302
+        # Same as above but with 302f
         def simple_app(environ, start_response):
             status = '302 Found'
             response_headers = [('Location', url),
@@ -207,7 +208,8 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
         # Call with empty WSGI Environment
         resp = app(dict(), self._start_response)
 
-        self.assertEqual(self.status[0], '302 Found')
+        #self.assertEqual(self.status[0], '302 Found')
+        self.assertEqual(self.status[0], '200 OK')
 
         # Assert there is only one zappa cookie
         self.assertEqual(len(self.headers), 2)
@@ -349,9 +351,16 @@ class TestWSGIMiddleWare(unittest.TestCase):
                                       trailing_slash=False)
 
         response = Response.from_app(app, environ)
-        # print "response", response
-        # cookies = dict([x.split('=') for x in response.data.split(';')])
-        # self.assertEqual(cookies['foo'], 'new_value')
-        # self.assertEqual(cookies['bar'], '456')
-        # self.assertEqual(cookies['baz'], '789')
+        print "response", response
+        # Filter the headers for Set-Cookie header
+        zappa_cookie = [x[1] for x in response.headers if x[0] == 'Set-Cookie']
+        self.assertEqual(len(zappa_cookie), 1)
+        zappa_cookie1 = zappa_cookie[0]
+        self.assertTrue(zappa_cookie1.startswith('zappa='))
+        zdict = parse_cookie(zappa_cookie1)
+        print 'zdict', zdict
+        cookies = json.loads(base58.b58decode(zdict['zappa']))
+        self.assertEqual(cookies['foo'], 'new_value')
+        self.assertEqual(cookies['bar'], '456')
+        self.assertEqual(cookies['baz'], '789')
 

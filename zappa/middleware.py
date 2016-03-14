@@ -26,6 +26,7 @@ class ZappaWSGIMiddleware(object):
     request_cookies = {}
 
     start_response = None
+    redirect_content = None
 
     def __init__(self, application):
         self.application = application
@@ -64,26 +65,12 @@ class ZappaWSGIMiddleware(object):
             # No cookies were previously set
             self.request_cookies = dict()
 
-        # Call the wrapped WSGI-application with the modified WSGI environment
-        # and propagate the response to caller
         return ClosingIterator(
             self.application(environ, self.encode_response)
         )
 
-    def decode_zappa_cookie(self, encoded_zappa):
-        """
-        Eat our Zappa cookie.
-        Save the parsed cookies, as we need to send them back on every update.
-
-        """
-
-        self.decoded_zappa = base58.b58decode(encoded_zappa)
-        self.request_cookies = json.loads(self.decoded_zappa)
-        return
-
     def encode_response(self, status, headers, exc_info=None):
         """
-
         Zappa-ify our application response!
 
         This means:
@@ -117,4 +104,35 @@ class ZappaWSGIMiddleware(object):
             ('Set-Cookie', dump_cookie('zappa', value=encoded))
         )
 
-        return self.start_response(status, new_headers, exc_info)
+        # If setting cookie on a 301/2,
+        # return 200 and replace the content with a javascript redirector
+        if status != '200 OK':
+            for key, value in new_headers:
+                if key != 'Location':
+                    continue
+                redirect_content = REDIRECT_HTML.replace('REDIRECT_ME', value)
+                status = '200 OK'
+                break
+
+        self.write = self.start_response(status, new_headers, exc_info)
+        return self.zappa_write
+
+    def zappa_write(self, body_data):
+        """
+        Modify the response body with our redirect injection.
+        """
+        if redirect_content:
+            self.write(redirect_content)
+        else:
+            self.write(body_data)        
+
+    def decode_zappa_cookie(self, encoded_zappa):
+        """
+        Eat our Zappa cookie.
+        Save the parsed cookies, as we need to send them back on every update.
+
+        """
+
+        self.decoded_zappa = base58.b58decode(encoded_zappa)
+        self.request_cookies = json.loads(self.decoded_zappa)
+        return
