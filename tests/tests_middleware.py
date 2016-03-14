@@ -187,6 +187,7 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
         def simple_app(environ, start_response):
             status = '302 Found'
             response_headers = [('Location', url),
+                                ('Derp', 'Max-Squirt'),
                                 ('Set-Cookie', 'foo=456')]
             start_response(status, response_headers)
             return [body]
@@ -199,15 +200,13 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
 
         #self.assertEqual(self.status[0], '302 Found')
         self.assertEqual(self.status[0], '200 OK')
-
-        # Assert there is only one zappa cookie
-        self.assertEqual(len(self.headers), 2)
+        self.assertEqual(len(self.headers), 3)
 
         self.assertEqual(self.headers[0][0], 'Location')
         self.assertEqual(self.headers[0][1], url)
 
-        self.assertEqual(self.headers[1][0], 'Set-Cookie')
-        self.assertTrue(self.headers[1][1].startswith('zappa='))
+        self.assertEqual(self.headers[2][0], 'Set-Cookie')
+        self.assertTrue(self.headers[2][1].startswith('zappa='))
 
         self.assertNotEqual(''.join(resp), body)
 
@@ -246,6 +245,28 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
         resp = app(dict(), self._start_response)
         print(''.join(resp))
 
+    def test_wsgi_middleware_expiry(self):
+        # Setting the cookies
+        def simple_app(environ, start_response):
+            status = '200 OK'
+            response_headers = [('Set-Cookie', 'boss=hogg; Expires=Wed, 09 Jun 2021 10:18:14 GMT;'),
+                                ('Set-Cookie', 'spank=stank; Expires=Wed, 09 Jun 2010 10:18:14 GMT;'),
+                                ('Set-Cookie', 'out=lawz; Expires=Wed, 09 Jun 2001 10:18:14 GMT;')]
+            start_response(status, response_headers)
+            return ['Stale cookies!']
+
+        # Wrap the app with the middleware
+        app = ZappaWSGIMiddleware(simple_app)
+
+        # Call with empty WSGI Environment
+        resp = app(dict(), self._start_response)
+
+        print("hello")
+
+        # Ensure the encoded zappa cookie is set
+        self.assertEqual(self.headers[0][0], 'Set-Cookie')
+        zappa_cookie = self.headers[0][1]
+        self.assertTrue(zappa_cookie.startswith('zappa='))
 
 class TestWSGIMiddleWare(unittest.TestCase):
     """ These tests call the app as it is called in a handler, and can only

@@ -1,5 +1,8 @@
 import base58
+import Cookie
 import json
+import time
+
 from werkzeug.http import parse_cookie, dump_cookie
 from werkzeug.wsgi import ClosingIterator
 
@@ -92,7 +95,7 @@ class ZappaWSGIMiddleware(object):
         new_headers = [(header[0], header[1]) for header in headers if header[0] != 'Set-Cookie']
 
         # Filter the headers for Set-Cookie header
-        cookie_dicts = [parse_cookie(header[1]) for header in headers if header[0] == 'Set-Cookie']
+        cookie_dicts = [{header[1].split('=', 1)[0]:header[1].split('=',1)[1:][0]} for header in headers if header[0] == 'Set-Cookie']
         
         # Flatten cookies_dicts to one dict. If there are multiple occuring
         # cookies, the last one present in the headers wins.
@@ -103,13 +106,34 @@ class ZappaWSGIMiddleware(object):
         for name, value in new_cookies.items():
             self.request_cookies[name] = value
 
+        # Get the oldest expire time, and set the Zappa cookie age to that.
+        # Else, let this be a session cookie.
+        expires = None
+        for name, value in self.request_cookies.items():
+            # Is this Unicode safe?
+            cookie = (name + '=' + value).encode('utf-8')
+            if cookie.count('=') is 1:
+                continue
+
+            kvps = cookie.split(';')
+            for kvp in kvps:
+                kvp = kvp.strip()
+                if 'expires' in kvp or 'Expires' in kvp:
+                    exp = time.strptime(kvp.split('=')[1], "%a, %d %b %Y %H:%M:%S GMT")
+                    if exp > expires:
+                        expires = exp
+                    break
+
         # JSON-ify the cookie and encode it.
         pack_s = json.dumps(self.request_cookies)
         encoded = base58.b58encode(pack_s)
         
         # Set the result as the zappa cookie
         new_headers.append(
-            ('Set-Cookie', dump_cookie('zappa', value=encoded))
+            ('Set-Cookie', dump_cookie('zappa', 
+                        value=encoded, 
+                        expires=expires)
+            )
         )
 
         # If setting cookie on a 301/2,
