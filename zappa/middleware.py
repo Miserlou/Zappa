@@ -27,6 +27,7 @@ class ZappaWSGIMiddleware(object):
 
     start_response = None
     redirect_content = None
+    write = None
 
     def __init__(self, application):
         self.application = application
@@ -65,8 +66,16 @@ class ZappaWSGIMiddleware(object):
             # No cookies were previously set
             self.request_cookies = dict()
 
+        # Call the application with our modifier
+        response = self.application(environ, self.encode_response)
+        
+        # If we have a redirect, smash in our response content.
+        if self.redirect_content:
+            response = [self.redirect_content for item in response]
+
+        # Return the response as a WSGI-safe iterator
         return ClosingIterator(
-            self.application(environ, self.encode_response)
+            response
         )
 
     def encode_response(self, status, headers, exc_info=None):
@@ -110,21 +119,11 @@ class ZappaWSGIMiddleware(object):
             for key, value in new_headers:
                 if key != 'Location':
                     continue
-                redirect_content = REDIRECT_HTML.replace('REDIRECT_ME', value)
+                self.redirect_content = REDIRECT_HTML.replace('REDIRECT_ME', value)
                 status = '200 OK'
                 break
 
-        self.write = self.start_response(status, new_headers, exc_info)
-        return self.zappa_write
-
-    def zappa_write(self, body_data):
-        """
-        Modify the response body with our redirect injection.
-        """
-        if redirect_content:
-            self.write(redirect_content)
-        else:
-            self.write(body_data)        
+        return self.start_response(status, new_headers, exc_info)
 
     def decode_zappa_cookie(self, encoded_zappa):
         """

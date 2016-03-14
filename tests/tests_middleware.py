@@ -192,7 +192,7 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
         self.assertEqual(self.headers[1][0], 'Set-Cookie')
         self.assertTrue(self.headers[1][1].startswith('zappa='))
 
-        self.assertEqual(''.join(resp), body)
+        self.assertNotEqual(''.join(resp), body)
 
         # Same as above but with 302f
         def simple_app(environ, start_response):
@@ -220,7 +220,7 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
         self.assertEqual(self.headers[1][0], 'Set-Cookie')
         self.assertTrue(self.headers[1][1].startswith('zappa='))
 
-        self.assertEqual(''.join(resp), body)
+        self.assertNotEqual(''.join(resp), body)
 
     def test_wsgi_middleware_uglystring(self):
         ugly_string = unicode("˝ÓÔÒÚÆ☃ЗИЙКЛМФХЦЧШ차를 타고 온 펲시맨(╯°□°）╯︵ ┻━┻)"
