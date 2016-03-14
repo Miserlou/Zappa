@@ -23,17 +23,6 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
         self.status[:] = [status]
         self.headers[:] = headers
 
-    def decode_zappa_cookie(self, encoded_zappa):
-        """
-        Eat our Zappa cookie.
-        Save the parsed cookies, as we need to send them back on every update.
-
-        """
-
-        decoded_zappa = base58.b58decode(encoded_zappa)
-        request_cookies = json.loads(decoded_zappa)
-        return request_cookies
-
     def test_wsgi_middleware_multiplecookies(self):
         def simple_app(environ, start_response):
             status = '200 OK'

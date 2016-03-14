@@ -27,7 +27,6 @@ class ZappaWSGIMiddleware(object):
 
     start_response = None
     redirect_content = None
-    write = None
 
     def __init__(self, application):
         self.application = application
@@ -93,7 +92,7 @@ class ZappaWSGIMiddleware(object):
         new_headers = [(header[0], header[1]) for header in headers if header[0] != 'Set-Cookie']
 
         # Filter the headers for Set-Cookie header
-        cookie_dicts = [parse_cookie(x[1]) for x in headers if x[0] == 'Set-Cookie']
+        cookie_dicts = [parse_cookie(header[1]) for header in headers if header[0] == 'Set-Cookie']
         
         # Flatten cookies_dicts to one dict. If there are multiple occuring
         # cookies, the last one present in the headers wins.
