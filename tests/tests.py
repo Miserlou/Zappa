@@ -253,13 +253,14 @@ class TestZappa(unittest.TestCase):
                 "CloudFront-Is-Tablet-Viewer": "false",
                 "X-Forwarded-Port": "443",
                 "CloudFront-Is-Mobile-Viewer": "false",
-                "CloudFront-Is-Desktop-Viewer": "true"
+                "CloudFront-Is-Desktop-Viewer": "true",
+                "Content-Type": "application/json"
             },
             "params": {
                 "parameter_1": "asdf1",
                 "parameter_2": "asdf2",
             },
-            "method": "GET",
+            "method": "POST",
             "query": {
                 "dead": "beef"
             }
@@ -298,6 +299,9 @@ class TestZappa(unittest.TestCase):
         self.assertEqual("/asdf1/asdf2/", request['PATH_INFO'])
 
         request = create_wsgi_request(event, trailing_slash=False)
+        self.assertEqual("/asdf1/asdf2", request['PATH_INFO'])
+
+        request = create_wsgi_request(event, trailing_slash=False, script_name='asdf1')
         self.assertEqual("/asdf1/asdf2", request['PATH_INFO'])
 
     def test_wsgi_logging(self):

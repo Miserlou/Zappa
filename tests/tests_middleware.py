@@ -82,7 +82,7 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
 
         # Assert that the simple_app, received the decoded cookies
         excpected = {'foo': '123', 'bar': '456', 'baz': '789'}
-        received = json.loads(''.join(resp))
+        received = parse_cookie(''.join(resp))
         self.assertDictEqual(received, excpected)
 
     def test_wsgi_middleware_cookieoverwrite(self):
@@ -98,7 +98,7 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
             status = '200 OK'
             response_headers = [('Set-Cookie', 'foo=123'),
                                 ('Set-Cookie', 'bar=456'),
-                                ('Set-Cookie', 'baz=789')]
+                                ('Set-Cookie', 'baz=789; Expires=Wed, 09 Jun 2001 10:18:14 GMT;')]
             start_response(status, response_headers)
             return ['Set cookies!']
 
@@ -142,13 +142,13 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
 
         # Assert that read_cookies received the corrected decoded cookies
         excpected = {'foo': 'sdf', 'bar': '456', 'baz': 'jkl'}
-        received = json.loads(''.join(resp))
+        received = parse_cookie(''.join(resp))
+
         self.assertDictEqual(received, excpected)
 
         # Call the app with the encoded cookie in the environment
         resp = app({'HTTP_COOKIE': zappa_cookie}, self._start_response)
-
-        received = json.loads(''.join(resp))
+        received = parse_cookie(''.join(resp))
         self.assertDictEqual(received, excpected)
 
     def test_wsgi_middleware_redirect(self):
@@ -260,8 +260,6 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
 
         # Call with empty WSGI Environment
         resp = app(dict(), self._start_response)
-
-        print("hello")
 
         # Ensure the encoded zappa cookie is set
         self.assertEqual(self.headers[0][0], 'Set-Cookie')

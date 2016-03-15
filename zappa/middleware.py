@@ -62,8 +62,13 @@ class ZappaWSGIMiddleware(object):
         if 'zappa' in parsed:
             # Save the parsed cookies. We need to send them back on every update.
             self.decode_zappa_cookie(parsed['zappa'])
+
+            # Since the client doesn't know it has old cookies,
+            # manual expire them.
+            self.filter_expired_cookies()
+
             # Set the WSGI environment cookie to be the decoded value.
-            environ[u'HTTP_COOKIE'] = self.decoded_zappa
+            environ[u'HTTP_COOKIE'] = self.cookie_environ_string()
         else:
             # No cookies were previously set
             self.request_cookies = dict()
@@ -158,3 +163,29 @@ class ZappaWSGIMiddleware(object):
         self.decoded_zappa = base58.b58decode(encoded_zappa)
         self.request_cookies = json.loads(self.decoded_zappa)
         return
+
+    def filter_expired_cookies(self):
+        """
+        Remove any expired cookies from our internal state.
+
+        """
+
+        now = time.gmtime() # GMT as struct_time
+        for name, value in self.request_cookies.items():
+            cookie = (name + '=' + value).encode('utf-8')
+            if cookie.count('=') is 1:
+                continue
+
+            kvps = cookie.split(';')
+            for kvp in kvps:
+                kvp = kvp.strip()
+                if 'expires' in kvp or 'Expires' in kvp:
+                    exp = time.strptime(kvp.split('=')[1], "%a, %d %b %Y %H:%M:%S GMT")
+                    if exp < now:
+                        del(self.request_cookies[name])
+
+    def cookie_environ_string(self):
+        """
+        Return the current set of cookies as a string for the HTTP_COOKIE environ.
+        """
+        return ';'.join([key + '=' + value for key, value in self.request_cookies.items()])

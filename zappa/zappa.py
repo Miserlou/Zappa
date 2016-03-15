@@ -452,7 +452,7 @@ class Zappa(object):
             print("Failed to get version {} of {} code".format(versions_back, function_name))
             return False
 
-        response = client.update_function_code(FunctionName=function_name, ZipFile=response.content, Publish=publish)
+        response = client.update_function_code(FunctionName=function_name, ZipFile=response.content, Publish=publish) # pragma: no cover
 
         return response['FunctionArn']
 
@@ -522,7 +522,7 @@ class Zappa(object):
             resource_id = response['id']
             parent_id = resource_id
 
-            self.create_and_setup_methods(api_id, resource_id, lambda_arn, progress.update)
+            self.create_and_setup_methods(api_id, resource_id, lambda_arn, progress.update) # pragma: no cover
 
         return api_id
 
