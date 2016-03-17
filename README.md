@@ -86,6 +86,7 @@ Zappa goes quite far beyond what Lambda and API Gateway were ever intended to ha
 
 * [zappa.gun.io](https://zappa.gun.io) - A Zappa "Hello, World" (real homepage coming.. soon..)
 * [spheres.gun.io](https://spheres.gun.io)  - Spheres, a photosphere host and viewer
+* [Mailchimp Signup Utility](https://github.com/sasha42/Mailchimp-utility) - A microservice for adding people to a mailing list via API. 
 * Your site here? 
 
 ## TODO
