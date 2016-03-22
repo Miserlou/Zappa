@@ -123,7 +123,7 @@ class ZappaWSGIMiddleware(object):
             kvps = cookie.split(';')
             for kvp in kvps:
                 kvp = kvp.strip()
-                if 'expires' in kvp or 'Expires' in kvp:
+                if 'expires' in kvp.lower():
                     exp = time.strptime(kvp.split('=')[1], "%a, %d %b %Y %H:%M:%S GMT")
                     if exp > expires:
                         expires = exp
@@ -168,6 +168,9 @@ class ZappaWSGIMiddleware(object):
         """
         Remove any expired cookies from our internal state.
 
+        The browser may send expired cookies, because it does not parse the
+        the ZappaCookie into its constituent parts.
+
         """
 
         now = time.gmtime() # GMT as struct_time
@@ -179,7 +182,7 @@ class ZappaWSGIMiddleware(object):
             kvps = cookie.split(';')
             for kvp in kvps:
                 kvp = kvp.strip()
-                if 'expires' in kvp or 'Expires' in kvp:
+                if 'expires' in kvp.lower():
                     exp = time.strptime(kvp.split('=')[1], "%a, %d %b %Y %H:%M:%S GMT")
                     if exp < now:
                         del(self.request_cookies[name])
