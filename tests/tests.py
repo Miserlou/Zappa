@@ -10,6 +10,7 @@ import unittest
 
 from .utils import placebo_session
 
+from zappa.handler import LambdaHandler
 from zappa.wsgi import create_wsgi_request, common_log
 from zappa.zappa import Zappa, ASSUME_POLICY, ATTACH_POLICY
 
@@ -320,6 +321,24 @@ class TestZappa(unittest.TestCase):
         response = response_tuple(200, 'hello')
         le = common_log(environ, response, response_time=True)
         le = common_log(environ, response, response_time=False)
+
+    ##
+    # Handler
+    ##
+
+    def test_handler(self):
+        lambda_handler = LambdaHandler('test_settings')
+        event = {
+            "body": {},
+            "headers": {},
+            "params": {
+                "parameter_1": "asdf1",
+                "parameter_2": "asdf2",
+            },
+            "method": "GET",
+            "query": {}
+        }
+        lambda_handler.handler(event, None)
 
 
 if __name__ == '__main__':
