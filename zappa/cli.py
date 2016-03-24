@@ -52,7 +52,7 @@ class ZappaCLI(object):
     vpc_config = None
     memory_size = None
 
-    def main(self):
+    def handle(self):
         """
         Main function.
 
@@ -68,6 +68,7 @@ class ZappaCLI(object):
         vargs = vars(args)
         if not any(vargs.values()):
             parser.error('Please supply a command to execute.')
+            return
 
         # Parse the input
         command_env = vargs['command_env']
@@ -362,10 +363,10 @@ class ZappaCLI(object):
 # Main
 ####################################################################
 
-if __name__ == '__main__':
+if __name__ == '__main__': #pragma: nocover
     try:
         cli = ZappaCLI()
-        sys.exit(cli.main())
+        sys.exit(cli.handle())
     except Exception as e:
         print(e)
 

@@ -10,6 +10,7 @@ import unittest
 
 from .utils import placebo_session
 
+from zappa.cli import ZappaCLI
 from zappa.handler import LambdaHandler
 from zappa.wsgi import create_wsgi_request, common_log
 from zappa.zappa import Zappa, ASSUME_POLICY, ATTACH_POLICY
@@ -340,6 +341,40 @@ class TestZappa(unittest.TestCase):
         }
         lambda_handler.handler(event, None)
 
+    ##
+    # CLI
+    ##
+
+    def test_cli_sanity(self):
+        zappa_cli = ZappaCLI()
+        return
+
+    def test_cli_utility(self):
+        zappa_cli = ZappaCLI()
+        zappa_cli.slugify('C:/derp/herp')
+        zappa_cli.api_stage = 'test'
+        zappa_cli.load_settings('test_settings.json')
+        zappa_cli.create_package()
+        zappa_cli.remove_local_zip()
+        logs = [
+            {
+                'timestamp': '12345',
+                'message': '[START RequestId] test'
+            },
+            {
+                'timestamp': '12345',
+                'message': '[REPORT RequestId] test'
+            },
+            {
+                'timestamp': '12345',
+                'message': '[END RequestId] test'
+            },
+            {
+                'timestamp': '12345',
+                'message': 'test'
+            }
+        ]
+        zappa_cli.print_logs(logs)
 
 if __name__ == '__main__':
     unittest.main()
