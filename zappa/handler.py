@@ -30,12 +30,16 @@ class LambdaHandler(object):
 
     def __new__(cls, settings_name="zappa_settings"):
         """Singleton instance to avoid repeat setup"""
+        print "NEW ING.."
+
         if LambdaHandler.__instance is None:
             LambdaHandler.__instance = object.__new__(cls)
         return LambdaHandler.__instance
 
     def __init__(self, settings_name="zappa_settings"):
         # Loading settings from a python module
+
+        print "IMPORTING.."
         self.settings = importlib.import_module(settings_name)
         self.settings_name = settings_name
 
@@ -56,8 +60,10 @@ class LambdaHandler(object):
         # The app module
         app_module = importlib.import_module(settings.APP_MODULE)
 
+
         # The application
         app_function = getattr(app_module, settings.APP_FUNCTION)
+
         app = ZappaWSGIMiddleware(app_function)
 
         # This is a normal HTTP request
@@ -71,7 +77,7 @@ class LambdaHandler(object):
                     return {'Content': str(event) + '\n' + str(context), 'Status': 200}
 
             # Create the environment for WSGI and handle the request
-            environ = create_wsgi_request(event, script_name=settings.SCRIPT_NAME,
+            environ = create_wsgi_request(event, script_name='',
                                           trailing_slash=False)
 
             # We are always on https on Lambda, so tell our wsgi app that.
@@ -113,4 +119,5 @@ class LambdaHandler(object):
                 return zappa_returndict
 
 def lambda_handler(event, context):
+    print "HANDLING.."
     return LambdaHandler.lambda_handler(event, context)
