@@ -8,9 +8,9 @@
 [![Coverage](https://img.shields.io/coveralls/Miserlou/Zappa.svg)](https://coveralls.io/github/Miserlou/Zappa) 
 [![Slack](https://img.shields.io/badge/chat-slack-ff69b4.svg)](https://slackautoinviter.herokuapp.com/)
 
-Zappa makes it super easy to deploy all Python WSGI applications on AWS Lambda + API Gateway. Think of it as "serverless" web hosting for your Python web apps.
+**Zappa** makes it super easy to deploy all Python WSGI applications on AWS Lambda + API Gateway. Think of it as "serverless" web hosting for your Python web apps. It's great for building server microservices with Flask, and for hosting larger web apps and CMSes with Django.  
 
-That means:
+Using **Zappa** means:
 
 * **No more** tedious web server configuration!
 * **No more** paying for 24/7 server uptime!
@@ -19,7 +19,7 @@ That means:
 
 __Awesome!__
 
-This project is for the Zappa core library, which can be used by any WSGI-compatible web framework (which is pretty much all of them.) This library also handles:
+This project is for the Zappa core library and utility, which can be used by any WSGI-compatible web framework (which is pretty much all of them.) This library also handles:
 
 * Packaging projects into Lambda-ready zip files and uploading them to S3
 * Correctly setting up IAM roles and permissions

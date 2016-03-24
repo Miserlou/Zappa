@@ -30,16 +30,14 @@ class LambdaHandler(object):
 
     def __new__(cls, settings_name="zappa_settings"):
         """Singleton instance to avoid repeat setup"""
-        print "NEW ING.."
 
         if LambdaHandler.__instance is None:
             LambdaHandler.__instance = object.__new__(cls)
         return LambdaHandler.__instance
 
     def __init__(self, settings_name="zappa_settings"):
+        
         # Loading settings from a python module
-
-        print "IMPORTING.."
         self.settings = importlib.import_module(settings_name)
         self.settings_name = settings_name
 
@@ -119,5 +117,4 @@ class LambdaHandler(object):
                 return zappa_returndict
 
 def lambda_handler(event, context):
-    print "HANDLING.."
     return LambdaHandler.lambda_handler(event, context)
