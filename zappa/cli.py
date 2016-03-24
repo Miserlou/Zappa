@@ -1,0 +1,371 @@
+#! /usr/bin/env python
+"""
+
+Zappa CLI
+
+Deploy arbitrary Python programs as serverless Zappa applications.
+
+"""
+
+from __future__ import unicode_literals
+
+import argparse
+import inspect
+import json
+import os
+import re
+import requests
+import sys
+import unicodedata
+import zipfile
+
+from zappa import Zappa
+
+CUSTOM_SETTINGS = [
+    'aws_region',
+    'delete_zip',
+    'exclude',
+    'http_methods',
+    'integration_response_codes',
+    'method_response_codes',
+    'parameter_depth',
+    'role_name',
+    'touch',
+]
+
+##
+# Main Input Processing
+##
+
+class ZappaCLI(object):
+
+    # Zappa settings
+    zappa = None
+    zappa_settings = None
+
+    api_stage = None
+    project_name = None
+    lambda_name = None
+    s3_bucket_name = None
+    settings_file = None
+    zip_path = None
+    vpc_config = None
+    memory_size = None
+
+    def main(self):
+        """
+        Main function.
+
+        Parses command, load settings and dispatches accordingly.
+
+        """
+        # Set
+        parser = argparse.ArgumentParser(description='Zappa - Deploy Python applications to AWS Lambda and API Gateway.\n')
+        parser.add_argument('command_env', metavar='U', type=str, nargs='*',
+                       help="Command to execute. Can be one of 'deploy', 'update', 'tail', rollback', 'invoke'.")
+
+        args = parser.parse_args()
+        vargs = vars(args)
+        if not any(vargs.values()):
+            parser.error('Please supply a command to execute.')
+
+        # Parse the input
+        command_env = vargs['command_env']
+        command = command_env[0]
+        self.api_stage = command_env[1]
+
+        # Load our settings
+        self.load_settings()
+
+        # Hand it off
+        if command == 'deploy':
+            self.deploy()
+        elif command == 'update':
+            self.update()
+        elif command == 'rollback':
+            self.rollback()
+        elif command == 'invoke':
+            self.invoke()
+        elif command == 'tail':
+            self.tail()
+        else:
+            print("The command '%s' is not recognized." % command)
+            return
+
+    ##
+    # The Commands
+    ##
+
+    def deploy(self):
+        """
+        Package your project, upload it to S3, register the Lambda function
+        and create the API Gateway routes.
+
+        """
+
+        # Load your AWS credentials from ~/.aws/credentials
+        self.zappa.load_credentials()
+
+        # Make sure the necessary IAM execution roles are available
+        self.zappa.create_iam_roles()
+
+        # Create the Lambda Zip
+        self.create_package()
+
+        # Upload it to S3
+        try:
+            zip_arn = self.zappa.upload_to_s3(
+                self.zip_path, self.s3_bucket_name)
+        except (KeyboardInterrupt, SystemExit):
+            raise
+
+        # Register the Lambda function with that zip as the source
+        # You'll also need to define the path to your lambda_handler code.
+        lambda_arn = self.zappa.create_lambda_function(bucket=self.s3_bucket_name,
+                                                       s3_key=self.zip_path,
+                                                       function_name=self.lambda_name,
+                                                       handler='handler.lambda_handler',
+                                                       vpc_config=self.vpc_config,
+                                                       memory_size=self.memory_size)
+
+        # Create and configure the API Gateway
+        api_id = self.zappa.create_api_gateway_routes(
+            lambda_arn, self.lambda_name)
+
+        # Deploy the API!
+        endpoint_url = self.zappa.deploy_api_gateway(api_id, self.api_stage)
+
+        # Finally, delete the local copy our zip package
+        if self.zappa_settings[self.api_stage].get('delete_zip', True):
+            os.remove(self.zip_path)
+
+        # Remove the uploaded zip from S3, because it is now registered..
+        self.zappa.remove_from_s3(self.zip_path, self.s3_bucket_name)
+
+        if self.zappa_settings[self.api_stage].get('touch', True):
+            requests.get(endpoint_url)
+
+        print("Your Zappa deployment is live!: " + endpoint_url)
+
+        return
+
+    def update(self):
+        """
+        Repackage and update the function code.
+        """
+
+        # Load your AWS credentials from ~/.aws/credentials
+        self.zappa.load_credentials()
+
+        # Create the Lambda Zip,
+        self.create_package()
+
+        # Upload it to S3
+        self.zappa.upload_to_s3(self.zip_path, self.s3_bucket_name)
+
+        # Register the Lambda function with that zip as the source
+        # You'll also need to define the path to your lambda_handler code.
+        lambda_arn = self.zappa.update_lambda_function(
+            self.s3_bucket_name, self.zip_path, self.lambda_name)
+
+        # Remove the uploaded zip from S3, because it is now registered..
+        self.zappa.remove_from_s3(self.zip_path, self.s3_bucket_name)
+
+        # Finally, delete the local copy our zip package
+        if self.zappa_settings[self.api_stage].get('delete_zip', True):
+            os.remove(self.zip_path)
+
+        print("Your updated Zappa deployment is live!")
+
+        return
+
+    def rollback(self):
+        return
+
+    def invoke(self):
+        return
+
+    def tail(self):
+        """
+        Tail this function's logs.
+
+        """
+
+        # Load your AWS credentials from ~/.aws/credentials
+        self.zappa.load_credentials()
+
+        try:
+            # Tail the available logs
+            all_logs = self.zappa.fetch_logs(self.lambda_name)
+            self.print_logs(all_logs)
+
+            # Keep polling, and print any new logs.
+            while True:
+                all_logs_again = self.zappa.fetch_logs(self.lambda_name)
+                new_logs = []
+                for log in all_logs_again:
+                    if log not in all_logs:
+                        new_logs.append(log)
+
+                self.print_logs(new_logs)
+                all_logs = all_logs + new_logs
+        except KeyboardInterrupt:
+            # Die gracefully
+            try:
+                sys.exit(0)
+            except SystemExit:
+                os._exit(0)
+
+
+    ##
+    # Utility
+    ##
+
+    def load_settings(self, settings_file="zappa_settings.json"):
+        """
+        Load the local zappa_settings.py file. 
+
+        Returns the loaded Zappa object.
+        """
+
+        # Ensure we're passesd a valid settings file.
+        if not os.path.isfile(settings_file):
+            print("Please configure your zappa_settings file.")
+            quit()
+
+        # Load up file
+        try:
+            with open(settings_file) as json_file:
+                self.zappa_settings = json.load(json_file)
+        except Exception as e:
+            print("Problem parsing settings file.")
+            print(e)
+            quit()
+
+        # Make sure that this environment is our settings
+        if self.api_stage not in self.zappa_settings.keys():
+            print("Please define '%s' in your Zappa settings." % self.api_stage)
+            quit()
+
+        # We need a working title for this project. Use one if supplied, else cwd dirname.
+        if 'project_name' in self.zappa_settings[self.api_stage]:
+            self.project_name = self.zappa_settings[self.api_stage]['project_name']
+        else:
+            self.project_name = self.slugify(os.getcwd().split(os.sep)[-1])
+
+        # The name of the actual AWS Lambda function, ex, 'helloworld-dev'
+        self.lambda_name = self.project_name + '-' + self.api_stage
+
+        # Load environment-specific settings
+        self.s3_bucket_name = self.zappa_settings[self.api_stage]['s3_bucket']
+        self.vpc_config = self.zappa_settings[
+            self.api_stage].get('vpc_config', {})
+        self.memory_size = self.zappa_settings[
+            self.api_stage].get('memory_size', 512)
+        self.settings_file = self.zappa_settings[
+            self.api_stage]['settings_file']
+        if '~' in self.settings_file:
+            self.settings_file = self.settings_file.replace(
+                '~', os.path.expanduser('~'))
+        if not os.path.isfile(self.settings_file):
+            print("Please make sure your settings_file is properly defined.")
+            quit()
+
+        # Create an Zappa object..
+        self.zappa = Zappa()
+
+        # ..and configure it
+        for setting in CUSTOM_SETTINGS:
+            if self.zappa_settings[self.api_stage].has_key(setting):
+                setattr(self.zappa, setting, self.zappa_settings[
+                        self.api_stage][setting])        
+
+        return self.zappa
+
+    def create_package(self):
+        """
+        Ensure that the package can be properly configured,
+        and then create it.
+
+        """
+
+        # Create the Lambda zip package (includes project and virtualenvironment)
+        # Also define the path the handler file so it can be copied to the zip
+        # root for Lambda.
+        current_file = os.path.dirname(os.path.abspath(
+            inspect.getfile(inspect.currentframe())))
+        handler_file = os.sep.join(current_file.split(os.sep)[0:]) + os.sep + 'handler.py'
+
+        # Create the zip file
+        self.zip_path = self.zappa.create_lambda_zip(
+                self.lambda_name,
+                handler_file=handler_file,
+                use_precompiled_packages=self.zappa_settings.get('use_precompiled_packages', True),
+                exclude=self.zappa_settings.get('exclude', [])
+            )
+
+        # Throw our setings into it
+        with zipfile.ZipFile(self.zip_path, 'a') as lambda_zip:
+            lambda_zip.write(self.settings_file, 'zappa_settings.py')
+            lambda_zip.close()
+
+        return
+
+    def remove_local_zip(self):
+        """
+        Remove our local zip file.
+        """
+
+        if self.zappa_settings[self.api_stage].get('delete_zip', True):
+            os.remove(self.zip_path)
+
+    def remove_uploaded_zip(self):
+        """
+        Remove the local and S3 zip file after uploading and updating.
+        """
+
+        # Remove the uploaded zip from S3, because it is now registered..
+        self.zappa.remove_from_s3(self.zip_path, self.s3_bucket_name)
+
+        # Finally, delete the local copy our zip package
+        self.remove_local_zip()
+
+    def slugify(self, value):
+        """
+        
+        Converts to lowercase, removes non-word characters (alphanumerics and
+        underscores) and converts spaces to hyphens. Also strips leading and
+        trailing whitespace.
+
+        Stolen from Django.
+
+        """
+        value = unicodedata.normalize('NFKD', u'' + value).encode('ascii', 'ignore').decode('ascii')
+        value = re.sub('[^\w\s-]', '', value).strip().lower()
+        return re.sub('[-\s]+', '-', value)
+
+    def print_logs(self, logs):
+
+        for log in logs:
+            timestamp = log['timestamp']
+            message = log['message']
+            if "START RequestId" in message:
+                continue
+            if "REPORT RequestId" in message:
+                continue
+            if "END RequestId" in message:
+                continue
+
+            print("[" + str(timestamp) + "] " + message.strip())
+
+####################################################################
+# Main
+####################################################################
+
+if __name__ == '__main__':
+    try:
+        cli = ZappaCLI()
+        sys.exit(cli.main())
+    except Exception as e:
+        print(e)
+

@@ -7,19 +7,23 @@ from urllib import urlencode
 from StringIO import StringIO
 from werkzeug.wrappers import Response
 
-from .wsgi import create_wsgi_request
-from .middleware import ZappaWSGIMiddleware
+# This file may be copied into a project's root,
+# so handle both scenarios.
+try:
+    from zappa.wsgi import create_wsgi_request
+    from zappa.middleware import ZappaWSGIMiddleware
+except ImportError as e: # pragma: no cover
+    from .wsgi import create_wsgi_request
+    from .middleware import ZappaWSGIMiddleware
 
 here_dir = os.path.abspath(os.path.dirname(__file__))
 
 
 class LambdaHandler(object):
     """
-
     Singleton for avoiding duplicate setup.
 
     Pattern provided by @benbangert.
-
     """
 
     __instance = None
@@ -107,3 +111,6 @@ class LambdaHandler(object):
                 raise Exception(location)
             else:
                 return zappa_returndict
+
+def lambda_handler(event, context):
+    return LambdaHandler.lambda_handler(event, context)
