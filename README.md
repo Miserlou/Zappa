@@ -2,7 +2,7 @@
   <img src="http://i.imgur.com/oePnHJn.jpg" alt="Zappa Rocks!"/>
 </p>
 
-## Zappa - Serverless Python Web Services 
+# Zappa - Serverless Python Web Services 
 
 [![Build Status](https://travis-ci.org/Miserlou/Zappa.svg)](https://travis-ci.org/Miserlou/Zappa)
 [![Coverage](https://img.shields.io/coveralls/Miserlou/Zappa.svg)](https://coveralls.io/github/Miserlou/Zappa) 
@@ -82,20 +82,20 @@ to change Zappa"s behavior. Use these at your own risk!
 ```javascript
  {
     "dev": {
-        "aws_region": "us-east-1", # AWS Region (default US East),
-        "domain": "yourapp.yourdomain.com", # Required if you"re using a domain
-        "http_methods": ["GET", "POST"], # HTTP Methods to route,
-        "integration_response_codes": [200, 301, 404, 500], # Integration response status codes to route
-        "memory_size": 512, # Lambda function memory in MB
-        "method_response_codes": [200, 301, 404, 500], # Method response status codes to route
-        "parameter_depth": 10, # Size of URL depth to route. Defaults to 5.
-        "role_name": "MyLambdaRole", # Lambda execution Role
-        "s3_bucket": "dev-bucket", # Zappa zip bucket,
-        "settings_file": "~/Projects/MyApp/settings/dev_settings.py", # Server side settings file location,
-        "touch": false, # GET the production URL upon initial deployment (default True)
-        "use_precompiled_packages": false, # If possible, use C-extension packages which have been pre-compiled for AWS Lambda
-        "vpc_config": { # Optional VPC configuration for Lambda function
-            "SubnetIds": [ "subnet-12345678" ], # Note: not all availability zones support Lambda!
+        "aws_region": "us-east-1", // AWS Region (default US East),
+        "domain": "yourapp.yourdomain.com", // Required if you're using a domain
+        "http_methods": ["GET", "POST"], // HTTP Methods to route,
+        "integration_response_codes": [200, 301, 404, 500], // Integration response status codes to route
+        "memory_size": 512, // Lambda function memory in MB
+        "method_response_codes": [200, 301, 404, 500], // Method response status codes to route
+        "parameter_depth": 10, / Size of URL depth to route. Defaults to 5.
+        "role_name": "MyLambdaRole", // Lambda execution Role
+        "s3_bucket": "dev-bucket", // Zappa zip bucket,
+        "settings_file": "~/Projects/MyApp/settings/dev_settings.py", // Server side settings file location,
+        "touch": false, // GET the production URL upon initial deployment (default True)
+        "use_precompiled_packages": false, // If possible, use C-extension packages which have been pre-compiled for AWS Lambda
+        "vpc_config": { // Optional VPC configuration for Lambda function
+            "SubnetIds": [ "subnet-12345678" ], // Note: not all availability zones support Lambda!
             "SecurityGroupIds": [ "sg-12345678" ]
         }
     }
