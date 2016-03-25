@@ -36,7 +36,7 @@ class LambdaHandler(object):
         return LambdaHandler.__instance
 
     def __init__(self, settings_name="zappa_settings"):
-        
+
         # Loading settings from a python module
         self.settings = importlib.import_module(settings_name)
         self.settings_name = settings_name
@@ -116,5 +116,5 @@ class LambdaHandler(object):
             else:
                 return zappa_returndict
 
-def lambda_handler(event, context):
+def lambda_handler(event, context): # pragma: no cover
     return LambdaHandler.lambda_handler(event, context)

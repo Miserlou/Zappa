@@ -89,7 +89,7 @@ class ZappaCLI(object):
         elif command == 'update':
             self.update()
         elif command == 'rollback':
-            if vargs['num_rollback'] < 1:
+            if vargs['num_rollback'] < 1: # pragma: no cover
                 parser.error("Please enter the number of iterations to rollback.")
                 return                
             self.rollback(vargs['num_rollback'])
@@ -97,7 +97,7 @@ class ZappaCLI(object):
             self.invoke()
         elif command == 'tail':
             self.tail()
-        else:
+        else: # pragma: no cover
             print("The command '%s' is not recognized." % command)
             return
 
@@ -238,7 +238,7 @@ class ZappaCLI(object):
         # Ensure we're passesd a valid settings file.
         if not os.path.isfile(settings_file):
             print("Please configure your zappa_settings file.")
-            quit()
+            quit() # pragma: no cover
 
         # Load up file
         try:
@@ -247,15 +247,15 @@ class ZappaCLI(object):
         except Exception as e:
             print("Problem parsing settings file.")
             print(e)
-            quit()
+            quit() # pragma: no cover
 
         # Make sure that this environment is our settings
         if self.api_stage not in self.zappa_settings.keys():
             print("Please define '%s' in your Zappa settings." % self.api_stage)
-            quit()
+            quit() # pragma: no cover
 
         # We need a working title for this project. Use one if supplied, else cwd dirname.
-        if 'project_name' in self.zappa_settings[self.api_stage]:
+        if 'project_name' in self.zappa_settings[self.api_stage]: # pragma: no cover
             self.project_name = self.zappa_settings[self.api_stage]['project_name']
         else:
             self.project_name = self.slugify(os.getcwd().split(os.sep)[-1])

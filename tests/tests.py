@@ -11,7 +11,7 @@ import unittest
 from .utils import placebo_session
 
 from zappa.cli import ZappaCLI
-from zappa.handler import LambdaHandler
+from zappa.handler import LambdaHandler, lambda_handler
 from zappa.wsgi import create_wsgi_request, common_log
 from zappa.zappa import Zappa, ASSUME_POLICY, ATTACH_POLICY
 
@@ -328,7 +328,7 @@ class TestZappa(unittest.TestCase):
     ##
 
     def test_handler(self):
-        lambda_handler = LambdaHandler('test_settings')
+        lh = LambdaHandler('test_settings')
         event = {
             "body": {},
             "headers": {},
@@ -339,7 +339,7 @@ class TestZappa(unittest.TestCase):
             "method": "GET",
             "query": {}
         }
-        lambda_handler.handler(event, None)
+        lh.handler(event, None)
 
     ##
     # CLI
