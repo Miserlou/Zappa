@@ -40,31 +40,20 @@ If you're looking for Django-specific integration, you should probably check out
 
 Next, you'll need to define your local and server-side settings.
 
-#### Local Settings
+#### Settings
 
-First, you'll need to define a few local settings for your Zappa deployment environments in a file named *zappa_settings.json* in your project directory. The simplest example is:
+Next, you'll need to define a few settings for your Zappa deployment environments in a file named *zappa_settings.json* in your project directory. The simplest example is:
 
 ```javascript
 {
-    "prod": { // The name of your environment
-       "s3_bucket": "lmbda", // The name of your S3 Bucket
-       "settings_file": "prod_settings.py" // Path to your remote settings file
+    "dev": { // The name of your environment
+       "s3_bucket": "lmbda", // The name of your S3 bucket
+       "app_function": "your_module.app" // The python path to your WSGI application function. In Flask, this is your 'app' object.
     }
 }
 ```
 
-You can define as many environments as your like - we recommend having a _dev_, _staging_, and _production_.
-
-#### Remote Settings
-
-Next, you'll need to define the settings for remote environment in the *settings_file*. The simplest example of this is:
-
-```python
-APP_MODULE = 'your_module' # The path to the module
-APP_FUNCTION = 'app' # The WSGI function (or a function that returns it)
-```
-
-If you have a Flask application, this will likely point to your Flask 'app', but you can point this to any WSGI function.
+You can define as many environments as your like - we recommend having _dev_, _staging_, and _production_.
 
 Now, you're ready to deploy!
 

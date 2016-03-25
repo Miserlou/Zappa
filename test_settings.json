@@ -1,7 +1,7 @@
 {
     "ttt333": {
        "s3_bucket": "lmbda",
-       "settings_file": "test_settings.py",
+       "app_function": "tests.test_app.hello_world",
        "delete_zip": true 
     }
 }

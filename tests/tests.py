@@ -376,8 +376,6 @@ class TestZappa(unittest.TestCase):
         ]
         zappa_cli.print_logs(logs)
 
-    # WHY WONT PLACEBO RECORD THIS??
-    # Gahhhhh
     @placebo_session
     def test_cli_aws(self, session):
         zappa_cli = ZappaCLI()
