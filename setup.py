@@ -31,7 +31,7 @@ setup(
     author_email='rich@openwatch.net',
     entry_points={
         'console_scripts': [
-            'soundscrape = zappa.cli:main',
+            'zappa=zappa.cli:handle',
         ]
     },
     classifiers=[
