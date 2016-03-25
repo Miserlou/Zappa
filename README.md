@@ -2,7 +2,7 @@
   <img src="http://i.imgur.com/oePnHJn.jpg" alt="Zappa Rocks!"/>
 </p>
 
-### Zappa - Serverless Python Web Services 
+## Zappa - Serverless Python Web Services 
 
 [![Build Status](https://travis-ci.org/Miserlou/Zappa.svg)](https://travis-ci.org/Miserlou/Zappa)
 [![Coverage](https://img.shields.io/coveralls/Miserlou/Zappa.svg)](https://coveralls.io/github/Miserlou/Zappa) 
@@ -79,7 +79,7 @@ You can watch the logs of a deployment by calling the 'tail' management command.
 There are other settings that you can define in your local settings
 to change Zappa's behavior. Use these at your own risk!
 
-```json
+```javascript
  {
     'dev': {
         'aws_region': 'us-east-1', # AWS Region (default US East),
@@ -109,53 +109,6 @@ Lambda has a limitation that functions which aren't called very often take longe
 #### Enabling CORS
 
 To enable Cross-Origin Resource Sharing (CORS) for your application, follow the [AWS 'How to CORS' Guide](https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-cors.html) to enable CORS via the API Gateway Console. Don't forget to re-deploy your API after making the changes!
-
-## Usage (Programatic)
-
-If you just want to use Zappa to deploy your web application, you'll probably want to use a client library like [django-zappa](https://github.com/Miserlou/django-zappa) instead. But, if you want to create a new client library or use Zappa directly, you can follow the steps below.
-
-You can install Zappa through pip:
-
-    $ pip install zappa
-
-Then, you'll want to call its main capabilities in order:
-
-```python
-
-# Set your configuration
-project_name = "MyProject"
-api_stage = "Production"
-s3_bucket_name = 'MyLambdaBucket'
-
-# Make your Zappa object
-zappa = Zappa()
-
-# Load your AWS credentials from ~/.aws/credentials
-zappa.load_credentials()
-
-# Make sure the necessary IAM execution roles are available
-zappa.create_iam_roles()
-
-# Create the Lambda zip package (includes project and virtualenvironment)
-zip_path = zappa.create_lambda_zip(project_name)
-
-# Upload it to S3
-zip_arn = zappa.upload_to_s3(zip_path, s3_bucket_name)
-
-# Register the Lambda function with that zip as the source
-# You'll also need to define the path to your lambda_handler code.
-lambda_arn = zappa.create_lambda_function(s3_bucket_name, zip_path, project_name, 'runme.lambda_handler')
-
-# Create and configure the API Gateway
-api_id = zappa.create_api_gateway_routes(lambda_arn)
-
-# Deploy the API!
-endpoint_url = zappa.deploy_api_gateway(api_id, api_stage)
-
-print("Your Zappa deployment is live!: " + endpoint_url)
-```
-
-And your application is [live](https://7k6anj0k99.execute-api.us-east-1.amazonaws.com/prod)!
 
 ## Hacks
 
