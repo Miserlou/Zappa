@@ -40,7 +40,35 @@ _Before you begin, make sure you have a valid AWS account and your [AWS credenti
 
     $ pip install zappa
 
-Next, you"ll need to define your local and server-side settings.
+Next, you'll need to define your local and server-side settings.
+
+#### Local Settings
+
+First, you'll need to define a few local settings for your Zappa deployment environments in a file named *zappa_settings.json* in your project directory. The simplest example is:
+
+```javascript
+{
+    "dev": { # The name of your environment
+       "s3_bucket": "lmbda", # The name of your S3 Bucket
+       "settings_file": "dev_settings.py" # Path to your remote settings file
+    }
+}
+```
+
+You can define as many environments as your like - we recommend having a _dev_, _staging_, and _production_.
+
+#### Remote Settings
+
+Next, you'll need to define the settings for remote environment in the *settings_file*. The simplest example of this is:
+
+```python
+APP_MODULE = 'dev_module' // The path to the module
+APP_FUNCTION = 'app' // The WSGI function (or a function that returns it)
+```
+
+If you have a Flask application, this will likely point to your Flask 'app', but you can point this to any WSGI function.
+
+Now, you're ready to deploy!
 
 ## Basic Usage
 
@@ -77,7 +105,7 @@ You can watch the logs of a deployment by calling the "tail" management command.
 ## Advanced Usage
 
 There are other settings that you can define in your local settings
-to change Zappa"s behavior. Use these at your own risk!
+to change Zappa's behavior. Use these at your own risk!
 
 ```javascript
  {
@@ -88,7 +116,7 @@ to change Zappa"s behavior. Use these at your own risk!
         "integration_response_codes": [200, 301, 404, 500], // Integration response status codes to route
         "memory_size": 512, // Lambda function memory in MB
         "method_response_codes": [200, 301, 404, 500], // Method response status codes to route
-        "parameter_depth": 10, / Size of URL depth to route. Defaults to 5.
+        "parameter_depth": 10, // Size of URL depth to route. Defaults to 5.
         "role_name": "MyLambdaRole", // Lambda execution Role
         "s3_bucket": "dev-bucket", // Zappa zip bucket,
         "settings_file": "~/Projects/MyApp/settings/dev_settings.py", // Server side settings file location,
@@ -104,7 +132,7 @@ to change Zappa"s behavior. Use these at your own risk!
 
 #### Keeping the server warm
 
-Lambda has a limitation that functions which aren"t called very often take longer to start - sometimes up to ten seconds. However, functions that are called regularly are cached and start quickly, usually in less than 50ms. To ensure that your servers are kept in a cached state, you can [manually configure](http://stackoverflow.com/a/27382253) a scheduled task for your Zappa function that"ll keep the server cached by calling it every 5 minutes. There is currently no way to configure this through API, so you"ll have to set this up manually. When this ability is available via API, django-zappa will configure this automatically. It would be nice to also add support LetsEncrypt through this same mechanism.
+Lambda has a limitation that functions which aren't called very often take longer to start - sometimes up to ten seconds. However, functions that are called regularly are cached and start quickly, usually in less than 50ms. To ensure that your servers are kept in a cached state, you can [manually configure](http://stackoverflow.com/a/27382253) a scheduled task for your Zappa function that"ll keep the server cached by calling it every 5 minutes. There is currently no way to configure this through API, so you'll have to set this up manually. When this ability is available via API, Zappa will configure this automatically. It would be nice to also add support LetsEncrypt through this same mechanism.
 
 #### Enabling CORS
 
@@ -112,7 +140,7 @@ To enable Cross-Origin Resource Sharing (CORS) for your application, follow the 
 
 ## Hacks
 
-Zappa goes quite far beyond what Lambda and API Gateway were ever intended to handle. As a result, there are quite a few hacks in here that allow it to work. Some of those include, but aren"t limited to..
+Zappa goes quite far beyond what Lambda and API Gateway were ever intended to handle. As a result, there are quite a few hacks in here that allow it to work. Some of those include, but aren't limited to..
 
 * Using VTL to map body, headers, method, params and query strings into JSON, and then turning that into valid WSGI.
 * Attaching response codes to response bodies, Base64 encoding the whole thing, using that as a regex to route the response code, decoding the body in VTL, and mapping the response body to that.

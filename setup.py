@@ -29,6 +29,11 @@ setup(
     url='https://github.com/Miserlou/Zappa',
     author='Rich Jones',
     author_email='rich@openwatch.net',
+    entry_points={
+        'console_scripts': [
+            'soundscrape = zappa.cli:main',
+        ]
+    },
     classifiers=[
         'Environment :: Console',
         'License :: OSI Approved :: Apache Software License',
