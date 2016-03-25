@@ -2,13 +2,15 @@
   <img src="http://i.imgur.com/oePnHJn.jpg" alt="Zappa Rocks!"/>
 </p>
 
-# Zappa - Serverless Python Web Services 
+## Zappa - Serverless Python Web Services 
 
 [![Build Status](https://travis-ci.org/Miserlou/Zappa.svg)](https://travis-ci.org/Miserlou/Zappa)
 [![Coverage](https://img.shields.io/coveralls/Miserlou/Zappa.svg)](https://coveralls.io/github/Miserlou/Zappa) 
 [![Slack](https://img.shields.io/badge/chat-slack-ff69b4.svg)](https://slackautoinviter.herokuapp.com/)
 
-**Zappa** makes it super easy to deploy all Python WSGI applications on AWS Lambda + API Gateway. Think of it as "serverless" web hosting for your Python web apps. It"s great for building server microservices with Flask, and for hosting larger web apps and CMSes with Django. Or, use any WSGI-compatible app you like!
+**Zappa** makes it super easy to deploy all Python WSGI applications on AWS Lambda + API Gateway. Think of it as "serverless" web hosting for your Python web apps. 
+
+It's great for deploying serverless microservices with frameworks like Flask and Bottle, and for hosting larger web apps and CMSes with Django. Or, you can use any WSGI-compatible app you like!
 
 Using **Zappa** means:
 
@@ -19,18 +21,12 @@ Using **Zappa** means:
 
 __Awesome!__
 
-This project is for the Zappa core library and utility, which can be used by any WSGI-compatible web framework (which is pretty much all of them.) This library also handles:
+This project is for the Zappa core library and utility, which can be used by any WSGI-compatible web framework (which is pretty much all of them.) Zappa also handles:
 
 * Packaging projects into Lambda-ready zip files and uploading them to S3
 * Correctly setting up IAM roles and permissions
 * Automatically configuring API Gateway routes, methods and integration responses
 * Deploying the API to various stages of readiness
-
-If you are looking for the version for your favorite web frameworks, you should probably try here:
-
-* **[django-zappa](https://github.com/Miserlou/django-zappa)**
-* **[flask-zappa](https://github.com/Miserlou/flask-zappa)**
-* **pyramid-zappa** (Coming.. maybe?)
 
 ## Installation and Configuration
 
@@ -40,6 +36,8 @@ _Before you begin, make sure you have a valid AWS account and your [AWS credenti
 
     $ pip install zappa
 
+(If you're looking for Django-specific integration, you should instead check out **[django-zappa](https://github.com/Miserlou/django-zappa)**.)
+
 Next, you'll need to define your local and server-side settings.
 
 #### Local Settings
@@ -48,9 +46,9 @@ First, you'll need to define a few local settings for your Zappa deployment envi
 
 ```javascript
 {
-    "dev": { # The name of your environment
-       "s3_bucket": "lmbda", # The name of your S3 Bucket
-       "settings_file": "dev_settings.py" # Path to your remote settings file
+    "prod": { // The name of your environment
+       "s3_bucket": "lmbda", // The name of your S3 Bucket
+       "settings_file": "prod_settings.py" // Path to your remote settings file
     }
 }
 ```
@@ -62,8 +60,8 @@ You can define as many environments as your like - we recommend having a _dev_, 
 Next, you'll need to define the settings for remote environment in the *settings_file*. The simplest example of this is:
 
 ```python
-APP_MODULE = 'dev_module' // The path to the module
-APP_FUNCTION = 'app' // The WSGI function (or a function that returns it)
+APP_MODULE = 'your_module' # The path to the module
+APP_FUNCTION = 'app' # The WSGI function (or a function that returns it)
 ```
 
 If you have a Flask application, this will likely point to your Flask 'app', but you can point this to any WSGI function.
@@ -82,6 +80,8 @@ Once your settings are configured, you can package and deploy your application t
 
 And now your app is **live!** How cool is that?!
 
+To expain what's going on, when you call 'deploy', Zappa will automatically package up your application and local virtual environment into a Lambda-compatible archive, replace any dependencies with versions [precompiled for Lambda](https://github.com/Miserlou/lambda-packages), set up the function handler and necessary WSGI Middleware, upload the archive to S3, register it as a new Lambda function, create a new API Gateway resource, create WSGI-compatible routes for it, link it to the new Lambda function, and finally delete the archive from your S3 bucket. Handy!
+
 #### Updates
 
 If your application has already been deployed and you only need to upload new Python code, but not touch the underlying routes, you can simply:
@@ -89,6 +89,8 @@ If your application has already been deployed and you only need to upload new Py
     $ zappa update production
     Updating..
     Your application is now live at: https://7k6anj0k99.execute-api.us-east-1.amazonaws.com/production
+
+This creates a new archive, uploads it to S3 and updates the Lambda function to use the new code, but doesn't touch the API Gateway routes.
 
 #### Rollback
 
