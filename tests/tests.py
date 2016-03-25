@@ -352,7 +352,7 @@ class TestZappa(unittest.TestCase):
     def test_cli_utility(self):
         zappa_cli = ZappaCLI()
         zappa_cli.slugify('C:/derp/herp')
-        zappa_cli.api_stage = 'test'
+        zappa_cli.api_stage = 'ttt333'
         zappa_cli.load_settings('test_settings.json')
         zappa_cli.create_package()
         zappa_cli.remove_local_zip()
@@ -369,12 +369,25 @@ class TestZappa(unittest.TestCase):
                 'timestamp': '12345',
                 'message': '[END RequestId] test'
             },
-            {
+            { 
                 'timestamp': '12345',
                 'message': 'test'
             }
         ]
         zappa_cli.print_logs(logs)
+
+    # WHY WONT PLACEBO RECORD THIS??
+    # Gahhhhh
+    @placebo_session
+    def test_cli_aws(self, session):
+        zappa_cli = ZappaCLI()
+        zappa_cli.api_stage = 'ttt333'
+        zappa_cli.load_settings('test_settings.json', session)
+        zappa_cli.zappa.credentials_arn = 'arn:aws:iam::724336686645:role/ZappaLambdaExecution'
+        zappa_cli.deploy()
+        zappa_cli.update()
+        zappa_cli.rollback(1)
+        zappa_cli.tail(False)
 
 if __name__ == '__main__':
     unittest.main()

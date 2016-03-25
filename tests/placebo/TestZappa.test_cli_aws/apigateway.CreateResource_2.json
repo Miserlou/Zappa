@@ -1,0 +1,13 @@
+{
+    "status_code": 201, 
+    "data": {
+        "path": "/{parameter_1}/{parameter_2}", 
+        "pathPart": "{parameter_2}", 
+        "id": "x9nbob", 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 201, 
+            "RequestId": "1004d3e5-f2cc-11e5-910b-97ce8e2335d5"
+        }, 
+        "parentId": "g7wfu0"
+    }
+}

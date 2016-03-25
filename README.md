@@ -36,7 +36,7 @@ _Before you begin, make sure you have a valid AWS account and your [AWS credenti
 
     $ pip install zappa
 
-(If you're looking for Django-specific integration, you should instead check out **[django-zappa](https://github.com/Miserlou/django-zappa)**.)
+If you're looking for Django-specific integration, you should probably check out _**[django-zappa](https://github.com/Miserlou/django-zappa)**_ instead.
 
 Next, you'll need to define your local and server-side settings.
 
@@ -96,7 +96,7 @@ This creates a new archive, uploads it to S3 and updates the Lambda function to 
 
 You can also rollback the deployed code to a previous version by supplying the number of revisions to return to. For instance, to rollback to the version deployed 3 versions ago:
 
-    $ zappa rollback production 3
+    $ zappa rollback production -n 3
 
 #### Tailing Logs
 

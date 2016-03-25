@@ -59,10 +59,12 @@ class ZappaCLI(object):
         Parses command, load settings and dispatches accordingly.
 
         """
-        # Set
+
         parser = argparse.ArgumentParser(description='Zappa - Deploy Python applications to AWS Lambda and API Gateway.\n')
         parser.add_argument('command_env', metavar='U', type=str, nargs='*',
                        help="Command to execute. Can be one of 'deploy', 'update', 'tail', rollback', 'invoke'.")
+        parser.add_argument('-n', '--num-rollback', type=int, default=0,
+                            help='The number of versions to rollback.')
 
         args = parser.parse_args()
         vargs = vars(args)
@@ -87,7 +89,10 @@ class ZappaCLI(object):
         elif command == 'update':
             self.update()
         elif command == 'rollback':
-            self.rollback()
+            if vargs['num_rollback'] < 1:
+                parser.error("Please enter the number of iterations to rollback.")
+                return                
+            self.rollback(vargs['num_rollback'])
         elif command == 'invoke':
             self.invoke()
         elif command == 'tail':
@@ -107,9 +112,6 @@ class ZappaCLI(object):
 
         """
 
-        # Load your AWS credentials from ~/.aws/credentials
-        self.zappa.load_credentials()
-
         # Make sure the necessary IAM execution roles are available
         self.zappa.create_iam_roles()
 
@@ -120,7 +122,7 @@ class ZappaCLI(object):
         try:
             zip_arn = self.zappa.upload_to_s3(
                 self.zip_path, self.s3_bucket_name)
-        except (KeyboardInterrupt, SystemExit):
+        except (KeyboardInterrupt, SystemExit): # pragma: no cover
             raise
 
         # Register the Lambda function with that zip as the source
@@ -158,9 +160,6 @@ class ZappaCLI(object):
         Repackage and update the function code.
         """
 
-        # Load your AWS credentials from ~/.aws/credentials
-        self.zappa.load_credentials()
-
         # Create the Lambda Zip,
         self.create_package()
 
@@ -183,20 +182,21 @@ class ZappaCLI(object):
 
         return
 
-    def rollback(self):
+    def rollback(self, revision):
+
+        print("Rolling back..")
+
+        self.zappa.rollback_lambda_function_version(
+            self.lambda_name, versions_back=revision)
+        print("Done!")
+
         return
 
-    def invoke(self):
-        return
-
-    def tail(self):
+    def tail(self, keep_open=True):
         """
         Tail this function's logs.
 
         """
-
-        # Load your AWS credentials from ~/.aws/credentials
-        self.zappa.load_credentials()
 
         try:
             # Tail the available logs
@@ -204,7 +204,8 @@ class ZappaCLI(object):
             self.print_logs(all_logs)
 
             # Keep polling, and print any new logs.
-            while True:
+            loop = True
+            while loop:
                 all_logs_again = self.zappa.fetch_logs(self.lambda_name)
                 new_logs = []
                 for log in all_logs_again:
@@ -213,7 +214,9 @@ class ZappaCLI(object):
 
                 self.print_logs(new_logs)
                 all_logs = all_logs + new_logs
-        except KeyboardInterrupt:
+                if not keep_open:
+                    loop = False
+        except KeyboardInterrupt: # pragma: no cover
             # Die gracefully
             try:
                 sys.exit(0)
@@ -225,7 +228,7 @@ class ZappaCLI(object):
     # Utility
     ##
 
-    def load_settings(self, settings_file="zappa_settings.json"):
+    def load_settings(self, settings_file="zappa_settings.json", session=None):
         """
         Load the local zappa_settings.py file. 
 
@@ -276,7 +279,10 @@ class ZappaCLI(object):
             quit()
 
         # Create an Zappa object..
-        self.zappa = Zappa()
+        self.zappa = Zappa(session)
+
+        # Load your AWS credentials from ~/.aws/credentials
+        self.zappa.load_credentials(session)
 
         # ..and configure it
         for setting in CUSTOM_SETTINGS:
@@ -366,7 +372,7 @@ class ZappaCLI(object):
 # Main
 ####################################################################
 
-if __name__ == '__main__': #pragma: nocover
+if __name__ == '__main__': # pragma: no cover
     try:
         cli = ZappaCLI()
         sys.exit(cli.handle())

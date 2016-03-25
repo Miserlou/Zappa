@@ -1,0 +1,11 @@
+{
+    "status_code": 200, 
+    "data": {
+        "Location": "/lmbda", 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "HostId": "jOOzh2uiAA1ILtHaYInhbJ3ONfifQNcu72EB68IsvErLIaQKMsQKTkk/5vhZWT6G65zbNuJelPQ=", 
+            "RequestId": "046066E73D6B9DF9"
+        }
+    }
+}

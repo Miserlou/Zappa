@@ -169,6 +169,7 @@ class Zappa(object):
 
     role_name = "ZappaLambdaExecution"
     aws_region = 'us-east-1'
+    
     ##
     # Credentials
     ##
