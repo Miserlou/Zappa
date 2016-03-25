@@ -67,11 +67,14 @@ class ZappaCLI(object):
         args = parser.parse_args()
         vargs = vars(args)
         if not any(vargs.values()):
-            parser.error('Please supply a command to execute.')
+            parser.error("Please supply a command to execute. Can be one of 'deploy', 'update', 'tail', rollback', 'invoke'.'")
             return
 
         # Parse the input
         command_env = vargs['command_env']
+        if len(command_env) < 2:
+            parser.error("Please supply an environment to deploy to.")
+            return
         command = command_env[0]
         self.api_stage = command_env[1]
 

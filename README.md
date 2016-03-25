@@ -2,13 +2,13 @@
   <img src="http://i.imgur.com/oePnHJn.jpg" alt="Zappa Rocks!"/>
 </p>
 
-## Serverless Python Web Services 
+### Zappa - Serverless Python Web Services 
 
 [![Build Status](https://travis-ci.org/Miserlou/Zappa.svg)](https://travis-ci.org/Miserlou/Zappa)
 [![Coverage](https://img.shields.io/coveralls/Miserlou/Zappa.svg)](https://coveralls.io/github/Miserlou/Zappa) 
 [![Slack](https://img.shields.io/badge/chat-slack-ff69b4.svg)](https://slackautoinviter.herokuapp.com/)
 
-**Zappa** makes it super easy to deploy all Python WSGI applications on AWS Lambda + API Gateway. Think of it as "serverless" web hosting for your Python web apps. It's great for building server microservices with Flask, and for hosting larger web apps and CMSes with Django.  
+**Zappa** makes it super easy to deploy all Python WSGI applications on AWS Lambda + API Gateway. Think of it as "serverless" web hosting for your Python web apps. It's great for building server microservices with Flask, and for hosting larger web apps and CMSes with Django. Or, use any WSGI-compatible app you like!
 
 Using **Zappa** means:
 
@@ -32,7 +32,85 @@ If you are looking for the version for your favorite web frameworks, you should 
 * **[flask-zappa](https://github.com/Miserlou/flask-zappa)**
 * **pyramid-zappa** (Coming.. maybe?)
 
-## Usage
+## Installation and Configuration
+
+_Before you begin, make sure you have a valid AWS account and your [AWS credentials file](https://blogs.aws.amazon.com/security/post/Tx3D6U6WSFGOK2H/A-New-and-Standardized-Way-to-Manage-Credentials-in-the-AWS-SDKs) is properly installed._
+
+**Zappa** can easily be installed through pip, like so:
+
+    $ pip install zappa
+
+Next, you'll need to define your local and server-side settings.
+
+## Basic Usage
+
+#### Initial Deployments
+
+Once your settings are configured, you can package and deploy your application to an environment called 'production' with a single command:
+
+    $ zappa deploy production
+    Deploying..
+    Your application is now live at: https://7k6anj0k99.execute-api.us-east-1.amazonaws.com/production
+
+And now your app is **live!** How cool is that?!
+
+#### Updates
+
+If your application has already been deployed and you only need to upload new Python code, but not touch the underlying routes, you can simply:
+
+    $ zappa update production
+    Updating..
+    Your application is now live at: https://7k6anj0k99.execute-api.us-east-1.amazonaws.com/production
+
+#### Rollback
+
+You can also rollback the deployed code to a previous version by supplying the number of revisions to return to. For instance, to rollback to the version deployed 3 versions ago:
+
+    $ zappa rollback production 3
+
+#### Tailing Logs
+
+You can watch the logs of a deployment by calling the 'tail' management command.
+
+    $ zappa tail production
+
+## Advanced Usage
+
+There are other settings that you can define in your local settings
+to change Zappa's behavior. Use these at your own risk!
+
+```json
+ {
+    'dev': {
+        'aws_region': 'us-east-1', # AWS Region (default US East),
+        'domain': 'yourapp.yourdomain.com', # Required if you're using a domain
+        'http_methods': ['GET', 'POST'], # HTTP Methods to route,
+        'integration_response_codes': [200, 301, 404, 500], # Integration response status codes to route
+        'memory_size': 512, # Lambda function memory in MB
+        'method_response_codes': [200, 301, 404, 500], # Method response status codes to route
+        'parameter_depth': 10, # Size of URL depth to route. Defaults to 5.
+        'role_name': "MyLambdaRole", # Lambda execution Role
+        's3_bucket': 'dev-bucket', # Zappa zip bucket,
+        'settings_file': '~/Projects/MyApp/settings/dev_settings.py', # Server side settings file location,
+        'touch': false, # GET the production URL upon initial deployment (default True)
+        'use_precompiled_packages': false, # If possible, use C-extension packages which have been pre-compiled for AWS Lambda
+        'vpc_config': { # Optional VPC configuration for Lambda function
+            'SubnetIds': [ 'subnet-12345678' ], # Note: not all availability zones support Lambda!
+            'SecurityGroupIds': [ 'sg-12345678' ]
+        }
+    }
+}
+```
+
+#### Keeping the server warm
+
+Lambda has a limitation that functions which aren't called very often take longer to start - sometimes up to ten seconds. However, functions that are called regularly are cached and start quickly, usually in less than 50ms. To ensure that your servers are kept in a cached state, you can [manually configure](http://stackoverflow.com/a/27382253) a scheduled task for your Zappa function that'll keep the server cached by calling it every 5 minutes. There is currently no way to configure this through API, so you'll have to set this up manually. When this ability is available via API, django-zappa will configure this automatically. It would be nice to also add support LetsEncrypt through this same mechanism.
+
+#### Enabling CORS
+
+To enable Cross-Origin Resource Sharing (CORS) for your application, follow the [AWS 'How to CORS' Guide](https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-cors.html) to enable CORS via the API Gateway Console. Don't forget to re-deploy your API after making the changes!
+
+## Usage (Programatic)
 
 If you just want to use Zappa to deploy your web application, you'll probably want to use a client library like [django-zappa](https://github.com/Miserlou/django-zappa) instead. But, if you want to create a new client library or use Zappa directly, you can follow the steps below.
 
