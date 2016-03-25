@@ -373,9 +373,11 @@ class ZappaCLI(object):
 ####################################################################
 
 if __name__ == '__main__': # pragma: no cover
+    handle()
+
+def handle(): # pragma: no cover
     try:
         cli = ZappaCLI()
         sys.exit(cli.handle())
     except Exception as e:
         print(e)
-
