@@ -132,13 +132,13 @@ To enable Cross-Origin Resource Sharing (CORS) for your application, follow the 
 * [Django-Zappa tutorial screencast](https://www.youtube.com/watch?v=plUrbPN0xc8&feature=youtu.be).
 * [Using Django-Zappa, Part 1](https://serverlesscode.com/post/zappa-wsgi-for-python/).
 * [Using Django-Zappa, Part 2: VPCs](https://serverlesscode.com/post/zappa-wsgi-for-python-pt-2/).
-* Your guide here?
+* _Your guide here?_
 
 ## Zappa in the Press
 
-* _(Zappa Serves Python, Minus the Servers)[http://www.infoworld.com/article/3031665/application-development/zappa-serves-python-web-apps-minus-the-servers.html]_
-* _(Zappa lyfter serverlösa applikationer med Python)[http://computersweden.idg.se/2.2683/1.649895/zappa-lyfter-python]_
-* _(Interview: Rich Jones on Zappa)[https://serverlesscode.com/post/rich-jones-interview-django-zappa/]_
+* _[Zappa Serves Python, Minus the Servers](http://www.infoworld.com/article/3031665/application-development/zappa-serves-python-web-apps-minus-the-servers.html)_
+* _[Zappa lyfter serverlösa applikationer med Python](http://computersweden.idg.se/2.2683/1.649895/zappa-lyfter-python)_
+* _[Interview: Rich Jones on Zappa](https://serverlesscode.com/post/rich-jones-interview-django-zappa/)_
 
 ## Sites Using Zappa
 
