@@ -17,7 +17,7 @@ with open(os.path.join(os.path.dirname(__file__), 'test_requirements.txt')) as f
 
 setup(
     name='zappa',
-    version='0.14.2',
+    version='0.14.3',
     packages=['zappa'],
     install_requires=required,
     tests_require=test_required,
@@ -32,6 +32,7 @@ setup(
     entry_points={
         'console_scripts': [
             'zappa=zappa.cli:handle',
+            'z=zappa.cli:handle',
         ]
     },
     classifiers=[
