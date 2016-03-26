@@ -75,7 +75,7 @@ If your application has already been deployed and you only need to upload new Py
 
     $ zappa update production
     Updating..
-    Your application is now live at: https://7k6anj0k99.execute-api.us-east-1.amazonaws.com/production
+    Your application is now updated at: https://7k6anj0k99.execute-api.us-east-1.amazonaws.com/production
 
 This creates a new archive, uploads it to S3 and updates the Lambda function to use the new code, but doesn't touch the API Gateway routes.
 
