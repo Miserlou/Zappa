@@ -221,7 +221,7 @@ class Zappa(object):
         temp_project_path = os.path.join(tempfile.gettempdir(), str(int(time.time())))
 
         if minify:
-            excludes = ZIP_EXCLUDES + exclude + [split_venv[-1] + '*']
+            excludes = ZIP_EXCLUDES + exclude + [split_venv[-1]]
             shutil.copytree(cwd, temp_project_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
         else:
             shutil.copytree(cwd, temp_project_path, symlinks=False)
@@ -232,7 +232,7 @@ class Zappa(object):
         site_packages = os.path.join(venv, 'lib', 'python2.7', 'site-packages')
 
         if minify:
-            excludes = ZIP_EXCLUDES + exclude + [split_venv[-1] + '*']
+            excludes = ZIP_EXCLUDES + exclude
             shutil.copytree(site_packages, temp_package_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
         else:
             shutil.copytree(site_packages, temp_package_path, symlinks=False)

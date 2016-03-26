@@ -58,7 +58,6 @@ class LambdaHandler(object):
         # The app module
         app_module = importlib.import_module(settings.APP_MODULE)
 
-
         # The application
         app_function = getattr(app_module, settings.APP_FUNCTION)
 
