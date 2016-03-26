@@ -1,8 +1,11 @@
 from __future__ import unicode_literals
 
 import base64
-import os
+import datetime
 import importlib
+import logging
+import os
+
 from urllib import urlencode
 from StringIO import StringIO
 from werkzeug.wrappers import Response
@@ -10,14 +13,16 @@ from werkzeug.wrappers import Response
 # This file may be copied into a project's root,
 # so handle both scenarios.
 try:
-    from zappa.wsgi import create_wsgi_request
+    from zappa.wsgi import create_wsgi_request, common_log
     from zappa.middleware import ZappaWSGIMiddleware
 except ImportError as e: # pragma: no cover
-    from .wsgi import create_wsgi_request
+    from .wsgi import create_wsgi_request, common_log
     from .middleware import ZappaWSGIMiddleware
 
-here_dir = os.path.abspath(os.path.dirname(__file__))
-
+# Set up logging
+logging.basicConfig()
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 class LambdaHandler(object):
     """
@@ -52,6 +57,8 @@ class LambdaHandler(object):
         that back to the API Gateway.
         
         """
+
+        time_start = datetime.datetime.now()
 
         settings = self.settings
 
@@ -96,10 +103,10 @@ class LambdaHandler(object):
             # pack the response as a deterministic B64 string and raise it
             # as an error to match our APIGW regex.
             # The DOCTYPE ensures that the page still renders in the browser.
+            exception = None
             if response.status_code in [400, 401, 403, 404, 500]:
                 content = "<!DOCTYPE html>" + str(response.status_code) + response.data
-                b64_content = base64.b64encode(content)
-                raise Exception(b64_content)
+                exception = base64.b64encode(content)
             # Internal are changed to become relative redirects
             # so they still work for apps on raw APIGW and on a domain.
             elif response.status_code in [301, 302]:
@@ -110,8 +117,19 @@ class LambdaHandler(object):
                 location = response.location
                 hostname = 'https://' + environ['HTTP_HOST']
                 if location.startswith(hostname):
-                    location = location[len(hostname):]
-                raise Exception(location)
+                    exception = location[len(hostname):]
+
+            # Calculate the total response time,
+            # and log it in the Common Log format.
+            time_end = datetime.datetime.now()
+            delta = time_end - time_start
+            response_time_ms = delta.total_seconds() * 1000
+            response.content = response.data
+            common_log(environ, response, response_time=response_time_ms)
+
+            # Finally, return the response to API Gateway.
+            if exception:
+                raise Exception(exception)
             else:
                 return zappa_returndict
 
