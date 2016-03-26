@@ -192,7 +192,7 @@ class Zappa(object):
         Returns path to that file.
 
         """
-        print("Packaging project as zip....")
+        print("Packaging project as zip...")
 
         venv = os.environ['VIRTUAL_ENV']
 
