@@ -22,12 +22,9 @@ Using **Zappa** means:
 
 __Awesome!__
 
-This project is for the Zappa core library and utility, which can be used by any WSGI-compatible web framework (which is pretty much all of them.) Zappa also handles:
-
-* Packaging projects into Lambda-ready zip files and uploading them to S3
-* Correctly setting up IAM roles and permissions
-* Automatically configuring API Gateway routes, methods and integration responses
-* Deploying the API to various stages of readiness
+<p align="center">
+  <img src="http://i.imgur.com/f1PJxCQ.gif" alt="Zappa Demo Gif"/>
+</p>
 
 ## Installation and Configuration
 
@@ -130,6 +127,26 @@ Lambda has a limitation that functions which aren't called very often take longe
 
 To enable Cross-Origin Resource Sharing (CORS) for your application, follow the [AWS "How to CORS" Guide](https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-cors.html) to enable CORS via the API Gateway Console. Don't forget to re-deploy your API after making the changes!
 
+## Zappa Guides
+
+* [Django-Zappa tutorial screencast](https://www.youtube.com/watch?v=plUrbPN0xc8&feature=youtu.be).
+* [Using Django-Zappa, Part 1](https://serverlesscode.com/post/zappa-wsgi-for-python/).
+* [Using Django-Zappa, Part 2: VPCs](https://serverlesscode.com/post/zappa-wsgi-for-python-pt-2/).
+* Your guide here?
+
+## Zappa in the Press
+
+* _(Zappa Serves Python, Minus the Servers)[http://www.infoworld.com/article/3031665/application-development/zappa-serves-python-web-apps-minus-the-servers.html]_
+* _(Zappa lyfter serverlösa applikationer med Python)[http://computersweden.idg.se/2.2683/1.649895/zappa-lyfter-python]_
+* _(Interview: Rich Jones on Zappa)[https://serverlesscode.com/post/rich-jones-interview-django-zappa/]_
+
+## Sites Using Zappa
+
+* [zappa.gun.io](https://zappa.gun.io) - A Zappa "Hello, World" (real homepage coming.. soon..)
+* [spheres.gun.io](https://spheres.gun.io)  - Spheres, a photosphere host and viewer
+* [Mailchimp Signup Utility](https://github.com/sasha42/Mailchimp-utility) - A microservice for adding people to a mailing list via API. 
+* Your site here? 
+
 ## Hacks
 
 Zappa goes quite far beyond what Lambda and API Gateway were ever intended to handle. As a result, there are quite a few hacks in here that allow it to work. Some of those include, but aren't limited to..
@@ -138,13 +155,6 @@ Zappa goes quite far beyond what Lambda and API Gateway were ever intended to ha
 * Attaching response codes to response bodies, Base64 encoding the whole thing, using that as a regex to route the response code, decoding the body in VTL, and mapping the response body to that.
 * Packing and _Base58_ encoding multiple cookies into a single cookie because we can only map one kind.
 * Turning cookie-setting 301/302 responses into 200 responses with HTML redirects, because we have no way to set headers on redirects.
-
-## Sites Using Zappa
-
-* [zappa.gun.io](https://zappa.gun.io) - A Zappa "Hello, World" (real homepage coming.. soon..)
-* [spheres.gun.io](https://spheres.gun.io)  - Spheres, a photosphere host and viewer
-* [Mailchimp Signup Utility](https://github.com/sasha42/Mailchimp-utility) - A microservice for adding people to a mailing list via API. 
-* Your site here? 
 
 ## TODO
 
