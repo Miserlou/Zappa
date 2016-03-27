@@ -90,20 +90,20 @@ class ZappaCLI(object):
         self.load_settings(vargs['settings_file'])
 
         # Hand it off
-        if command == 'deploy':
+        if command == 'deploy': # pragma: no cover
             self.deploy()
-        elif command == 'update':
+        elif command == 'update': # pragma: no cover
             self.update()
-        elif command == 'rollback':
+        elif command == 'rollback': # pragma: no cover
             if vargs['num_rollback'] < 1: # pragma: no cover
                 parser.error("Please enter the number of iterations to rollback.")
                 return                
             self.rollback(vargs['num_rollback'])
-        elif command == 'invoke':
+        elif command == 'invoke': # pragma: no cover
             self.invoke()
-        elif command == 'tail':
+        elif command == 'tail': # pragma: no cover
             self.tail()
-        else: # pragma: no cover
+        else:
             print("The command '%s' is not recognized." % command)
             return
 

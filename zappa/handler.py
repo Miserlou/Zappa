@@ -47,7 +47,7 @@ class LambdaHandler(object):
         self.settings_name = settings_name
 
     @classmethod
-    def lambda_handler(cls, event, context):
+    def lambda_handler(cls, event, context): # pragma: no cover
         return cls().handler(event, context)
 
     def handler(self, event, context):
@@ -128,7 +128,7 @@ class LambdaHandler(object):
             common_log(environ, response, response_time=response_time_ms)
 
             # Finally, return the response to API Gateway.
-            if exception:
+            if exception: # pragma: no cover
                 raise Exception(exception)
             else:
                 return zappa_returndict
