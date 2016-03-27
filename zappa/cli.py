@@ -68,6 +68,9 @@ class ZappaCLI(object):
                        help="Command to execute. Can be one of 'deploy', 'update', 'tail' and 'rollback'.")
         parser.add_argument('-n', '--num-rollback', type=int, default=0,
                             help='The number of versions to rollback.')
+        parser.add_argument('-s', '--settings_file', type=str, default='zappa_settings.json',
+                            help='The path to a zappa settings file.')
+
 
         args = parser.parse_args()
         vargs = vars(args)
@@ -78,13 +81,13 @@ class ZappaCLI(object):
         # Parse the input
         command_env = vargs['command_env']
         if len(command_env) < 2:
-            parser.error("Please supply an environment to deploy to.")
+            parser.error("Please supply an environment to interact with.")
             return
         command = command_env[0]
         self.api_stage = command_env[1]
 
         # Load our settings
-        self.load_settings()
+        self.load_settings(vargs['settings_file'])
 
         # Hand it off
         if command == 'deploy':
