@@ -70,7 +70,8 @@ class ZappaCLI(object):
                             help='The number of versions to rollback.')
         parser.add_argument('-s', '--settings_file', type=str, default='zappa_settings.json',
                             help='The path to a zappa settings file.')
-
+        parser.add_argument('-a', '--app_function', type=str, default=None,
+                            help='The WSGI application function.')
 
         args = parser.parse_args(argv)
         vargs = vars(args)
@@ -88,6 +89,8 @@ class ZappaCLI(object):
 
         # Load our settings
         self.load_settings(vargs['settings_file'])
+        if vargs['app_function'] is not None:
+            self.app_function = vargs['app_function']
 
         # Hand it off
         if command == 'deploy': # pragma: no cover
@@ -276,7 +279,7 @@ class ZappaCLI(object):
         self.memory_size = self.zappa_settings[
             self.api_stage].get('memory_size', 512)
         self.app_function = self.zappa_settings[
-            self.api_stage]['app_function']
+            self.api_stage].get('app_function', None)
 
         # Create an Zappa object..
         self.zappa = Zappa(session)
