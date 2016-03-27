@@ -376,6 +376,12 @@ class TestZappa(unittest.TestCase):
         ]
         zappa_cli.print_logs(logs)
 
+    def test_cli_args(self):
+        zappa_cli = ZappaCLI()
+        # Sanity
+        argv = '-s test_settings.json derp ttt333'.split()
+        zappa_cli.handle(argv)
+
     @placebo_session
     def test_cli_aws(self, session):
         zappa_cli = ZappaCLI()

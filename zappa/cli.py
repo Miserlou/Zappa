@@ -55,7 +55,7 @@ class ZappaCLI(object):
     vpc_config = None
     memory_size = None
 
-    def handle(self):
+    def handle(self, argv=None):
         """
         Main function.
 
@@ -72,15 +72,15 @@ class ZappaCLI(object):
                             help='The path to a zappa settings file.')
 
 
-        args = parser.parse_args()
+        args = parser.parse_args(argv)
         vargs = vars(args)
-        if not any(vargs.values()):
+        if not any(vargs.values()): # pragma: no cover
             parser.error("Please supply a command to execute. Can be one of 'deploy', 'update', 'tail', rollback', 'invoke'.'")
             return
 
         # Parse the input
         command_env = vargs['command_env']
-        if len(command_env) < 2:
+        if len(command_env) < 2: # pragma: no cover
             parser.error("Please supply an environment to interact with.")
             return
         command = command_env[0]
