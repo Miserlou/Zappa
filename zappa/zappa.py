@@ -114,6 +114,18 @@ ATTACH_POLICY = """{
                 "ec2:CreateNetworkInterface"
             ],
             "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:*"
+            ],
+            "Resource": "arn:aws:s3:::*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "sqs:*",
+            "Resource": "arn:aws:sqs:::*"
         }
     ]
 }"""
