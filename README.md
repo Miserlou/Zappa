@@ -133,6 +133,7 @@ To enable Cross-Origin Resource Sharing (CORS) for your application, follow the 
 * [Django-Zappa tutorial screencast](https://www.youtube.com/watch?v=plUrbPN0xc8&feature=youtu.be).
 * [Using Django-Zappa, Part 1](https://serverlesscode.com/post/zappa-wsgi-for-python/).
 * [Using Django-Zappa, Part 2: VPCs](https://serverlesscode.com/post/zappa-wsgi-for-python-pt-2/).
+* [Building Serverless Microservices with Zappa and Flask](https://gun.io/blog/serverless-microservices-with-zappa-and-flask/)
 * _Your guide here?_
 
 ## Zappa in the Press
