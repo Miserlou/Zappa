@@ -389,7 +389,13 @@ def handle(): # pragma: no cover
     try:
         cli = ZappaCLI()
         sys.exit(cli.handle())
+    except (KeyboardInterrupt, SystemExit): # pragma: no cover
+        if cli.zip_path: # Remove the Zip from S3 upon failure.
+            cli.remove_uploaded_zip()
+        return
     except Exception as e:
+        if cli.zip_path: # Remove the Zip from S3 upon failure.
+            cli.remove_uploaded_zip()
         print(e)
 
 if __name__ == '__main__': # pragma: no cover
