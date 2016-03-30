@@ -47,6 +47,7 @@ class ZappaCLI(object):
 
     api_stage = None
     app_function = None
+    aws_region = None
     project_name = None
     lambda_name = None
     s3_bucket_name = None
@@ -280,9 +281,12 @@ class ZappaCLI(object):
             self.api_stage].get('memory_size', 512)
         self.app_function = self.zappa_settings[
             self.api_stage].get('app_function', None)
+        self.aws_region = self.zappa_settings[
+            self.api_stage].get('aws_region', 'us-east-1')
 
         # Create an Zappa object..
         self.zappa = Zappa(session)
+        self.zappa.aws_region = self.aws_region
 
         # Load your AWS credentials from ~/.aws/credentials
         self.zappa.load_credentials(session)
