@@ -323,12 +323,13 @@ class Zappa(object):
         """
         s3 = self.boto_session.resource('s3')
 
+        # If this bucket doesn't exist, make it.
+        # Will likely fail, but that's apparently the best way to check
+        # it exists, since boto3 doesn't expose a better check.
         try:
             s3.create_bucket(Bucket=bucket_name)
         except Exception as e: # pragma: no cover
-            print(e)
-            print("Couldn't create bucket.")
-            return False
+            pass
 
         if not os.path.isfile(source_path) or os.stat(source_path).st_size == 0:
             print("Problem with source file {}".format(source_path))
