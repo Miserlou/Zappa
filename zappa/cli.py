@@ -344,7 +344,10 @@ class ZappaCLI(object):
         """
 
         if self.zappa_settings[self.api_stage].get('delete_zip', True):
-            os.remove(self.zip_path)
+            try:
+                os.remove(self.zip_path)
+            except Exception as e: # pragma: no cover
+                pass
 
     def remove_uploaded_zip(self):
         """
