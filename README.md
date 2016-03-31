@@ -147,6 +147,7 @@ To enable Cross-Origin Resource Sharing (CORS) for your application, follow the 
 * [zappa.gun.io](https://zappa.gun.io) - A Zappa "Hello, World" (real homepage coming.. soon..)
 * [spheres.gun.io](https://spheres.gun.io)  - Spheres, a photosphere host and viewer
 * [Mailchimp Signup Utility](https://github.com/sasha42/Mailchimp-utility) - A microservice for adding people to a mailing list via API. 
+* [Serverless Image Host](https://github.com/Miserlou/serverless-imagehost) - A thumbnailing service with Flask, Zappa and Pillow.
 * Your site here? 
 
 ## Hacks
