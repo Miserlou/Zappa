@@ -2,6 +2,7 @@
     "ttt333": {
        "s3_bucket": "lmbda",
        "app_function": "tests.test_app.hello_world",
-       "delete_zip": true 
+       "delete_zip": true,
+       "debug": true 
     }
 }

@@ -101,6 +101,8 @@ to change Zappa's behavior. Use these at your own risk!
  {
     "dev": {
         "aws_region": "us-east-1", // AWS Region (default US East),
+        "debug": true // Print Zappa configuration errors tracebacks in the 500
+        "delete_zip": true // Delete the local zip archive after code updates
         "domain": "yourapp.yourdomain.com", // Required if you're using a domain
         "http_methods": ["GET", "POST"], // HTTP Methods to route,
         "integration_response_codes": [200, 301, 404, 500], // Integration response status codes to route
