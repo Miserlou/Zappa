@@ -9,6 +9,6 @@ python-dateutil==2.5.2
 requests>=2.9.1
 six==1.10.0
 tqdm==3.8.0
-Werkzeug==0.11.4
+Werkzeug==0.11.5
 wheel==0.29.0
 wsgi-request-logger==0.4.5
