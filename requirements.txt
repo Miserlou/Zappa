@@ -1,6 +1,6 @@
 base58==0.2.2
 boto3==1.3.0
-botocore==1.4.8
+botocore==1.4.9
 docutils==0.12
 futures==3.0.5
 jmespath==0.9.0
