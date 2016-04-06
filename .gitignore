@@ -58,5 +58,9 @@ docs/_build/
 # PyBuilder
 target/
 
+# PyCharm
+#  Project settings from the PyCharm IDE are stored in the .idea folder
+.idea/
+
 env/
 .DS_Store
