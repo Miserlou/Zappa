@@ -143,6 +143,10 @@ Lambda has a limitation that functions which aren't called very often take longe
 
 To enable Cross-Origin Resource Sharing (CORS) for your application, follow the [AWS "How to CORS" Guide](https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-cors.html) to enable CORS via the API Gateway Console. Don't forget to re-deploy your API after making the changes!
 
+#### Deploying to a Domain With a Let'sEncrypt Certificate
+
+If you want to use Zappa on a domain with a free Let's Encrypt certificate, you can follow [this guide](https://github.com/Miserlou/Zappa/blob/master/docs/domain_with_free_ssl.md).
+
 ## Zappa Guides
 
 * [Django-Zappa tutorial screencast](https://www.youtube.com/watch?v=plUrbPN0xc8&feature=youtu.be).
