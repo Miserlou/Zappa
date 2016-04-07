@@ -12,6 +12,7 @@ from __future__ import unicode_literals
 import argparse
 import datetime
 import inspect
+import importlib
 import json
 import os
 import re
@@ -49,6 +50,7 @@ class ZappaCLI(object):
     app_function = None
     aws_region = None
     debug = None
+    prebuild_script = None
     project_name = None
     lambda_name = None
     s3_bucket_name = None
@@ -123,6 +125,10 @@ class ZappaCLI(object):
 
         """
 
+        # Execute the prebuild script
+        if self.prebuild_script:
+            self.execute_prebuild_script()
+
         # Make sure the necessary IAM execution roles are available
         self.zappa.create_iam_roles()
 
@@ -170,6 +176,10 @@ class ZappaCLI(object):
         """
         Repackage and update the function code.
         """
+
+        # Execute the prebuild script
+        if self.prebuild_script:
+            self.execute_prebuild_script()
 
         # Create the Lambda Zip,
         self.create_package()
@@ -286,6 +296,8 @@ class ZappaCLI(object):
             self.api_stage].get('aws_region', 'us-east-1')
         self.debug = self.zappa_settings[
             self.api_stage].get('debug', True)
+        self.prebuild_script = self.zappa_settings[
+            self.api_stage].get('prebuild_script', None)
 
         # Create an Zappa object..
         self.zappa = Zappa(session)
@@ -381,6 +393,10 @@ class ZappaCLI(object):
         return re.sub('[-\s]+', '-', value)
 
     def print_logs(self, logs):
+        """
+        Parse, filter and print logs to the console.
+        
+        """
 
         for log in logs:
             timestamp = log['timestamp']
@@ -393,6 +409,24 @@ class ZappaCLI(object):
                 continue
 
             print("[" + str(timestamp) + "] " + message.strip())
+
+    def execute_prebuild_script(self):
+        """
+        Parse and execute the prebuild_script from the zappa_settings.
+
+        """
+
+        # Parse the string
+        prebuild_module_s, prebuild_function_s = self.prebuild_script.rsplit('.', 1)
+
+        # The module
+        prebuild_module = importlib.import_module(prebuild_module_s)
+
+        # The function
+        prebuild_function = getattr(prebuild_module, prebuild_function_s)
+
+        # Execute it
+        prebuild_function()
 
 ####################################################################
 # Main
