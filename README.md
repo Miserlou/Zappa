@@ -178,12 +178,6 @@ Zappa goes quite far beyond what Lambda and API Gateway were ever intended to ha
 * Packing and _Base58_ encoding multiple cookies into a single cookie because we can only map one kind.
 * Turning cookie-setting 301/302 responses into 200 responses with HTML redirects, because we have no way to set headers on redirects.
 
-## TODO
+## Contributing
 
-This project is very young, so there is still plenty to be done. Contributions are more than welcome! Please file tickets before submitting patches, and submit your patches to the "dev" branch.
-
-Things that need work right now:
-
-* Testing
-* Feedback
-* Real documentation / website!
+This project is still young, so there is still plenty to be done. Contributions are more than welcome! Please file tickets before submitting patches, and submit your patches to the "dev" branch.
