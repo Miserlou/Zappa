@@ -1,5 +1,6 @@
 import logging
 
+import base64
 from urllib import urlencode
 from requestlogger import ApacheFormatter
 from StringIO import StringIO
@@ -59,9 +60,15 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
 
         # Input processing
         if method == "POST":
-            environ['wsgi.input'] = StringIO(body)
             if event_info["headers"].has_key('Content-Type'):
                 environ['CONTENT_TYPE'] = event_info["headers"]['Content-Type']
+
+                # Multipart forms are Base64 encoded through API Gateway
+                if 'multipart/form-data;' in event_info["headers"]['Content-Type']:
+                    body = base64.b64decode(body)
+
+            environ['wsgi.input'] = StringIO(body)
+
             environ['CONTENT_LENGTH'] = str(len(body))
 
         for header in event_info["headers"]:
