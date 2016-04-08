@@ -2,6 +2,7 @@ base58==0.2.2
 boto3==1.3.0
 botocore==1.4.10
 docutils==0.12
+docopt>=0.6.1
 futures==3.0.5
 jmespath==0.9.0
 lambda-packages==0.4.0
