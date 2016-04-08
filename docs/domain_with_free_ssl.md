@@ -1,12 +1,12 @@
 # Using Let's Encrypt with Zappa
 
-This guide will show you the slightly convoluted way of running a Zappa website on a custom domain with a free valid SSL certificate via Let'sEncrypt.
+This guide will show you the slightly convoluted way of running a Zappa website on a custom domain with a free valid SSL certificate via Let's Encrypt.
 
 ## Tool Installation
 
 First, you should have a valid Zappa website deployed to API Gateway without a domain.
 
-You'll also need to install Let'sEncrypt via git:
+You'll also need to install Let's Encrypt via git:
 
 ```
 $ git clone https://github.com/letsencrypt/letsencrypt
