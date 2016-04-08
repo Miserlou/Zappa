@@ -1,4 +1,5 @@
 import logging
+import json
 
 import base64
 from urllib import urlencode
@@ -13,10 +14,14 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
         """
 
         method = event_info['method']
-        body = str(event_info['body'])
         params = event_info['params']
         query = event_info['query']
         headers = event_info['headers']
+        if headers.get('content-type', headers.get('Content-Type', '')) == 'application/json':
+          body = str(json.dumps(event_info['body']))
+        else:
+          body = str(event_info['body'])
+          
 
         path = "/"
         for key in sorted(params.keys()):
