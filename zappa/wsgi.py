@@ -6,6 +6,7 @@ from urllib import urlencode
 from requestlogger import ApacheFormatter
 from StringIO import StringIO
 
+
 def create_wsgi_request(event_info, server_name='zappa', script_name=None,
                         trailing_slash=True):
         """
@@ -17,11 +18,15 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
         params = event_info['params']
         query = event_info['query']
         headers = event_info['headers']
-        if headers.get('content-type', headers.get('Content-Type', '')) == 'application/json':
-          body = str(json.dumps(event_info['body']))
+        content_type = headers.get('content-type',
+                                   headers.get('Content-Type', ''))
+        # Some clients implement a non-rfc compliant content-type string:
+        # e.g. "application/json; charset=utf-8"
+        content_type = content_type.lower().split(';')[0]
+        if content_type == 'application/json':
+            body = str(json.dumps(event_info['body']))
         else:
-          body = str(event_info['body'])
-          
+            body = str(event_info['body'])
 
         path = "/"
         for key in sorted(params.keys()):
@@ -65,7 +70,7 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
 
         # Input processing
         if method == "POST":
-            if event_info["headers"].has_key('Content-Type'):
+            if 'Content-Type' in event_info["headers"]:
                 environ['CONTENT_TYPE'] = event_info["headers"]['Content-Type']
 
                 # Multipart forms are Base64 encoded through API Gateway
@@ -88,6 +93,7 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
 
         return environ
 
+
 def common_log(environ, response, response_time=None):
     """
     Given the WSGI environ and the response,
@@ -100,11 +106,13 @@ def common_log(environ, response, response_time=None):
 
     if response_time:
         formatter = ApacheFormatter(with_response_time=True)
-        log_entry = formatter(response.status_code, environ, len(response.content), rt_ms=response_time)
+        log_entry = formatter(response.status_code, environ,
+                              len(response.content), rt_ms=response_time)
     else:
         formatter = ApacheFormatter(with_response_time=False)
-        log_entry = formatter(response.status_code, environ, len(response.content))
-    
+        log_entry = formatter(response.status_code, environ,
+                              len(response.content))
+
     logger.info(log_entry)
 
     return log_entry
