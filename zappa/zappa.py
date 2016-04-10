@@ -477,6 +477,7 @@ class Zappa(object):
         client = self.boto_session.client('lambda')
 
         response = client.list_versions_by_function(FunctionName=function_name)
+
         #Take into account $LATEST
         if len(response['Versions']) < versions_back + 1:
             print("We do not have {} revisions. Aborting".format(str(versions_back)))
@@ -495,6 +496,19 @@ class Zappa(object):
         response = client.update_function_code(FunctionName=function_name, ZipFile=response.content, Publish=publish) # pragma: no cover
 
         return response['FunctionArn']
+
+    def delete_lambda_function(self, function_name):
+        """
+        Given a function name, delete it from AWS Lambda.
+
+        Returns the response.
+
+        """
+        client = self.boto_session.client('lambda')
+        response = client.delete_function(
+            FunctionName=function_name,
+        )
+        return response
 
     ##
     # API Gateway
@@ -528,6 +542,7 @@ class Zappa(object):
             )
 
         api_id = response['id']
+
         ##
         # The Resources
         ##
@@ -707,6 +722,31 @@ class Zappa(object):
 
         endpoint_url = "https://" + api_id + ".execute-api." + self.boto_session.region_name + ".amazonaws.com/" + stage_name
         return endpoint_url
+
+    def undeploy_api_gateway(self, project_name):
+        """
+        Delete a deployed REST API Gateway.
+
+        Returns
+
+        """
+
+        print("Deleting API Gateway..")
+
+        client = self.boto_session.client('apigateway')
+        all_apis = client.get_rest_apis(
+            limit=50
+        )
+
+        for api in all_apis['items']:
+            if api['name'] != project_name:
+                continue
+            response = client.delete_rest_api(
+                restApiId=api['id']
+            )
+            print("Undeployed API!")
+
+        return
 
     def get_api_url(self, stage_name):
         """

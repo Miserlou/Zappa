@@ -110,6 +110,8 @@ class ZappaCLI(object):
             self.invoke()
         elif command == 'tail': # pragma: no cover
             self.tail()
+        elif command == 'undeploy': # pragma: no cover
+            self.tail()
         else:
             print("The command '%s' is not recognized." % command)
             return
@@ -244,6 +246,21 @@ class ZappaCLI(object):
             except SystemExit:
                 os._exit(0)
 
+
+    def undeploy(self):
+
+        confirm = raw_input("Are you sure you want to undeploy? [y/n]")
+        if confirm != 'y':
+            return
+
+        self.zappa.undeploy_api_gateway(self.project_name)
+        self.zappa.delete_lamdbda_function(self.lambda_name)
+
+        self.zappa.rollback_lambda_function_version(
+            self.lambda_name, versions_back=revision)
+        print("Done!")
+
+        return
 
     ##
     # Utility
