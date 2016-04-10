@@ -98,7 +98,7 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
             status = '200 OK'
             response_headers = [('Set-Cookie', 'foo=123'),
                                 ('Set-Cookie', 'bar=456'),
-                                ('Set-Cookie', 'baz=789; Expires=Wed, 09 Jun 2001 10:18:14 GMT;')]
+                                ('Set-Cookie', 'baz=789; Expires=Wed, 09-Jun-2001 10:18:14 GMT;')]
             start_response(status, response_headers)
             return ['Set cookies!']
 
@@ -249,9 +249,9 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
         # Setting the cookies
         def simple_app(environ, start_response):
             status = '200 OK'
-            response_headers = [('Set-Cookie', 'boss=hogg; Expires=Wed, 09 Jun 2021 10:18:14 GMT;'),
-                                ('Set-Cookie', 'spank=stank; Expires=Wed, 09 Jun 2010 10:18:14 GMT;'),
-                                ('Set-Cookie', 'out=lawz; Expires=Wed, 09 Jun 2001 10:18:14 GMT;')]
+            response_headers = [('Set-Cookie', 'boss=hogg; Expires=Wed, 09-Jun-2021 10:18:14 GMT;'),
+                                ('Set-Cookie', 'spank=stank; Expires=Wed, 09-Jun-2010 10:18:14 GMT;'),
+                                ('Set-Cookie', 'out=lawz; Expires=Wed, 09-Jun-2001 10:18:14 GMT;')]
             start_response(status, response_headers)
             return ['Stale cookies!']
 
