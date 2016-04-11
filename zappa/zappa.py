@@ -188,7 +188,7 @@ class Zappa(object):
         'PATCH',
         'POST'
     ]
-    parameter_depth = 5
+    parameter_depth = 8
     integration_response_codes = [200, 301, 400, 401, 403, 404, 500]
     integration_content_types = [
         'text/html',
