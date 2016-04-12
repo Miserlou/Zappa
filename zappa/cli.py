@@ -12,11 +12,13 @@ from __future__ import unicode_literals
 import argparse
 import datetime
 import inspect
+import importlib
 import json
 import os
 import re
 import requests
 import sys
+import tempfile
 import unicodedata
 import zipfile
 
@@ -46,6 +48,9 @@ class ZappaCLI(object):
 
     api_stage = None
     app_function = None
+    aws_region = None
+    debug = None
+    prebuild_script = None
     project_name = None
     lambda_name = None
     s3_bucket_name = None
@@ -54,7 +59,7 @@ class ZappaCLI(object):
     vpc_config = None
     memory_size = None
 
-    def handle(self):
+    def handle(self, argv=None):
         """
         Main function.
 
@@ -67,39 +72,47 @@ class ZappaCLI(object):
                        help="Command to execute. Can be one of 'deploy', 'update', 'tail' and 'rollback'.")
         parser.add_argument('-n', '--num-rollback', type=int, default=0,
                             help='The number of versions to rollback.')
+        parser.add_argument('-s', '--settings_file', type=str, default='zappa_settings.json',
+                            help='The path to a zappa settings file.')
+        parser.add_argument('-a', '--app_function', type=str, default=None,
+                            help='The WSGI application function.')
 
-        args = parser.parse_args()
+        args = parser.parse_args(argv)
         vargs = vars(args)
-        if not any(vargs.values()):
+        if not any(vargs.values()): # pragma: no cover
             parser.error("Please supply a command to execute. Can be one of 'deploy', 'update', 'tail', rollback', 'invoke'.'")
             return
 
         # Parse the input
         command_env = vargs['command_env']
-        if len(command_env) < 2:
-            parser.error("Please supply an environment to deploy to.")
+        if len(command_env) < 2: # pragma: no cover
+            parser.error("Please supply an environment to interact with.")
             return
         command = command_env[0]
         self.api_stage = command_env[1]
 
         # Load our settings
-        self.load_settings()
+        self.load_settings(vargs['settings_file'])
+        if vargs['app_function'] is not None:
+            self.app_function = vargs['app_function']
 
         # Hand it off
-        if command == 'deploy':
+        if command == 'deploy': # pragma: no cover
             self.deploy()
-        elif command == 'update':
+        elif command == 'update': # pragma: no cover
             self.update()
-        elif command == 'rollback':
+        elif command == 'rollback': # pragma: no cover
             if vargs['num_rollback'] < 1: # pragma: no cover
                 parser.error("Please enter the number of iterations to rollback.")
                 return                
             self.rollback(vargs['num_rollback'])
-        elif command == 'invoke':
+        elif command == 'invoke': # pragma: no cover
             self.invoke()
-        elif command == 'tail':
+        elif command == 'tail': # pragma: no cover
             self.tail()
-        else: # pragma: no cover
+        elif command == 'undeploy': # pragma: no cover
+            self.tail()
+        else:
             print("The command '%s' is not recognized." % command)
             return
 
@@ -113,6 +126,10 @@ class ZappaCLI(object):
         and create the API Gateway routes.
 
         """
+
+        # Execute the prebuild script
+        if self.prebuild_script:
+            self.execute_prebuild_script()
 
         # Make sure the necessary IAM execution roles are available
         self.zappa.create_iam_roles()
@@ -161,6 +178,10 @@ class ZappaCLI(object):
         """
         Repackage and update the function code.
         """
+
+        # Execute the prebuild script
+        if self.prebuild_script:
+            self.execute_prebuild_script()
 
         # Create the Lambda Zip,
         self.create_package()
@@ -226,6 +247,21 @@ class ZappaCLI(object):
                 os._exit(0)
 
 
+    def undeploy(self):
+
+        confirm = raw_input("Are you sure you want to undeploy? [y/n]")
+        if confirm != 'y':
+            return
+
+        self.zappa.undeploy_api_gateway(self.project_name)
+        self.zappa.delete_lamdbda_function(self.lambda_name)
+
+        self.zappa.rollback_lambda_function_version(
+            self.lambda_name, versions_back=revision)
+        print("Done!")
+
+        return
+
     ##
     # Utility
     ##
@@ -272,10 +308,17 @@ class ZappaCLI(object):
         self.memory_size = self.zappa_settings[
             self.api_stage].get('memory_size', 512)
         self.app_function = self.zappa_settings[
-            self.api_stage]['app_function']
+            self.api_stage].get('app_function', None)
+        self.aws_region = self.zappa_settings[
+            self.api_stage].get('aws_region', 'us-east-1')
+        self.debug = self.zappa_settings[
+            self.api_stage].get('debug', True)
+        self.prebuild_script = self.zappa_settings[
+            self.api_stage].get('prebuild_script', None)
 
         # Create an Zappa object..
         self.zappa = Zappa(session)
+        self.zappa.aws_region = self.aws_region
 
         # Load your AWS credentials from ~/.aws/credentials
         self.zappa.load_credentials(session)
@@ -314,7 +357,18 @@ class ZappaCLI(object):
         with zipfile.ZipFile(self.zip_path, 'a') as lambda_zip:
             app_module, app_function = self.app_function.rsplit('.', 1)
             settings_s = "# Generated by Zappa\nAPP_MODULE='%s'\nAPP_FUNCTION='%s'\n" % (app_module, app_function)
-            lambda_zip.writestr('zappa_settings.py', settings_s)
+            
+            if self.debug is not None:
+                settings_s = settings_s + "DEBUG='%s'" % (self.debug) # Cast to Bool in handler
+
+            # Lambda requires a specific chmod
+            temp_settings = tempfile.NamedTemporaryFile(delete=False)
+            os.chmod(temp_settings.name, 0644)
+            temp_settings.write(settings_s)
+            temp_settings.close()
+            lambda_zip.write(temp_settings.name, 'zappa_settings.py')
+            os.remove(temp_settings.name)
+
             lambda_zip.close()
 
         return
@@ -325,7 +379,10 @@ class ZappaCLI(object):
         """
 
         if self.zappa_settings[self.api_stage].get('delete_zip', True):
-            os.remove(self.zip_path)
+            try:
+                os.remove(self.zip_path)
+            except Exception as e: # pragma: no cover
+                pass
 
     def remove_uploaded_zip(self):
         """
@@ -353,6 +410,10 @@ class ZappaCLI(object):
         return re.sub('[-\s]+', '-', value)
 
     def print_logs(self, logs):
+        """
+        Parse, filter and print logs to the console.
+        
+        """
 
         for log in logs:
             timestamp = log['timestamp']
@@ -366,16 +427,40 @@ class ZappaCLI(object):
 
             print("[" + str(timestamp) + "] " + message.strip())
 
+    def execute_prebuild_script(self):
+        """
+        Parse and execute the prebuild_script from the zappa_settings.
+
+        """
+
+        # Parse the string
+        prebuild_module_s, prebuild_function_s = self.prebuild_script.rsplit('.', 1)
+
+        # The module
+        prebuild_module = importlib.import_module(prebuild_module_s)
+
+        # The function
+        prebuild_function = getattr(prebuild_module, prebuild_function_s)
+
+        # Execute it
+        prebuild_function()
+
 ####################################################################
 # Main
 ####################################################################
-
-if __name__ == '__main__': # pragma: no cover
-    handle()
 
 def handle(): # pragma: no cover
     try:
         cli = ZappaCLI()
         sys.exit(cli.handle())
+    except (KeyboardInterrupt, SystemExit): # pragma: no cover
+        if cli.zip_path: # Remove the Zip from S3 upon failure.
+            cli.remove_uploaded_zip()
+        return
     except Exception as e:
+        if cli.zip_path: # Remove the Zip from S3 upon failure.
+            cli.remove_uploaded_zip()
         print(e)
+
+if __name__ == '__main__': # pragma: no cover
+    handle()

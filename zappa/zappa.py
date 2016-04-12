@@ -72,6 +72,30 @@ POST_TEMPLATE_MAPPING = """#set($rawPostData = $input.path('$'))
   }  
 }"""
 
+FORM_ENCODED_TEMPLATE_MAPPING = """
+{
+  "body" : "$util.base64Encode($input.body)",
+  "headers": {
+    #foreach($header in $input.params().header.keySet())
+    "$header": "$util.escapeJavaScript($input.params().header.get($header))" #if($foreach.hasNext),#end
+    
+    #end
+  },
+  "method": "$context.httpMethod",
+  "params": {
+    #foreach($param in $input.params().path.keySet())
+    "$param": "$util.escapeJavaScript($input.params().path.get($param))" #if($foreach.hasNext),#end
+    
+    #end
+  },
+  "query": {
+    #foreach($queryParam in $input.params().querystring.keySet())
+    "$queryParam": "$util.escapeJavaScript($input.params().querystring.get($queryParam))" #if($foreach.hasNext),#end
+    
+    #end
+  }  
+}"""
+
 ASSUME_POLICY = """{
   "Version": "2012-10-17",
   "Statement": [
@@ -114,6 +138,20 @@ ATTACH_POLICY = """{
                 "ec2:CreateNetworkInterface"
             ],
             "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:*"
+            ],
+            "Resource": "arn:aws:s3:::*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "sqs:*"
+            ],
+            "Resource": "arn:aws:sqs:::*"
         }
     ]
 }"""
@@ -125,7 +163,7 @@ REDIRECT_RESPONSE_TEMPLATE = ""
 API_GATEWAY_REGIONS = ['us-east-1', 'us-west-2', 'eu-west-1', 'ap-northeast-1']
 LAMBDA_REGIONS = ['us-east-1', 'us-west-2', 'eu-west-1', 'ap-northeast-1']
 
-ZIP_EXCLUDES =  ['*.exe', '*.DS_Store', '*.Python', '*.git', '*.zip', '*.tar.gz', '*.dist-info']
+ZIP_EXCLUDES =  ['*.exe', '*.DS_Store', '*.Python', '*.git', '*.zip', '*.tar.gz']
 
 ##
 # Classes
@@ -150,7 +188,7 @@ class Zappa(object):
         'PATCH',
         'POST'
     ]
-    parameter_depth = 5
+    parameter_depth = 8
     integration_response_codes = [200, 301, 400, 401, 403, 404, 500]
     integration_content_types = [
         'text/html',
@@ -192,7 +230,7 @@ class Zappa(object):
         Returns path to that file.
 
         """
-        print("Packaging project as zip....")
+        print("Packaging project as zip...")
 
         venv = os.environ['VIRTUAL_ENV']
 
@@ -221,7 +259,7 @@ class Zappa(object):
         temp_project_path = os.path.join(tempfile.gettempdir(), str(int(time.time())))
 
         if minify:
-            excludes = ZIP_EXCLUDES + exclude + [split_venv[-1] + '*']
+            excludes = ZIP_EXCLUDES + exclude + [split_venv[-1]]
             shutil.copytree(cwd, temp_project_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
         else:
             shutil.copytree(cwd, temp_project_path, symlinks=False)
@@ -232,7 +270,7 @@ class Zappa(object):
         site_packages = os.path.join(venv, 'lib', 'python2.7', 'site-packages')
 
         if minify:
-            excludes = ZIP_EXCLUDES + exclude + [split_venv[-1] + '*']
+            excludes = ZIP_EXCLUDES + exclude
             shutil.copytree(site_packages, temp_package_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
         else:
             shutil.copytree(site_packages, temp_package_path, symlinks=False)
@@ -307,12 +345,13 @@ class Zappa(object):
         """
         s3 = self.boto_session.resource('s3')
 
+        # If this bucket doesn't exist, make it.
+        # Will likely fail, but that's apparently the best way to check
+        # it exists, since boto3 doesn't expose a better check.
         try:
             s3.create_bucket(Bucket=bucket_name)
         except Exception as e: # pragma: no cover
-            print(e)
-            print("Couldn't create bucket.")
-            return False
+            pass
 
         if not os.path.isfile(source_path) or os.stat(source_path).st_size == 0:
             print("Problem with source file {}".format(source_path))
@@ -436,6 +475,7 @@ class Zappa(object):
         client = self.boto_session.client('lambda')
 
         response = client.list_versions_by_function(FunctionName=function_name)
+
         #Take into account $LATEST
         if len(response['Versions']) < versions_back + 1:
             print("We do not have {} revisions. Aborting".format(str(versions_back)))
@@ -454,6 +494,19 @@ class Zappa(object):
         response = client.update_function_code(FunctionName=function_name, ZipFile=response.content, Publish=publish) # pragma: no cover
 
         return response['FunctionArn']
+
+    def delete_lambda_function(self, function_name):
+        """
+        Given a function name, delete it from AWS Lambda.
+
+        Returns the response.
+
+        """
+        client = self.boto_session.client('lambda')
+        response = client.delete_function(
+            FunctionName=function_name,
+        )
+        return response
 
     ##
     # API Gateway
@@ -487,6 +540,7 @@ class Zappa(object):
             )
 
         api_id = response['id']
+
         ##
         # The Resources
         ##
@@ -548,9 +602,11 @@ class Zappa(object):
 
             template_mapping = TEMPLATE_MAPPING
             post_template_mapping = POST_TEMPLATE_MAPPING
+            form_encoded_template_mapping = FORM_ENCODED_TEMPLATE_MAPPING
             content_mapping_templates = {
-                'application/json': template_mapping,
-                'application/x-www-form-urlencoded': post_template_mapping
+                'application/json': template_mapping, 
+                'application/x-www-form-urlencoded': post_template_mapping,
+                'multipart/form-data': form_encoded_template_mapping
             }
             credentials = self.credentials_arn  # This must be a Role ARN
             uri = 'arn:aws:apigateway:' + self.boto_session.region_name + ':lambda:path/2015-03-31/functions/' + lambda_arn + '/invocations'
@@ -664,6 +720,31 @@ class Zappa(object):
 
         endpoint_url = "https://" + api_id + ".execute-api." + self.boto_session.region_name + ".amazonaws.com/" + stage_name
         return endpoint_url
+
+    def undeploy_api_gateway(self, project_name):
+        """
+        Delete a deployed REST API Gateway.
+
+        Returns
+
+        """
+
+        print("Deleting API Gateway..")
+
+        client = self.boto_session.client('apigateway')
+        all_apis = client.get_rest_apis(
+            limit=50
+        )
+
+        for api in all_apis['items']:
+            if api['name'] != project_name:
+                continue
+            response = client.delete_rest_api(
+                restApiId=api['id']
+            )
+            print("Undeployed API!")
+
+        return
 
     def get_api_url(self, stage_name):
         """

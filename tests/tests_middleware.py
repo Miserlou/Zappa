@@ -98,7 +98,7 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
             status = '200 OK'
             response_headers = [('Set-Cookie', 'foo=123'),
                                 ('Set-Cookie', 'bar=456'),
-                                ('Set-Cookie', 'baz=789; Expires=Wed, 09 Jun 2001 10:18:14 GMT;')]
+                                ('Set-Cookie', 'baz=789; Expires=Wed, 09-Jun-2001 10:18:14 GMT;')]
             start_response(status, response_headers)
             return ['Set cookies!']
 
@@ -186,8 +186,8 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
         # Same as above but with 302f
         def simple_app(environ, start_response):
             status = '302 Found'
-            response_headers = [('Location', url),
-                                ('Derp', 'Max-Squirt'),
+            response_headers = [('Derp', 'Max-Squirt'),
+                                ('Location', url),
                                 ('Set-Cookie', 'foo=456')]
             start_response(status, response_headers)
             return [body]
@@ -202,8 +202,8 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
         self.assertEqual(self.status[0], '200 OK')
         self.assertEqual(len(self.headers), 3)
 
-        self.assertEqual(self.headers[0][0], 'Location')
-        self.assertEqual(self.headers[0][1], url)
+        self.assertEqual(self.headers[1][0], 'Location')
+        self.assertEqual(self.headers[1][1], url)
 
         self.assertEqual(self.headers[2][0], 'Set-Cookie')
         self.assertTrue(self.headers[2][1].startswith('zappa='))
@@ -249,9 +249,9 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
         # Setting the cookies
         def simple_app(environ, start_response):
             status = '200 OK'
-            response_headers = [('Set-Cookie', 'boss=hogg; Expires=Wed, 09 Jun 2021 10:18:14 GMT;'),
-                                ('Set-Cookie', 'spank=stank; Expires=Wed, 09 Jun 2010 10:18:14 GMT;'),
-                                ('Set-Cookie', 'out=lawz; Expires=Wed, 09 Jun 2001 10:18:14 GMT;')]
+            response_headers = [('Set-Cookie', 'boss=hogg; Expires=Wed, 09-Jun-2021 10:18:14 GMT;'),
+                                ('Set-Cookie', 'spank=stank; Expires=Wed, 09-Jun-2010 10:18:14 GMT;'),
+                                ('Set-Cookie', 'out=lawz; Expires=Wed, 09-Jun-2001 10:18:14 GMT;')]
             start_response(status, response_headers)
             return ['Stale cookies!']
 

@@ -5,12 +5,25 @@
 ## Zappa - Serverless Python Web Services 
 
 [![Build Status](https://travis-ci.org/Miserlou/Zappa.svg)](https://travis-ci.org/Miserlou/Zappa)
-[![Coverage](https://img.shields.io/coveralls/Miserlou/Zappa.svg)](https://coveralls.io/github/Miserlou/Zappa) 
+[![Coverage](https://img.shields.io/coveralls/Miserlou/Zappa.svg)](https://coveralls.io/github/Miserlou/Zappa)
+[![Requirements Status](https://requires.io/github/Miserlou/Zappa/requirements.svg?branch=master)](https://requires.io/github/Miserlou/Zappa/requirements/?branch=master) 
+[![PyPI](https://img.shields.io/pypi/dm/Zappa.svg?style=flat)](https://pypi.python.org/pypi/zappa/)
+[![PyPI](https://img.shields.io/pypi/v/Zappa.svg)](https://pypi.python.org/pypi/zappa)
 [![Slack](https://img.shields.io/badge/chat-slack-ff69b4.svg)](https://slackautoinviter.herokuapp.com/)
 
 **Zappa** makes it super easy to deploy all Python WSGI applications on AWS Lambda + API Gateway. Think of it as "serverless" web hosting for your Python web apps. 
 
-It's great for deploying serverless microservices with frameworks like Flask and Bottle, and for hosting larger web apps and CMSes with Django. Or, you can use any WSGI-compatible app you like!
+> What do you mean "serverless"?
+
+Okay, so there still is a server - but it only has a _40 millisecond_ life cycle! Serverless in this case means **"without any permanent infrastucture."**
+
+With a traditional HTTP server, the server is online 24/7, processing requests one by one as they come in. If the queue of incoming requests grows too large, some requests will time out. With Zappa, **each request is given its own virtual HTTP "server"** by Amazon API Gateway. AWS handles the horizontal scaling automatically, so no requests ever time out. Each request then calls your application from a memory cache in AWS Lambda and returns the response via Python's WSGI interface. After your app returns, the "server" dies.
+
+Better still, with Zappa you only pay for the milliseconds of server time that you use, so it's many **orders of magnitude cheaper** than VPS/PaaS hosts like Linode or Heroku - and in most cases, it's completely free. Plus, there's no need to worry about load balancing or keeping servers online ever again.
+
+It's great for deploying serverless microservices with frameworks like Flask and Bottle, and for hosting larger web apps and CMSes with Django. Or, you can use any WSGI-compatible app you like! You **probably don't need to change your existing applications** to use it, and you're not locked into using it.
+
+And finally, Zappa is **super easy to use**. You can deploy your application with a single command out of the box.  
 
 Using **Zappa** means:
 
@@ -21,12 +34,9 @@ Using **Zappa** means:
 
 __Awesome!__
 
-This project is for the Zappa core library and utility, which can be used by any WSGI-compatible web framework (which is pretty much all of them.) Zappa also handles:
-
-* Packaging projects into Lambda-ready zip files and uploading them to S3
-* Correctly setting up IAM roles and permissions
-* Automatically configuring API Gateway routes, methods and integration responses
-* Deploying the API to various stages of readiness
+<p align="center">
+  <img src="http://i.imgur.com/f1PJxCQ.gif" alt="Zappa Demo Gif"/>
+</p>
 
 ## Installation and Configuration
 
@@ -102,12 +112,16 @@ to change Zappa's behavior. Use these at your own risk!
  {
     "dev": {
         "aws_region": "us-east-1", // AWS Region (default US East),
+        "debug": true // Print Zappa configuration errors tracebacks in the 500
+        "delete_zip": true // Delete the local zip archive after code updates
         "domain": "yourapp.yourdomain.com", // Required if you're using a domain
+        "exclude": ["*.gz", "*.pem"], // A list of regex patterns to exclude from the archive
         "http_methods": ["GET", "POST"], // HTTP Methods to route,
         "integration_response_codes": [200, 301, 404, 500], // Integration response status codes to route
         "memory_size": 512, // Lambda function memory in MB
         "method_response_codes": [200, 301, 404, 500], // Method response status codes to route
-        "parameter_depth": 10, // Size of URL depth to route. Defaults to 5.
+        "parameter_depth": 10, // Size of URL depth to route. Defaults to 8.
+        "prebuild_script": "your_module.your_function", // Function to execute before uploading code
         "role_name": "MyLambdaRole", // Lambda execution Role
         "s3_bucket": "dev-bucket", // Zappa zip bucket,
         "settings_file": "~/Projects/MyApp/settings/dev_settings.py", // Server side settings file location,
@@ -129,6 +143,32 @@ Lambda has a limitation that functions which aren't called very often take longe
 
 To enable Cross-Origin Resource Sharing (CORS) for your application, follow the [AWS "How to CORS" Guide](https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-cors.html) to enable CORS via the API Gateway Console. Don't forget to re-deploy your API after making the changes!
 
+#### Deploying to a Domain With a Let's Encrypt Certificate
+
+If you want to use Zappa on a domain with a free Let's Encrypt certificate, you can follow [this guide](https://github.com/Miserlou/Zappa/blob/master/docs/domain_with_free_ssl.md).
+
+## Zappa Guides
+
+* [Django-Zappa tutorial screencast](https://www.youtube.com/watch?v=plUrbPN0xc8&feature=youtu.be).
+* [Using Django-Zappa, Part 1](https://serverlesscode.com/post/zappa-wsgi-for-python/).
+* [Using Django-Zappa, Part 2: VPCs](https://serverlesscode.com/post/zappa-wsgi-for-python-pt-2/).
+* [Building Serverless Microservices with Zappa and Flask](https://gun.io/blog/serverless-microservices-with-zappa-and-flask/)
+* _Your guide here?_
+
+## Zappa in the Press
+
+* _[Zappa Serves Python, Minus the Servers](http://www.infoworld.com/article/3031665/application-development/zappa-serves-python-web-apps-minus-the-servers.html)_
+* _[Zappa lyfter serverlösa applikationer med Python](http://computersweden.idg.se/2.2683/1.649895/zappa-lyfter-python)_
+* _[Interview: Rich Jones on Zappa](https://serverlesscode.com/post/rich-jones-interview-django-zappa/)_
+
+## Sites Using Zappa
+
+* [zappa.gun.io](https://zappa.gun.io) - A Zappa "Hello, World" (real homepage coming.. soon..)
+* [spheres.gun.io](https://spheres.gun.io)  - Spheres, a photosphere host and viewer
+* [Mailchimp Signup Utility](https://github.com/sasha42/Mailchimp-utility) - A microservice for adding people to a mailing list via API. 
+* [Serverless Image Host](https://github.com/Miserlou/serverless-imagehost) - A thumbnailing service with Flask, Zappa and Pillow.
+* Your site here? 
+
 ## Hacks
 
 Zappa goes quite far beyond what Lambda and API Gateway were ever intended to handle. As a result, there are quite a few hacks in here that allow it to work. Some of those include, but aren't limited to..
@@ -138,19 +178,6 @@ Zappa goes quite far beyond what Lambda and API Gateway were ever intended to ha
 * Packing and _Base58_ encoding multiple cookies into a single cookie because we can only map one kind.
 * Turning cookie-setting 301/302 responses into 200 responses with HTML redirects, because we have no way to set headers on redirects.
 
-## Sites Using Zappa
+## Contributing
 
-* [zappa.gun.io](https://zappa.gun.io) - A Zappa "Hello, World" (real homepage coming.. soon..)
-* [spheres.gun.io](https://spheres.gun.io)  - Spheres, a photosphere host and viewer
-* [Mailchimp Signup Utility](https://github.com/sasha42/Mailchimp-utility) - A microservice for adding people to a mailing list via API. 
-* Your site here? 
-
-## TODO
-
-This project is very young, so there is still plenty to be done. Contributions are more than welcome! Please file tickets before submitting patches, and submit your patches to the "dev" branch.
-
-Things that need work right now:
-
-* Testing
-* Feedback
-* Real documentation / website!
+This project is still young, so there is still plenty to be done. Contributions are more than welcome! Please file tickets before submitting patches, and submit your patches to the "dev" branch.
