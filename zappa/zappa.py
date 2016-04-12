@@ -169,7 +169,7 @@ class Zappa(object):
 
     role_name = "ZappaLambdaExecution"
     aws_region = 'us-east-1'
-    
+
     ##
     # Credentials
     ##
@@ -241,21 +241,19 @@ class Zappa(object):
 
         # Then the pre-compiled packages..
         if use_precompiled_packages:
+            installed_packages_name_set = {package.project_name.lower() for package in
+                                           pip.get_installed_distributions()}
 
-            installed_packages = pip.get_installed_distributions()
-            for package in installed_packages:
-                package_name = package.project_name.lower()
-                for name, details in lambda_packages.items():
-                    if name.lower() == package_name:
-                        tar = tarfile.open(details['path'], mode="r:gz")
-                        for member in tar.getmembers():
+            for name, details in lambda_packages.items():
+                if name.lower() in installed_packages_name_set:
+                    tar = tarfile.open(details['path'], mode="r:gz")
+                    for member in tar.getmembers():
+                        # If we can, trash the local version.
+                        if member.isdir():
+                            shutil.rmtree(os.path.join(temp_project_path, member.name), ignore_errors=True)
+                            continue
 
-                            # If we can, trash the local version.
-                            if member.isdir():
-                                shutil.rmtree(os.path.join(temp_project_path, member.name), ignore_errors=True)
-                                continue
-
-                            tar.extract(member, temp_project_path)
+                        tar.extract(member, temp_project_path)
 
         # If a handler_file is supplied, copy that to the root of the package,
         # because that's where AWS Lambda looks for it. It can't be inside a package.
@@ -551,7 +549,7 @@ class Zappa(object):
             template_mapping = TEMPLATE_MAPPING
             post_template_mapping = POST_TEMPLATE_MAPPING
             content_mapping_templates = {
-                'application/json': template_mapping, 
+                'application/json': template_mapping,
                 'application/x-www-form-urlencoded': post_template_mapping
             }
             credentials = self.credentials_arn  # This must be a Role ARN
@@ -571,7 +569,7 @@ class Zappa(object):
                 cacheKeyParameters=[]
             )
             report_progress()
-                
+
             ##
             # Method Response
             ##
@@ -746,7 +744,7 @@ class Zappa(object):
 
         all_streams = streams['logStreams']
         all_names = [stream['logStreamName'] for stream in all_streams]
-        response = client.filter_log_events(logGroupName=log_name, 
+        response = client.filter_log_events(logGroupName=log_name,
                             logStreamNames=all_names,
                             filterPattern=filter_pattern,
                             limit=limit)
