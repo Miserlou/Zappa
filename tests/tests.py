@@ -8,6 +8,8 @@ import random
 import string
 import unittest
 
+from lambda_packages import lambda_packages
+
 from .utils import placebo_session
 
 from zappa.cli import ZappaCLI
@@ -36,11 +38,15 @@ class TestZappa(unittest.TestCase):
         Zappa()
 
     def test_create_lambda_package(self):
-        self.assertTrue(True)
-        z = Zappa()
-        path = z.create_lambda_zip(handler_file=os.path.realpath(__file__))
-        self.assertTrue(os.path.isfile(path))
-        os.remove(path)
+        # mock the pip.get_installed_distributions() to include a package in lambda_packages so that the code
+        # for zipping pre-compiled packages gets called
+        mock_named_tuple = collections.namedtuple('mock_named_tuple', ['project_name'])
+        mock_return_val = [mock_named_tuple(lambda_packages.keys()[0])]  # choose name of 1st package in lambda_packages
+        with mock.patch('pip.get_installed_distributions', return_value=mock_return_val):
+            z = Zappa()
+            path = z.create_lambda_zip(handler_file=os.path.realpath(__file__))
+            self.assertTrue(os.path.isfile(path))
+            os.remove(path)
 
     def test_load_credentials(self):
         z = Zappa()
