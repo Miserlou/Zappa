@@ -502,6 +502,8 @@ class Zappa(object):
         Returns the response.
 
         """
+        print("Deleting lambda function..")
+
         client = self.boto_session.client('lambda')
         response = client.delete_function(
             FunctionName=function_name,
@@ -733,7 +735,7 @@ class Zappa(object):
 
         client = self.boto_session.client('apigateway')
         all_apis = client.get_rest_apis(
-            limit=50
+            limit=500
         )
 
         for api in all_apis['items']:
@@ -742,7 +744,6 @@ class Zappa(object):
             response = client.delete_rest_api(
                 restApiId=api['id']
             )
-            print("Undeployed API!")
 
         return
 

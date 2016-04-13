@@ -97,6 +97,14 @@ You can also rollback the deployed code to a previous version by supplying the n
 
     $ zappa rollback production -n 3
 
+#### Undeploy
+
+If you need to remove the API Gateway and Lambda function that you have previously published, you can simply:
+
+    $ zappa undeploy production
+
+You will be asked for confirmation before it executes.
+
 #### Tailing Logs
 
 You can watch the logs of a deployment by calling the "tail" management command.
