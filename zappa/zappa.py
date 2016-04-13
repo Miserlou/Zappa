@@ -215,8 +215,8 @@ class Zappa(object):
     boto_session = None
     credentials_arn = None
 
-    def __init__(self, boto_session=None):
-        self.load_credentials(boto_session)
+    def __init__(self, boto_session=None, profile_name=None):
+        self.load_credentials(boto_session, profile_name)
 
     ##
     # Packaging
@@ -837,16 +837,30 @@ class Zappa(object):
     # Utility
     ##
 
-    def load_credentials(self, boto_session=None):
-        if not boto_session:
-            # automatically load credentials from config or environment
+    def load_credentials(self, boto_session=None, profile_name=None):
+        """
+        Load AWS credentials.
 
-            # set aws_region to None to use the system's region instead
+        An optional boto_session can be provided, but that's usually for testing.
+
+        An optional profile_name can be provided for config files that have multiple sets
+        of credentials.
+        """
+
+        # Automatically load credentials from config or environment
+        if not boto_session:
+            
+            # Set aws_region to None to use the system's region instead
             if self.aws_region is None:
                 self.aws_region = boto3.Session().region_name
                 logger.debug("Set region from boto: %s", self.aws_region)
 
-            self.boto_session = boto3.Session(region_name=self.aws_region)
+            # If provided, use the supplied profile name.
+            if profile_name:
+                self.boto_session = boto3.Session(profile_name=profile_name, region_name=self.aws_region)
+            else:
+                self.boto_session = boto3.Session(region_name=self.aws_region)
+
             logger.debug("Loaded boto session from config: %s", boto_session)
         else:
             logger.debug("Using provided boto session: %s", boto_session)

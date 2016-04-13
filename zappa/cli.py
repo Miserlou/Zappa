@@ -52,6 +52,7 @@ class ZappaCLI(object):
     debug = None
     prebuild_script = None
     project_name = None
+    profile_name = None
     lambda_name = None
     s3_bucket_name = None
     settings_file = None
@@ -313,6 +314,8 @@ class ZappaCLI(object):
             self.api_stage].get('debug', True)
         self.prebuild_script = self.zappa_settings[
             self.api_stage].get('prebuild_script', None)
+        self.profile_name = self.zappa_settings[
+            self.api_stage].get('profile_name', None)
 
         # Create an Zappa object..
         self.zappa = Zappa(session)

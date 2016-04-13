@@ -56,6 +56,7 @@ class TestZappa(unittest.TestCase):
         self.assertEqual(z.aws_region, 'us-east-1')
 
         z.aws_region = 'eu-west-1'
+        z.profile_name = 'default'
         z.load_credentials()
         self.assertEqual(z.boto_session.region_name, 'eu-west-1')
         self.assertEqual(z.aws_region, 'eu-west-1')
