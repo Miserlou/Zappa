@@ -13,7 +13,7 @@ import argparse
 import datetime
 import inspect
 import importlib
-import json
+import hjson as json
 import os
 import re
 import requests
