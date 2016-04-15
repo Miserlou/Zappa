@@ -69,7 +69,7 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
         }
 
         # Input processing
-        if method == "POST":
+        if method == "POST" or method =="PUT":
             if 'Content-Type' in event_info["headers"]:
                 environ['CONTENT_TYPE'] = event_info["headers"]['Content-Type']
 
