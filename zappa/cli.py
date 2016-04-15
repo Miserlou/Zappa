@@ -17,6 +17,7 @@ import hjson as json
 import os
 import re
 import requests
+import slugify
 import sys
 import tempfile
 import unicodedata
@@ -295,10 +296,11 @@ class ZappaCLI(object):
         if 'project_name' in self.zappa_settings[self.api_stage]: # pragma: no cover
             self.project_name = self.zappa_settings[self.api_stage]['project_name']
         else:
-            self.project_name = self.slugify(os.getcwd().split(os.sep)[-1])
+            self.project_name = slugify.slugify(os.getcwd().split(os.sep)[-1])
 
         # The name of the actual AWS Lambda function, ex, 'helloworld-dev'
-        self.lambda_name = self.project_name + '-' + self.api_stage
+        # Django's slugify doesn't replace _, but this does.
+        self.lambda_name = slugify.slugify(self.project_name + '-' + self.api_stage)
 
         # Load environment-specific settings
         self.s3_bucket_name = self.zappa_settings[self.api_stage]['s3_bucket']
@@ -395,20 +397,6 @@ class ZappaCLI(object):
 
         # Finally, delete the local copy our zip package
         self.remove_local_zip()
-
-    def slugify(self, value):
-        """
-        
-        Converts to lowercase, removes non-word characters (alphanumerics and
-        underscores) and converts spaces to hyphens. Also strips leading and
-        trailing whitespace.
-
-        Stolen from Django.
-
-        """
-        value = unicodedata.normalize('NFKD', u'' + value).encode('ascii', 'ignore').decode('ascii')
-        value = re.sub('[^\w\s-]', '', value).strip().lower()
-        return re.sub('[-\s]+', '-', value)
 
     def print_logs(self, logs):
         """

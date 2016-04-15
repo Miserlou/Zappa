@@ -364,7 +364,6 @@ class TestZappa(unittest.TestCase):
 
     def test_cli_utility(self):
         zappa_cli = ZappaCLI()
-        zappa_cli.slugify('C:/derp/herp')
         zappa_cli.api_stage = 'ttt333'
         zappa_cli.load_settings('test_settings.json')
         zappa_cli.create_package()
