@@ -12,6 +12,6 @@ python-slugify==1.2.0
 requests>=2.9.1
 six==1.10.0
 tqdm==4.4.1
-Werkzeug==0.11.7
+Werkzeug==0.11.8
 wheel==0.29.0
 wsgi-request-logger==0.4.5
