@@ -223,7 +223,7 @@ class Zappa(object):
     ##
 
     def create_lambda_zip(self, prefix='lambda_package', handler_file=None,
-                          minify=True, exclude=None, use_precompiled_packages=True):
+                          minify=True, exclude=None, use_precompiled_packages=True, include=None):
         """
         Creates a Lambda-ready zip file of the current virtualenvironment and working directory.
 
@@ -254,6 +254,12 @@ class Zappa(object):
             parts.append(os.path.join(path, tail))
             return map(os.path.normpath, parts)[::-1]
         split_venv = splitpath(venv)
+        split_cwd = splitpath(cwd)
+
+        # Ideally this should be avoided automatically,
+        # but this serves as an okay stop-gap measure.
+        if split_venv[-1] == split_cwd[-1]:
+            print("Warning! Your project and virtualenv have the same name! You may want to re-create your venv with a new name, or explicitly define a 'project_name', as this may cause errors.")
 
         # First, do the project..
         temp_project_path = os.path.join(tempfile.gettempdir(), str(int(time.time())))
