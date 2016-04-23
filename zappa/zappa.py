@@ -536,11 +536,8 @@ class Zappa(object):
             api_name = str(int(time.time()))
 
         # Does an API Gateway with this name exist already?
-        try:
-            response = client.get_rest_api(
-                restApiId=api_name
-            )
-        except botocore.exceptions.ClientError as e:
+        apis = client.get_rest_apis()['items']
+        if not len(filter(lambda a: a['name'] == api_name, apis)):
             response = client.create_rest_api(
                 name=api_name,
                 description=api_name + " Zappa",
