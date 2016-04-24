@@ -337,6 +337,7 @@ class Zappa(object):
 
         # Trash the temp directory
         shutil.rmtree(temp_project_path)
+        shutil.rmtree(temp_package_path)
 
         # Warn if this is too large for Lambda.
         file_stats = os.stat(zip_path)
