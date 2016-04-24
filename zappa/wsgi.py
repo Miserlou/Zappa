@@ -18,8 +18,14 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
         params = event_info['params']
         query = event_info['query']
         headers = event_info['headers']
-        content_type = headers.get('content-type',
-                                   headers.get('Content-Type', ''))
+
+        # Make header names canonical, e.g. content-type => Content-Type
+        for header in headers.keys():
+            canonical = header.title()
+            if canonical != header:
+                headers[canonical] = headers.pop(header)
+
+        content_type = headers.get('Content-Type', '')
         # Some clients implement a non-rfc compliant content-type string:
         # e.g. "application/json; charset=utf-8"
         content_type = content_type.lower().split(';')[0]
