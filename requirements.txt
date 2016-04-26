@@ -11,7 +11,7 @@ python-dateutil==2.5.3
 python-slugify==1.2.0
 requests>=2.9.1
 six==1.10.0
-tqdm==4.4.1
-Werkzeug==0.11.8
+tqdm==4.5.0
+Werkzeug==0.11.9
 wheel==0.29.0
 wsgi-request-logger==0.4.5
