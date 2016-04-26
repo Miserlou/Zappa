@@ -17,7 +17,7 @@ with open(os.path.join(os.path.dirname(__file__), 'test_requirements.txt')) as f
 
 setup(
     name='zappa',
-    version='0.17.5',
+    version='0.17.6',
     packages=['zappa'],
     install_requires=required,
     tests_require=test_required,
