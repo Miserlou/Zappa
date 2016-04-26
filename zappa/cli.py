@@ -140,11 +140,11 @@ class ZappaCLI(object):
         self.create_package()
 
         # Upload it to S3
-        try:
-            zip_arn = self.zappa.upload_to_s3(
+        success = self.zappa.upload_to_s3(
                 self.zip_path, self.s3_bucket_name)
-        except (KeyboardInterrupt, SystemExit): # pragma: no cover
-            raise
+        if not success:
+            print("Unable to upload to S3. Quitting.")
+            return
 
         # Register the Lambda function with that zip as the source
         # You'll also need to define the path to your lambda_handler code.
@@ -189,7 +189,10 @@ class ZappaCLI(object):
         self.create_package()
 
         # Upload it to S3
-        self.zappa.upload_to_s3(self.zip_path, self.s3_bucket_name)
+        success = self.zappa.upload_to_s3(self.zip_path, self.s3_bucket_name)
+        if not success:
+            print("Unable to upload to S3. Quitting.")
+            return
 
         # Register the Lambda function with that zip as the source
         # You'll also need to define the path to your lambda_handler code.
@@ -270,6 +273,8 @@ class ZappaCLI(object):
         """
         Load the local zappa_settings.json file. 
 
+        An existing boto session can be supplied, though this is likely for testing purposes.
+
         Returns the loaded Zappa object.
         """
 
@@ -321,10 +326,12 @@ class ZappaCLI(object):
 
         # Create an Zappa object..
         self.zappa = Zappa(session)
+
+        # Explicitly set our AWS Region
         self.zappa.aws_region = self.aws_region
 
         # Load your AWS credentials from ~/.aws/credentials
-        self.zappa.load_credentials(session)
+        self.zappa.load_credentials(session, self.profile_name)
 
         # ..and configure it
         for setting in CUSTOM_SETTINGS:

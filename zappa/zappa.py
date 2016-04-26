@@ -377,10 +377,18 @@ class Zappa(object):
             print("Uploading zip (" + str(self.human_size(source_size)) + ")...")
             progress = tqdm(total=float(os.path.getsize(source_path)), unit_scale=True)
 
-            s3.meta.client.upload_file(
-                source_path, bucket_name, dest_path,
-                Callback=progress.update
-            )
+            # Attempt to upload to S3 using the S3 meta client with the progress bar.
+            # If we're unable to do that, try one more time using a session client,
+            # which cannot use the progress bar.
+            # Related: https://github.com/boto/boto3/issues/611
+            try:
+                s3.meta.client.upload_file(
+                    source_path, bucket_name, dest_path,
+                    Callback=progress.update
+                )
+            except Exception as e: # pragma: no cover                
+                s3 = self.boto_session.client('s3')
+                s3.upload_file(source_path, bucket_name, dest_path)
 
             progress.close()
         except (KeyboardInterrupt, SystemExit): # pragma: no cover
