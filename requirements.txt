@@ -4,7 +4,7 @@ botocore==1.4.15
 docutils==0.12
 docopt>=0.6.1
 futures==3.0.5
-hjson==1.5.5
+hjson==1.5.6
 jmespath==0.9.0
 lambda-packages==0.5.0
 python-dateutil==2.5.3
