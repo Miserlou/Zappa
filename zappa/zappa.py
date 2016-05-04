@@ -310,7 +310,7 @@ class Zappa(object):
         s3 = self.boto_session.resource('s3')
 
         try:
-            s3.create_bucket(Bucket=bucket_name)
+            s3.create_bucket(Bucket=bucket_name, CreateBucketConfiguration={"LocationConstraint": self.aws_region})
         except Exception as e: # pragma: no cover
             print(e)
             print("Couldn't create bucket.")
