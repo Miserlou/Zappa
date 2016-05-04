@@ -1,5 +1,5 @@
 {
-    "ttt333": {
+    "ttt555": {
        "s3_bucket": "lmbda",
        "app_function": "tests.test_app.hello_world",
        "delete_zip": true,
