@@ -105,7 +105,8 @@ ASSUME_POLICY = """{
       "Principal": {
         "Service": [
           "lambda.amazonaws.com",
-          "apigateway.amazonaws.com"
+          "apigateway.amazonaws.com",
+          "events.amazonaws.com"
         ]
       },
       "Action": "sts:AssumeRole"
@@ -798,6 +799,7 @@ class Zappa(object):
         attach_policy_s = ATTACH_POLICY
 
         attach_policy_obj = json.loads(attach_policy_s)
+        assume_policy_obj = json.loads(assume_policy_s)
 
         iam = self.boto_session.resource('iam')
 
@@ -813,7 +815,7 @@ class Zappa(object):
                                    AssumeRolePolicyDocument=assume_policy_s)
             self.credentials_arn = role.arn
 
-        # create or update the role's policy if needed
+        # create or update the role's policies if needed
         policy = iam.RolePolicy(self.role_name, 'zappa-permissions')
         try:
             if policy.policy_document != attach_policy_obj:
@@ -824,7 +826,51 @@ class Zappa(object):
             print("Creating zappa-permissions policy on " + self.role_name + " IAM Role.")
             policy.put(PolicyDocument=attach_policy_s)
 
+        if role.assume_role_policy_document != assume_policy_obj:
+            print("Updating assume role policy on " + self.role_name + " IAM Role.")
+            client = boto3.client('iam') # Is there a way to do this with the IAM session?
+            client.update_assume_role_policy(
+                RoleName=self.role_name, 
+                PolicyDocument=assume_policy_s
+            )
+
         return self.credentials_arn
+
+    ##
+    # CloudWatch Events
+    ##
+
+    def create_keep_warm(self, lambda_arn, name=None, schedule_expression='rate(5 minutes)', function_name="handler"):
+        """
+        Fetch the CloudWatch logs for a given Lambda name.
+
+        """
+
+        client = self.boto_session.client('events')
+
+        if not name:
+            name = "zappa-keep-warm-"
+
+        response = client.put_rule(
+            Name=name,
+            ScheduleExpression=schedule_expression,
+            State='ENABLED',
+            Description='Zappa Keep Warm',
+            RoleArn=self.credentials_arn
+        )
+
+        target_arn = 'arn:aws:lambda:%s:%s:function:%s' % (self.aws_region, lambda_arn, function_name)
+        response = client.put_targets(
+            Rule='string',
+            Targets=[
+                {
+                    'Id': '1',
+                    'Arn': target_arn,
+                    'Input': '',
+                    'InputPath': ''
+                },
+            ]
+        )
 
     ##
     # CloudWatch Logging
