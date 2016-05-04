@@ -1,0 +1,12 @@
+{
+    "status_code": 201, 
+    "data": {
+        "apiKeyRequired": false, 
+        "httpMethod": "GET", 
+        "authorizationType": "NONE", 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 201, 
+            "RequestId": "be0fd625-123e-11e6-96bb-bba00ad25cb4"
+        }
+    }
+}

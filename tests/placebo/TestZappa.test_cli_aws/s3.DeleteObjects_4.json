@@ -1,0 +1,15 @@
+{
+    "status_code": 200, 
+    "data": {
+        "Deleted": [
+            {
+                "Key": "zappa-ttt555-1462397217.zip"
+            }
+        ], 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "HostId": "HVlUIGD2JFaaTM1VqUgOhTfffSNrhuezHs1Jv7oSlI8YhpEyy++apoZ5jhXBtqpIMBebskeS9Rs=", 
+            "RequestId": "DFDD54D95D220180"
+        }
+    }
+}

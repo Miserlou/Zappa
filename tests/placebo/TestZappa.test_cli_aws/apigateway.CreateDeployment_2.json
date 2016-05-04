@@ -1,0 +1,20 @@
+{
+    "status_code": 201, 
+    "data": {
+        "id": "2qlmza", 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 201, 
+            "RequestId": "e978d06a-123e-11e6-ac75-dbe1cd03fe31"
+        }, 
+        "createdDate": {
+            "hour": 17, 
+            "__class__": "datetime", 
+            "month": 5, 
+            "second": 52, 
+            "microsecond": 0, 
+            "year": 2016, 
+            "day": 4, 
+            "minute": 26
+        }
+    }
+}

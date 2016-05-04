@@ -1,0 +1,14 @@
+{
+    "status_code": 200, 
+    "data": {
+        "ETag": "\"30cd613bd7078853d90dfc8ab97a8156-6\"", 
+        "Bucket": "lmbda", 
+        "Location": "https://lmbda.s3.amazonaws.com/zappa-ttt555-1462397217.zip", 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "HostId": "prwME3Eu8pjhhKpzD/onvTxwGtMcR+euMNp8Lw6f1lZ4UgYaes2UNuHhwpxo3zj/FISJ98dJxzs=", 
+            "RequestId": "B0EECD0B858B5E4F"
+        }, 
+        "Key": "zappa-ttt555-1462397217.zip"
+    }
+}

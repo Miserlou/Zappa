@@ -1,0 +1,21 @@
+{
+    "status_code": 200, 
+    "data": {
+        "logStreams": [
+            {
+                "firstEventTimestamp": 1462397216249, 
+                "lastEventTimestamp": 1462397216249, 
+                "creationTime": 1462397214332, 
+                "uploadSequenceToken": "49560634375137379661859441512439440362148386349753841330", 
+                "logStreamName": "2016/05/04/[$LATEST]927dd9ed97e141c5b8ceebeabc9c9a2e", 
+                "lastIngestionTime": 1462397231357, 
+                "arn": "arn:aws:logs:us-east-1:724336686645:log-group:/aws/lambda/zappa-ttt555:log-stream:2016/05/04/[$LATEST]927dd9ed97e141c5b8ceebeabc9c9a2e", 
+                "storedBytes": 0
+            }
+        ], 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "RequestId": "1b422d09-123f-11e6-a166-7d1acbba1489"
+        }
+    }
+}

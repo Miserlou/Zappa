@@ -1,0 +1,45 @@
+{
+    "status_code": 200, 
+    "data": {
+        "searchedLogStreams": [
+            {
+                "searchedCompletely": true, 
+                "logStreamName": "2016/05/04/[$LATEST]927dd9ed97e141c5b8ceebeabc9c9a2e"
+            }
+        ], 
+        "events": [
+            {
+                "ingestionTime": 1462397216276, 
+                "timestamp": 1462397216249, 
+                "message": "START RequestId: ec143b8e-123e-11e6-bb58-dfb87a648e41 Version: $LATEST\n", 
+                "eventId": "32612547698609436129129063282012610985541291941689753600", 
+                "logStreamName": "2016/05/04/[$LATEST]927dd9ed97e141c5b8ceebeabc9c9a2e"
+            }, 
+            {
+                "ingestionTime": 1462397231357, 
+                "timestamp": 1462397216265, 
+                "message": "[INFO]\t2016-05-04T21:26:56.264Z\tec143b8e-123e-11e6-bb58-dfb87a648e41\t72.231.27.57 - - [04/May/2016:21:26:56 +0000] \"GET / HTTP/1.1\" 200 30 \"\" \"python-requests/2.9.1\" 0/14.443\n", 
+                "eventId": "32612547698966248052305553270508827753040189878169174016", 
+                "logStreamName": "2016/05/04/[$LATEST]927dd9ed97e141c5b8ceebeabc9c9a2e"
+            }, 
+            {
+                "ingestionTime": 1462397231357, 
+                "timestamp": 1462397216265, 
+                "message": "END RequestId: ec143b8e-123e-11e6-bb58-dfb87a648e41\n", 
+                "eventId": "32612547698966248052305553270508827753040189878169174017", 
+                "logStreamName": "2016/05/04/[$LATEST]927dd9ed97e141c5b8ceebeabc9c9a2e"
+            }, 
+            {
+                "ingestionTime": 1462397231357, 
+                "timestamp": 1462397216265, 
+                "message": "REPORT RequestId: ec143b8e-123e-11e6-bb58-dfb87a648e41\tDuration: 15.20 ms\tBilled Duration: 100 ms \tMemory Size: 512 MB\tMax Memory Used: 18 MB\t\n", 
+                "eventId": "32612547698966248052305553270508827753040189878169174018", 
+                "logStreamName": "2016/05/04/[$LATEST]927dd9ed97e141c5b8ceebeabc9c9a2e"
+            }
+        ], 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "RequestId": "1b4a4395-123f-11e6-a39f-d1ad0156576b"
+        }
+    }
+}

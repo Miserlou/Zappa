@@ -364,7 +364,7 @@ class TestZappa(unittest.TestCase):
 
     def test_cli_utility(self):
         zappa_cli = ZappaCLI()
-        zappa_cli.api_stage = 'ttt333'
+        zappa_cli.api_stage = 'ttt555'
         zappa_cli.load_settings('test_settings.json')
         zappa_cli.create_package()
         zappa_cli.remove_local_zip()
@@ -391,13 +391,13 @@ class TestZappa(unittest.TestCase):
     def test_cli_args(self):
         zappa_cli = ZappaCLI()
         # Sanity
-        argv = '-s test_settings.json derp ttt333'.split()
+        argv = '-s test_settings.json derp ttt555'.split()
         zappa_cli.handle(argv)
 
     @placebo_session
     def test_cli_aws(self, session):
         zappa_cli = ZappaCLI()
-        zappa_cli.api_stage = 'ttt333'
+        zappa_cli.api_stage = 'ttt555'
         zappa_cli.load_settings('test_settings.json', session)
         zappa_cli.zappa.credentials_arn = 'arn:aws:iam::724336686645:role/ZappaLambdaExecution'
         zappa_cli.deploy()

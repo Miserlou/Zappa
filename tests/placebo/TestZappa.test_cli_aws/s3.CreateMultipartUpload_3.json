@@ -1,0 +1,13 @@
+{
+    "status_code": 200, 
+    "data": {
+        "Bucket": "lmbda", 
+        "UploadId": "1_a_PjH0tqlMd662DeBGF52efFRDdjx3NS4jlnqK1G3tw8yNnkgSS8eIPYGCIixB2UKA2weOAb0r9rj6U5gNXQ--", 
+        "Key": "zappa-ttt555-1462397100.zip", 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "HostId": "iON1dVQSqpDF4xfUy0hevGPLt1A9eE/2j2qrR+Mke5QlWlzcZvC1Z/7C2TCmk+6fqb4shtaBD8w=", 
+            "RequestId": "DC48C27FB5A4BF32"
+        }
+    }
+}

@@ -1,0 +1,27 @@
+{
+    "status_code": 200, 
+    "data": {
+        "Code": {
+            "RepositoryType": "S3", 
+            "Location": "https://prod-04-2014-tasks.s3.amazonaws.com/snapshots/724336686645/zappa-ttt555-5f3ce7e7-910e-45c0-9ad9-ddde438e0e6b?x-amz-security-token=FQoDYXdzEGYaDOTwkJlI%2BgXJTFCcPSK0A7teG54A%2BLjn1cRm5S840h%2FlpcTCX%2FHfLlF3rk0wgtnxbENi2kwc%2B0sbj0ogUN77tMtezAaaZHml8dCCrve3EKr%2BaT%2F8SX%2Fgx7tHhwT7dvP5lMMgsXXKEaV4TJTtVnHg%2FV8IXNVCWOMyCIhpOHPtofqUvwU6%2FCNjnSGbK2kASsw2%2B8QSzAP6W0STj3X8gqFytUQUggIrzkUpK7nzDfHXIkt0XNRMH7JIvwvqGFN%2FNTxCh5HfWmbuKxN49q%2BdF9%2BeTyhgEBr56e0tFV50yRSe5OMmso%2FjEXs%2FLygGGrbE10Es0FrJcVs6a9ueL5uV5DDTEkQKdXqK9WBNWU%2FBE5zJMz8NmYgT4FrWxVuXHB1vTz%2FsuUWT7XwYWhpEs25TYrsJh%2F2QD14utF4ZUghuEnz4KTPk%2Fdhs6srlAzGAoQxaAaQyhT8eRKco48bf8FrJPVSQO0EBVGd1naThKu38Wr5%2BNDsG6rKdJ%2F2PJjUPFGsRYuLYhtdwxaJgKcifQzzts%2Bsa%2BAnAOn7jdqC%2Fds8fbz03s%2FF7kIlhL%2F4vIw%2BUKn%2Bpjf9%2BlJPBKCWlNr5stcuOVkMFSGCijscorLmpuQU%3D&AWSAccessKeyId=ASIAJICA4DCRKRONNCWQ&Expires=1462397855&Signature=EWmA8G7tKPpECJ4CtDJUlqS4%2FAE%3D"
+        }, 
+        "Configuration": {
+            "Version": "1", 
+            "CodeSha256": "BVwdwGmIC8giO2tawFpj1tNf3idFqD8qnCtHbzZZe7I=", 
+            "FunctionName": "zappa-ttt555", 
+            "MemorySize": 512, 
+            "CodeSize": 45060765, 
+            "FunctionArn": "arn:aws:lambda:us-east-1:724336686645:function:zappa-ttt555:1", 
+            "Handler": "handler.lambda_handler", 
+            "Role": "arn:aws:iam::724336686645:role/ZappaLambdaExecution", 
+            "Timeout": 30, 
+            "LastModified": "2016-05-04T21:25:30.225+0000", 
+            "Runtime": "python2.7", 
+            "Description": "Zappa Deployment"
+        }, 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "RequestId": "049f5819-123f-11e6-be12-25e7eb4e756a"
+        }
+    }
+}

@@ -1,0 +1,22 @@
+{
+    "status_code": 201, 
+    "data": {
+        "id": "g06e9ew1y0", 
+        "name": "zappa-ttt555", 
+        "description": "zappa-ttt555 Zappa", 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 201, 
+            "RequestId": "bd507dda-123e-11e6-b4a5-257eb49a4977"
+        }, 
+        "createdDate": {
+            "hour": 17, 
+            "__class__": "datetime", 
+            "month": 5, 
+            "second": 35, 
+            "microsecond": 0, 
+            "year": 2016, 
+            "day": 4, 
+            "minute": 25
+        }
+    }
+}

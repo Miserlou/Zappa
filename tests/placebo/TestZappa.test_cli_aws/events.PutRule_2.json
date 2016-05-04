@@ -1,0 +1,10 @@
+{
+    "status_code": 200, 
+    "data": {
+        "RuleArn": "arn:aws:events:us-east-1:724336686645:rule/zappa-keep-warm", 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "RequestId": "040588dc-123f-11e6-ad9f-3f8ab88bc537"
+        }
+    }
+}

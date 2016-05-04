@@ -1,0 +1,21 @@
+{
+    "status_code": 201, 
+    "data": {
+        "CodeSha256": "BVwdwGmIC8giO2tawFpj1tNf3idFqD8qnCtHbzZZe7I=", 
+        "FunctionName": "zappa-ttt555", 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 201, 
+            "RequestId": "b8c8852c-123e-11e6-8bee-b309214dacc6"
+        }, 
+        "CodeSize": 45060765, 
+        "MemorySize": 512, 
+        "FunctionArn": "arn:aws:lambda:us-east-1:724336686645:function:zappa-ttt555", 
+        "Version": "1", 
+        "Role": "arn:aws:iam::724336686645:role/ZappaLambdaExecution", 
+        "Timeout": 30, 
+        "LastModified": "2016-05-04T21:25:30.225+0000", 
+        "Handler": "handler.lambda_handler", 
+        "Runtime": "python2.7", 
+        "Description": "Zappa Deployment"
+    }
+}
