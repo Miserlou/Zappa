@@ -145,7 +145,7 @@ to change Zappa's behavior. Use these at your own risk!
 }
 ```
 
-#### Keeping the server warm
+#### Keeping The Server Warm
 
 Zappa will automatically set up a regularly occuring execution of your application in order to keep the Lambda function warm. This can be disabled via the 'keep_warm' setting.
 
