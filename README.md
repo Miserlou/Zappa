@@ -126,6 +126,7 @@ to change Zappa's behavior. Use these at your own risk!
         "exclude": ["*.gz", "*.pem"], // A list of regex patterns to exclude from the archive
         "http_methods": ["GET", "POST"], // HTTP Methods to route,
         "integration_response_codes": [200, 301, 404, 500], // Integration response status codes to route
+        "keep_warm": true, // Create CloudWatch events to keep the server warm.
         "memory_size": 512, // Lambda function memory in MB
         "method_response_codes": [200, 301, 404, 500], // Method response status codes to route
         "parameter_depth": 10, // Size of URL depth to route. Defaults to 8.
@@ -146,7 +147,7 @@ to change Zappa's behavior. Use these at your own risk!
 
 #### Keeping the server warm
 
-Lambda has a limitation that functions which aren't called very often take longer to start - sometimes up to ten seconds. However, functions that are called regularly are cached and start quickly, usually in less than 50ms. To ensure that your servers are kept in a cached state, you can [manually configure](http://stackoverflow.com/a/27382253) a scheduled task for your Zappa function that'll keep the server cached by calling it every 5 minutes. There is currently no way to configure this through API, so you'll have to set this up manually. When this ability is available via API, Zappa will configure this automatically. It would be nice to also add support LetsEncrypt through this same mechanism.
+Zappa will automatically set up a regularly occuring execution of your application in order to keep the Lambda function warm. This can be disabled via the 'keep_warm' setting.
 
 #### Enabling CORS
 

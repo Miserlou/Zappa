@@ -104,8 +104,8 @@ ASSUME_POLICY = """{
       "Effect": "Allow",
       "Principal": {
         "Service": [
-          "lambda.amazonaws.com",
           "apigateway.amazonaws.com",
+          "lambda.amazonaws.com",
           "events.amazonaws.com"
         ]
       },
@@ -840,16 +840,13 @@ class Zappa(object):
     # CloudWatch Events
     ##
 
-    def create_keep_warm(self, lambda_arn, name=None, schedule_expression='rate(5 minutes)', function_name="handler"):
+    def create_keep_warm(self, lambda_arn, name="zappa-keep-warm", schedule_expression="rate(5 minutes)", function_name="handler.lambda_handler"):
         """
-        Fetch the CloudWatch logs for a given Lambda name.
+        Schedule a regularly occuring execution to keep the function warm in cache.
 
         """
 
         client = self.boto_session.client('events')
-
-        if not name:
-            name = "zappa-keep-warm-"
 
         response = client.put_rule(
             Name=name,
@@ -859,12 +856,12 @@ class Zappa(object):
             RoleArn=self.credentials_arn
         )
 
-        target_arn = 'arn:aws:lambda:%s:%s:function:%s' % (self.aws_region, lambda_arn, function_name)
+        target_arn = lambda_arn
         response = client.put_targets(
-            Rule='string',
+            Rule=name,
             Targets=[
                 {
-                    'Id': '1',
+                    'Id': str(sum([ ord(c) for c in lambda_arn])), # Is this insane?
                     'Arn': target_arn,
                     'Input': '',
                     'InputPath': ''

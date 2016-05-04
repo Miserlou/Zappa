@@ -155,6 +155,10 @@ class ZappaCLI(object):
                                                        vpc_config=self.vpc_config,
                                                        memory_size=self.memory_size)
 
+        # Create a Keep Warm for this deployment
+        if self.zappa_settings[self.api_stage].get('keep_warm', True):
+            self.zappa.create_keep_warm(lambda_arn)
+
         # Create and configure the API Gateway
         api_id = self.zappa.create_api_gateway_routes(
             lambda_arn, self.lambda_name)
@@ -185,6 +189,9 @@ class ZappaCLI(object):
         if self.prebuild_script:
             self.execute_prebuild_script()
 
+        # Make sure the necessary IAM execution roles are available
+        self.zappa.create_iam_roles()
+
         # Create the Lambda Zip,
         self.create_package()
 
@@ -198,6 +205,10 @@ class ZappaCLI(object):
         # You'll also need to define the path to your lambda_handler code.
         lambda_arn = self.zappa.update_lambda_function(
             self.s3_bucket_name, self.zip_path, self.lambda_name)
+
+        # Create a Keep Warm for this deployment
+        if self.zappa_settings[self.api_stage].get('keep_warm', True):
+            self.zappa.create_keep_warm(lambda_arn)
 
         # Remove the uploaded zip from S3, because it is now registered..
         self.zappa.remove_from_s3(self.zip_path, self.s3_bucket_name)
