@@ -363,7 +363,7 @@ class Zappa(object):
         # Will likely fail, but that's apparently the best way to check
         # it exists, since boto3 doesn't expose a better check.
         try:
-            s3.create_bucket(Bucket=bucket_name)
+            s3.create_bucket(Bucket=bucket_name, CreateBucketConfiguration={"LocationConstraint": self.aws_region})
         except Exception as e: # pragma: no cover
             pass
 
