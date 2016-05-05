@@ -840,6 +840,18 @@ class Zappa(object):
     # CloudWatch Events
     ##
 
+    def schedule_events(self):
+        """
+        Scans the modules of the current project (venv excluded),
+        looks for any modules decorated with zappa scheduling expressions,
+        then registers those events.
+
+        TODO.
+
+        """
+
+        return
+
     def create_keep_warm(self, lambda_arn, name="zappa-keep-warm", schedule_expression="rate(5 minutes)", function_name="handler.lambda_handler"):
         """
         Schedule a regularly occuring execution to keep the function warm in cache.
