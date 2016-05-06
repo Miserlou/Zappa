@@ -2,6 +2,7 @@ import base64
 import boto3
 import botocore
 import fnmatch
+import imp
 import json
 import logging
 import os
@@ -841,7 +842,7 @@ class Zappa(object):
     # CloudWatch Events
     ##
 
-    def schedule_events(self):
+    def schedule_events(self, path=os.getcwd()):
         """
         Scans the modules of the current project (venv excluded),
         looks for any modules decorated with zappa scheduling expressions,
@@ -851,20 +852,16 @@ class Zappa(object):
 
         """
 
-        for name, val in self.__dict__.iteritems(): 
-            if callable(val):
-                val()
-
-        import imp
-        modules = []
-
         skip_roots = []
-        for root, dirnames, filenames in os.walk(os.getcwd()):
+        for root, dirnames, filenames in os.walk(path):
 
             # Skip virtualenvironments
             if 'pip-selfcheck.json' in filenames:
                 skip_roots.append(root)
                 continue
+
+            print root
+            print filenames
 
             breakout = False
             for skip in skip_roots:
@@ -876,7 +873,12 @@ class Zappa(object):
             for filename in fnmatch.filter(filenames, '*.py'):
                 filepath = os.path.join(root, filename)
                 mod_name = filename.split('.')[0]
-                py_mod = imp.load_source(mod_name, filepath)
+                if mod_name in ['cli', 'setup']:
+                    continue
+                try:
+                    py_mod = imp.load_source(mod_name, filepath)
+                except Exception as e:
+                    continue
 
         for key, value in sys.modules.items():
             if not value:

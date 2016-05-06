@@ -193,6 +193,13 @@ class TestZappa(unittest.TestCase):
         json.loads(ASSUME_POLICY)
         json.loads(ATTACH_POLICY)
 
+    def test_schedule_events(self):
+        z = Zappa()
+        import os
+        path = os.getcwd()
+        print path
+        z.schedule_events(path=path)
+
     ##
     # Logging
     ##
