@@ -8,6 +8,7 @@ import os
 import pip
 import requests
 import shutil
+import sys
 import tarfile
 import tempfile
 import time
@@ -849,6 +850,48 @@ class Zappa(object):
         TODO.
 
         """
+
+        for name, val in self.__dict__.iteritems(): 
+            if callable(val):
+                val()
+
+        import imp
+        modules = []
+
+        skip_roots = []
+        for root, dirnames, filenames in os.walk(os.getcwd()):
+
+            # Skip virtualenvironments
+            if 'pip-selfcheck.json' in filenames:
+                skip_roots.append(root)
+                continue
+
+            breakout = False
+            for skip in skip_roots:
+                if skip in root:
+                    breakout = True
+            if breakout:
+                continue
+
+            for filename in fnmatch.filter(filenames, '*.py'):
+                filepath = os.path.join(root, filename)
+                mod_name = filename.split('.')[0]
+                py_mod = imp.load_source(mod_name, filepath)
+
+        for key, value in sys.modules.items():
+            if not value:
+                continue
+            if not hasattr(value, '__file__'):
+                continue
+            path = value.__file__
+            if 'site-packages' in path:
+                continue
+            if os.getcwd() not in path:
+                continue
+
+            for name, val in value.__dict__.iteritems(): 
+                if callable(val):
+                    continue # XXX DO ZAPPA_WRAP_CHECK HERE!
 
         return
 

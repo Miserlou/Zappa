@@ -114,6 +114,8 @@ class ZappaCLI(object):
             self.tail()
         elif command == 'undeploy': # pragma: no cover
             self.undeploy()
+        elif command == 'schedule': # pragma: no cover
+            self.schedule()
         else:
             print("The command '%s' is not recognized." % command)
             return
@@ -275,6 +277,12 @@ class ZappaCLI(object):
         print("Done!")
 
         return
+
+    def schedule(self):
+
+        self.zappa.schedule_events()
+        return
+
 
     ##
     # Utility
