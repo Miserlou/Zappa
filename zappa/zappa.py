@@ -233,7 +233,7 @@ class Zappa(object):
     ##
 
     def create_lambda_zip(self, prefix='lambda_package', handler_file=None,
-                          minify=True, exclude=None, use_precompiled_packages=True, include=None):
+                          minify=True, exclude=None, use_precompiled_packages=True, include=None, venv=None):
         """
         Creates a Lambda-ready zip file of the current virtualenvironment and working directory.
 
@@ -242,7 +242,12 @@ class Zappa(object):
         """
         print("Packaging project as zip...")
 
-        venv = os.environ['VIRTUAL_ENV']
+        if not venv:
+            try:
+                venv = os.environ['VIRTUAL_ENV']
+            except KeyError as e: # pragma: no cover
+                print("Zappa requires an active virtual environment.")
+                quit()
 
         cwd = os.getcwd()
         zip_fname = prefix + '-' + str(int(time.time())) + '.zip'
@@ -860,9 +865,6 @@ class Zappa(object):
                 skip_roots.append(root)
                 continue
 
-            print root
-            print filenames
-
             breakout = False
             for skip in skip_roots:
                 if skip in root:
@@ -873,8 +875,12 @@ class Zappa(object):
             for filename in fnmatch.filter(filenames, '*.py'):
                 filepath = os.path.join(root, filename)
                 mod_name = filename.split('.')[0]
+
+                # This clearly isn't a workable solution.
+                # Maybe we can read the file looking for our decorators?
                 if mod_name in ['cli', 'setup']:
                     continue
+
                 try:
                     py_mod = imp.load_source(mod_name, filepath)
                 except Exception as e:

@@ -195,9 +195,7 @@ class TestZappa(unittest.TestCase):
 
     def test_schedule_events(self):
         z = Zappa()
-        import os
         path = os.getcwd()
-        print path
         z.schedule_events(path=path)
 
     ##
