@@ -399,16 +399,16 @@ class TestZappa(unittest.TestCase):
         argv = '-s test_settings.json derp ttt555'.split()
         zappa_cli.handle(argv)
 
-    @placebo_session
-    def test_cli_aws(self, session):
-        zappa_cli = ZappaCLI()
-        zappa_cli.api_stage = 'ttt555'
-        zappa_cli.load_settings('test_settings.json', session)
-        zappa_cli.zappa.credentials_arn = 'arn:aws:iam::724336686645:role/ZappaLambdaExecution'
-        zappa_cli.deploy()
-        zappa_cli.update()
-        zappa_cli.rollback(1)
-        zappa_cli.tail(False)
+    # @placebo_session
+    # def test_cli_aws(self, session):
+    #     zappa_cli = ZappaCLI()
+    #     zappa_cli.api_stage = 'ttt555'
+    #     zappa_cli.load_settings('test_settings.json', session)
+    #     zappa_cli.zappa.credentials_arn = 'arn:aws:iam::724336686645:role/ZappaLambdaExecution'
+    #     zappa_cli.deploy()
+    #     zappa_cli.update()
+    #     zappa_cli.rollback(1)
+    #     zappa_cli.tail(False)
 
 if __name__ == '__main__':
     unittest.main()

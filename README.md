@@ -123,8 +123,8 @@ to change Zappa's behavior. Use these at your own risk!
         "debug": true // Print Zappa configuration errors tracebacks in the 500
         "delete_zip": true // Delete the local zip archive after code updates
         "events": [{
-            "function": "your_module.your_function", # The function to execute
-            "expression': "rate(1 minute)" # When to execute it (in cron or rate format)
+            "function": "your_module.your_function", // The function to execute
+            "expression': "rate(1 minute)" // When to execute it (in cron or rate format)
         }],
         "domain": "yourapp.yourdomain.com", // Required if you're using a domain
         "exclude": ["*.gz", "*.pem"], // A list of regex patterns to exclude from the archive
