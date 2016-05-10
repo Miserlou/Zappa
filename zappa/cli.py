@@ -159,8 +159,8 @@ class ZappaCLI(object):
                                                        memory_size=self.memory_size)
 
         # Create a Keep Warm for this deployment
-        # if self.zappa_settings[self.api_stage].get('keep_warm', True):
-        #     self.zappa.create_keep_warm(self.lambda_arn)
+        if self.zappa_settings[self.api_stage].get('keep_warm', True):
+            self.zappa.create_keep_warm(self.lambda_arn)
 
         # Create and configure the API Gateway
         api_id = self.zappa.create_api_gateway_routes(
@@ -210,8 +210,8 @@ class ZappaCLI(object):
             self.s3_bucket_name, self.zip_path, self.lambda_name)
 
         # Create a Keep Warm for this deployment
-        # if self.zappa_settings[self.api_stage].get('keep_warm', True):
-        #     self.zappa.create_keep_warm(self.lambda_arn)
+        if self.zappa_settings[self.api_stage].get('keep_warm', True):
+            self.zappa.create_keep_warm(self.lambda_arn)
 
         # Remove the uploaded zip from S3, because it is now registered..
         self.zappa.remove_from_s3(self.zip_path, self.s3_bucket_name)
@@ -294,7 +294,6 @@ class ZappaCLI(object):
             self.update()
 
             print "Scheduling.."
-
             self.zappa.schedule_events(self.lambda_arn, self.lambda_name, events)
 
         return

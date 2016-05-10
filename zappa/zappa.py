@@ -910,6 +910,7 @@ class Zappa(object):
         """
 
         client = self.boto_session.client('events')
+        lambda_client = self.boto_session.client('lambda')
 
         response = client.put_rule(
             Name=name,
@@ -917,6 +918,14 @@ class Zappa(object):
             State='ENABLED',
             Description='Zappa Keep Warm',
             RoleArn=self.credentials_arn
+        )
+
+        response = lambda_client.add_permission(
+            FunctionName=lambda_name,
+            StatementId=''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8)),
+            Action='lambda:InvokeFunction',
+            Principal='events.amazonaws.com',
+            SourceArn=response['RuleArn'],
         )
 
         target_arn = lambda_arn
@@ -927,7 +936,6 @@ class Zappa(object):
                     'Id': str(sum([ ord(c) for c in lambda_arn])), # Is this insane?
                     'Arn': target_arn,
                     'Input': '',
-                    'InputPath': ''
                 },
             ]
         )
