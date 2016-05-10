@@ -854,7 +854,7 @@ class Zappa(object):
         Given a Lambda ARN, name and a list of events, schedule this as CloudWatch Events.
 
         'events' is a list of dictionaries, where the dict must contains the string
-        of a 'module' and the string of the event 'expression', and an optional 'name' and 'description'.
+        of a 'function' and the string of the event 'expression', and an optional 'name' and 'description'.
 
         Expressions can be in rate or cron format:
             http://docs.aws.amazon.com/lambda/latest/dg/tutorial-scheduled-events-schedule-expressions.html
@@ -866,10 +866,10 @@ class Zappa(object):
 
         for event in events:
 
-            module = event['module']
+            function = event['function']
             schedule_expression = event['expression']
-            name = event.get('name', module)
-            description = event.get('description', module)
+            name = event.get('name', function)
+            description = event.get('description', function)
 
             response = client.put_rule(
                 Name=name,
@@ -887,14 +887,14 @@ class Zappa(object):
                 SourceArn=response['RuleArn'],
             )
 
-            # Create the CloudWatch event ARN for this module.
+            # Create the CloudWatch event ARN for this function.
             target_arn = lambda_arn
-            inp = json.dumps({'detail': module})
+            inp = json.dumps({'detail': function})
             target_response = client.put_targets(
                 Rule=name,
                 Targets=[
                     {
-                        'Id': module, # Is this insane?
+                        'Id': function, # Is this insane?
                         'Arn': target_arn,
                         'Input': inp,
                     },
