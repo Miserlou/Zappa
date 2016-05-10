@@ -7,8 +7,10 @@ import json
 import logging
 import os
 import pip
+import random
 import requests
 import shutil
+import string
 import sys
 import tarfile
 import tempfile
@@ -847,63 +849,61 @@ class Zappa(object):
     # CloudWatch Events
     ##
 
-    def schedule_events(self, path=os.getcwd()):
+    def schedule_events(self, lambda_arn, lambda_name, events):
         """
-        Scans the modules of the current project (venv excluded),
-        looks for any modules decorated with zappa scheduling expressions,
-        then registers those events.
+        Given a Lambda ARN, name and a list of events, schedule this as CloudWatch Events.
 
-        TODO.
+        'events' is a list of dictionaries, where the dict must contains the string
+        of a 'module' and the string of the event 'expression', and an optional 'name' and 'description'.
+
+        Expressions can be in rate or cron format:
+            http://docs.aws.amazon.com/lambda/latest/dg/tutorial-scheduled-events-schedule-expressions.html
 
         """
 
-        skip_roots = []
-        for root, dirnames, filenames in os.walk(path):
+        client = self.boto_session.client('events')
+        lambda_client = self.boto_session.client('lambda')
 
-            # Skip virtualenvironments
-            if 'pip-selfcheck.json' in filenames:
-                skip_roots.append(root)
-                continue
+        for event in events:
 
-            breakout = False
-            for skip in skip_roots:
-                if skip in root:
-                    breakout = True
-            if breakout:
-                continue
+            module = event['module']
+            schedule_expression = event['expression']
+            name = event.get('name', module)
+            description = event.get('description', module)
 
-            for filename in fnmatch.filter(filenames, '*.py'):
-                filepath = os.path.join(root, filename)
-                mod_name = filename.split('.')[0]
+            response = client.put_rule(
+                Name=name,
+                ScheduleExpression=schedule_expression,
+                State='ENABLED',
+                Description=description,
+                RoleArn=self.credentials_arn
+            )
 
-                # This clearly isn't a workable solution.
-                # Maybe we can read the file looking for our decorators?
-                if mod_name in ['cli', 'setup']:
-                    continue
+            response = lambda_client.add_permission(
+                FunctionName=lambda_name,
+                StatementId=''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8)),
+                Action='lambda:InvokeFunction',
+                Principal='events.amazonaws.com',
+                SourceArn=response['RuleArn'],
+            )
 
-                try:
-                    py_mod = imp.load_source(mod_name, filepath)
-                except Exception as e:
-                    continue
+            # Create the CloudWatch event ARN for this module.
+            target_arn = lambda_arn
+            inp = json.dumps({'detail': module})
+            target_response = client.put_targets(
+                Rule=name,
+                Targets=[
+                    {
+                        'Id': module, # Is this insane?
+                        'Arn': target_arn,
+                        'Input': inp,
+                    },
+                ]
+            )
 
-        for key, value in sys.modules.items():
-            if not value:
-                continue
-            if not hasattr(value, '__file__'):
-                continue
-            path = value.__file__
-            if 'site-packages' in path:
-                continue
-            if os.getcwd() not in path:
-                continue
+            return
 
-            for name, val in value.__dict__.iteritems(): 
-                if callable(val):
-                    continue # XXX DO ZAPPA_WRAP_CHECK HERE!
-
-        return
-
-    def create_keep_warm(self, lambda_arn, name="zappa-keep-warm", schedule_expression="rate(5 minutes)", function_name="handler.lambda_handler"):
+    def create_keep_warm(self, lambda_arn, name="zappa-keep-warm", schedule_expression="rate(5 minutes)"):
         """
         Schedule a regularly occuring execution to keep the function warm in cache.
 

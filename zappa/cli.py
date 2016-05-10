@@ -54,6 +54,7 @@ class ZappaCLI(object):
     prebuild_script = None
     project_name = None
     profile_name = None
+    lambda_arn = None
     lambda_name = None
     s3_bucket_name = None
     settings_file = None
@@ -150,7 +151,7 @@ class ZappaCLI(object):
 
         # Register the Lambda function with that zip as the source
         # You'll also need to define the path to your lambda_handler code.
-        lambda_arn = self.zappa.create_lambda_function(bucket=self.s3_bucket_name,
+        self.lambda_arn = self.zappa.create_lambda_function(bucket=self.s3_bucket_name,
                                                        s3_key=self.zip_path,
                                                        function_name=self.lambda_name,
                                                        handler='handler.lambda_handler',
@@ -158,12 +159,12 @@ class ZappaCLI(object):
                                                        memory_size=self.memory_size)
 
         # Create a Keep Warm for this deployment
-        if self.zappa_settings[self.api_stage].get('keep_warm', True):
-            self.zappa.create_keep_warm(lambda_arn)
+        # if self.zappa_settings[self.api_stage].get('keep_warm', True):
+        #     self.zappa.create_keep_warm(self.lambda_arn)
 
         # Create and configure the API Gateway
         api_id = self.zappa.create_api_gateway_routes(
-            lambda_arn, self.lambda_name)
+            self.lambda_arn, self.lambda_name)
 
         # Deploy the API!
         endpoint_url = self.zappa.deploy_api_gateway(api_id, self.api_stage)
@@ -205,12 +206,12 @@ class ZappaCLI(object):
 
         # Register the Lambda function with that zip as the source
         # You'll also need to define the path to your lambda_handler code.
-        lambda_arn = self.zappa.update_lambda_function(
+        self.lambda_arn = self.zappa.update_lambda_function(
             self.s3_bucket_name, self.zip_path, self.lambda_name)
 
         # Create a Keep Warm for this deployment
-        if self.zappa_settings[self.api_stage].get('keep_warm', True):
-            self.zappa.create_keep_warm(lambda_arn)
+        # if self.zappa_settings[self.api_stage].get('keep_warm', True):
+        #     self.zappa.create_keep_warm(self.lambda_arn)
 
         # Remove the uploaded zip from S3, because it is now registered..
         self.zappa.remove_from_s3(self.zip_path, self.s3_bucket_name)
@@ -280,7 +281,22 @@ class ZappaCLI(object):
 
     def schedule(self):
 
-        self.zappa.schedule_events()
+        if self.zappa_settings[self.api_stage].get('events', None):
+            events = self.zappa_settings[self.api_stage]['events']
+
+            if type(events) != type([]):
+                print("Events must be supplied as a list.")
+                return
+
+            # Update, as we need to get the Lambda ARN.
+            # There is probably a better way to do this.
+            # http://boto3.readthedocs.io/en/latest/reference/services/lambda.html#Lambda.Client.get_function
+            self.update()
+
+            print "Scheduling.."
+
+            self.zappa.schedule_events(self.lambda_arn, self.lambda_name, events)
+
         return
 
 
