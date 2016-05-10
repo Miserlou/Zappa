@@ -62,6 +62,10 @@ class LambdaHandler(object):
         
         """
 
+        # TODO If this is invoked from a non-APIGW event source,
+        # extract the method and process separately.
+        # ex: {u'account': u'724336686645', u'region': u'us-east-1', u'detail': {}, u'detail-type': u'Scheduled Event', u'source': u'aws.events', u'version': u'0', u'time': u'2016-05-10T21:05:39Z', u'id': u'0d6a6db0-d5e7-4755-93a0-750a8bf49d55', u'resources': [u'arn:aws:events:us-east-1:724336686645:rule/test_app.blovine']}
+
         try:
             time_start = datetime.datetime.now()
 
@@ -158,4 +162,5 @@ class LambdaHandler(object):
 
 
 def lambda_handler(event, context): # pragma: no cover
+
     return LambdaHandler.lambda_handler(event, context)
