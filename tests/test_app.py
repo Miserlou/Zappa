@@ -11,3 +11,6 @@ def hello_world(environ, start_response):
     Hello %(subject)s!
 
 ''' % {'subject': subject}]
+
+def schedule_me():
+    return "Hello!"

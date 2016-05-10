@@ -64,7 +64,20 @@ class LambdaHandler(object):
 
         # TODO If this is invoked from a non-APIGW event source,
         # extract the method and process separately.
-        # ex: {u'account': u'724336686645', u'region': u'us-east-1', u'detail': {}, u'detail-type': u'Scheduled Event', u'source': u'aws.events', u'version': u'0', u'time': u'2016-05-10T21:05:39Z', u'id': u'0d6a6db0-d5e7-4755-93a0-750a8bf49d55', u'resources': [u'arn:aws:events:us-east-1:724336686645:rule/test_app.blovine']}
+
+        if event.get('detail-type', None) is u'Scheduled Event':
+            whole_function = event['resources'][0].split('/')[-1]
+
+            module = whole_function.rsplit('.', 1)[0]
+            function = whole_function.rsplit('.', 1)[1]
+
+            app_module = importlib.import_module(module)
+            app_function = getattr(app_module, function)
+
+            # Execute the function!
+            app_function()
+
+            return
 
         try:
             time_start = datetime.datetime.now()
