@@ -88,11 +88,19 @@ class ZappaCLI(object):
 
         # Parse the input
         command_env = vargs['command_env']
-        if len(command_env) < 2: # pragma: no cover
-            parser.error("Please supply an environment to interact with.")
-            return
         command = command_env[0]
-        self.api_stage = command_env[1]
+        if len(command_env) < 2: # pragma: no cover
+            self.load_settings_file(vargs['settings_file'])
+
+            # If there's only one environment defined in the settings,
+            # use that as the default.
+            if len(self.zappa_settings.keys()) is 1:
+                self.api_stage = self.zappa_settings.keys()[0]
+            else:
+                parser.error("Please supply an environment to interact with.")
+                return
+        else:
+            self.api_stage = command_env[1]
 
         # Load our settings
         self.load_settings(vargs['settings_file'])
@@ -335,13 +343,7 @@ class ZappaCLI(object):
             quit() # pragma: no cover
 
         # Load up file
-        try:
-            with open(settings_file) as json_file:
-                self.zappa_settings = json.load(json_file)
-        except Exception as e: # pragma: no cover
-            print("Problem parsing settings file.")
-            print(e)
-            quit() # pragma: no cover
+        self.load_settings_file(settings_file)
 
         # Make sure that this environment is our settings
         if self.api_stage not in self.zappa_settings.keys():
@@ -391,6 +393,15 @@ class ZappaCLI(object):
                         self.api_stage][setting])        
 
         return self.zappa
+
+    def load_settings_file(self, settings_file="zappa_settings.json"):
+        try:
+            with open(settings_file) as json_file:
+                self.zappa_settings = json.load(json_file)
+        except Exception as e: # pragma: no cover
+            print("Problem parsing settings file.")
+            print(e)
+            quit() # pragma: no cover
 
     def create_package(self):
         """
