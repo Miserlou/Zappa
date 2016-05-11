@@ -903,6 +903,9 @@ class Zappa(object):
 
             return
 
+    def unschedule_events(self, lambda_arn, lambda_name, events):
+        return
+
     def create_keep_warm(self, lambda_arn, lambda_name, name="zappa-keep-warm", schedule_expression="rate(5 minutes)"):
         """
         Schedule a regularly occuring execution to keep the function warm in cache.

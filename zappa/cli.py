@@ -267,6 +267,9 @@ class ZappaCLI(object):
 
 
     def undeploy(self):
+        """
+        Tear down an exiting deployment.
+        """
 
         confirm = raw_input("Are you sure you want to undeploy? [y/n] ")
         if confirm != 'y':
@@ -280,6 +283,11 @@ class ZappaCLI(object):
         return
 
     def schedule(self):
+        """
+        Given a a list of functions and a schedule to execute them,
+        setup up regular execution.
+
+        """
 
         if self.zappa_settings[self.api_stage].get('events', None):
             events = self.zappa_settings[self.api_stage]['events']
@@ -290,14 +298,23 @@ class ZappaCLI(object):
 
             # Update, as we need to get the Lambda ARN.
             # There is probably a better way to do this.
+            # XXX
             # http://boto3.readthedocs.io/en/latest/reference/services/lambda.html#Lambda.Client.get_function
             self.update()
 
-            print "Scheduling.."
+            print("Scheduling..")
             self.zappa.schedule_events(self.lambda_arn, self.lambda_name, events)
 
         return
 
+    def unschedule(self):
+        """
+        Given a a list of scheduled functions,
+        tear down their regular execution.
+
+        """
+
+        return
 
     ##
     # Utility
