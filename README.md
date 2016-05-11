@@ -119,6 +119,12 @@ And then:
 
 And now your function will execute every minute!
 
+If you want to cancel these, you can simply use the 'unschedule' command:
+
+    $ zappa unschedule production
+
+And now your schedule event rules are deleted.
+
 #### Undeploy
 
 If you need to remove the API Gateway and Lambda function that you have previously published, you can simply:

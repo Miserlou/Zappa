@@ -903,7 +903,9 @@ class Zappa(object):
                 ]
             )
 
-            return
+            print("Scheduled " + name + " at " + schedule_expression + ".")
+
+        return
 
     def delete_rule(self, rule_name):
         """
@@ -939,6 +941,25 @@ class Zappa(object):
         return
 
     def unschedule_events(self, lambda_arn, lambda_name, events):
+        """
+        Given a list of events, unschedule these CloudWatch Events.
+
+        'events' is a list of dictionaries, where the dict must contains the string
+        of a 'function' and the string of the event 'expression', and an optional 'name' and 'description'.
+
+        """
+
+        client = self.boto_session.client('events')
+
+        for event in events:
+
+            function = event['function']
+            name = event.get('name', function)
+
+            self.delete_rule(name)
+
+            print("Uncheduled " + name + ".")
+
         return
 
     def create_keep_warm(self, lambda_arn, lambda_name, name="zappa-keep-warm", schedule_expression="rate(5 minutes)"):

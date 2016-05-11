@@ -132,6 +132,8 @@ class ZappaCLI(object):
             self.undeploy()
         elif command == 'schedule': # pragma: no cover
             self.schedule()
+        elif command == 'unschedule': # pragma: no cover
+            self.unschedule()
         else:
             print("The command '%s' is not recognized." % command)
             return
@@ -328,6 +330,16 @@ class ZappaCLI(object):
         tear down their regular execution.
 
         """
+
+        if self.zappa_settings[self.api_stage].get('events', None):
+            events = self.zappa_settings[self.api_stage]['events']
+
+            if type(events) != type([]):
+                print("Events must be supplied as a list.")
+                return
+
+            print("Unscheduling..")
+            self.zappa.unschedule_events(events)
 
         return
 
