@@ -22,6 +22,7 @@ import sys
 import tempfile
 import unicodedata
 import zipfile
+import pkg_resources
 
 from zappa import Zappa
 
@@ -79,6 +80,7 @@ class ZappaCLI(object):
                             help='The path to a zappa settings file.')
         parser.add_argument('-a', '--app_function', type=str, default=None,
                             help='The WSGI application function.')
+        parser.add_argument('-v', '--version', action='store_true', help='Print the zappa version')
 
         args = parser.parse_args(argv)
         vargs = vars(args)
@@ -86,8 +88,14 @@ class ZappaCLI(object):
             parser.error("Please supply a command to execute. Can be one of 'deploy', 'update', 'tail', rollback', 'invoke'.'")
             return
 
+        # version requires no arguments
+        if args.version:
+            self.print_version()
+            sys.exit(0)
+
         # Parse the input
         command_env = vargs['command_env']
+
         if len(command_env) < 2: # pragma: no cover
             parser.error("Please supply an environment to interact with.")
             return
@@ -315,6 +323,13 @@ class ZappaCLI(object):
         """
 
         return
+
+    def print_version(self):
+        """
+        Print the current zappa version.
+        """
+        version = pkg_resources.require("zappa")[0].version
+        print(version)
 
     ##
     # Utility
