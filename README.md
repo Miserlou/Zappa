@@ -97,6 +97,28 @@ You can also rollback the deployed code to a previous version by supplying the n
 
     $ zappa rollback production -n 3
 
+#### Scheduling
+
+Zappa can be used to easily schedule functions to occur on regular intervals. Just list your functions and the expression to schedule them using [cron or rate syntax](http://docs.aws.amazon.com/lambda/latest/dg/tutorial-scheduled-events-schedule-expressions.html) in your *zappa_settings.json* file:
+
+```javascript
+     {
+        "production": {
+            ...
+            "events": [{
+                "function": "your_module.your_function", // The function to execute
+                "expression": "rate(1 minute)" // When to execute it (in cron or rate format)
+            }],
+            ...
+    }
+```
+
+And then:
+
+    $ zappa schedule production
+
+And now your function will execute every minute!
+
 #### Undeploy
 
 If you need to remove the API Gateway and Lambda function that you have previously published, you can simply:
@@ -124,7 +146,7 @@ to change Zappa's behavior. Use these at your own risk!
         "delete_zip": true // Delete the local zip archive after code updates
         "events": [{
             "function": "your_module.your_function", // The function to execute
-            "expression': "rate(1 minute)" // When to execute it (in cron or rate format)
+            "expression": "rate(1 minute)" // When to execute it (in cron or rate format)
         }],
         "domain": "yourapp.yourdomain.com", // Required if you're using a domain
         "exclude": ["*.gz", "*.pem"], // A list of regex patterns to exclude from the archive
