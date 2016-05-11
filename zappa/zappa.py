@@ -903,6 +903,39 @@ class Zappa(object):
 
             return
 
+    def delete_rule(self, rule_name):
+        """
+        Delete a CWE rule.
+
+        """
+
+        client = self.boto_session.client('events')
+
+        targets = client.list_targets_by_rule(
+            Rule=rule_name,
+        )['Targets']
+        for target in targets:
+            response = client.remove_targets(
+                Rule=rule_name,
+                Ids=[
+                    target['Id'],
+                ]
+            )
+
+
+        # Do we have an old keepwarm for this?
+        rules = client.list_rules(
+            NamePrefix=rule_name,
+        )['Rules']
+        for rule in rules:
+            if rule['Name'] == rule_name:
+
+               response = client.delete_rule(
+                    Name=rule_name
+                )
+ 
+        return
+
     def unschedule_events(self, lambda_arn, lambda_name, events):
         return
 
@@ -914,12 +947,16 @@ class Zappa(object):
 
         client = self.boto_session.client('events')
         lambda_client = self.boto_session.client('lambda')
+        rule_name = name + "-" + str(lambda_name)
+
+        # Do we have an old keepwarm for this?
+        self.delete_rule(rule_name)
 
         response = client.put_rule(
-            Name=name,
+            Name=rule_name,
             ScheduleExpression=schedule_expression,
             State='ENABLED',
-            Description='Zappa Keep Warm',
+            Description='Zappa Keep Warm - ' + str(lambda_name),
             RoleArn=self.credentials_arn
         )
 
@@ -933,7 +970,7 @@ class Zappa(object):
 
         target_arn = lambda_arn
         response = client.put_targets(
-            Rule=name,
+            Rule=rule_name,
             Targets=[
                 {
                     'Id': str(sum([ ord(c) for c in lambda_arn])), # Is this insane?
