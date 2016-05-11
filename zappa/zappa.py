@@ -871,6 +871,8 @@ class Zappa(object):
             name = event.get('name', function)
             description = event.get('description', function)
 
+            self.delete_rule(name)
+
             response = client.put_rule(
                 Name=name,
                 ScheduleExpression=schedule_expression,
