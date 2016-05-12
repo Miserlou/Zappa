@@ -80,11 +80,13 @@ class ZappaCLI(object):
                             help='The path to a zappa settings file.')
         parser.add_argument('-a', '--app_function', type=str, default=None,
                             help='The WSGI application function.')
-        parser.add_argument('-v', '--version', action='store_true', help='Print the zappa version')
+        parser.add_argument('-v', '--version', action='store_true', help='Print the zappa version', default=False)
 
         args = parser.parse_args(argv)
         vargs = vars(args)
-        if not any(vargs.values()): # pragma: no cover
+        vargs_nosettings = vargs.copy()
+        vargs_nosettings.pop('settings_file')
+        if not any(vargs_nosettings.values()): # pragma: no cover
             parser.error("Please supply a command to execute. Can be one of 'deploy', 'update', 'tail', rollback', 'invoke'.'")
             return
 
