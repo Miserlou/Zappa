@@ -812,7 +812,7 @@ class Zappa(object):
 
         iam = self.boto_session.resource('iam')
 
-        # create the role if needed
+        # Create the role if needed
         role = iam.Role(self.role_name)
         try:
             self.credentials_arn = role.arn
@@ -897,7 +897,7 @@ class Zappa(object):
                 Rule=name,
                 Targets=[
                     {
-                        'Id': function, # Is this insane?
+                        'Id': function,
                         'Arn': target_arn,
                         'Input': inp,
                     },
@@ -916,6 +916,8 @@ class Zappa(object):
 
         client = self.boto_session.client('events')
 
+        # All targets must be removed before 
+        # we can actually delete the rule.
         targets = client.list_targets_by_rule(
             Rule=rule_name,
         )['Targets']
@@ -927,7 +929,7 @@ class Zappa(object):
                 ]
             )
 
-        # Do we have an old keepwarm for this?
+        # Delete our rules.
         rules = client.list_rules(
             NamePrefix=rule_name,
         )['Rules']
@@ -952,10 +954,8 @@ class Zappa(object):
         client = self.boto_session.client('events')
 
         for event in events:
-
             function = event['function']
             name = event.get('name', function)
-
             self.delete_rule(name)
 
             print("Uncheduled " + name + ".")
