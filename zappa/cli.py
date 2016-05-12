@@ -12,7 +12,7 @@ from __future__ import unicode_literals
 import argparse
 import datetime
 import inspect
-import importlib
+import imp
 import hjson as json
 import os
 import re
@@ -521,7 +521,7 @@ class ZappaCLI(object):
         prebuild_module_s, prebuild_function_s = self.prebuild_script.rsplit('.', 1)
 
         # The module
-        prebuild_module = importlib.import_module(prebuild_module_s)
+        prebuild_module = imp.load_source(prebuild_module_s, prebuild_module_s + '.py')
 
         # The function
         prebuild_function = getattr(prebuild_module, prebuild_function_s)
