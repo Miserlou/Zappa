@@ -123,7 +123,7 @@ If you want to cancel these, you can simply use the 'unschedule' command:
 
     $ zappa unschedule production
 
-And now your schedule event rules are deleted.
+And now your scheduled event rules are deleted.
 
 #### Undeploy
 

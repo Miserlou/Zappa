@@ -835,7 +835,8 @@ class Zappa(object):
             print("Creating zappa-permissions policy on " + self.role_name + " IAM Role.")
             policy.put(PolicyDocument=attach_policy_s)
 
-        if role.assume_role_policy_document != assume_policy_obj:
+        if role.assume_role_policy_document != assume_policy_obj and \
+                set(role.assume_role_policy_document['Statement'][0]['Principal']['Service']) != set(assume_policy_obj['Statement'][0]['Principal']['Service']):
             print("Updating assume role policy on " + self.role_name + " IAM Role.")
             client = boto3.client('iam') # Is there a way to do this with the IAM session?
             client.update_assume_role_policy(
@@ -925,7 +926,6 @@ class Zappa(object):
                     target['Id'],
                 ]
             )
-
 
         # Do we have an old keepwarm for this?
         rules = client.list_rules(
