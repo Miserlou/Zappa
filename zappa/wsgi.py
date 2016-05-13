@@ -81,7 +81,14 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
 
                 # Multipart forms are Base64 encoded through API Gateway
                 if 'multipart/form-data;' in event_info["headers"]['Content-Type']:
+
+                    # Unfortunately, this only works for text data,
+                    # not binary data. Yet. 
+                    # See: 
+                    #   https://github.com/Miserlou/Zappa/issues/80
+                    #   https://forums.aws.amazon.com/thread.jspa?threadID=231371&tstart=0
                     body = base64.b64decode(body)
+
 
             environ['wsgi.input'] = StringIO(body)
 
