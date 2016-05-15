@@ -335,10 +335,19 @@ class Zappa(object):
 
                 # If there is a .pyc file in this package,
                 # we can skip the python source code as we'll just
-                # use the compiled bytecode anyway.
+                # use the compiled bytecode anyway..
                 if filename[-3:] == '.py':
-                    if os.path.isfile(os.path.join(root, filename) + 'c'):
-                        continue
+                    abs_filname = os.path.join(root, filename)
+                    abs_pyc_filename = abs_filname + 'c'
+                    if os.path.isfile(abs_pyc_filename):
+
+                        # but only if the pyc is older than the py,
+                        # otherwise we'll deploy outdated code!
+                        py_time = os.stat(abs_filname).st_mtime 
+                        pyc_time = os.stat(abs_pyc_filename).st_mtime 
+                        
+                        if pyc_time > py_time:
+                            continue
 
                 zipf.write(os.path.join(root, filename), os.path.join(root.replace(temp_project_path, ''), filename))
 
@@ -355,6 +364,7 @@ class Zappa(object):
             print("\n\nWarning: Application zip package is likely to be too large for AWS Lambda.\n\n")
 
         return zip_fname
+
     ##
     # S3
     ##
@@ -755,8 +765,6 @@ class Zappa(object):
     def undeploy_api_gateway(self, project_name):
         """
         Delete a deployed REST API Gateway.
-
-        Returns
 
         """
 
