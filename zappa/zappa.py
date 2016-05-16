@@ -876,19 +876,32 @@ class Zappa(object):
         for event in events:
 
             function = event['function']
-            schedule_expression = event['expression']
+            expression = event['expression']
             name = event.get('name', function)
             description = event.get('description', function)
 
             self.delete_rule(name)
 
-            response = client.put_rule(
-                Name=name,
-                ScheduleExpression=schedule_expression,
-                State='ENABLED',
-                Description=description,
-                RoleArn=self.credentials_arn
-            )
+            #   - If 'cron' or 'rate' in expression, use ScheduleExpression
+            #   - Else, use EventPattern
+            #       - ex https://github.com/awslabs/aws-lambda-ddns-function
+
+            if 'cron' in expression or 'rate' in expression:
+                response = client.put_rule(
+                    Name=name,
+                    ScheduleExpression=expression,
+                    State='ENABLED',
+                    Description=description,
+                    RoleArn=self.credentials_arn
+                )
+            else:
+                response = client.put_rule(
+                    Name=name,
+                    EventPattern=expression,
+                    State='ENABLED',
+                    Description=description,
+                    RoleArn=self.credentials_arn
+                )
 
             response = lambda_client.add_permission(
                 FunctionName=lambda_name,
@@ -912,7 +925,7 @@ class Zappa(object):
                 ]
             )
 
-            print("Scheduled " + name + " at " + schedule_expression + ".")
+            print("Scheduled " + name + " at " + expression + ".")
 
         return
 
