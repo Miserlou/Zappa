@@ -26,6 +26,7 @@ from botocore.exceptions import ClientError
 from io import BytesIO
 from lambda_packages import lambda_packages
 from tqdm import tqdm
+from platform import machine
 
 # Zappa imports
 from util import copytree, add_event_source, remove_event_source, human_size
@@ -331,8 +332,12 @@ class Zappa(object):
         import pip
 
         if not venv:
+            conda_mode = False
             if 'VIRTUAL_ENV' in os.environ:
                 venv = os.environ['VIRTUAL_ENV']
+            elif 'CONDA_ENV_PATH' in os.environ:
+                venv = os.environ['CONDA_ENV_PATH']
+                conda_mode = True
             elif os.path.exists('.python-version'):  # pragma: no cover
                 logger.debug("Pyenv's local virtualenv detected.")
                 try:
@@ -347,8 +352,19 @@ class Zappa(object):
                 venv = bin_path[:bin_path.rfind(env_name)] + env_name
                 logger.debug('env path = {}'.format(venv))
             else:  # pragma: no cover
-                print("Zappa requires an active virtual environment.")
+                print("Zappa requires an active virtual or conda environment.")
                 quit()
+            
+            if conda_mode:
+                if (('linux' not in sys.platform)
+                        or (machine() in ['armv6l', 'armv7l', 'ppc64le'])
+                        or (8 * tuple.__itemsize__ != 64)):
+                    warnings.warn('The local architecture is different than that of AWS lambda (linux-64).\nMake sure the binaries in your conda environment are compatible with AWS lambda')
+                if sys.version_info[:2] != (2,7):
+                    warnings.warn('The local python version is different than that of AWS lambda (2.7.x).\nMake sure the binaries in your conda environment are compatible with AWS lambda')
+                if use_precompiled_packages:
+                    warnings.warn('Using conda while use_precompiled_packages is set to true is not recommended: it may lead to overwriting conda packages')
+
 
         cwd = os.getcwd()
         zip_fname = prefix + '-' + str(int(time.time())) + '.zip'
