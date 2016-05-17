@@ -449,8 +449,8 @@ class ZappaCLI(object):
         self.zip_path = self.zappa.create_lambda_zip(
                 self.lambda_name,
                 handler_file=handler_file,
-                use_precompiled_packages=self.zappa_settings.get('use_precompiled_packages', True),
-                exclude=self.zappa_settings.get('exclude', [])
+                use_precompiled_packages=self.zappa_settings[self.api_stage].get('use_precompiled_packages', True),
+                exclude=self.zappa_settings[self.api_stage].get('exclude', [])
             )
 
         # Throw our setings into it
