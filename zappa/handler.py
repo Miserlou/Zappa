@@ -23,7 +23,7 @@ except ImportError as e: # pragma: no cover
 # Set up logging
 logging.basicConfig()
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 class LambdaException(Exception):
     pass
@@ -76,20 +76,24 @@ class LambdaHandler(object):
 
             # Execute the function!
             app_function()
-
             return
 
         try:
+            # Timing
             time_start = datetime.datetime.now()
 
             settings = self.settings
+
+            # Custom log level
+            if settings.LOG_LEVEL:
+                level = logging.getLevelName(settings.LOG_LEVEL)
+                logger.setLevel(level)
 
             # The app module
             app_module = importlib.import_module(settings.APP_MODULE)
 
             # The application
             app_function = getattr(app_module, settings.APP_FUNCTION)
-
             app = ZappaWSGIMiddleware(app_function)
 
             # This is a normal HTTP request
