@@ -343,9 +343,9 @@ class Zappa(object):
 
                         # but only if the pyc is older than the py,
                         # otherwise we'll deploy outdated code!
-                        py_time = os.stat(abs_filname).st_mtime 
-                        pyc_time = os.stat(abs_pyc_filename).st_mtime 
-                        
+                        py_time = os.stat(abs_filname).st_mtime
+                        pyc_time = os.stat(abs_pyc_filename).st_mtime
+
                         if pyc_time > py_time:
                             continue
 
@@ -406,7 +406,7 @@ class Zappa(object):
                     source_path, bucket_name, dest_path,
                     Callback=progress.update
                 )
-            except Exception as e: # pragma: no cover                
+            except Exception as e: # pragma: no cover
                 s3 = self.boto_session.client('s3')
                 s3.upload_file(source_path, bucket_name, dest_path)
 
@@ -848,7 +848,7 @@ class Zappa(object):
             print("Updating assume role policy on " + self.role_name + " IAM Role.")
             client = boto3.client('iam') # Is there a way to do this with the IAM session?
             client.update_assume_role_policy(
-                RoleName=self.role_name, 
+                RoleName=self.role_name,
                 PolicyDocument=assume_policy_s
             )
 
@@ -937,7 +937,7 @@ class Zappa(object):
 
         client = self.boto_session.client('events')
 
-        # All targets must be removed before 
+        # All targets must be removed before
         # we can actually delete the rule.
         targets = client.list_targets_by_rule(
             Rule=rule_name,
@@ -960,7 +960,7 @@ class Zappa(object):
                response = client.delete_rule(
                     Name=rule_name
                 )
- 
+
         return
 
     def unschedule_events(self, lambda_arn, lambda_name, events):
@@ -1075,6 +1075,12 @@ class Zappa(object):
             # If provided, use the supplied profile name.
             if profile_name:
                 self.boto_session = boto3.Session(profile_name=profile_name, region_name=self.aws_region)
+            elif os.environ.get('AWS_ACCESS_KEY_ID') and os.environ.get('AWS_SECRET_ACCESS_KEY'):
+                region_name = os.environ.get('AWS_DEFAULT_REGION') or self.aws_region
+                self.boto_session = boto3.Session(
+                    aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
+                    aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY'),
+                    region_name=region_name)
             else:
                 self.boto_session = boto3.Session(region_name=self.aws_region)
 
