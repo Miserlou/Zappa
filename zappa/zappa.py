@@ -326,7 +326,7 @@ class Zappa(object):
         try:
             import zlib
             compression_method = zipfile.ZIP_DEFLATED
-        except Exception as e: # pragma: no cover
+        except ImportError as e: # pragma: no cover
             compression_method = zipfile.ZIP_STORED
 
         zipf = zipfile.ZipFile(zip_path, 'w', compression_method)
@@ -384,7 +384,7 @@ class Zappa(object):
         # it exists, since boto3 doesn't expose a better check.
         try:
             s3.create_bucket(Bucket=bucket_name, CreateBucketConfiguration={"LocationConstraint": self.aws_region})
-        except Exception as e: # pragma: no cover
+        except botocore.exceptions.ClientError as e: # pragma: no cover
             pass
 
         if not os.path.isfile(source_path) or os.stat(source_path).st_size == 0:
@@ -945,8 +945,8 @@ class Zappa(object):
             targets = client.list_targets_by_rule(
                 Rule=rule_name,
             )['Targets']
-        except Exception as e:
-            # No target by this rule, nothing to delete.
+        except botocore.exceptions.ClientError as e:
+            # Likely no target by this rule, nothing to delete.
             return
 
         if targets == []:
