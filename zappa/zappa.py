@@ -480,6 +480,8 @@ class Zappa(object):
 
         """
 
+        print("Updating Lambda function..")
+
         client = self.boto_session.client('lambda')
         response = client.update_function_code(
             FunctionName=function_name,
@@ -939,9 +941,17 @@ class Zappa(object):
 
         # All targets must be removed before
         # we can actually delete the rule.
-        targets = client.list_targets_by_rule(
-            Rule=rule_name,
-        )['Targets']
+        try:
+            targets = client.list_targets_by_rule(
+                Rule=rule_name,
+            )['Targets']
+        except Exception as e:
+            # No target by this rule, nothing to delete.
+            return
+
+        if targets == []:
+            return
+
         for target in targets:
             response = client.remove_targets(
                 Rule=rule_name,
@@ -992,6 +1002,8 @@ class Zappa(object):
         client = self.boto_session.client('events')
         lambda_client = self.boto_session.client('lambda')
         rule_name = name + "-" + str(lambda_name)
+
+        print("Scheduling keep-warm..")
 
         # Do we have an old keepwarm for this?
         self.delete_rule(rule_name)

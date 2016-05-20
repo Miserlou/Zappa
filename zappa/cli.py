@@ -406,6 +406,8 @@ class ZappaCLI(object):
             self.api_stage].get('profile_name', None)
         self.log_level = self.zappa_settings[
             self.api_stage].get('log_level', "DEBUG")
+        self.domain = self.zappa_settings[
+            self.api_stage].get('domain', None)
 
         # Create an Zappa object..
         self.zappa = Zappa(session)
@@ -462,8 +464,17 @@ class ZappaCLI(object):
             
             if self.debug is not None:
                 settings_s = settings_s + "DEBUG='%s'\n" % (self.debug) # Cast to Bool in handler
-
             settings_s = settings_s + "LOG_LEVEL='%s'\n" % (self.log_level)
+
+            # If we're on a domain, we don't need to define the /<<env>> in
+            # the WSGI PATH
+            if self.domain:
+                settings_s = settings_s + "DOMAIN='%s'\n" % (self.domain)
+            else:
+                settings_s = settings_s + "DOMAIN=None\n"
+
+            # We can be environment-aware
+            settings_s = settings_s + "API_STAGE='%s'\n" % (self.api_stage)
 
             # Lambda requires a specific chmod
             temp_settings = tempfile.NamedTemporaryFile(delete=False)

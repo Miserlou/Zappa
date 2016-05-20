@@ -106,9 +106,21 @@ class LambdaHandler(object):
                     if 'event_echo' in list(event['params'].values()):
                         return {'Content': str(event) + '\n' + str(context), 'Status': 200}
 
+                if settings.DOMAIN:
+                    # If we're on a domain, we operate normally
+                    script_name = ''
+                else:
+                    # But if we're not, then our base URL
+                    # will be something like
+                    # https://blahblahblah.execute-api.us-east-1.amazonaws.com/dev
+                    # So, we need to make sure the WSGI app knows this.
+                    script_name = '/' + settings.API_STAGE
+
                 # Create the environment for WSGI and handle the request
-                environ = create_wsgi_request(event, script_name='',
-                                              trailing_slash=False)
+                environ = create_wsgi_request(event, 
+                                                script_name=script_name,
+                                                trailing_slash=False
+                                            )
 
                 # We are always on https on Lambda, so tell our wsgi app that.
                 environ['wsgi.url_scheme'] = 'https'
