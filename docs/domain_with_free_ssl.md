@@ -24,14 +24,14 @@ $ npm install -g localtunnel
 In one terminal, run:
 
 ```
-./letsencrypt-auto certonly -d your-sub.example.com --manual
+./letsencrypt-auto certonly -d yoursub.example.com --manual
 ```
 
 Hit 'Yes' until you get to a message like this:
 
 ```
 Make sure your web server displays the following content at
-http://your-sub.example.com/.well-known/acme-challenge/OJkbegasdfnowA_xql_kqpl8hBImj9WbM88fDF35wBE before continuing:
+http://yoursub.example.com/.well-known/acme-challenge/OJkbegasdfnowA_xql_kqpl8hBImj9WbM88fDF35wBE before continuing:
 
 OJkbegIsNpnowA_xql_kqpl8hBImj9WbM88fDF35wBE.Dowxk8snntasdfS433FYr2xtYZ0RaBcpaEXqmdc
 
@@ -60,24 +60,24 @@ s.serve_forever()"
 In a third terminal, run the following command (make sure firewall is off or allow port 80 through):
 
 ```
-lt --port 80 --subdomain your-sub
+lt --port 80 --subdomain yoursub
 ```
 
-Then, in a browser, visit http://your-sub.localtunnel.me/.well-known/acme-challenge/ and make sure that your challenge value is there.
+Then, in a browser, visit http://yoursub.localtunnel.me/.well-known/acme-challenge/ and make sure that your challenge value is there.
 
-Next, point your DNS server's CNAME value to be "your-sub.localtunnel.me". Wait five minutes for this to propate, then visit http://your-sub.example.com/.well-known/acme-challenge/ and confirm that this is working.
+Next, point your DNS server's CNAME value to be "yoursub.localtunnel.me". Wait five minutes for this to propate, then visit http://yoursub.example.com/.well-known/acme-challenge/ and confirm that this is working.
 
-Then, in the first terminal, press ENTER and your certificate will be generated. You can find all of the keys and certificates in /etc/letsencrypt/live/your-sub.example.com/
+Then, in the first terminal, press ENTER and your certificate will be generated. You can find all of the keys and certificates in /etc/letsencrypt/live/yoursub.example.com/
 
 ## Installing the Certificate
 
-In the AWS API Gateway console, visit the [custom domains](https://console.aws.amazon.com/apigateway/home?region=us-east-1#/custom-domain-names) page. Press 'create' and fill in your values from your /etc/letsencrypt/live/your-sub.example.com/ directory.
+In the AWS API Gateway console, visit the [custom domains](https://console.aws.amazon.com/apigateway/home?region=us-east-1#/custom-domain-names) page. Press 'create' and fill in your values from your /etc/letsencrypt/live/yoursub.example.com/ directory.
 
 
 | value | AWS API Gateway Custom Domain Name Setting field |
 | --- | --- | --- |
-| `your-sub.example.com` | Domain name |
-| `your-sub.example.com` | Certificate name |
+| `yoursub.example.com` | Domain name |
+| `yoursub.example.com` | Certificate name |
 | `privkey.pem` | Certificate private key |
 | `cert.pem` | Certificate body |
 | `fullchain.pem` | Certificate chain. **Note**: only copy the 2nd part of the chain because the 1st part is the Certificate body, already provided.
