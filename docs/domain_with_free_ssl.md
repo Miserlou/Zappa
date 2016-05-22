@@ -1,6 +1,6 @@
 # Using Let's Encrypt with Zappa
 
-This guide will show you the slightly convoluted way of running a Zappa website on a API Gateway Customer Domain Names with a free valid SSL certificate via Let's Encrypt.
+This guide will show you the slightly convoluted way of running a Zappa website on a API Gateway Custom Domain Names with a free valid SSL certificate via Let's Encrypt.
 
 ## Tool Installation
 
@@ -57,7 +57,7 @@ s = BaseHTTPServer.HTTPServer(('', 80), SimpleHTTPServer.SimpleHTTPRequestHandle
 s.serve_forever()"
 ```
 
-In a third terminal, run the following command:
+In a third terminal, run the following command (make sure firewall is off or allow port 80 through):
 
 ```
 lt --port 80 --subdomain your-sub-something-temporary-unique
