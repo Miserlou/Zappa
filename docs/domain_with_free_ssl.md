@@ -1,6 +1,6 @@
 # Using Let's Encrypt with Zappa
 
-This guide will show you the slightly convoluted way of running a Zappa website on a API Gateway Custom Domain Names with a free valid SSL certificate via Let's Encrypt.
+This guide will show you the slightly convoluted way of running a Zappa website on an API Gateway Custom Domain Name with a free valid SSL certificate via Let's Encrypt.
 
 ## Tool Installation
 
@@ -82,4 +82,4 @@ In the AWS API Gateway console, visit the [custom domains](https://console.aws.a
 | `cert.pem` | Certificate body |
 | `fullchain.pem` | Certificate chain. **Note**: only copy the 2nd part of the chain because the 1st part is the Certificate body, already provided.
 
-Finally, press 'Save' and your domain with a free valid SSL certificate will be live! Update your domain DNS CNAME to point to API Gateway domain. Also, this certificate will expires after 90 days, remember to re-generate it!
+Finally, press 'Save' and your domain with a free valid SSL certificate will be live! Update your domain DNS CNAME to point to API Gateway domain. Also, this certificate will expire after 90 days, remember to re-generate it!
