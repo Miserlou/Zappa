@@ -60,12 +60,12 @@ s.serve_forever()"
 In a third terminal, run the following command (make sure firewall is off or allow port 80 through):
 
 ```
-lt --port 80 --subdomain your-sub-something-temporary-unique
+lt --port 80 --subdomain your-sub
 ```
 
-Then, in a browser, visit http://your-sub-something-temporary-unique.localtunnel.me/.well-known/acme-challenge/ and make sure that your challenge value is there.
+Then, in a browser, visit http://your-sub.localtunnel.me/.well-known/acme-challenge/ and make sure that your challenge value is there.
 
-Next, point your DNS server's CNAME value to be "your-sub-something-temporary-unique.localtunnel.me". Wait five minutes for this to propate, then visit http://your-sub-something-temporary-unique.example.com/.well-known/acme-challenge/ and confirm that this is working.
+Next, point your DNS server's CNAME value to be "your-sub.localtunnel.me". Wait five minutes for this to propate, then visit http://your-sub.example.com/.well-known/acme-challenge/ and confirm that this is working.
 
 Then, in the first terminal, press ENTER and your certificate will be generated. You can find all of the keys and certificates in /etc/letsencrypt/live/your-sub.example.com/
 
