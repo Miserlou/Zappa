@@ -201,11 +201,11 @@ class Zappa(object):
         'POST'
     ]
     parameter_depth = 8
-    integration_response_codes = [200, 301, 400, 401, 403, 404, 500]
+    integration_response_codes = [200, 201, 301, 400, 401, 403, 404, 500]
     integration_content_types = [
         'text/html',
     ]
-    method_response_codes = [200, 301, 400, 401, 403, 404, 500]
+    method_response_codes = [200, 201, 301, 400, 401, 403, 404, 500]
     method_content_types = [
         'text/html',
     ]
@@ -326,7 +326,7 @@ class Zappa(object):
         try:
             import zlib
             compression_method = zipfile.ZIP_DEFLATED
-        except Exception as e: # pragma: no cover
+        except ImportError as e: # pragma: no cover
             compression_method = zipfile.ZIP_STORED
 
         zipf = zipfile.ZipFile(zip_path, 'w', compression_method)
@@ -343,9 +343,9 @@ class Zappa(object):
 
                         # but only if the pyc is older than the py,
                         # otherwise we'll deploy outdated code!
-                        py_time = os.stat(abs_filname).st_mtime 
-                        pyc_time = os.stat(abs_pyc_filename).st_mtime 
-                        
+                        py_time = os.stat(abs_filname).st_mtime
+                        pyc_time = os.stat(abs_pyc_filename).st_mtime
+
                         if pyc_time > py_time:
                             continue
 
@@ -384,7 +384,7 @@ class Zappa(object):
         # it exists, since boto3 doesn't expose a better check.
         try:
             s3.create_bucket(Bucket=bucket_name, CreateBucketConfiguration={"LocationConstraint": self.aws_region})
-        except Exception as e: # pragma: no cover
+        except botocore.exceptions.ClientError as e: # pragma: no cover
             pass
 
         if not os.path.isfile(source_path) or os.stat(source_path).st_size == 0:
@@ -406,7 +406,7 @@ class Zappa(object):
                     source_path, bucket_name, dest_path,
                     Callback=progress.update
                 )
-            except Exception as e: # pragma: no cover                
+            except Exception as e: # pragma: no cover
                 s3 = self.boto_session.client('s3')
                 s3.upload_file(source_path, bucket_name, dest_path)
 
@@ -479,6 +479,8 @@ class Zappa(object):
         Given a bucket and key of a valid Lambda-zip, a function name and a handler, update that Lambda function's code.
 
         """
+
+        print("Updating Lambda function..")
 
         client = self.boto_session.client('lambda')
         response = client.update_function_code(
@@ -848,7 +850,7 @@ class Zappa(object):
             print("Updating assume role policy on " + self.role_name + " IAM Role.")
             client = boto3.client('iam') # Is there a way to do this with the IAM session?
             client.update_assume_role_policy(
-                RoleName=self.role_name, 
+                RoleName=self.role_name,
                 PolicyDocument=assume_policy_s
             )
 
@@ -937,11 +939,19 @@ class Zappa(object):
 
         client = self.boto_session.client('events')
 
-        # All targets must be removed before 
+        # All targets must be removed before
         # we can actually delete the rule.
-        targets = client.list_targets_by_rule(
-            Rule=rule_name,
-        )['Targets']
+        try:
+            targets = client.list_targets_by_rule(
+                Rule=rule_name,
+            )['Targets']
+        except botocore.exceptions.ClientError as e:
+            # Likely no target by this rule, nothing to delete.
+            return
+
+        if targets == []:
+            return
+
         for target in targets:
             response = client.remove_targets(
                 Rule=rule_name,
@@ -960,7 +970,7 @@ class Zappa(object):
                response = client.delete_rule(
                     Name=rule_name
                 )
- 
+
         return
 
     def unschedule_events(self, lambda_arn, lambda_name, events):
@@ -992,6 +1002,8 @@ class Zappa(object):
         client = self.boto_session.client('events')
         lambda_client = self.boto_session.client('lambda')
         rule_name = name + "-" + str(lambda_name)
+
+        print("Scheduling keep-warm..")
 
         # Do we have an old keepwarm for this?
         self.delete_rule(rule_name)
@@ -1075,6 +1087,12 @@ class Zappa(object):
             # If provided, use the supplied profile name.
             if profile_name:
                 self.boto_session = boto3.Session(profile_name=profile_name, region_name=self.aws_region)
+            elif os.environ.get('AWS_ACCESS_KEY_ID') and os.environ.get('AWS_SECRET_ACCESS_KEY'):
+                region_name = os.environ.get('AWS_DEFAULT_REGION') or self.aws_region
+                self.boto_session = boto3.Session(
+                    aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
+                    aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY'),
+                    region_name=region_name)
             else:
                 self.boto_session = boto3.Session(region_name=self.aws_region)
 

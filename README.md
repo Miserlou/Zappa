@@ -7,7 +7,6 @@
 [![Build Status](https://travis-ci.org/Miserlou/Zappa.svg)](https://travis-ci.org/Miserlou/Zappa)
 [![Coverage](https://img.shields.io/coveralls/Miserlou/Zappa.svg)](https://coveralls.io/github/Miserlou/Zappa)
 [![Requirements Status](https://requires.io/github/Miserlou/Zappa/requirements.svg?branch=master)](https://requires.io/github/Miserlou/Zappa/requirements/?branch=master) 
-[![PyPI](https://img.shields.io/pypi/dm/Zappa.svg?style=flat)](https://pypi.python.org/pypi/zappa/)
 [![PyPI](https://img.shields.io/pypi/v/Zappa.svg)](https://pypi.python.org/pypi/zappa)
 [![Slack](https://img.shields.io/badge/chat-slack-ff69b4.svg)](https://slackautoinviter.herokuapp.com/)
 
@@ -159,6 +158,7 @@ to change Zappa's behavior. Use these at your own risk!
         "http_methods": ["GET", "POST"], // HTTP Methods to route,
         "integration_response_codes": [200, 301, 404, 500], // Integration response status codes to route
         "keep_warm": true, // Create CloudWatch events to keep the server warm.
+        "log_level": "DEBUG", // Set the Zappa log level. Default DEBUG, can be one of CRITICAL, ERROR, WARNING, INFO and DEBUG. 
         "memory_size": 512, // Lambda function memory in MB
         "method_response_codes": [200, 301, 404, 500], // Method response status codes to route
         "parameter_depth": 10, // Size of URL depth to route. Defaults to 8.

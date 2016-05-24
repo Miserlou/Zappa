@@ -61,7 +61,7 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
             'QUERY_STRING': query_string,
             'REMOTE_ADDR': remote_addr,
             'REQUEST_METHOD': method,
-            'SCRIPT_NAME': str(''),
+            'SCRIPT_NAME': str(script_name) if script_name else '',
             'SERVER_NAME': str(server_name),
             'SERVER_PORT': str('80'),
             'SERVER_PROTOCOL': str('HTTP/1.1'),
@@ -101,6 +101,7 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
         if script_name:
             environ['SCRIPT_NAME'] = script_name
             path_info = environ['PATH_INFO']
+
             if script_name in path_info:
                 environ['PATH_INFO'].replace(script_name, '')
 

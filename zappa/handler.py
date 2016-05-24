@@ -23,7 +23,7 @@ except ImportError as e: # pragma: no cover
 # Set up logging
 logging.basicConfig()
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 class LambdaException(Exception):
     pass
@@ -76,20 +76,24 @@ class LambdaHandler(object):
 
             # Execute the function!
             app_function()
-
             return
 
         try:
+            # Timing
             time_start = datetime.datetime.now()
 
             settings = self.settings
+
+            # Custom log level
+            if settings.LOG_LEVEL:
+                level = logging.getLevelName(settings.LOG_LEVEL)
+                logger.setLevel(level)
 
             # The app module
             app_module = importlib.import_module(settings.APP_MODULE)
 
             # The application
             app_function = getattr(app_module, settings.APP_FUNCTION)
-
             app = ZappaWSGIMiddleware(app_function)
 
             # This is a normal HTTP request
@@ -102,9 +106,21 @@ class LambdaHandler(object):
                     if 'event_echo' in list(event['params'].values()):
                         return {'Content': str(event) + '\n' + str(context), 'Status': 200}
 
+                if settings.DOMAIN:
+                    # If we're on a domain, we operate normally
+                    script_name = ''
+                else:
+                    # But if we're not, then our base URL
+                    # will be something like
+                    # https://blahblahblah.execute-api.us-east-1.amazonaws.com/dev
+                    # So, we need to make sure the WSGI app knows this.
+                    script_name = '/' + settings.API_STAGE
+
                 # Create the environment for WSGI and handle the request
-                environ = create_wsgi_request(event, script_name='',
-                                              trailing_slash=False)
+                environ = create_wsgi_request(event, 
+                                                script_name=script_name,
+                                                trailing_slash=False
+                                            )
 
                 # We are always on https on Lambda, so tell our wsgi app that.
                 environ['wsgi.url_scheme'] = 'https'
