@@ -13,6 +13,7 @@ import requests
 import shutil
 import string
 import subprocess
+import sys
 import tarfile
 import tempfile
 import time
@@ -203,6 +204,8 @@ ZIP_EXCLUDES = [
     '*.hg', '*.egg-info', 'pip', 'docutils*', 'setuputils*'
 ]
 
+STANDARD_CONDA_PACKAGES = ['openssl','pip','python','readline','sqlite','wheel', 'boto3', 'botocore']
+
 ##
 # Classes
 ##
@@ -322,7 +325,7 @@ class Zappa(object):
                 os.remove(link)
 
     def create_lambda_zip(self, prefix='lambda_package', handler_file=None,
-                          minify=True, exclude=None, use_precompiled_packages=True, include=None, venv=None):
+                          minify=True, exclude=None, use_precompiled_packages=True, include=None, venv=None, exclude_conda_packages=STANDARD_CONDA_PACKAGES):
         """
         Create a Lambda-ready zip file of the current virtualenvironment and working directory.
 
@@ -337,6 +340,7 @@ class Zappa(object):
                 venv = os.environ['VIRTUAL_ENV']
             elif 'CONDA_ENV_PATH' in os.environ:
                 venv = os.environ['CONDA_ENV_PATH']
+                conda_env = venv
                 conda_mode = True
             elif os.path.exists('.python-version'):  # pragma: no cover
                 logger.debug("Pyenv's local virtualenv detected.")
@@ -407,35 +411,57 @@ class Zappa(object):
             copytree(cwd, temp_project_path, symlinks=False)
 
         # Then, do the site-packages..
-        egg_links = []
-        temp_package_path = os.path.join(temp_zappa_folder, 'package')
-        if os.sys.platform == 'win32':
-            site_packages = os.path.join(venv, 'Lib', 'site-packages')
-        else:
-            site_packages = os.path.join(venv, 'lib', 'python2.7', 'site-packages')
-        egg_links.extend(glob.glob(os.path.join(site_packages, '*.egg-link')))
+        if not conda_mode:
+            egg_links = []
+            temp_package_path = os.path.join(temp_zappa_folder, 'package')
+            if os.sys.platform == 'win32':
+                site_packages = os.path.join(venv, 'Lib', 'site-packages')
+            else:
+                site_packages = os.path.join(venv, 'lib', 'python2.7', 'site-packages')
+            egg_links.extend(glob.glob(os.path.join(site_packages, '*.egg-link')))
 
-        if minify:
-            excludes = ZIP_EXCLUDES + exclude
-            copytree(site_packages, temp_package_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
-
-        else:
-            copytree(site_packages, temp_package_path, symlinks=False)
-
-        # We may have 64-bin specific packages too.
-        site_packages_64 = os.path.join(venv, 'lib64', 'python2.7', 'site-packages')
-        if os.path.exists(site_packages_64):
-            egg_links.extend(glob.glob(os.path.join(site_packages_64, '*.egg-link')))
             if minify:
                 excludes = ZIP_EXCLUDES + exclude
-                copytree(site_packages_64, temp_package_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
+                copytree(site_packages, temp_package_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
             else:
-                copytree(site_packages_64, temp_package_path, symlinks=False)
+                copytree(site_packages, temp_package_path, symlinks=False)
 
-        if egg_links:
-            self.copy_editable_packages(egg_links, temp_package_path)
+            # We may have 64-bin specific packages too.
+            site_packages_64 = os.path.join(venv, 'lib64', 'python2.7', 'site-packages')
+            if os.path.exists(site_packages_64):
+                egg_links.extend(glob.glob(os.path.join(site_packages_64, '*.egg-link')))
+                if minify:
+                    excludes = ZIP_EXCLUDES + exclude
+                    copytree(site_packages_64, temp_package_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
+                else:
+                    copytree(site_packages_64, temp_package_path, symlinks=False)
 
-        copy_tree(temp_package_path, temp_project_path, update=True)
+            if egg_links:
+                self.copy_editable_packages(egg_links, temp_package_path)
+
+            copy_tree(temp_package_path, temp_project_path, update=True)
+        else:
+            temp_package_path = os.path.join(temp_zappa_folder,'conda_env')
+            site_packages = os.path.join(temp_package_path, 'lib', 'python2.7', 'site-packages')
+            if minify:
+                excludes = ZIP_EXCLUDES + exclude
+                shutil.copytree(conda_env, temp_package_path, symlinks=True, ignore=shutil.ignore_patterns(*excludes))
+                # Use conda cli to remove standard packages like python, pip, ...
+                subprocess.call(['conda','remove','-p',temp_package_path,'--force','--yes']+exclude_conda_packages)
+            else:
+                shutil.copytree(conda_env, temp_package_path, symlinks=True)
+
+            # Extracts all egg files (e.g. setuptools)
+            egg_files = [f for f in os.listdir(site_packages) if os.path.isfile(os.path.join(site_packages, f)) and f.split('.')[-1]=='egg']
+            for egg_file in egg_files:
+                print('Extracting '+ egg_file)
+                with zipfile.ZipFile(os.path.join(site_packages,egg_file)) as zf:
+                    zf.extractall(os.path.join(site_packages))
+                os.remove(os.path.join(site_packages,egg_file))
+            # Put site-packages at the root of the environment
+            copy_tree(site_packages, temp_package_path, update=True)
+            shutil.rmtree(site_packages)
+            copy_tree(temp_package_path, temp_project_path, update=True)
 
         # Then the pre-compiled packages..
         if use_precompiled_packages:
