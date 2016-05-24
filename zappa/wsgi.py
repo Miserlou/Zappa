@@ -19,6 +19,13 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
         query = event_info['query']
         headers = event_info['headers']
 
+        # Non-GET data is B64'd through the APIGW.
+        if method in ["POST", "PUT", "PATCH"]:
+            encoded_body = event_info['body']
+            body = base64.b64decode(encoded_body)
+        else:
+            body = event_info['body']
+
         # Make header names canonical, e.g. content-type => Content-Type
         for header in headers.keys():
             canonical = header.title()
@@ -32,7 +39,7 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
         if content_type == 'application/json':
             body = str(json.dumps(event_info['body']))
         else:
-            body = str(event_info['body'])
+            body = body
 
         path = "/"
         for key in sorted(params.keys()):
@@ -79,19 +86,19 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
             if 'Content-Type' in event_info["headers"]:
                 environ['CONTENT_TYPE'] = event_info["headers"]['Content-Type']
 
-                # Multipart forms are Base64 encoded through API Gateway
-                if 'multipart/form-data;' in event_info["headers"]['Content-Type']:
-
-                    # Unfortunately, this only works for text data,
-                    # not binary data. Yet. 
-                    # See: 
-                    #   https://github.com/Miserlou/Zappa/issues/80
-                    #   https://forums.aws.amazon.com/thread.jspa?threadID=231371&tstart=0
-                    body = base64.b64decode(body)
-
+                # B64'ing everything now until this is resolved.
+                #
+                # # Multipart forms are Base64 encoded through API Gateway
+                # if 'multipart/form-data;' in event_info["headers"]['Content-Type']:
+                #
+                #     # Unfortunately, this only works for text data,
+                #     # not binary data. Yet. 
+                #     # See: 
+                #     #   https://github.com/Miserlou/Zappa/issues/80
+                #     #   https://forums.aws.amazon.com/thread.jspa?threadID=231371&tstart=0
+                #     body = base64.b64decode(body)
 
             environ['wsgi.input'] = StringIO(body)
-
             environ['CONTENT_LENGTH'] = str(len(body))
 
         for header in event_info["headers"]:
