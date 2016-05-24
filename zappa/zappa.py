@@ -1036,6 +1036,21 @@ class Zappa(object):
             ]
         )
 
+    def remove_keep_warm(self, lambda_name, name="zappa-keep-warm"):
+        """
+        Unschedule the regularly occuring execution to keep the function warm in cache.
+
+        """
+
+        client = self.boto_session.client('events')
+        lambda_client = self.boto_session.client('lambda')
+        rule_name = name + "-" + str(lambda_name)
+
+        print("Removing keep-warm..")
+
+        self.delete_rule(rule_name)
+
+
     ##
     # CloudWatch Logging
     ##

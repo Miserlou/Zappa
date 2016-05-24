@@ -295,6 +295,8 @@ class ZappaCLI(object):
             return
 
         self.zappa.undeploy_api_gateway(self.lambda_name)
+        if self.zappa_settings[self.api_stage].get('keep_warm', True):
+            self.zappa.remove_keep_warm(self.lambda_name)
         self.zappa.delete_lambda_function(self.lambda_name)
 
         print("Done!")
