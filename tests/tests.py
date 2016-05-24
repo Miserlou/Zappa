@@ -252,7 +252,7 @@ class TestZappa(unittest.TestCase):
     def test_wsgi_event(self):
 
         event = {
-            "body": {},
+            "body": "",
             "headers": {
                 "Via": "1.1 e604e934e9195aaf3e36195adbcb3e18.cloudfront.net (CloudFront)",
                 "Accept-Language": "en-US,en;q=0.5",
