@@ -848,7 +848,7 @@ class Zappa(object):
         if role.assume_role_policy_document != assume_policy_obj and \
                 set(role.assume_role_policy_document['Statement'][0]['Principal']['Service']) != set(assume_policy_obj['Statement'][0]['Principal']['Service']):
             print("Updating assume role policy on " + self.role_name + " IAM Role.")
-            client = self.boto_session.client('iam') # Is there a way to do this with the IAM session?
+            client = self.boto_session.client('iam')
             client.update_assume_role_policy(
                 RoleName=self.role_name,
                 PolicyDocument=assume_policy_s
