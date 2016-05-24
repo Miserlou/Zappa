@@ -32,15 +32,6 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
             if canonical != header:
                 headers[canonical] = headers.pop(header)
 
-        content_type = headers.get('Content-Type', '')
-        # Some clients implement a non-rfc compliant content-type string:
-        # e.g. "application/json; charset=utf-8"
-        content_type = content_type.lower().split(';')[0]
-        if content_type == 'application/json':
-            body = str(json.dumps(event_info['body']))
-        else:
-            body = body
-
         path = "/"
         for key in sorted(params.keys()):
             path = path + params[key] + "/"

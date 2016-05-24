@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 ##
 
 TEMPLATE_MAPPING = """{
-  "body" : $input.json("$"),
+  "body" : "$util.base64Encode($input.json("$"))",
   "headers": {
     #foreach($header in $input.params().header.keySet())
     "$header": "$util.escapeJavaScript($input.params().header.get($header))" #if($foreach.hasNext),#end
@@ -647,7 +647,7 @@ class Zappa(object):
             post_template_mapping = POST_TEMPLATE_MAPPING
             form_encoded_template_mapping = FORM_ENCODED_TEMPLATE_MAPPING
             content_mapping_templates = {
-                'application/json': template_mapping,
+                'application/json': post_template_mapping,
                 'application/x-www-form-urlencoded': post_template_mapping,
                 'multipart/form-data': form_encoded_template_mapping
             }
