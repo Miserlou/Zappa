@@ -183,7 +183,7 @@ Zappa will automatically set up a regularly occuring execution of your applicati
 
 #### Enabling CORS
 
-To enable Cross-Origin Resource Sharing (CORS) for your application, follow the [AWS "How to CORS" Guide](https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-cors.html) to enable CORS via the API Gateway Console. Don't forget to re-deploy your API after making the changes!
+To enable Cross-Origin Resource Sharing (CORS) for your application, follow the [AWS "How to CORS" Guide](https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-cors.html) to enable CORS via the API Gateway Console. Don't forget to enable CORS per parameter and re-deploy your API after making the changes!
 
 #### Deploying to a Domain With a Let's Encrypt Certificate
 
