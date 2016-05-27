@@ -74,13 +74,13 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
 
         # Input processing
         if method in ["POST", "PUT", "PATCH"]:
-            if 'Content-Type' in event_info["headers"]:
-                environ['CONTENT_TYPE'] = event_info["headers"]['Content-Type']
+            if 'Content-Type' in headers:
+                environ['CONTENT_TYPE'] = headers['Content-Type']
 
                 # B64'ing everything now until this is resolved.
                 #
                 # # Multipart forms are Base64 encoded through API Gateway
-                # if 'multipart/form-data;' in event_info["headers"]['Content-Type']:
+                # if 'multipart/form-data;' in headers['Content-Type']:
                 #
                 #     # Unfortunately, this only works for text data,
                 #     # not binary data. Yet. 
@@ -92,9 +92,9 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
             environ['wsgi.input'] = StringIO(body)
             environ['CONTENT_LENGTH'] = str(len(body))
 
-        for header in event_info["headers"]:
+        for header in headers:
             wsgi_name = "HTTP_" + header.upper().replace('-', '_')
-            environ[wsgi_name] = str(event_info["headers"][header])
+            environ[wsgi_name] = str(headers[header])
 
         if script_name:
             environ['SCRIPT_NAME'] = script_name
