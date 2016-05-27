@@ -1598,7 +1598,9 @@ class ZappaCLI(object):
                     'exclude',
                     # Exclude packages already builtin to the python lambda environment
                     # https://github.com/Miserlou/Zappa/issues/556
-                    ["boto3", "dateutil", "botocore", "s3transfer", "six.py", "jmespath", "concurrent"])
+                    ["boto3", "dateutil", "botocore", "s3transfer", "six.py", "jmespath", "concurrent"]),
+                exclude_conda_packages = self.stage_config.get('exclude_conda_packages',
+                    ['pip','python','readline','sqlite','wheel', 'boto3', 'botocore'])
             )
 
         # Throw custom setings into the zip file

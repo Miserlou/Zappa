@@ -418,6 +418,7 @@ to change Zappa's behavior. Use these at your own risk!
         ],
         "exception_handler": "your_module.report_exception", // function that will be invoked in case Zappa sees an unhandled exception raised from your code
         "exclude": ["*.gz", "*.rar"], // A list of regex patterns to exclude from the archive. By default Zappa excludes common python packages available in a lambda environment (botocore, boto3, concurrent.futures, jmespath, six.py, dateutil).
+        "exclude_conda_packages": ["boto3","botocore","pip","python","readline","sqlite","wheel"] // When using conda, a list of conda packages to remove before zipping.
         "extends": "stage_name", // Duplicate and extend another stage's settings. For example, `dev-asia` could extend from `dev-common` with a different `s3_bucket` value.
         "http_methods": ["GET", "POST"], // HTTP Methods to route,
         "iam_authorization": true, // optional, use IAM to require request signing. Default false. Note that enabling this will override the authorizer configuration.
@@ -465,7 +466,7 @@ to change Zappa's behavior. Use these at your own risk!
         "vpc_config": { // Optional VPC configuration for Lambda function
             "SubnetIds": [ "subnet-12345678" ], // Note: not all availability zones support Lambda!
             "SecurityGroupIds": [ "sg-12345678" ]
-        }
+        },
     }
 }
 ```
