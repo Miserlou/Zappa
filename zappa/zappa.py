@@ -447,7 +447,9 @@ class Zappa(object):
                 shutil.copytree(conda_env, temp_package_path, symlinks=True, ignore=shutil.ignore_patterns(*excludes))
                 # Use conda cli to remove standard packages like python, pip, ...
                 if len(exclude_conda_packages):
-                    subprocess.call(['conda','remove','-p',temp_package_path,'--force','--yes']+exclude_conda_packages)
+                    print('Removing ' + ', '.join(exclude_conda_packages) + ' from conda environment '+ temp_package_path)
+                    subprocess.call(['conda','remove','-p',temp_package_path,'--force','--yes']+exclude_conda_packages,
+                        stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
             else:
                 shutil.copytree(conda_env, temp_package_path, symlinks=True)
 
@@ -459,8 +461,10 @@ class Zappa(object):
                     zf.extractall(os.path.join(site_packages))
                 os.remove(os.path.join(site_packages,egg_file))
             # Put site-packages at the root of the environment
-            copy_tree(site_packages, temp_package_path, update=True)
+            print('Copying python packages')
+            copy_tree(site_packages, temp_project_path, update=True)
             shutil.rmtree(site_packages)
+            print('Copying remaining binaries')
             copy_tree(temp_package_path, temp_project_path, update=True)
 
         # Then the pre-compiled packages..
