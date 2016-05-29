@@ -101,7 +101,7 @@ class ZappaWSGIMiddleware(object):
         new_headers = [(header[0], header[1]) for header in headers if header[0] != 'Set-Cookie']
 
         # Filter the headers for Set-Cookie header
-        cookie_dicts = [{header[1].split('=', 1)[0].strip():header[1].split('=',1)[1:][0]} for header in headers if header[0] == 'Set-Cookie']
+        cookie_dicts = [{header[1].split('=', 1)[0].strip():header[1].split('=',1)[1]} for header in headers if header[0] == 'Set-Cookie']
         
         # Flatten cookies_dicts to one dict. If there are multiple occuring
         # cookies, the last one present in the headers wins.
