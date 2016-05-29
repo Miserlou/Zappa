@@ -163,7 +163,6 @@ class ZappaWSGIMiddleware(object):
 
         self.decoded_zappa = base58.b58decode(encoded_zappa)
         self.request_cookies = json.loads(self.decoded_zappa)
-        return
 
     def filter_expired_cookies(self):
         """
