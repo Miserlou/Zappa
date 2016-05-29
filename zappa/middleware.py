@@ -110,20 +110,9 @@ class ZappaWSGIMiddleware(object):
         # Get the oldest expire time, and set the Zappa cookie age to that.
         # Else, let this be a session cookie.
         expires = None
-        for name, value in self.request_cookies.items():
-            # Is this Unicode safe?
-            cookie = (name + '=' + value).encode('utf-8')
-            if cookie.count('=') is 1:
-                continue
-
-            kvps = cookie.split(';')
-            for kvp in kvps:
-                kvp = kvp.strip()
-                if 'expires' in kvp.lower():
-                    exp = time.strptime(kvp.split('=')[1], "%a, %d-%b-%Y %H:%M:%S GMT")
-                    if exp > expires:
-                        expires = exp
-                    break
+        for _, exp in self.iter_cookies_expires():
+            if exp > expires:
+                expires = exp
 
         # JSON-ify the cookie and encode it.
         pack_s = json.dumps(self.request_cookies)
@@ -168,7 +157,16 @@ class ZappaWSGIMiddleware(object):
 
         """
 
-        now = time.gmtime() # GMT as struct_time
+        now = time.gmtime()  # GMT as struct_time
+        for name, exp in self.iter_cookies_expires():
+            if exp < now:
+                del(self.request_cookies[name])
+
+    def iter_cookies_expires(self):
+        """
+            Interator over request_cookies.
+            Yield name and expires of cookies.
+        """
         for name, value in self.request_cookies.items():
             cookie = (name + '=' + value).encode('utf-8')
             if cookie.count('=') is 1:
@@ -179,8 +177,9 @@ class ZappaWSGIMiddleware(object):
                 kvp = kvp.strip()
                 if 'expires' in kvp.lower():
                     exp = time.strptime(kvp.split('=')[1], "%a, %d-%b-%Y %H:%M:%S GMT")
-                    if exp < now:
-                        del(self.request_cookies[name])
+                    yield name, exp
+                    break
+
 
     def cookie_environ_string(self):
         """
