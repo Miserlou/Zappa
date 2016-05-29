@@ -103,14 +103,9 @@ class ZappaWSGIMiddleware(object):
         # Filter the headers for Set-Cookie header
         cookie_dicts = [{header[1].split('=', 1)[0].strip():header[1].split('=',1)[1:][0]} for header in headers if header[0] == 'Set-Cookie']
         
-        # Flatten cookies_dicts to one dict. If there are multiple occuring
-        # cookies, the last one present in the headers wins.
-        new_cookies = dict()
-        map(new_cookies.update, cookie_dicts)
-
-        # Update request_cookies with cookies from the response.
-        for name, value in new_cookies.items():
-            self.request_cookies[name] = value
+        # Update request_cookies with cookies from the response. If there are
+        # multiple occuring cookies, the last one present in the headers wins.
+        map(self.request_cookies.update, cookie_dicts)
 
         # Get the oldest expire time, and set the Zappa cookie age to that.
         # Else, let this be a session cookie.
