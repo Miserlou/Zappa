@@ -1,5 +1,4 @@
 import base58
-import Cookie
 import json
 import time
 
