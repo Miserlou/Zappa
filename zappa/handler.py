@@ -68,8 +68,7 @@ class LambdaHandler(object):
         if event.get('detail-type', None) is u'Scheduled Event':
             whole_function = event['resources'][0].split('/')[-1]
 
-            module = whole_function.rsplit('.', 1)[0]
-            function = whole_function.rsplit('.', 1)[1]
+            module, function = whole_function.rsplit('.', 1)
 
             app_module = importlib.import_module(module)
             app_function = getattr(app_module, function)
