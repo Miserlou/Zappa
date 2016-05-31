@@ -129,14 +129,12 @@ class LambdaHandler(object):
                 response = Response.from_app(app, environ)
 
                 # This is the object we're going to return.
-                zappa_returndict = dict()
+                # Pack the WSGI response into our special dictionary.
+                zappa_returndict = dict(response.headers)
 
-                if response.data:
+                if 'Content' not in zappa_returndict and response.data:
                     zappa_returndict['Content'] = response.data
 
-                # Pack the WSGI response into our special dictionary.
-                for (header_name, header_value) in response.headers:
-                    zappa_returndict[header_name] = header_value
                 zappa_returndict['Status'] = response.status_code
 
                 # To ensure correct status codes, we need to
