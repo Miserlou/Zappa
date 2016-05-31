@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 ##
 
 TEMPLATE_MAPPING = """{
-  "body" : $input.json('$'),
+  "body" : "$util.base64Encode($input.json("$"))",
   "headers": {
     #foreach($header in $input.params().header.keySet())
     "$header": "$util.escapeJavaScript($input.params().header.get($header))" #if($foreach.hasNext),#end
@@ -52,9 +52,9 @@ TEMPLATE_MAPPING = """{
   }
 }"""
 
-POST_TEMPLATE_MAPPING = """#set($rawPostData = $input.path('$'))
+POST_TEMPLATE_MAPPING = """#set($rawPostData = $input.path("$"))
 {
-  "body" : "$rawPostData",
+  "body" : "$util.base64Encode($input.body)",
   "headers": {
     #foreach($header in $input.params().header.keySet())
     "$header": "$util.escapeJavaScript($input.params().header.get($header))" #if($foreach.hasNext),#end
@@ -647,7 +647,7 @@ class Zappa(object):
             post_template_mapping = POST_TEMPLATE_MAPPING
             form_encoded_template_mapping = FORM_ENCODED_TEMPLATE_MAPPING
             content_mapping_templates = {
-                'application/json': template_mapping,
+                'application/json': post_template_mapping,
                 'application/x-www-form-urlencoded': post_template_mapping,
                 'multipart/form-data': form_encoded_template_mapping
             }
@@ -848,7 +848,7 @@ class Zappa(object):
         if role.assume_role_policy_document != assume_policy_obj and \
                 set(role.assume_role_policy_document['Statement'][0]['Principal']['Service']) != set(assume_policy_obj['Statement'][0]['Principal']['Service']):
             print("Updating assume role policy on " + self.role_name + " IAM Role.")
-            client = boto3.client('iam') # Is there a way to do this with the IAM session?
+            client = self.boto_session.client('iam')
             client.update_assume_role_policy(
                 RoleName=self.role_name,
                 PolicyDocument=assume_policy_s
@@ -1035,6 +1035,21 @@ class Zappa(object):
                 },
             ]
         )
+
+    def remove_keep_warm(self, lambda_name, name="zappa-keep-warm"):
+        """
+        Unschedule the regularly occuring execution to keep the function warm in cache.
+
+        """
+
+        client = self.boto_session.client('events')
+        lambda_client = self.boto_session.client('lambda')
+        rule_name = name + "-" + str(lambda_name)
+
+        print("Removing keep-warm..")
+
+        self.delete_rule(rule_name)
+
 
     ##
     # CloudWatch Logging
