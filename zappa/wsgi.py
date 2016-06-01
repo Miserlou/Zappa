@@ -1,5 +1,4 @@
 import logging
-import json
 
 import base64
 from urllib import urlencode
