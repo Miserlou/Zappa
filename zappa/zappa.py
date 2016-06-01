@@ -1,8 +1,6 @@
 import base64
 import boto3
 import botocore
-import fnmatch
-import imp
 import json
 import logging
 import os
@@ -11,16 +9,13 @@ import random
 import requests
 import shutil
 import string
-import sys
 import tarfile
 import tempfile
 import time
-import warnings
 import zipfile
 
 from distutils.dir_util import copy_tree
 from lambda_packages import lambda_packages
-from os.path import expanduser
 from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
