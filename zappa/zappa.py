@@ -444,11 +444,14 @@ class Zappa(object):
     # Lambda
     ##
 
-    def create_lambda_function(self, bucket, s3_key, function_name, handler, description="Zappa Deployment", timeout=30, memory_size=512, publish=True, vpc_config={}):
+    def create_lambda_function(self, bucket, s3_key, function_name, handler, description="Zappa Deployment", timeout=30, memory_size=512, publish=True, vpc_config=None):
         """
         Given a bucket and key of a valid Lambda-zip, a function name and a handler, register that Lambda function.
 
         """
+
+        if not vpc_config:
+            vpc_config = {}
 
         client = self.boto_session.client('lambda')
         response = client.create_function(
