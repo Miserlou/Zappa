@@ -172,6 +172,7 @@ class ZappaCLI(object):
                                                        function_name=self.lambda_name,
                                                        handler='handler.lambda_handler',
                                                        vpc_config=self.vpc_config,
+                                                       timeout=self.timeout_seconds,
                                                        memory_size=self.memory_size)
 
         # Create a Keep Warm for this deployment
@@ -407,6 +408,8 @@ class ZappaCLI(object):
             self.api_stage].get('log_level', "DEBUG")
         self.domain = self.zappa_settings[
             self.api_stage].get('domain', None)
+        self.timeout_seconds = self.zappa_settings[
+            self.api_stage].get('timeout_seconds', 30)
 
         # Create an Zappa object..
         self.zappa = Zappa(session)
