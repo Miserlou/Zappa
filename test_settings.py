@@ -4,7 +4,7 @@ DEBUG = 'True'
 LOG_LEVEL = 'DEBUG'
 SCRIPT_NAME = 'hello_world'
 DOMAIN = None
-API_STAGE = 'ttt555'
+API_STAGE = 'ttt888'
 
 def prebuild_me():
     print("This is a prebuild script!")

@@ -2,11 +2,11 @@
     "status_code": 201, 
     "data": {
         "apiKeyRequired": false, 
-        "httpMethod": "DELETE", 
+        "httpMethod": "OPTIONS", 
         "authorizationType": "NONE", 
         "ResponseMetadata": {
             "HTTPStatusCode": 201, 
-            "RequestId": "1c0d1eb1-f2cc-11e5-a340-d76d518ae6ea"
+            "RequestId": "69f3435e-28f4-11e6-87ec-8f98a402daaf"
         }
     }
 }

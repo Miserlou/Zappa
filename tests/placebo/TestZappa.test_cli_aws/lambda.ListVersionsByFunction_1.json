@@ -3,48 +3,48 @@
     "data": {
         "ResponseMetadata": {
             "HTTPStatusCode": 200, 
-            "RequestId": "4d9be2f0-f2cc-11e5-b206-0dc7c40edbf8"
+            "RequestId": "b0bc99a5-28f4-11e6-973f-fd5204f1d818"
         }, 
         "Versions": [
             {
                 "Version": "$LATEST", 
-                "CodeSha256": "5Gq+m28OkJedfolalFOEOPvPfNraGb6SAfr2slY4WNc=", 
-                "FunctionName": "zappa-ttt333", 
+                "CodeSha256": "O+UgQQT1ppytR9/n9r3ULukBw473iimxxyoQUUzNiuQ=", 
+                "FunctionName": "zappa-ttt666", 
                 "MemorySize": 512, 
-                "CodeSize": 39182402, 
-                "FunctionArn": "arn:aws:lambda:us-east-1:724336686645:function:zappa-ttt333:$LATEST", 
+                "CodeSize": 53489678, 
+                "FunctionArn": "arn:aws:lambda:us-east-1:724336686645:function:zappa-ttt666:$LATEST", 
                 "Handler": "handler.lambda_handler", 
                 "Role": "arn:aws:iam::724336686645:role/ZappaLambdaExecution", 
                 "Timeout": 30, 
-                "LastModified": "2016-03-25T20:58:15.208+0000", 
+                "LastModified": "2016-06-02T19:03:19.892+0000", 
                 "Runtime": "python2.7", 
                 "Description": "Zappa Deployment"
             }, 
             {
                 "Version": "1", 
-                "CodeSha256": "I/ivyw2ZrPfIGiSUSZD+SJxe/ydR7GppDtAocnEjPiA=", 
-                "FunctionName": "zappa-ttt333", 
+                "CodeSha256": "cWF57Szks5dHvRXo5yI6Ob0OPhD8TFF8IsmuTeM3vko=", 
+                "FunctionName": "zappa-ttt666", 
                 "MemorySize": 512, 
-                "CodeSize": 38917244, 
-                "FunctionArn": "arn:aws:lambda:us-east-1:724336686645:function:zappa-ttt333:1", 
+                "CodeSize": 53011393, 
+                "FunctionArn": "arn:aws:lambda:us-east-1:724336686645:function:zappa-ttt666:1", 
                 "Handler": "handler.lambda_handler", 
                 "Role": "arn:aws:iam::724336686645:role/ZappaLambdaExecution", 
                 "Timeout": 30, 
-                "LastModified": "2016-03-25T20:56:02.121+0000", 
+                "LastModified": "2016-06-02T19:00:43.958+0000", 
                 "Runtime": "python2.7", 
                 "Description": "Zappa Deployment"
             }, 
             {
                 "Version": "2", 
-                "CodeSha256": "5Gq+m28OkJedfolalFOEOPvPfNraGb6SAfr2slY4WNc=", 
-                "FunctionName": "zappa-ttt333", 
+                "CodeSha256": "O+UgQQT1ppytR9/n9r3ULukBw473iimxxyoQUUzNiuQ=", 
+                "FunctionName": "zappa-ttt666", 
                 "MemorySize": 512, 
-                "CodeSize": 39182402, 
-                "FunctionArn": "arn:aws:lambda:us-east-1:724336686645:function:zappa-ttt333:2", 
+                "CodeSize": 53489678, 
+                "FunctionArn": "arn:aws:lambda:us-east-1:724336686645:function:zappa-ttt666:2", 
                 "Handler": "handler.lambda_handler", 
                 "Role": "arn:aws:iam::724336686645:role/ZappaLambdaExecution", 
                 "Timeout": 30, 
-                "LastModified": "2016-03-25T20:58:15.208+0000", 
+                "LastModified": "2016-06-02T19:03:19.892+0000", 
                 "Runtime": "python2.7", 
                 "Description": "Zappa Deployment"
             }

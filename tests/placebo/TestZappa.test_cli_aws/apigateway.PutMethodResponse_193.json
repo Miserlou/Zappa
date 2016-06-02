@@ -4,10 +4,10 @@
         "responseModels": {
             "text/html": "Empty"
         }, 
-        "statusCode": "401", 
+        "statusCode": "200", 
         "ResponseMetadata": {
             "HTTPStatusCode": 201, 
-            "RequestId": "1f1ca7e8-f2cc-11e5-934a-01f4862b04e9"
+            "RequestId": "6d0b30ff-28f4-11e6-b8f8-d1b42d374c32"
         }, 
         "responseParameters": {
             "method.response.header.Content-Type": false, 

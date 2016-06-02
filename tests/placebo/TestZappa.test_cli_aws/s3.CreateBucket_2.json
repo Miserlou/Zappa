@@ -1,11 +1,15 @@
 {
-    "status_code": 200, 
+    "status_code": 400, 
     "data": {
-        "Location": "/lmbda", 
         "ResponseMetadata": {
-            "HTTPStatusCode": 200, 
-            "HostId": "7VwK1PGLwTSXIV1QeFZFcS9H0xuVPaD1/DjxjVaUtKJEa9V4rdptoWfvrSS27RXwNWzUG+FrMEA=", 
-            "RequestId": "617758DE7093429F"
+            "HTTPStatusCode": 400, 
+            "HostId": "ixHdQ3qvyt5fk5PT/74tfr1XaZW9OB1x8QC0ei9d3zxD8YA/64TQkiUo35wem3Y7andJXQ8UGkM=", 
+            "RequestId": "A0FF751028D7BE3E"
+        }, 
+        "Error": {
+            "Message": "The specified location-constraint is not valid", 
+            "Code": "InvalidLocationConstraint", 
+            "LocationConstraint": "us-east-1"
         }
     }
 }

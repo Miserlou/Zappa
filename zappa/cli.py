@@ -87,7 +87,7 @@ class ZappaCLI(object):
             parser.error("Please supply a command to execute. Can be one of 'deploy', 'update', 'tail', rollback', 'invoke'.'")
             return
 
-        # version requires no arguments
+        # Version requires no arguments
         if args.version:
             self.print_version()
             sys.exit(0)
@@ -281,15 +281,15 @@ class ZappaCLI(object):
             except SystemExit:
                 os._exit(0)
 
-
-    def undeploy(self):
+    def undeploy(self, noconfirm=False):
         """
         Tear down an exiting deployment.
         """
 
-        confirm = raw_input("Are you sure you want to undeploy? [y/n] ")
-        if confirm != 'y':
-            return
+        if not noconfirm: # pragma: no cover
+            confirm = raw_input("Are you sure you want to undeploy? [y/n] ")
+            if confirm != 'y':
+                return
 
         self.zappa.undeploy_api_gateway(self.lambda_name)
         if self.zappa_settings[self.api_stage].get('keep_warm', True):

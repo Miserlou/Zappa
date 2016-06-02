@@ -1,14 +1,14 @@
 {
     "status_code": 201, 
     "data": {
-        "statusCode": "500", 
+        "statusCode": "201", 
         "responseTemplates": {
             "text/html": "#set($inputRoot = $input.path('$.errorMessage'))\n$util.base64Decode($inputRoot)"
         }, 
-        "selectionPattern": "PCFET0NUWVBFIGh0bWw\\+NTAw.*", 
+        "selectionPattern": "PCFET0NUWVBFIGh0bWw\\+MjAx.*", 
         "ResponseMetadata": {
             "HTTPStatusCode": 201, 
-            "RequestId": "ca9bf73b-123e-11e6-96bb-bba00ad25cb4"
+            "RequestId": "7e6db942-28f4-11e6-87ec-8f98a402daaf"
         }, 
         "responseParameters": {
             "method.response.header.Content-Type": "integration.response.body.Content-Type", 
