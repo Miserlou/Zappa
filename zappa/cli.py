@@ -88,7 +88,7 @@ class ZappaCLI(object):
             return
 
         # Version requires no arguments
-        if args.version:
+        if args.version: # pragma: no cover
             self.print_version()
             sys.exit(0)
 
@@ -161,7 +161,7 @@ class ZappaCLI(object):
         # Upload it to S3
         success = self.zappa.upload_to_s3(
                 self.zip_path, self.s3_bucket_name)
-        if not success:
+        if not success: # pragma: no cover
             print("Unable to upload to S3. Quitting.")
             return
 
@@ -216,7 +216,7 @@ class ZappaCLI(object):
 
         # Upload it to S3
         success = self.zappa.upload_to_s3(self.zip_path, self.s3_bucket_name)
-        if not success:
+        if not success: # pragma: no cover
             print("Unable to upload to S3. Quitting.")
             return
 
