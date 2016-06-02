@@ -4,11 +4,8 @@ import base64
 import datetime
 import importlib
 import logging
-import os
 import traceback
 
-from urllib import urlencode
-from StringIO import StringIO
 from werkzeug.wrappers import Response
 
 # This file may be copied into a project's root,

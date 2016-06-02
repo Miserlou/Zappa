@@ -10,17 +10,14 @@ Deploy arbitrary Python programs as serverless Zappa applications.
 from __future__ import unicode_literals
 
 import argparse
-import datetime
 import inspect
 import imp
 import hjson as json
 import os
-import re
 import requests
 import slugify
 import sys
 import tempfile
-import unicodedata
 import zipfile
 import pkg_resources
 
