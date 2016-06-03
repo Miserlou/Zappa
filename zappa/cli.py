@@ -422,7 +422,7 @@ class ZappaCLI(object):
 
         # ..and configure it
         for setting in CUSTOM_SETTINGS:
-            if self.zappa_settings[self.api_stage].has_key(setting):
+            if setting in self.zappa_settings[self.api_stage]:
                 setattr(self.zappa, setting, self.zappa_settings[
                         self.api_stage][setting])        
 
