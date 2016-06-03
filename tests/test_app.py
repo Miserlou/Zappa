@@ -7,10 +7,10 @@ def hello_world(environ, start_response):
     else:
         subject = 'World'
     start_response('200 OK', [('Content-Type', 'text/html')])
-    return ['''Hello %(subject)s
-    Hello %(subject)s!
+    return ['''Hello {subject!s}
+    Hello {subject!s}!
 
-''' % {'subject': subject}]
+'''.format(**{'subject': subject})]
 
 def schedule_me():
     return "Hello!"
