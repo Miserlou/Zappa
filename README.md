@@ -147,13 +147,15 @@ to change Zappa's behavior. Use these at your own risk!
  {
     "dev": {
         "aws_region": "us-east-1", // AWS Region (default US East),
+        "cache_cluster_enabled": false, // Use APIGW cache cluster (default False)
+        "cache_cluster_size": .5, // APIGW Cache Cluster size (default 0.5)
         "debug": true // Print Zappa configuration errors tracebacks in the 500
         "delete_zip": true // Delete the local zip archive after code updates
+        "domain": "yourapp.yourdomain.com", // Required if you're using a domain
         "events": [{
             "function": "your_module.your_function", // The function to execute
             "expression": "rate(1 minute)" // When to execute it (in cron or rate format)
         }],
-        "domain": "yourapp.yourdomain.com", // Required if you're using a domain
         "exclude": ["*.gz", "*.pem"], // A list of regex patterns to exclude from the archive
         "http_methods": ["GET", "POST"], // HTTP Methods to route,
         "integration_response_codes": [200, 301, 404, 500], // Integration response status codes to route

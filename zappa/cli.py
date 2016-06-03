@@ -184,7 +184,14 @@ class ZappaCLI(object):
             self.lambda_arn, self.lambda_name)
 
         # Deploy the API!
-        endpoint_url = self.zappa.deploy_api_gateway(api_id, self.api_stage)
+        cache_cluster_enabled = self.zappa_settings[self.api_stage].get('cache_cluster_enabled', False)
+        cache_cluster_size = str(self.zappa_settings[self.api_stage].get('cache_cluster_size', .5))
+        endpoint_url = self.zappa.deploy_api_gateway(
+                                    api_id=api_id, 
+                                    stage_name=self.api_stage,
+                                    cache_cluster_enabled=cache_cluster_enabled,
+                                    cache_cluster_size=cache_cluster_size
+                                )
 
         # Finally, delete the local copy our zip package
         if self.zappa_settings[self.api_stage].get('delete_zip', True):
