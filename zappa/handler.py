@@ -98,9 +98,8 @@ class LambdaHandler(object):
                 # return this event instead of processing the request
                 # https://your_api.aws-api.com/?event_echo=true
                 event_echo = getattr(settings, "EVENT_ECHO", True)
-                if event_echo:
-                    if 'event_echo' in list(event['params'].values()):
-                        return {'Content': str(event) + '\n' + str(context), 'Status': 200}
+                if event_echo and 'event_echo' in event['params'].values():
+                    return {'Content': str(event) + '\n' + str(context), 'Status': 200}
 
                 if settings.DOMAIN:
                     # If we're on a domain, we operate normally
