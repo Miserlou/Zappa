@@ -1126,6 +1126,6 @@ class Zappa(object):
     def human_size(self, num, suffix='B'):
         for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
             if abs(num) < 1024.0:
-                return "%3.1f%s%s" % (num, unit, suffix)
+                return "{0:3.1f}{1!s}{2!s}".format(num, unit, suffix)
             num /= 1024.0
-        return "%.1f%s%s" % (num, 'Yi', suffix)
+        return "{0:.1f}{1!s}{2!s}".format(num, 'Yi', suffix)
