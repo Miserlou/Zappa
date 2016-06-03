@@ -186,7 +186,7 @@ class TestZappa(unittest.TestCase):
         z = Zappa(session)
         z.credentials_arn = 'arn:aws:iam::12345:role/ZappaLambdaExecution'
         events = z.fetch_logs('Spheres-demonstration')
-        self.assertTrue(events != None)
+        self.assertTrue(events is not None)
 
     def test_policy_json(self):
         # ensure the policy docs are valid JSON
