@@ -315,7 +315,7 @@ class ZappaCLI(object):
 
         """
 
-        if self.zappa_settings[self.api_stage].get('events', None):
+        if self.zappa_settings[self.api_stage].get('events'):
             events = self.zappa_settings[self.api_stage]['events']
 
             if type(events) != type([]):
