@@ -65,7 +65,7 @@ class LambdaHandler(object):
         # TODO If this is invoked from a non-APIGW event source,
         # extract the method and process separately.
 
-        if event.get('detail-type', None) is u'Scheduled Event':
+        if event.get('detail-type') is u'Scheduled Event':
             whole_function = event['resources'][0].split('/')[-1]
 
             module = whole_function.rsplit('.', 1)[0]
