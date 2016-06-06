@@ -166,6 +166,7 @@ to change Zappa's behavior. Use these at your own risk!
         "parameter_depth": 10, // Size of URL depth to route. Defaults to 8.
         "prebuild_script": "your_module.your_function", // Function to execute before uploading code
         "profile_name": "your-profile-name", // AWS profile credentials to use. Default 'default'.
+        "project_name": "MyProject", // The name of the project as it appears on AWS. Defaults to a slugified `pwd`.
         "role_name": "MyLambdaRole", // Lambda execution Role
         "s3_bucket": "dev-bucket", // Zappa zip bucket,
         "settings_file": "~/Projects/MyApp/settings/dev_settings.py", // Server side settings file location,

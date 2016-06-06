@@ -16,6 +16,9 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
     through _start_response.
     """
     def setUp(self):
+        """
+        Set the test up with default headers and status codes.
+        """
         self.headers = list()
         self.status = list()
 

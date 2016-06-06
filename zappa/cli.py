@@ -40,6 +40,11 @@ CUSTOM_SETTINGS = [
 ##
 
 class ZappaCLI(object):
+    """
+    ZappaCLI object is responsible for loading the settings, 
+    handling the input arguments and executing the calls to the core library.
+
+    """
 
     # Zappa settings
     zappa = None
@@ -249,6 +254,9 @@ class ZappaCLI(object):
         return
 
     def rollback(self, revision):
+        """
+        Rollsback the currently deploy lambda code to a previous revision.
+        """
 
         print("Rolling back..")
 
@@ -560,6 +568,9 @@ class ZappaCLI(object):
 ####################################################################
 
 def handle(): # pragma: no cover
+    """
+    Main program execution handler.
+    """
     try:
         cli = ZappaCLI()
         sys.exit(cli.handle())
