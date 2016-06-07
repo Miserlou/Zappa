@@ -971,7 +971,7 @@ class Zappa(object):
 
         return
 
-    def unschedule_events(self, lambda_arn, lambda_name, events):
+    def unschedule_events(self, events):
         """
         Given a list of events, unschedule these CloudWatch Events.
 
