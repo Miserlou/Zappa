@@ -222,8 +222,11 @@ class Zappa(object):
     boto_session = None
     credentials_arn = None
 
-    def __init__(self, boto_session=None, profile_name=None):
+    def __init__(self, boto_session=None, profile_name=None, aws_region=aws_region):
+        self.aws_region = aws_region
         self.load_credentials(boto_session, profile_name)
+        self.lambda_client = self.boto_session.client('lambda')
+        self.iam = self.boto_session.resource('iam')
 
     ##
     # Packaging
@@ -506,6 +509,7 @@ class Zappa(object):
         )
 
         return response
+
 
     def rollback_lambda_function_version(self, function_name, versions_back=1, publish=True):
         """
@@ -1091,7 +1095,6 @@ class Zappa(object):
 
         # Automatically load credentials from config or environment
         if not boto_session:
-
             # Set aws_region to None to use the system's region instead
             if self.aws_region is None:
                 self.aws_region = boto3.Session().region_name

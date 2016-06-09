@@ -20,8 +20,12 @@ import sys
 import tempfile
 import zipfile
 import pkg_resources
+import logging
 
 from zappa import Zappa
+
+logging.basicConfig()
+logger = logging.getLogger()
 
 CUSTOM_SETTINGS = [
     'aws_region',
@@ -115,7 +119,7 @@ class ZappaCLI(object):
         command = command_env[0]
 
         if command not in CLI_COMMANDS:
-            print("The command '{}' is not recognized. {}".format(command, help_message)
+            print("The command '{}' is not recognized. {}".format(command, help_message))
             return
 
         if len(command_env) < 2: # pragma: no cover
@@ -345,11 +349,15 @@ class ZappaCLI(object):
                 print("Events must be supplied as a list.")
                 return
 
-            # Update, as we need to get the Lambda ARN.
-            # There is probably a better way to do this.
-            # XXX
-            # http://boto3.readthedocs.io/en/latest/reference/services/lambda.html#Lambda.Client.get_function
-            self.update()
+            try:
+                response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name)
+                self.lambda_arn = str(response['Configuration']['FunctionArn'])
+                self.lambda_name = str(response['Configuration']['FunctionName'])
+                role = self.zappa.iam.Role(self.zappa.role_name)
+                self.zappa.credentials_arn = role.arn
+            except:
+                logger.warn('Function {} does not exist, creating a new one.'.format(self.lambda_name))
+                self.update()
 
             print("Scheduling..")
             self.zappa.schedule_events(self.lambda_arn, self.lambda_name, events)
@@ -441,16 +449,8 @@ class ZappaCLI(object):
         self.timeout_seconds = self.zappa_settings[
             self.api_stage].get('timeout_seconds', 30)
 
-        # Create an Zappa object..
-        self.zappa = Zappa(session)
+        self.zappa = Zappa(boto_session=session, profile_name=self.profile_name, aws_region=self.aws_region)
 
-        # Explicitly set our AWS Region
-        self.zappa.aws_region = self.aws_region
-
-        # Load your AWS credentials from ~/.aws/credentials
-        self.zappa.load_credentials(session, self.profile_name)
-
-        # ..and configure it
         for setting in CUSTOM_SETTINGS:
             if setting in self.zappa_settings[self.api_stage]:
                 setattr(self.zappa, setting, self.zappa_settings[
@@ -586,17 +586,19 @@ def handle(): # pragma: no cover
     """
     Main program execution handler.
     """
-    try:
-        cli = ZappaCLI()
-        sys.exit(cli.handle())
-    except (KeyboardInterrupt, SystemExit): # pragma: no cover
-        if cli.zip_path: # Remove the Zip from S3 upon failure.
-            cli.remove_uploaded_zip()
-        return
-    except Exception as e:
-        if cli.zip_path: # Remove the Zip from S3 upon failure.
-            cli.remove_uploaded_zip()
-        print(e)
+    cli = ZappaCLI()
+    cli.handle()
+    # try:
+    #
+    #     sys.exit(cli.handle())
+    # except (KeyboardInterrupt, SystemExit): # pragma: no cover
+    #     if cli.zip_path: # Remove the Zip from S3 upon failure.
+    #         cli.remove_uploaded_zip()
+    #     return
+    # except Exception as e:
+    #     if cli.zip_path: # Remove the Zip from S3 upon failure.
+    #         cli.remove_uploaded_zip()
+    #     print(e)
 
 if __name__ == '__main__': # pragma: no cover
     handle()
