@@ -147,13 +147,15 @@ to change Zappa's behavior. Use these at your own risk!
  {
     "dev": {
         "aws_region": "us-east-1", // AWS Region (default US East),
+        "cache_cluster_enabled": false, // Use APIGW cache cluster (default False)
+        "cache_cluster_size": .5, // APIGW Cache Cluster size (default 0.5)
         "debug": true // Print Zappa configuration errors tracebacks in the 500
         "delete_zip": true // Delete the local zip archive after code updates
+        "domain": "yourapp.yourdomain.com", // Required if you're using a domain
         "events": [{
             "function": "your_module.your_function", // The function to execute
             "expression": "rate(1 minute)" // When to execute it (in cron or rate format)
         }],
-        "domain": "yourapp.yourdomain.com", // Required if you're using a domain
         "exclude": ["*.gz", "*.pem"], // A list of regex patterns to exclude from the archive
         "http_methods": ["GET", "POST"], // HTTP Methods to route,
         "integration_response_codes": [200, 301, 404, 500], // Integration response status codes to route
@@ -164,9 +166,11 @@ to change Zappa's behavior. Use these at your own risk!
         "parameter_depth": 10, // Size of URL depth to route. Defaults to 8.
         "prebuild_script": "your_module.your_function", // Function to execute before uploading code
         "profile_name": "your-profile-name", // AWS profile credentials to use. Default 'default'.
+        "project_name": "MyProject", // The name of the project as it appears on AWS. Defaults to a slugified `pwd`.
         "role_name": "MyLambdaRole", // Lambda execution Role
         "s3_bucket": "dev-bucket", // Zappa zip bucket,
         "settings_file": "~/Projects/MyApp/settings/dev_settings.py", // Server side settings file location,
+        "timeout_seconds": 30, // Maximum lifespan for the Lambda function (default 30)
         "touch": false, // GET the production URL upon initial deployment (default True)
         "use_precompiled_packages": false, // If possible, use C-extension packages which have been pre-compiled for AWS Lambda
         "vpc_config": { // Optional VPC configuration for Lambda function

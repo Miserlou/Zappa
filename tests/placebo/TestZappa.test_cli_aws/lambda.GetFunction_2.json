@@ -3,25 +3,25 @@
     "data": {
         "Code": {
             "RepositoryType": "S3", 
-            "Location": "https://prod-04-2014-tasks.s3.amazonaws.com/snapshots/724336686645/zappa-ttt555-5f3ce7e7-910e-45c0-9ad9-ddde438e0e6b?x-amz-security-token=FQoDYXdzEGYaDOTwkJlI%2BgXJTFCcPSK0A7teG54A%2BLjn1cRm5S840h%2FlpcTCX%2FHfLlF3rk0wgtnxbENi2kwc%2B0sbj0ogUN77tMtezAaaZHml8dCCrve3EKr%2BaT%2F8SX%2Fgx7tHhwT7dvP5lMMgsXXKEaV4TJTtVnHg%2FV8IXNVCWOMyCIhpOHPtofqUvwU6%2FCNjnSGbK2kASsw2%2B8QSzAP6W0STj3X8gqFytUQUggIrzkUpK7nzDfHXIkt0XNRMH7JIvwvqGFN%2FNTxCh5HfWmbuKxN49q%2BdF9%2BeTyhgEBr56e0tFV50yRSe5OMmso%2FjEXs%2FLygGGrbE10Es0FrJcVs6a9ueL5uV5DDTEkQKdXqK9WBNWU%2FBE5zJMz8NmYgT4FrWxVuXHB1vTz%2FsuUWT7XwYWhpEs25TYrsJh%2F2QD14utF4ZUghuEnz4KTPk%2Fdhs6srlAzGAoQxaAaQyhT8eRKco48bf8FrJPVSQO0EBVGd1naThKu38Wr5%2BNDsG6rKdJ%2F2PJjUPFGsRYuLYhtdwxaJgKcifQzzts%2Bsa%2BAnAOn7jdqC%2Fds8fbz03s%2FF7kIlhL%2F4vIw%2BUKn%2Bpjf9%2BlJPBKCWlNr5stcuOVkMFSGCijscorLmpuQU%3D&AWSAccessKeyId=ASIAJICA4DCRKRONNCWQ&Expires=1462397855&Signature=EWmA8G7tKPpECJ4CtDJUlqS4%2FAE%3D"
+            "Location": "https://prod-04-2014-tasks.s3.amazonaws.com/snapshots/724336686645/zappa-ttt888-ef373459-e2b9-4519-94d3-f1998bd796f1?x-amz-security-token=FQoDYXdzEEsaDNFzs2HYUQm1%2BwJcHyK0A9oTLyn6u3U1q%2BjcOxrB2kF2Gha9Vpjpcp0wb02djylFBu5GjKFNlmkBS09fB5sFF%2F%2BzwufGwltEli4X2lJjz%2BhOrsTGXLHt0nDI6FKrnVMxUhOviwBzE9%2B75hAuABJDjStqJ%2Bl1dYmcYlbzeKuTie2VAnhmenrR2xBf8g8tu1vQYWNC3paPjybbBb0gLKskKwNPpU7bCSEFp1hBXqX5iOXIvEbWy4RjA1BAq6WsLwoRpWeob86mu%2FZp8cZa%2BggS9xvl2QJywMHHdc48UNRj5CicPocMjSe7dPZLYiXhWWzFJl4ggkvBMNHJkBxyH2LHk5XXY3dyO3dmyt6OLRph08Z2eicAv1M6hVxg08mauyOlJMB3X0EfYDpI2V7o4rgXhDj57H5a49Nqrz4YSVE6AbxNmKH5KbJIg%2FdA7%2FhZhe7KMEtPpvZOd4SlWNzDbOC%2FxGvyhRZ%2B7hLV1goJlwK0OtBC03F0ttJ0VDHDQVscvg9OqS4unFStJ4xUbwia5T6q%2B0kJuCZVWlsVDfzhCaBkyIGBinTy23SctTB4KeQceAQZvk3LlZFIWy%2FzGosRVJ2NXvKhwjUo9vHBugU%3D&AWSAccessKeyId=ASIAIYMYK3GZ4OBV663Q&Expires=1464896076&Signature=EGH22BneoRTYD4iKGa0guH9D99M%3D"
         }, 
         "Configuration": {
             "Version": "1", 
-            "CodeSha256": "BVwdwGmIC8giO2tawFpj1tNf3idFqD8qnCtHbzZZe7I=", 
-            "FunctionName": "zappa-ttt555", 
+            "CodeSha256": "8UE6MFl8cvkkFxpuqn2ABeTmjedHPEODPlX1szqo1+o=", 
+            "FunctionName": "zappa-ttt888", 
             "MemorySize": 512, 
-            "CodeSize": 45060765, 
-            "FunctionArn": "arn:aws:lambda:us-east-1:724336686645:function:zappa-ttt555:1", 
+            "CodeSize": 8311340, 
+            "FunctionArn": "arn:aws:lambda:us-east-1:724336686645:function:zappa-ttt888:1", 
             "Handler": "handler.lambda_handler", 
             "Role": "arn:aws:iam::724336686645:role/ZappaLambdaExecution", 
             "Timeout": 30, 
-            "LastModified": "2016-05-04T21:25:30.225+0000", 
+            "LastModified": "2016-06-02T19:23:48.902+0000", 
             "Runtime": "python2.7", 
             "Description": "Zappa Deployment"
         }, 
         "ResponseMetadata": {
             "HTTPStatusCode": 200, 
-            "RequestId": "049f5819-123f-11e6-be12-25e7eb4e756a"
+            "RequestId": "a4a838ef-28f7-11e6-b71d-85d581e5b915"
         }
     }
 }

@@ -1,0 +1,15 @@
+{
+    "status_code": 400, 
+    "data": {
+        "ResponseMetadata": {
+            "HTTPStatusCode": 400, 
+            "HostId": "Wb7Zafku3Fm3Jo9rU4fdCONIC1uqzsB6wOenBvQ40sYlBaPODFG2w+wVCzIatOB8Dp1D4ZoHdGw=", 
+            "RequestId": "2CB218F2983FF033"
+        }, 
+        "Error": {
+            "Message": "The specified location-constraint is not valid", 
+            "Code": "InvalidLocationConstraint", 
+            "LocationConstraint": "us-east-1"
+        }
+    }
+}

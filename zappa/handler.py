@@ -4,11 +4,8 @@ import base64
 import datetime
 import importlib
 import logging
-import os
 import traceback
 
-from urllib import urlencode
-from StringIO import StringIO
 from werkzeug.wrappers import Response
 
 # This file may be copied into a project's root,
@@ -62,12 +59,12 @@ class LambdaHandler(object):
         
         """
 
-        # TODO If this is invoked from a non-APIGW event source,
+        # TODO If this is invoked from a non-APIGW/Scheduled event source,
         # extract the method and process separately.
 
-        if event.get('detail-type', None) is u'Scheduled Event':
+        if event.get('detail-type') == u'Scheduled Event':
+            
             whole_function = event['resources'][0].split('/')[-1]
-
             module, function = whole_function.rsplit('.', 1)
 
             app_module = importlib.import_module(module)
@@ -101,9 +98,8 @@ class LambdaHandler(object):
                 # return this event instead of processing the request
                 # https://your_api.aws-api.com/?event_echo=true
                 event_echo = getattr(settings, "EVENT_ECHO", True)
-                if event_echo:
-                    if 'event_echo' in list(event['params'].values()):
-                        return {'Content': str(event) + '\n' + str(context), 'Status': 200}
+                if event_echo and 'event_echo' in event['params'].values():
+                    return {'Content': str(event) + '\n' + str(context), 'Status': 200}
 
                 if settings.DOMAIN:
                     # If we're on a domain, we operate normally
@@ -128,14 +124,12 @@ class LambdaHandler(object):
                 response = Response.from_app(app, environ)
 
                 # This is the object we're going to return.
-                zappa_returndict = dict()
+                # Pack the WSGI response into our special dictionary.
+                zappa_returndict = dict(response.headers)
 
-                if response.data:
+                if 'Content' not in zappa_returndict and response.data:
                     zappa_returndict['Content'] = response.data
 
-                # Pack the WSGI response into our special dictionary.
-                for (header_name, header_value) in response.headers:
-                    zappa_returndict[header_name] = header_value
                 zappa_returndict['Status'] = response.status_code
 
                 # To ensure correct status codes, we need to

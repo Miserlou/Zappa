@@ -1,0 +1,13 @@
+{
+    "status_code": 400, 
+    "data": {
+        "ResponseMetadata": {
+            "HTTPStatusCode": 400, 
+            "RequestId": "53729c57-28f4-11e6-b918-078fb6d3b572"
+        }, 
+        "Error": {
+            "Message": "Rule zappa-keep-warm-zappa-ttt666 does not exist.", 
+            "Code": "ResourceNotFoundException"
+        }
+    }
+}

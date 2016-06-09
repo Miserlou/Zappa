@@ -1,14 +1,14 @@
 {
     "status_code": 200, 
     "data": {
-        "ETag": "\"f9ec614049d5c9cf2b994dde26e49ec0-5\"", 
+        "ETag": "\"7d8ea4b5ca695ef9def6f57e8ab947af-7\"", 
         "Bucket": "lmbda", 
-        "Location": "https://lmbda.s3.amazonaws.com/zappa-ttt333-1458939297.zip", 
+        "Location": "https://lmbda.s3.amazonaws.com/zappa-ttt666-1464893986.zip", 
         "ResponseMetadata": {
             "HTTPStatusCode": 200, 
-            "HostId": "KSMdDFZZBz+0YqR3m0MzQzMA+XSmeXJNyjXBm+UJgJiC/SOjjO+s5XmJmXe/QL2oVzD2Ihw9Rwk=", 
-            "RequestId": "6AE81D6970838BCA"
+            "HostId": "1U04LK7sMQjp+bQd91fM5zhG/ealJmd6+PIGvUE0Fx2gA88TS/2pO+/hqbOl0dSYpUrXl87wFXY=", 
+            "RequestId": "753D147604AD53D7"
         }, 
-        "Key": "zappa-ttt333-1458939297.zip"
+        "Key": "zappa-ttt666-1464893986.zip"
     }
 }

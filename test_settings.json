@@ -1,9 +1,10 @@
 {
-    "ttt555": {
+    "ttt888": {
        "s3_bucket": "lmbda",
        "app_function": "tests.test_app.hello_world",
        "delete_zip": true,
        "debug": true,
+       "parameter_depth": 2, 
        "prebuild_script": "test_settings.prebuild_me"
     }
 }

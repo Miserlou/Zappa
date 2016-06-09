@@ -1,0 +1,13 @@
+{
+    "status_code": 409, 
+    "data": {
+        "ResponseMetadata": {
+            "HTTPStatusCode": 409, 
+            "RequestId": "57205ad3-28f7-11e6-b9d3-61f7d33459a1"
+        }, 
+        "Error": {
+            "Message": "Function already exist: zappa-ttt777", 
+            "Code": "ResourceConflictException"
+        }
+    }
+}

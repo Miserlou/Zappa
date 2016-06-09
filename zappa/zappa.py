@@ -1,8 +1,6 @@
 import base64
 import boto3
 import botocore
-import fnmatch
-import imp
 import json
 import logging
 import os
@@ -11,16 +9,13 @@ import random
 import requests
 import shutil
 import string
-import sys
 import tarfile
 import tempfile
 import time
-import warnings
 import zipfile
 
 from distutils.dir_util import copy_tree
 from lambda_packages import lambda_packages
-from os.path import expanduser
 from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
@@ -175,7 +170,7 @@ REDIRECT_RESPONSE_TEMPLATE = ""
 API_GATEWAY_REGIONS = ['us-east-1', 'us-west-2', 'eu-west-1', 'ap-northeast-1']
 LAMBDA_REGIONS = ['us-east-1', 'us-west-2', 'eu-west-1', 'ap-northeast-1']
 
-ZIP_EXCLUDES =  ['*.exe', '*.DS_Store', '*.Python', '*.git', '*.zip', '*.tar.gz','*.hg']
+ZIP_EXCLUDES =  ['*.exe', '*.DS_Store', '*.Python', '*.git', '.git/*', '*.zip', '*.tar.gz', '*.hg', '*.egg-info']
 
 ##
 # Classes
@@ -449,11 +444,14 @@ class Zappa(object):
     # Lambda
     ##
 
-    def create_lambda_function(self, bucket, s3_key, function_name, handler, description="Zappa Deployment", timeout=30, memory_size=512, publish=True, vpc_config={}):
+    def create_lambda_function(self, bucket, s3_key, function_name, handler, description="Zappa Deployment", timeout=30, memory_size=512, publish=True, vpc_config=None):
         """
         Given a bucket and key of a valid Lambda-zip, a function name and a handler, register that Lambda function.
 
         """
+
+        if not vpc_config:
+            vpc_config = {}
 
         client = self.boto_session.client('lambda')
         response = client.create_function(
@@ -973,7 +971,7 @@ class Zappa(object):
 
         return
 
-    def unschedule_events(self, lambda_arn, lambda_name, events):
+    def unschedule_events(self, events):
         """
         Given a list of events, unschedule these CloudWatch Events.
 
@@ -1128,6 +1126,6 @@ class Zappa(object):
     def human_size(self, num, suffix='B'):
         for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
             if abs(num) < 1024.0:
-                return "%3.1f%s%s" % (num, unit, suffix)
+                return "{0:3.1f}{1!s}{2!s}".format(num, unit, suffix)
             num /= 1024.0
-        return "%.1f%s%s" % (num, 'Yi', suffix)
+        return "{0:.1f}{1!s}{2!s}".format(num, 'Yi', suffix)

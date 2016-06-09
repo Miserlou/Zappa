@@ -10,17 +10,14 @@ Deploy arbitrary Python programs as serverless Zappa applications.
 from __future__ import unicode_literals
 
 import argparse
-import datetime
 import inspect
 import imp
 import hjson as json
 import os
-import re
 import requests
 import slugify
 import sys
 import tempfile
-import unicodedata
 import zipfile
 import pkg_resources
 
@@ -55,6 +52,11 @@ CLI_COMMANDS = [
 ##
 
 class ZappaCLI(object):
+    """
+    ZappaCLI object is responsible for loading the settings,
+    handling the input arguments and executing the calls to the core library.
+
+    """
 
     # Zappa settings
     zappa = None
@@ -103,8 +105,8 @@ class ZappaCLI(object):
             parser.error(help_message)
             return
 
-        # version requires no arguments
-        if args.version:
+        # Version requires no arguments
+        if args.version: # pragma: no cover
             self.print_version()
             sys.exit(0)
 
@@ -155,7 +157,6 @@ class ZappaCLI(object):
         elif command == 'unschedule': # pragma: no cover
             self.unschedule()
 
-
     ##
     # The Commands
     ##
@@ -180,7 +181,7 @@ class ZappaCLI(object):
         # Upload it to S3
         success = self.zappa.upload_to_s3(
                 self.zip_path, self.s3_bucket_name)
-        if not success:
+        if not success: # pragma: no cover
             print("Unable to upload to S3. Quitting.")
             return
 
@@ -191,6 +192,7 @@ class ZappaCLI(object):
                                                        function_name=self.lambda_name,
                                                        handler='handler.lambda_handler',
                                                        vpc_config=self.vpc_config,
+                                                       timeout=self.timeout_seconds,
                                                        memory_size=self.memory_size)
 
         # Create a Keep Warm for this deployment
@@ -202,7 +204,14 @@ class ZappaCLI(object):
             self.lambda_arn, self.lambda_name)
 
         # Deploy the API!
-        endpoint_url = self.zappa.deploy_api_gateway(api_id, self.api_stage)
+        cache_cluster_enabled = self.zappa_settings[self.api_stage].get('cache_cluster_enabled', False)
+        cache_cluster_size = str(self.zappa_settings[self.api_stage].get('cache_cluster_size', .5))
+        endpoint_url = self.zappa.deploy_api_gateway(
+                                    api_id=api_id,
+                                    stage_name=self.api_stage,
+                                    cache_cluster_enabled=cache_cluster_enabled,
+                                    cache_cluster_size=cache_cluster_size
+                                )
 
         # Finally, delete the local copy our zip package
         if self.zappa_settings[self.api_stage].get('delete_zip', True):
@@ -235,7 +244,7 @@ class ZappaCLI(object):
 
         # Upload it to S3
         success = self.zappa.upload_to_s3(self.zip_path, self.s3_bucket_name)
-        if not success:
+        if not success: # pragma: no cover
             print("Unable to upload to S3. Quitting.")
             return
 
@@ -260,6 +269,9 @@ class ZappaCLI(object):
         return
 
     def rollback(self, revision):
+        """
+        Rollsback the currently deploy lambda code to a previous revision.
+        """
 
         print("Rolling back..")
 
@@ -300,15 +312,15 @@ class ZappaCLI(object):
             except SystemExit:
                 os._exit(0)
 
-
-    def undeploy(self):
+    def undeploy(self, noconfirm=False):
         """
         Tear down an exiting deployment.
         """
 
-        confirm = raw_input("Are you sure you want to undeploy? [y/n] ")
-        if confirm != 'y':
-            return
+        if not noconfirm: # pragma: no cover
+            confirm = raw_input("Are you sure you want to undeploy? [y/n] ")
+            if confirm != 'y':
+                return
 
         self.zappa.undeploy_api_gateway(self.lambda_name)
         if self.zappa_settings[self.api_stage].get('keep_warm', True):
@@ -326,7 +338,7 @@ class ZappaCLI(object):
 
         """
 
-        if self.zappa_settings[self.api_stage].get('events', None):
+        if self.zappa_settings[self.api_stage].get('events'):
             events = self.zappa_settings[self.api_stage]['events']
 
             if type(events) != list:
@@ -393,7 +405,7 @@ class ZappaCLI(object):
 
         # Make sure that this environment is our settings
         if self.api_stage not in self.zappa_settings.keys():
-            print("Please define '%s' in your Zappa settings." % self.api_stage)
+            print("Please define '{0!s}' in your Zappa settings.".format(self.api_stage))
             quit() # pragma: no cover
 
         # We need a working title for this project. Use one if supplied, else cwd dirname.
@@ -426,6 +438,8 @@ class ZappaCLI(object):
             self.api_stage].get('log_level', "DEBUG")
         self.domain = self.zappa_settings[
             self.api_stage].get('domain', None)
+        self.timeout_seconds = self.zappa_settings[
+            self.api_stage].get('timeout_seconds', 30)
 
         # Create an Zappa object..
         self.zappa = Zappa(session)
@@ -438,7 +452,7 @@ class ZappaCLI(object):
 
         # ..and configure it
         for setting in CUSTOM_SETTINGS:
-            if self.zappa_settings[self.api_stage].has_key(setting):
+            if setting in self.zappa_settings[self.api_stage]:
                 setattr(self.zappa, setting, self.zappa_settings[
                         self.api_stage][setting])
 
@@ -478,21 +492,21 @@ class ZappaCLI(object):
         # Throw our setings into it
         with zipfile.ZipFile(self.zip_path, 'a') as lambda_zip:
             app_module, app_function = self.app_function.rsplit('.', 1)
-            settings_s = "# Generated by Zappa\nAPP_MODULE='%s'\nAPP_FUNCTION='%s'\n" % (app_module, app_function)
+            settings_s = "# Generated by Zappa\nAPP_MODULE='{0!s}'\nAPP_FUNCTION='{1!s}'\n".format(app_module, app_function)
 
             if self.debug is not None:
-                settings_s = settings_s + "DEBUG='%s'\n" % (self.debug) # Cast to Bool in handler
-            settings_s = settings_s + "LOG_LEVEL='%s'\n" % (self.log_level)
+                settings_s = settings_s + "DEBUG='{0!s}'\n".format((self.debug)) # Cast to Bool in handler
+            settings_s = settings_s + "LOG_LEVEL='{0!s}'\n".format((self.log_level))
 
             # If we're on a domain, we don't need to define the /<<env>> in
             # the WSGI PATH
             if self.domain:
-                settings_s = settings_s + "DOMAIN='%s'\n" % (self.domain)
+                settings_s = settings_s + "DOMAIN='{0!s}'\n".format((self.domain))
             else:
                 settings_s = settings_s + "DOMAIN=None\n"
 
             # We can be environment-aware
-            settings_s = settings_s + "API_STAGE='%s'\n" % (self.api_stage)
+            settings_s = settings_s + "API_STAGE='{0!s}'\n".format((self.api_stage))
 
             # Lambda requires a specific chmod
             temp_settings = tempfile.NamedTemporaryFile(delete=False)
@@ -569,6 +583,9 @@ class ZappaCLI(object):
 ####################################################################
 
 def handle(): # pragma: no cover
+    """
+    Main program execution handler.
+    """
     try:
         cli = ZappaCLI()
         sys.exit(cli.handle())

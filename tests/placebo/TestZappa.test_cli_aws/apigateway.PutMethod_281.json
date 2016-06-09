@@ -2,11 +2,11 @@
     "status_code": 201, 
     "data": {
         "apiKeyRequired": false, 
-        "httpMethod": "PATCH", 
+        "httpMethod": "POST", 
         "authorizationType": "NONE", 
         "ResponseMetadata": {
             "HTTPStatusCode": 201, 
-            "RequestId": "c52e31cd-123e-11e6-bfe9-095d5a87ef42"
+            "RequestId": "79060e63-28f4-11e6-87ec-8f98a402daaf"
         }
     }
 }
