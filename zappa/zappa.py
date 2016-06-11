@@ -585,9 +585,7 @@ class Zappa(object):
         # The Resources
         ##
 
-        response = client.get_resources(
-            restApiId=api_id,
-        )
+        response = self.apigateway_client.get_resources(restApiId=api_id)
 
         # count how many put requests we'll be reporting for progress bar
         progress_total = self.parameter_depth * len(self.http_methods) * (
@@ -607,7 +605,7 @@ class Zappa(object):
         parent_id = root_id
         for i in range(1, self.parameter_depth):
 
-            response = client.create_resource(
+            response = self.apigateway_client.create_resource(
                 restApiId=api_id,
                 parentId=parent_id,
                 pathPart="{parameter_" + str(i) + "}"
