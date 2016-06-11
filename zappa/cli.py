@@ -22,10 +22,7 @@ import zipfile
 import pkg_resources
 import logging
 
-from zappa import Zappa
-
-logging.basicConfig()
-logger = logging.getLogger()
+from zappa import Zappa, logger
 
 CUSTOM_SETTINGS = [
     'aws_region',
@@ -45,7 +42,6 @@ CLI_COMMANDS = [
     'rollback',
     'schedule',
     'tail',
-    'undeploy',
     'undeploy',
     'unschedule',
     'update'
@@ -80,6 +76,8 @@ class ZappaCLI(object):
     zip_path = None
     vpc_config = None
     memory_size = None
+    use_apigateway = None
+    lambda_handler = None
 
     def handle(self, argv=None):
         """
@@ -99,6 +97,7 @@ class ZappaCLI(object):
         parser.add_argument('-a', '--app_function', type=str, default=None,
                             help='The WSGI application function.')
         parser.add_argument('-v', '--version', action='store_true', help='Print the zappa version', default=False)
+        parser.add_argument('-y', action='store_true', help='Auto confirm yes', default=False)
 
         args = parser.parse_args(argv)
 
@@ -155,7 +154,7 @@ class ZappaCLI(object):
         elif command == 'tail': # pragma: no cover
             self.tail()
         elif command == 'undeploy': # pragma: no cover
-            self.undeploy()
+            self.undeploy(noconfirm=args.y)
         elif command == 'schedule': # pragma: no cover
             self.schedule()
         elif command == 'unschedule': # pragma: no cover
@@ -194,7 +193,7 @@ class ZappaCLI(object):
         self.lambda_arn = self.zappa.create_lambda_function(bucket=self.s3_bucket_name,
                                                        s3_key=self.zip_path,
                                                        function_name=self.lambda_name,
-                                                       handler='handler.lambda_handler',
+                                                       handler=self.lambda_handler,
                                                        vpc_config=self.vpc_config,
                                                        timeout=self.timeout_seconds,
                                                        memory_size=self.memory_size)
@@ -203,19 +202,24 @@ class ZappaCLI(object):
         if self.zappa_settings[self.api_stage].get('keep_warm', True):
             self.zappa.create_keep_warm(self.lambda_arn, self.lambda_name)
 
-        # Create and configure the API Gateway
-        api_id = self.zappa.create_api_gateway_routes(
-            self.lambda_arn, self.lambda_name)
+        endpoint_url = ''
+        if self.use_apigateway:
+            # Create and configure the API Gateway
+            api_id = self.zappa.create_api_gateway_routes(
+                self.lambda_arn, self.lambda_name)
 
-        # Deploy the API!
-        cache_cluster_enabled = self.zappa_settings[self.api_stage].get('cache_cluster_enabled', False)
-        cache_cluster_size = str(self.zappa_settings[self.api_stage].get('cache_cluster_size', .5))
-        endpoint_url = self.zappa.deploy_api_gateway(
-                                    api_id=api_id,
-                                    stage_name=self.api_stage,
-                                    cache_cluster_enabled=cache_cluster_enabled,
-                                    cache_cluster_size=cache_cluster_size
-                                )
+            # Deploy the API!
+            cache_cluster_enabled = self.zappa_settings[self.api_stage].get('cache_cluster_enabled', False)
+            cache_cluster_size = str(self.zappa_settings[self.api_stage].get('cache_cluster_size', .5))
+            endpoint_url = self.zappa.deploy_api_gateway(
+                                        api_id=api_id,
+                                        stage_name=self.api_stage,
+                                        cache_cluster_enabled=cache_cluster_enabled,
+                                        cache_cluster_size=cache_cluster_size
+                                    )
+
+            if self.zappa_settings[self.api_stage].get('touch', True):
+                requests.get(endpoint_url)
 
         # Finally, delete the local copy our zip package
         if self.zappa_settings[self.api_stage].get('delete_zip', True):
@@ -224,12 +228,8 @@ class ZappaCLI(object):
         # Remove the uploaded zip from S3, because it is now registered..
         self.zappa.remove_from_s3(self.zip_path, self.s3_bucket_name)
 
-        if self.zappa_settings[self.api_stage].get('touch', True):
-            requests.get(endpoint_url)
+        print("Deployed! {}".format(endpoint_url))
 
-        print("Your Zappa deployment is live!: " + endpoint_url)
-
-        return
 
     def update(self):
         """
@@ -360,6 +360,7 @@ class ZappaCLI(object):
                 self.update()
 
             print("Scheduling..")
+            logger.info('Scheduling...')
             self.zappa.schedule_events(self.lambda_arn, self.lambda_name, events)
 
         return
@@ -448,6 +449,10 @@ class ZappaCLI(object):
             self.api_stage].get('domain', None)
         self.timeout_seconds = self.zappa_settings[
             self.api_stage].get('timeout_seconds', 30)
+        self.use_apigateway = self.zappa_settings[
+            self.api_stage].get('use_apigateway', True)
+        self.lambda_handler = self.zappa_settings[
+            self.api_stage].get('lambda_handler', 'handler.lambda_handler')
 
         self.zappa = Zappa(boto_session=session, profile_name=self.profile_name, aws_region=self.aws_region)
 
@@ -489,36 +494,35 @@ class ZappaCLI(object):
                 exclude=self.zappa_settings[self.api_stage].get('exclude', [])
             )
 
-        # Throw our setings into it
-        with zipfile.ZipFile(self.zip_path, 'a') as lambda_zip:
-            app_module, app_function = self.app_function.rsplit('.', 1)
-            settings_s = "# Generated by Zappa\nAPP_MODULE='{0!s}'\nAPP_FUNCTION='{1!s}'\n".format(app_module, app_function)
+        if self.app_function:
+            # Throw custom setings into the zip file
+            with zipfile.ZipFile(self.zip_path, 'a') as lambda_zip:
+                app_module, app_function = self.app_function.rsplit('.', 1)
+                settings_s = "# Generated by Zappa\nAPP_MODULE='{0!s}'\nAPP_FUNCTION='{1!s}'\n".format(app_module, app_function)
 
-            if self.debug is not None:
-                settings_s = settings_s + "DEBUG='{0!s}'\n".format((self.debug)) # Cast to Bool in handler
-            settings_s = settings_s + "LOG_LEVEL='{0!s}'\n".format((self.log_level))
+                if self.debug:
+                    settings_s = settings_s + "DEBUG='{0!s}'\n".format((self.debug)) # Cast to Bool in handler
+                settings_s = settings_s + "LOG_LEVEL='{0!s}'\n".format((self.log_level))
 
-            # If we're on a domain, we don't need to define the /<<env>> in
-            # the WSGI PATH
-            if self.domain:
-                settings_s = settings_s + "DOMAIN='{0!s}'\n".format((self.domain))
-            else:
-                settings_s = settings_s + "DOMAIN=None\n"
+                # If we're on a domain, we don't need to define the /<<env>> in
+                # the WSGI PATH
+                if self.domain:
+                    settings_s = settings_s + "DOMAIN='{0!s}'\n".format((self.domain))
+                else:
+                    settings_s = settings_s + "DOMAIN=None\n"
 
-            # We can be environment-aware
-            settings_s = settings_s + "API_STAGE='{0!s}'\n".format((self.api_stage))
+                # We can be environment-aware
+                settings_s = settings_s + "API_STAGE='{0!s}'\n".format((self.api_stage))
 
-            # Lambda requires a specific chmod
-            temp_settings = tempfile.NamedTemporaryFile(delete=False)
-            os.chmod(temp_settings.name, 0644)
-            temp_settings.write(settings_s)
-            temp_settings.close()
-            lambda_zip.write(temp_settings.name, 'zappa_settings.py')
-            os.remove(temp_settings.name)
+                # Lambda requires a specific chmod
+                temp_settings = tempfile.NamedTemporaryFile(delete=False)
+                os.chmod(temp_settings.name, 0644)
+                temp_settings.write(settings_s)
+                temp_settings.close()
+                lambda_zip.write(temp_settings.name, 'zappa_settings.py')
+                os.remove(temp_settings.name)
+                # lambda_zip.close()
 
-            lambda_zip.close()
-
-        return
 
     def remove_local_zip(self):
         """

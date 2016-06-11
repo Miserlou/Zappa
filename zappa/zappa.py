@@ -18,7 +18,10 @@ from distutils.dir_util import copy_tree
 from lambda_packages import lambda_packages
 from tqdm import tqdm
 
+logging.basicConfig(format='%(levelname)s:%(message)s')
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
 
 ##
 # Policies And Template Mappings
@@ -226,6 +229,7 @@ class Zappa(object):
         self.aws_region = aws_region
         self.load_credentials(boto_session, profile_name)
         self.lambda_client = self.boto_session.client('lambda')
+        self.events_client = self.boto_session.client('events')
         self.iam = self.boto_session.resource('iam')
 
     ##
@@ -874,11 +878,10 @@ class Zappa(object):
 
         """
 
-        client = self.boto_session.client('events')
-        lambda_client = self.boto_session.client('lambda')
+        # client = self.boto_session.client('events')
+        # lambda_client = self.boto_session.client('lambda')
 
         for event in events:
-
             function = event['function']
             expression = event['expression']
             name = event.get('name', function)
@@ -891,13 +894,15 @@ class Zappa(object):
             #       - ex https://github.com/awslabs/aws-lambda-ddns-function
 
             if 'cron' in expression or 'rate' in expression:
-                response = client.put_rule(
+                response = self.events_client.put_rule(
                     Name=name,
                     ScheduleExpression=expression,
                     State='ENABLED',
                     Description=description,
                     RoleArn=self.credentials_arn
                 )
+                print('cron res ...')
+                print(response)
             else:
                 response = client.put_rule(
                     Name=name,
@@ -907,31 +912,33 @@ class Zappa(object):
                     RoleArn=self.credentials_arn
                 )
 
-            response = lambda_client.add_permission(
-                FunctionName=lambda_name,
-                StatementId=''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8)),
-                Action='lambda:InvokeFunction',
-                Principal='events.amazonaws.com',
-                SourceArn=response['RuleArn'],
-            )
+            # permission_response = self.lambda_client.add_permission(
+            #     FunctionName=lambda_name,
+            #     StatementId=''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8)),
+            #     Action='lambda:InvokeFunction',
+            #     Principal='events.amazonaws.com',
+            #     SourceArn=response['RuleArn'],
+            # )
+            # print('permission response')
+            # print(permission_response)
 
             # Create the CloudWatch event ARN for this function.
-            target_arn = lambda_arn
-            inp = json.dumps({'detail': function})
-            target_response = client.put_targets(
-                Rule=name,
-                Targets=[
-                    {
-                        'Id': function,
-                        'Arn': target_arn,
-                        'Input': inp,
-                    },
-                ]
-            )
+            # target_response = self.events_client.put_targets(
+            #     Rule=name,
+            #     Targets=[
+            #         {
+            #             'Id': function,
+            #             'Arn': lambda_arn,
+            #             'Input': json.dumps({'detail': function}),
+            #         },
+            #     ]
+            # )
+            # print('target res...')
+            # print(target_response)
 
-            print("Scheduled " + name + " at " + expression + ".")
+            # print("Scheduled " + name + " at " + expression + ".")
+            logger.info("Scheduled {} at {}.".format(name, expression))
 
-        return
 
     def delete_rule(self, rule_name):
         """
