@@ -20,7 +20,7 @@ from tqdm import tqdm
 
 logging.basicConfig(format='%(levelname)s:%(message)s')
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 ##
@@ -857,21 +857,23 @@ class Zappa(object):
             description = event.get('description', function)
 
             self.delete_rule(name)
-            exit()
             #   - If 'cron' or 'rate' in expression, use ScheduleExpression
             #   - Else, use EventPattern
             #       - ex https://github.com/awslabs/aws-lambda-ddns-function
 
+            if not self.credentials_arn:
+                self.credentials_arn = self.create_iam_roles()
+
             if 'cron' in expression or 'rate' in expression:
-                response = self.events_client.put_rule(
+                rule_response = self.events_client.put_rule(
                     Name=name,
                     ScheduleExpression=expression,
                     State='ENABLED',
                     Description=description,
-                    # RoleArn=self.credentials_arn
+                    RoleArn=self.credentials_arn
                 )
             else:
-                response = self.events_client.put_rule(
+                rule_response = self.events_client.put_rule(
                     Name=name,
                     EventPattern=expression,
                     State='ENABLED',
@@ -879,16 +881,16 @@ class Zappa(object):
                     RoleArn=self.credentials_arn
                 )
 
-            if 'RuleArn' in response:
-                logger.debug('Rule created. ARN {}'.format(response['RuleArn']))
+            if 'RuleArn' in rule_response:
+                logger.debug('Rule created. ARN {}'.format(rule_response['RuleArn']))
 
-            logger.debug('Adding new permission for Lambda')
+            logger.debug('Adding new permission to invoke Lambda function: {}'.format(lambda_name))
             permission_response = self.lambda_client.add_permission(
                 FunctionName=lambda_name,
                 StatementId=''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8)),
                 Action='lambda:InvokeFunction',
                 Principal='events.amazonaws.com',
-                SourceArn=response['RuleArn'],
+                SourceArn=rule_response['RuleArn'],
             )
 
             if permission_response['ResponseMetadata']['HTTPStatusCode'] != 201:
@@ -896,32 +898,18 @@ class Zappa(object):
                 return
 
             # Create the CloudWatch event ARN for this function.
-            # http://boto3.readthedocs.io/en/latest/reference/services/events.html#CloudWatchEvents.Client.put_targets
-            # print(function)
-            # print("{}:6".format(lambda_arn))
             target_response = self.events_client.put_targets(
                 Rule=name,
                 Targets=[
                     {
                         'Id': 'Id' + ''.join(random.choice(string.digits) for _ in range(12)),
-                        # 'Arn': lambda_arn,
-                        'Arn': "{}:6".format(lambda_arn),
-                        # 'Input': json.dumps({'detail': function}),
-                    },
+                        'Arn': lambda_arn,
+                        'Input': json.dumps({'detail': function})
+                    }
                 ]
             )
 
-            # TODO: add event source from Lambda as well
-
             if target_response['ResponseMetadata']['HTTPStatusCode'] == 200:
-                # event_mapping_response = self.lambda_client.create_event_source_mapping(
-                #     EventSourceArn=response['RuleArn'],
-                #     FunctionName=function,
-                #     Enabled=True,
-                #     # BatchSize=123,
-                #     StartingPosition='LATEST'
-                # )
-                # print(event_mapping_response)
                 print("Scheduled {} at {}.".format(name, expression))
             else:
                 print("Problem scheduling {} at {}.".format(name, expression))
@@ -932,7 +920,7 @@ class Zappa(object):
         Delete a CWE rule.
 
         """
-        logger.debug('Deleting rule {}'.format(rule_name))
+        logger.debug('Deleting existing rule {}'.format(rule_name))
 
         # All targets must be removed before
         # we can actually delete the rule.
@@ -943,28 +931,17 @@ class Zappa(object):
             return
 
         if 'Targets' in targets and targets['Targets']:
-            ids_to_delete = [x['Id'] for x in targets['Targets']]
-            # for target in targets['Targets']:
-            #     logger.debug('Deleting target rule: {}'.format(target['Id']))
-            print(ids_to_delete)
-            response = self.events_client.remove_targets(Rule=rule_name, Ids=ids_to_delete)
-            # [target['Id']]
-            print(response)
+            response = self.events_client.remove_targets(Rule=rule_name, Ids=[x['Id'] for x in targets['Targets']])
         else:
             logger.debug('No target to delete')
-            return
-        exit()
 
         # Delete our rules.
         rules = self.events_client.list_rules(NamePrefix=rule_name)
-        print('all rules')
-        print(rules)
-        # ['Rules']
-        exit()
-        for rule in rules:
-            if rule['Name'] == rule_name:
-                logger.debug('Deleting our rule')
-                response = self.events_client.delete_rule(Name=rule_name)
+        if 'Rules' in rules and rules['Rules']:
+            for rule in rules['Rules']:
+                if rule['Name'] == rule_name:
+                    logger.debug('Deleting rule: {}'.format(rule_name))
+                    self.events_client.delete_rule(Name=rule_name)
 
 
     def unschedule_events(self, events):
@@ -1046,13 +1023,13 @@ class Zappa(object):
         """
 
         log_name = '/aws/lambda/' + lambda_name
-        streams = self.log_client.describe_log_streams(logGroupName=log_name,
+        streams = self.logs_client.describe_log_streams(logGroupName=log_name,
                                             descending=True,
                                             orderBy='LastEventTime')
 
         all_streams = streams['logStreams']
         all_names = [stream['logStreamName'] for stream in all_streams]
-        response = self.log_client.filter_log_events(logGroupName=log_name,
+        response = self.logs_client.filter_log_events(logGroupName=log_name,
                             logStreamNames=all_names,
                             filterPattern=filter_pattern,
                             limit=limit)

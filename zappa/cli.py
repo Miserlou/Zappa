@@ -356,16 +356,6 @@ class ZappaCLI(object):
                 print("Function does not exist, please deploy first. Ex: zappa deploy {}".format(self.api_stage))
                 return
 
-            # try:
-            #     response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name)
-            #     self.lambda_arn = str(response['Configuration']['FunctionArn'])
-            #     self.lambda_name = str(response['Configuration']['FunctionName'])
-            #     role = self.zappa.iam.Role(self.zappa.role_name)
-            #     self.zappa.credentials_arn = role.arn
-            # except:
-            #     logger.warn('Function {} does not exist, creating a new one.'.format(self.lambda_name))
-            #     self.update()
-
             print("Scheduling..")
             self.zappa.schedule_events(
                 lambda_arn=function_response['Configuration']['FunctionArn'],
