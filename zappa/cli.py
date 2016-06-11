@@ -360,10 +360,8 @@ class ZappaCLI(object):
                 self.update()
 
             print("Scheduling..")
-            logger.info('Scheduling...')
             self.zappa.schedule_events(self.lambda_arn, self.lambda_name, events)
 
-        return
 
     def unschedule(self):
         """

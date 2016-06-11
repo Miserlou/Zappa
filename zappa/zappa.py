@@ -228,9 +228,14 @@ class Zappa(object):
     def __init__(self, boto_session=None, profile_name=None, aws_region=aws_region):
         self.aws_region = aws_region
         self.load_credentials(boto_session, profile_name)
+        self.s3_client = self.boto_session.client('s3')
         self.lambda_client = self.boto_session.client('lambda')
         self.events_client = self.boto_session.client('events')
+        self.apigateway_client = self.boto_session.client('apigateway')
+        self.logs_client = self.boto_session.client('logs')
+        self.iam_client = self.boto_session.client('iam')
         self.iam = self.boto_session.resource('iam')
+        self.s3 = self.boto_session.resource('s3')
 
     ##
     # Packaging
@@ -379,13 +384,12 @@ class Zappa(object):
         Returns True on success, false on failure.
 
         """
-        s3 = self.boto_session.resource('s3')
 
         # If this bucket doesn't exist, make it.
         # Will likely fail, but that's apparently the best way to check
         # it exists, since boto3 doesn't expose a better check.
         try:
-            s3.create_bucket(Bucket=bucket_name, CreateBucketConfiguration={"LocationConstraint": self.aws_region})
+            self.s3.create_bucket(Bucket=bucket_name, CreateBucketConfiguration={"LocationConstraint": self.aws_region})
         except botocore.exceptions.ClientError as e: # pragma: no cover
             pass
 
@@ -404,13 +408,12 @@ class Zappa(object):
             # which cannot use the progress bar.
             # Related: https://github.com/boto/boto3/issues/611
             try:
-                s3.meta.client.upload_file(
+                self.s3.meta.client.upload_file(
                     source_path, bucket_name, dest_path,
                     Callback=progress.update
                 )
             except Exception as e: # pragma: no cover
-                s3 = self.boto_session.client('s3')
-                s3.upload_file(source_path, bucket_name, dest_path)
+                self.s3_client.upload_file(source_path, bucket_name, dest_path)
 
             progress.close()
         except (KeyboardInterrupt, SystemExit): # pragma: no cover
@@ -429,11 +432,10 @@ class Zappa(object):
         Returns True on success, False on failure.
 
         """
-        s3 = self.boto_session.resource('s3')
-        bucket = s3.Bucket(bucket_name)
+        bucket = self.s3.Bucket(bucket_name)
 
         try:
-            s3.meta.client.head_bucket(Bucket=bucket_name)
+            self.s3.meta.client.head_bucket(Bucket=bucket_name)
         except botocore.exceptions.ClientError as e: # pragma: no cover
             # If a client error is thrown, then check that it was a 404 error.
             # If it was a 404 error, then the bucket does not exist.
@@ -460,8 +462,7 @@ class Zappa(object):
         if not vpc_config:
             vpc_config = {}
 
-        client = self.boto_session.client('lambda')
-        response = client.create_function(
+        response = self.lambda_client.create_function(
             FunctionName=function_name,
             Runtime='python2.7',
             Role=self.credentials_arn,
@@ -487,8 +488,7 @@ class Zappa(object):
 
         print("Updating Lambda function..")
 
-        client = self.boto_session.client('lambda')
-        response = client.update_function_code(
+        response = self.lambda_client.update_function_code(
             FunctionName=function_name,
             S3Bucket=bucket,
             S3Key=s3_key,
@@ -504,15 +504,12 @@ class Zappa(object):
 
         """
 
-        client = self.boto_session.client('lambda')
-        response = client.invoke(
+        return self.lambda_client.invoke(
             FunctionName=function_name,
             InvocationType=invocation_type,
             LogType=log_type,
             Payload=payload
         )
-
-        return response
 
 
     def rollback_lambda_function_version(self, function_name, versions_back=1, publish=True):
@@ -522,9 +519,7 @@ class Zappa(object):
         Returns the Function ARN.
 
         """
-        client = self.boto_session.client('lambda')
-
-        response = client.list_versions_by_function(FunctionName=function_name)
+        response = self.lambda_client.list_versions_by_function(FunctionName=function_name)
 
         #Take into account $LATEST
         if len(response['Versions']) < versions_back + 1:
@@ -534,14 +529,14 @@ class Zappa(object):
         revisions = [int(revision['Version']) for revision in response['Versions'] if revision['Version'] != '$LATEST']
         revisions.sort(reverse=True)
 
-        response = client.get_function(FunctionName='function:{}:{}'.format(function_name, revisions[versions_back]))
+        response = self.lambda_client.get_function(FunctionName='function:{}:{}'.format(function_name, revisions[versions_back]))
         response = requests.get(response['Code']['Location'])
 
         if response.status_code != 200:
             print("Failed to get version {} of {} code".format(versions_back, function_name))
             return False
 
-        response = client.update_function_code(FunctionName=function_name, ZipFile=response.content, Publish=publish) # pragma: no cover
+        response = self.lambda_client.update_function_code(FunctionName=function_name, ZipFile=response.content, Publish=publish) # pragma: no cover
 
         return response['FunctionArn']
 
@@ -554,11 +549,9 @@ class Zappa(object):
         """
         print("Deleting lambda function..")
 
-        client = self.boto_session.client('lambda')
-        response = client.delete_function(
+        return self.lambda_client.delete_function(
             FunctionName=function_name,
         )
-        return response
 
     ##
     # API Gateway
@@ -574,15 +567,13 @@ class Zappa(object):
 
         print("Creating API Gateway routes..")
 
-        client = self.boto_session.client('apigateway')
-
         if not api_name:
             api_name = str(int(time.time()))
 
         # Does an API Gateway with this name exist already?
-        apis = client.get_rest_apis()['items']
+        apis = self.apigateway_client.get_rest_apis()['items']
         if not len(filter(lambda a: a['name'] == api_name, apis)):
-            response = client.create_rest_api(
+            response = self.apigateway_client.create_rest_api(
                 name=api_name,
                 description=api_name + " Zappa",
                 cloneFrom=''
@@ -636,11 +627,8 @@ class Zappa(object):
 
         """
 
-        client = self.boto_session.client('apigateway')
-
         for method in self.http_methods:
-
-            response = client.put_method(
+            response = self.apigateway_client.put_method(
                     restApiId=api_id,
                     resourceId=resource_id,
                     httpMethod=method,
@@ -660,7 +648,7 @@ class Zappa(object):
             credentials = self.credentials_arn  # This must be a Role ARN
             uri = 'arn:aws:apigateway:' + self.boto_session.region_name + ':lambda:path/2015-03-31/functions/' + lambda_arn + '/invocations'
 
-            client.put_integration(
+            self.apigateway_client.put_integration(
                 restApiId=api_id,
                 resourceId=resource_id,
                 httpMethod=method.upper(),
@@ -685,7 +673,7 @@ class Zappa(object):
                 response_parameters = {"method.response.header." + header_type: False for header_type in self.method_header_types}
                 response_models = {content_type: 'Empty' for content_type in self.method_content_types}
 
-                method_response = client.put_method_response(
+                method_response = self.apigateway_client.put_method_response(
                         restApiId=api_id,
                         resourceId=resource_id,
                         httpMethod=method,
@@ -715,7 +703,7 @@ class Zappa(object):
                 else:
                     response_templates = {content_type: ERROR_RESPONSE_TEMPLATE for content_type in self.integration_content_types}
 
-                integration_response = client.put_integration_response(
+                integration_response = self.apigateway_client.put_integration_response(
                         restApiId=api_id,
                         resourceId=resource_id,
                         httpMethod=method,
@@ -754,21 +742,17 @@ class Zappa(object):
 
         print("Deploying API Gateway..")
 
-        variables = variables or {}
-
-        client = self.boto_session.client('apigateway')
-        response = client.create_deployment(
+        response = self.apigateway_client.create_deployment(
             restApiId=api_id,
             stageName=stage_name,
             stageDescription=stage_description,
             description=description,
             cacheClusterEnabled=cache_cluster_enabled,
             cacheClusterSize=cache_cluster_size,
-            variables=variables
+            variables=variables or {}
         )
 
-        endpoint_url = "https://" + api_id + ".execute-api." + self.boto_session.region_name + ".amazonaws.com/" + stage_name
-        return endpoint_url
+        return "https://{}.execute-api.{}.amazonaws.com/{}".format(api_id, self.boto_session.region_name, stage_name)
 
     def undeploy_api_gateway(self, project_name):
         """
@@ -778,19 +762,17 @@ class Zappa(object):
 
         print("Deleting API Gateway..")
 
-        client = self.boto_session.client('apigateway')
-        all_apis = client.get_rest_apis(
+        all_apis = self.apigateway_client.get_rest_apis(
             limit=500
         )
 
         for api in all_apis['items']:
             if api['name'] != project_name:
                 continue
-            response = client.delete_rest_api(
+            response = self.apigateway_client.delete_rest_api(
                 restApiId=api['id']
             )
 
-        return
 
     def get_api_url(self, stage_name):
         """
@@ -798,17 +780,11 @@ class Zappa(object):
 
         """
 
-        client = self.boto_session.client('apigateway')
-        response = client.get_rest_apis(
-            limit=500
-        )
+        response = self.apigateway_client.get_rest_apis(limit=500)
 
         for item in response['items']:
             if item['description'] == stage_name:
-                endpoint_url = "https://" + item['id'] + ".execute-api." + self.boto_session.region_name + ".amazonaws.com/" + stage_name
-                return endpoint_url
-
-        return ''
+                return "https://{}.execute-api.{}.amazonaws.com/{}".format(item['id'], self.boto_session.region_name, stage_name)
 
     ##
     # IAM
@@ -826,22 +802,20 @@ class Zappa(object):
         attach_policy_obj = json.loads(attach_policy_s)
         assume_policy_obj = json.loads(assume_policy_s)
 
-        iam = self.boto_session.resource('iam')
-
         # Create the role if needed
-        role = iam.Role(self.role_name)
+        role = self.iam.Role(self.role_name)
         try:
             self.credentials_arn = role.arn
 
         except botocore.client.ClientError:
             print("Creating " + self.role_name + " IAM Role...")
 
-            role = iam.create_role(RoleName=self.role_name,
+            role = self.iam.create_role(RoleName=self.role_name,
                                    AssumeRolePolicyDocument=assume_policy_s)
             self.credentials_arn = role.arn
 
         # create or update the role's policies if needed
-        policy = iam.RolePolicy(self.role_name, 'zappa-permissions')
+        policy = self.iam.RolePolicy(self.role_name, 'zappa-permissions')
         try:
             if policy.policy_document != attach_policy_obj:
                 print("Updating zappa-permissions policy on " + self.role_name + " IAM Role.")
@@ -854,8 +828,7 @@ class Zappa(object):
         if role.assume_role_policy_document != assume_policy_obj and \
                 set(role.assume_role_policy_document['Statement'][0]['Principal']['Service']) != set(assume_policy_obj['Statement'][0]['Principal']['Service']):
             print("Updating assume role policy on " + self.role_name + " IAM Role.")
-            client = self.boto_session.client('iam')
-            client.update_assume_role_policy(
+            self.iam_client.update_assume_role_policy(
                 RoleName=self.role_name,
                 PolicyDocument=assume_policy_s
             )
@@ -877,9 +850,6 @@ class Zappa(object):
             http://docs.aws.amazon.com/lambda/latest/dg/tutorial-scheduled-events-schedule-expressions.html
 
         """
-
-        # client = self.boto_session.client('events')
-        # lambda_client = self.boto_session.client('lambda')
 
         for event in events:
             function = event['function']
@@ -904,7 +874,7 @@ class Zappa(object):
                 print('cron res ...')
                 print(response)
             else:
-                response = client.put_rule(
+                response = self.events_client.put_rule(
                     Name=name,
                     EventPattern=expression,
                     State='ENABLED',
@@ -946,12 +916,10 @@ class Zappa(object):
 
         """
 
-        client = self.boto_session.client('events')
-
         # All targets must be removed before
         # we can actually delete the rule.
         try:
-            targets = client.list_targets_by_rule(
+            targets = self.events_client.list_targets_by_rule(
                 Rule=rule_name,
             )['Targets']
         except botocore.exceptions.ClientError as e:
@@ -962,7 +930,7 @@ class Zappa(object):
             return
 
         for target in targets:
-            response = client.remove_targets(
+            response = self.events_client.remove_targets(
                 Rule=rule_name,
                 Ids=[
                     target['Id'],
@@ -970,17 +938,16 @@ class Zappa(object):
             )
 
         # Delete our rules.
-        rules = client.list_rules(
+        rules = self.events_client.list_rules(
             NamePrefix=rule_name,
         )['Rules']
         for rule in rules:
             if rule['Name'] == rule_name:
 
-               response = client.delete_rule(
+               response = self.events_client.delete_rule(
                     Name=rule_name
                 )
 
-        return
 
     def unschedule_events(self, events):
         """
@@ -991,8 +958,6 @@ class Zappa(object):
 
         """
 
-        client = self.boto_session.client('events')
-
         for event in events:
             function = event['function']
             name = event.get('name', function)
@@ -1000,7 +965,6 @@ class Zappa(object):
 
             print("Uncheduled " + name + ".")
 
-        return
 
     def create_keep_warm(self, lambda_arn, lambda_name, name="zappa-keep-warm", schedule_expression="rate(5 minutes)"):
         """
@@ -1008,8 +972,6 @@ class Zappa(object):
 
         """
 
-        client = self.boto_session.client('events')
-        lambda_client = self.boto_session.client('lambda')
         rule_name = name + "-" + str(lambda_name)
 
         print("Scheduling keep-warm..")
@@ -1017,7 +979,7 @@ class Zappa(object):
         # Do we have an old keepwarm for this?
         self.delete_rule(rule_name)
 
-        response = client.put_rule(
+        response = self.events_client.put_rule(
             Name=rule_name,
             ScheduleExpression=schedule_expression,
             State='ENABLED',
@@ -1025,7 +987,7 @@ class Zappa(object):
             RoleArn=self.credentials_arn
         )
 
-        response = lambda_client.add_permission(
+        response = self.lambda_client.add_permission(
             FunctionName=lambda_name,
             StatementId=''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8)),
             Action='lambda:InvokeFunction',
@@ -1033,13 +995,12 @@ class Zappa(object):
             SourceArn=response['RuleArn'],
         )
 
-        target_arn = lambda_arn
-        response = client.put_targets(
+        response = self.events_client.put_targets(
             Rule=rule_name,
             Targets=[
                 {
                     'Id': str(sum([ ord(c) for c in lambda_arn])), # Is this insane?
-                    'Arn': target_arn,
+                    'Arn': lambda_arn,
                     'Input': '',
                 },
             ]
@@ -1051,13 +1012,9 @@ class Zappa(object):
 
         """
 
-        client = self.boto_session.client('events')
-        lambda_client = self.boto_session.client('lambda')
-        rule_name = name + "-" + str(lambda_name)
-
         print("Removing keep-warm..")
 
-        self.delete_rule(rule_name)
+        self.delete_rule(name + "-" + str(lambda_name))
 
 
     ##
@@ -1070,16 +1027,14 @@ class Zappa(object):
 
         """
 
-        client = self.boto_session.client('logs')
-
         log_name = '/aws/lambda/' + lambda_name
-        streams = client.describe_log_streams(logGroupName=log_name,
+        streams = self.log_client.describe_log_streams(logGroupName=log_name,
                                             descending=True,
                                             orderBy='LastEventTime')
 
         all_streams = streams['logStreams']
         all_names = [stream['logStreamName'] for stream in all_streams]
-        response = client.filter_log_events(logGroupName=log_name,
+        response = self.log_client.filter_log_events(logGroupName=log_name,
                             logStreamNames=all_names,
                             filterPattern=filter_pattern,
                             limit=limit)
