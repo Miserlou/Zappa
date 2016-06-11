@@ -857,7 +857,7 @@ class Zappa(object):
             description = event.get('description', function)
 
             self.delete_rule(name)
-            # exit()
+            exit()
             #   - If 'cron' or 'rate' in expression, use ScheduleExpression
             #   - Else, use EventPattern
             #       - ex https://github.com/awslabs/aws-lambda-ddns-function
@@ -868,7 +868,7 @@ class Zappa(object):
                     ScheduleExpression=expression,
                     State='ENABLED',
                     Description=description,
-                    RoleArn=self.credentials_arn
+                    # RoleArn=self.credentials_arn
                 )
             else:
                 response = self.events_client.put_rule(
@@ -897,12 +897,15 @@ class Zappa(object):
 
             # Create the CloudWatch event ARN for this function.
             # http://boto3.readthedocs.io/en/latest/reference/services/events.html#CloudWatchEvents.Client.put_targets
+            # print(function)
+            # print("{}:6".format(lambda_arn))
             target_response = self.events_client.put_targets(
                 Rule=name,
                 Targets=[
                     {
-                        'Id': function,
-                        'Arn': "{}:$LATEST".format(lambda_arn),
+                        'Id': 'Id' + ''.join(random.choice(string.digits) for _ in range(12)),
+                        # 'Arn': lambda_arn,
+                        'Arn': "{}:6".format(lambda_arn),
                         # 'Input': json.dumps({'detail': function}),
                     },
                 ]
@@ -911,15 +914,14 @@ class Zappa(object):
             # TODO: add event source from Lambda as well
 
             if target_response['ResponseMetadata']['HTTPStatusCode'] == 200:
-                event_mapping_response = self.lambda_client.create_event_source_mapping(
-                    EventSourceArn=response['RuleArn'],
-                    FunctionName=function,
-                    Enabled=True,
-                    # BatchSize=123,
-                    StartingPosition='LATEST'
-                )
-                print(event_mapping_response)
-
+                # event_mapping_response = self.lambda_client.create_event_source_mapping(
+                #     EventSourceArn=response['RuleArn'],
+                #     FunctionName=function,
+                #     Enabled=True,
+                #     # BatchSize=123,
+                #     StartingPosition='LATEST'
+                # )
+                # print(event_mapping_response)
                 print("Scheduled {} at {}.".format(name, expression))
             else:
                 print("Problem scheduling {} at {}.".format(name, expression))
@@ -935,23 +937,30 @@ class Zappa(object):
         # All targets must be removed before
         # we can actually delete the rule.
         try:
-            targets = self.events_client.list_targets_by_rule(Rule=rule_name)['Targets']
-            print('targets tied to rule are...')
-            print(targets)
+            targets = self.events_client.list_targets_by_rule(Rule=rule_name)
         except botocore.exceptions.ClientError as e:
-            # Likely no target by this rule, nothing to delete.
-            logger.debug('Can\'t delete rule {} {}'.format(rule_name, e.message))
+            logger.debug('No target found for this rule: {} {}'.format(rule_name, e.message))
             return
 
-        if not targets:
+        if 'Targets' in targets and targets['Targets']:
+            ids_to_delete = [x['Id'] for x in targets['Targets']]
+            # for target in targets['Targets']:
+            #     logger.debug('Deleting target rule: {}'.format(target['Id']))
+            print(ids_to_delete)
+            response = self.events_client.remove_targets(Rule=rule_name, Ids=ids_to_delete)
+            # [target['Id']]
+            print(response)
+        else:
+            logger.debug('No target to delete')
             return
-
-        for target in targets:
-            logger.debug('Deleting target rule {}'.format(target['Id']))
-            response = self.events_client.remove_targets(Rule=rule_name, Ids=[target['Id']])
+        exit()
 
         # Delete our rules.
-        rules = self.events_client.list_rules(NamePrefix=rule_name)['Rules']
+        rules = self.events_client.list_rules(NamePrefix=rule_name)
+        print('all rules')
+        print(rules)
+        # ['Rules']
+        exit()
         for rule in rules:
             if rule['Name'] == rule_name:
                 logger.debug('Deleting our rule')
