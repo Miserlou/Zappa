@@ -20,7 +20,7 @@ from tqdm import tqdm
 
 logging.basicConfig(format='%(levelname)s:%(message)s')
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 ##
@@ -850,7 +850,6 @@ class Zappa(object):
             http://docs.aws.amazon.com/lambda/latest/dg/tutorial-scheduled-events-schedule-expressions.html
 
         """
-
         for event in events:
             function = event['function']
             expression = event['expression']
@@ -858,7 +857,7 @@ class Zappa(object):
             description = event.get('description', function)
 
             self.delete_rule(name)
-
+            # exit()
             #   - If 'cron' or 'rate' in expression, use ScheduleExpression
             #   - Else, use EventPattern
             #       - ex https://github.com/awslabs/aws-lambda-ddns-function
@@ -871,8 +870,6 @@ class Zappa(object):
                     Description=description,
                     RoleArn=self.credentials_arn
                 )
-                print('cron res ...')
-                print(response)
             else:
                 response = self.events_client.put_rule(
                     Name=name,
@@ -882,32 +879,50 @@ class Zappa(object):
                     RoleArn=self.credentials_arn
                 )
 
-            # permission_response = self.lambda_client.add_permission(
-            #     FunctionName=lambda_name,
-            #     StatementId=''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8)),
-            #     Action='lambda:InvokeFunction',
-            #     Principal='events.amazonaws.com',
-            #     SourceArn=response['RuleArn'],
-            # )
-            # print('permission response')
-            # print(permission_response)
+            if 'RuleArn' in response:
+                logger.debug('Rule created. ARN {}'.format(response['RuleArn']))
+
+            logger.debug('Adding new permission for Lambda')
+            permission_response = self.lambda_client.add_permission(
+                FunctionName=lambda_name,
+                StatementId=''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8)),
+                Action='lambda:InvokeFunction',
+                Principal='events.amazonaws.com',
+                SourceArn=response['RuleArn'],
+            )
+
+            if permission_response['ResponseMetadata']['HTTPStatusCode'] != 201:
+                print('Problem creating permission to invoke Lambda function')
+                return
 
             # Create the CloudWatch event ARN for this function.
-            # target_response = self.events_client.put_targets(
-            #     Rule=name,
-            #     Targets=[
-            #         {
-            #             'Id': function,
-            #             'Arn': lambda_arn,
-            #             'Input': json.dumps({'detail': function}),
-            #         },
-            #     ]
-            # )
-            # print('target res...')
-            # print(target_response)
+            # http://boto3.readthedocs.io/en/latest/reference/services/events.html#CloudWatchEvents.Client.put_targets
+            target_response = self.events_client.put_targets(
+                Rule=name,
+                Targets=[
+                    {
+                        'Id': function,
+                        'Arn': "{}:$LATEST".format(lambda_arn),
+                        # 'Input': json.dumps({'detail': function}),
+                    },
+                ]
+            )
 
-            # print("Scheduled " + name + " at " + expression + ".")
-            logger.info("Scheduled {} at {}.".format(name, expression))
+            # TODO: add event source from Lambda as well
+
+            if target_response['ResponseMetadata']['HTTPStatusCode'] == 200:
+                event_mapping_response = self.lambda_client.create_event_source_mapping(
+                    EventSourceArn=response['RuleArn'],
+                    FunctionName=function,
+                    Enabled=True,
+                    # BatchSize=123,
+                    StartingPosition='LATEST'
+                )
+                print(event_mapping_response)
+
+                print("Scheduled {} at {}.".format(name, expression))
+            else:
+                print("Problem scheduling {} at {}.".format(name, expression))
 
 
     def delete_rule(self, rule_name):
@@ -915,38 +930,32 @@ class Zappa(object):
         Delete a CWE rule.
 
         """
+        logger.debug('Deleting rule {}'.format(rule_name))
 
         # All targets must be removed before
         # we can actually delete the rule.
         try:
-            targets = self.events_client.list_targets_by_rule(
-                Rule=rule_name,
-            )['Targets']
+            targets = self.events_client.list_targets_by_rule(Rule=rule_name)['Targets']
+            print('targets tied to rule are...')
+            print(targets)
         except botocore.exceptions.ClientError as e:
             # Likely no target by this rule, nothing to delete.
+            logger.debug('Can\'t delete rule {} {}'.format(rule_name, e.message))
             return
 
-        if targets == []:
+        if not targets:
             return
 
         for target in targets:
-            response = self.events_client.remove_targets(
-                Rule=rule_name,
-                Ids=[
-                    target['Id'],
-                ]
-            )
+            logger.debug('Deleting target rule {}'.format(target['Id']))
+            response = self.events_client.remove_targets(Rule=rule_name, Ids=[target['Id']])
 
         # Delete our rules.
-        rules = self.events_client.list_rules(
-            NamePrefix=rule_name,
-        )['Rules']
+        rules = self.events_client.list_rules(NamePrefix=rule_name)['Rules']
         for rule in rules:
             if rule['Name'] == rule_name:
-
-               response = self.events_client.delete_rule(
-                    Name=rule_name
-                )
+                logger.debug('Deleting our rule')
+                response = self.events_client.delete_rule(Name=rule_name)
 
 
     def unschedule_events(self, events):
@@ -1014,7 +1023,7 @@ class Zappa(object):
 
         print("Removing keep-warm..")
 
-        self.delete_rule(name + "-" + str(lambda_name))
+        self.delete_rule("{}-{}".format(name, str(lambda_name)))
 
 
     ##
