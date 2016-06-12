@@ -588,7 +588,9 @@ def handle(): # pragma: no cover
     """
     Main program execution handler.
     """
+
     try:
+        cli = ZappaCLI()
         sys.exit(cli.handle())
     except (KeyboardInterrupt, SystemExit): # pragma: no cover
         if cli.zip_path: # Remove the Zip from S3 upon failure.
