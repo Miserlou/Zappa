@@ -73,10 +73,9 @@ class ZappaCLI(object):
 
         """
 
-        cmd_list =  "'deploy', 'update', 'undeploy', 'schedule', 'unschedule', 'tail' and 'rollback'"
         parser = argparse.ArgumentParser(description='Zappa - Deploy Python applications to AWS Lambda and API Gateway.\n')
         parser.add_argument('command_env', metavar='U', type=str, nargs='*',
-                       help="Command to execute. Can be one of {}.".format(cmd_list)
+                       help="Command to execute. Can be one of 'deploy', 'update', 'tail' and 'rollback'.")
         parser.add_argument('-n', '--num-rollback', type=int, default=0,
                             help='The number of versions to rollback.')
         parser.add_argument('-s', '--settings_file', type=str, default='zappa_settings.json',
@@ -90,7 +89,7 @@ class ZappaCLI(object):
         vargs_nosettings = vargs.copy()
         vargs_nosettings.pop('settings_file')
         if not any(vargs_nosettings.values()): # pragma: no cover
-            parser.error("Please supply a command to execute. Can be one of {}.".format(cmd_list))
+            parser.error("Please supply a command to execute. Can be one of 'deploy', 'update', 'tail', rollback', 'invoke'.'")
             return
 
         # Version requires no arguments
