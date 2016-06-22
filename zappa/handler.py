@@ -5,7 +5,10 @@ import datetime
 import importlib
 import logging
 import traceback
+import os
+import json
 
+import boto3
 from werkzeug.wrappers import Response
 
 # This file may be copied into a project's root,
@@ -46,6 +49,50 @@ class LambdaHandler(object):
         # Loading settings from a python module
         self.settings = importlib.import_module(settings_name)
         self.settings_name = settings_name
+
+        remote_bucket = getattr(self.settings, 'REMOTE_ENV_BUCKET', None)
+        remote_file = getattr(self.settings, 'REMOTE_ENV_FILE', None)
+
+        if remote_bucket and remote_file:
+            self.load_remote_settings(remote_bucket, remote_file)
+
+    def load_remote_settings(self, remote_bucket, remote_file):
+        """
+        Attempt to read a file from s3 containing a flat json object. Adds each
+        key->value pair as environment variables. Helpful for keeping
+        sensitive or stage-specific configuration variables in s3 instead of
+        version control.
+        """
+        boto_session = boto3.Session()
+        s3 = boto_session.resource('s3')
+        try:
+            remote_env_object = s3.Object(
+                remote_bucket,
+                remote_file
+            ).get()
+        except Exception:  # catch everything aws might decide to raise
+            print('Could not load remote settings file')
+            return
+
+        try:
+            content = remote_env_object['Body'].read().decode('utf-8')
+        except Exception as e:  # catch everything aws might decide to raise
+            print('Exception while reading remote settings file', e)
+            return
+
+        try:
+            settings_dict = json.loads(content)
+        except (ValueError, TypeError):
+            print('Failed to parse remote settings!')
+            return
+
+        # add each key-value to environment - overwrites existing keys!
+        for key, value in settings_dict.items():
+            print('Adding {} -> {} to environment'.format(
+                key,
+                value
+            ))
+            os.environ[key] = value
 
     @classmethod
     def lambda_handler(cls, event, context): # pragma: no cover
