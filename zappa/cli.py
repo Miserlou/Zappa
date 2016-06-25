@@ -380,7 +380,7 @@ class ZappaCLI(object):
         Returns the loaded Zappa object.
         """
 
-        # Ensure we're passesd a valid settings file.
+        # Ensure we're passed a valid settings file.
         if not os.path.isfile(settings_file):
             print("Please configure your zappa_settings file.")
             quit() # pragma: no cover
