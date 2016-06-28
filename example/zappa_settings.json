@@ -1,0 +1,49 @@
+{
+    "dev_event": {
+       "project_name": "dev_event_zappa_test_flask_app",
+       "keep_warm": false,
+       "debug": true,
+       "log_level": "DEBUG",
+       "events": [{
+         "function": "dev_event_zappa_test_flask_app",
+         "expression": "rate(1 minute)"
+         }],
+       "aws_region": "us-west-2",
+       "s3_bucket": "zappa-test-bucket",
+       "lambda_handler": "app.lambda_handler",
+       "use_apigateway": false,
+       "http_methods": ["GET"],
+       "parameter_depth": 1,
+       "timeout_seconds": 300,
+       "memory_size": 128,
+       "use_precompiled_packages": true
+    },
+    "dev_api": {
+       "project_name": "dev_api_zappa_test_flask_app",
+       "keep_warm": false,
+       "debug": true,
+       "log_level": "DEBUG",
+       "aws_region": "us-west-2",
+       "s3_bucket": "zappa-test-bucket",
+       "app_function": "app.app",
+       "http_methods": ["GET"],
+       "parameter_depth": 1,
+       "timeout_seconds": 300,
+       "memory_size": 128,
+       "use_precompiled_packages": true
+    },
+    "prod": {
+      "project_name": "dev_zappa_test_flask_app",
+      "events": [{
+        "function": "production_zappa_test_flask_app",
+        "expression": "rate(5 minute)"
+        }],
+      "aws_region": "us-west-2",
+      "s3_bucket": "zappa-test-bucket",
+      "app_function": "app.app",
+      "http_methods": ["GET"],
+      "parameter_depth": 1,
+      "memory_size": 512,
+      "use_precompiled_packages": true
+    }
+}

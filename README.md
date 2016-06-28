@@ -2,15 +2,15 @@
   <img src="http://i.imgur.com/oePnHJn.jpg" alt="Zappa Rocks!"/>
 </p>
 
-## Zappa - Serverless Python Web Services 
+## Zappa - Serverless Python Web Services
 
 [![Build Status](https://travis-ci.org/Miserlou/Zappa.svg)](https://travis-ci.org/Miserlou/Zappa)
 [![Coverage](https://img.shields.io/coveralls/Miserlou/Zappa.svg)](https://coveralls.io/github/Miserlou/Zappa)
-[![Requirements Status](https://requires.io/github/Miserlou/Zappa/requirements.svg?branch=master)](https://requires.io/github/Miserlou/Zappa/requirements/?branch=master) 
+[![Requirements Status](https://requires.io/github/Miserlou/Zappa/requirements.svg?branch=master)](https://requires.io/github/Miserlou/Zappa/requirements/?branch=master)
 [![PyPI](https://img.shields.io/pypi/v/Zappa.svg)](https://pypi.python.org/pypi/zappa)
 [![Slack](https://img.shields.io/badge/chat-slack-ff69b4.svg)](https://slackautoinviter.herokuapp.com/)
 
-**Zappa** makes it super easy to deploy all Python WSGI applications on AWS Lambda + API Gateway. Think of it as "serverless" web hosting for your Python web apps. 
+**Zappa** makes it super easy to deploy all Python WSGI applications on AWS Lambda + API Gateway. Think of it as "serverless" web hosting for your Python web apps.
 
 > What do you mean "serverless"?
 
@@ -160,7 +160,8 @@ to change Zappa's behavior. Use these at your own risk!
         "http_methods": ["GET", "POST"], // HTTP Methods to route,
         "integration_response_codes": [200, 301, 404, 500], // Integration response status codes to route
         "keep_warm": true, // Create CloudWatch events to keep the server warm.
-        "log_level": "DEBUG", // Set the Zappa log level. Default DEBUG, can be one of CRITICAL, ERROR, WARNING, INFO and DEBUG. 
+        "lambda_handler": "your_custom_handler", // The name of Lambda handler. Default: handler.lambda_handler
+        "log_level": "DEBUG", // Set the Zappa log level. Default DEBUG, can be one of CRITICAL, ERROR, WARNING, INFO and DEBUG.
         "memory_size": 512, // Lambda function memory in MB
         "method_response_codes": [200, 301, 404, 500], // Method response status codes to route
         "parameter_depth": 10, // Size of URL depth to route. Defaults to 8.
@@ -173,6 +174,7 @@ to change Zappa's behavior. Use these at your own risk!
         "timeout_seconds": 30, // Maximum lifespan for the Lambda function (default 30)
         "touch": false, // GET the production URL upon initial deployment (default True)
         "use_precompiled_packages": false, // If possible, use C-extension packages which have been pre-compiled for AWS Lambda
+        "use_apigateway": true, // Set to false if you don't want to create API Gateway resource. Default true
         "vpc_config": { // Optional VPC configuration for Lambda function
             "SubnetIds": [ "subnet-12345678" ], // Note: not all availability zones support Lambda!
             "SecurityGroupIds": [ "sg-12345678" ]
@@ -211,9 +213,9 @@ If you want to use Zappa on a domain with a free Let's Encrypt certificate, you 
 
 * [zappa.gun.io](https://zappa.gun.io) - A Zappa "Hello, World" (real homepage coming.. soon..)
 * [spheres.gun.io](https://spheres.gun.io)  - Spheres, a photosphere host and viewer
-* [Mailchimp Signup Utility](https://github.com/sasha42/Mailchimp-utility) - A microservice for adding people to a mailing list via API. 
+* [Mailchimp Signup Utility](https://github.com/sasha42/Mailchimp-utility) - A microservice for adding people to a mailing list via API.
 * [Serverless Image Host](https://github.com/Miserlou/serverless-imagehost) - A thumbnailing service with Flask, Zappa and Pillow.
-* Your site here? 
+* Your site here?
 
 ## Hacks
 
