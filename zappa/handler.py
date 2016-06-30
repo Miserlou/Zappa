@@ -92,7 +92,6 @@ class LambdaHandler(object):
             settings_dict = json.loads(content)
         except (ValueError, TypeError): # pragma: no cover
             print('Failed to parse remote settings!')
-            print("Content is:" + content)
             return
 
         # add each key-value to environment - overwrites existing keys!
