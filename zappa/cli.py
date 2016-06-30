@@ -98,7 +98,7 @@ class ZappaCLI(object):
         parser.add_argument('-a', '--app_function', type=str, default=None,
                             help='The WSGI application function.')
         parser.add_argument('-v', '--version', action='store_true', help='Print the zappa version', default=False)
-        parser.add_argument('-y', action='store_true', help='Auto confirm yes', default=False)
+        parser.add_argument('-y', '--yes', action='store_true', help='Auto confirm yes', default=False)
 
         args = parser.parse_args(argv)
 
