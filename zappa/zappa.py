@@ -298,12 +298,20 @@ class Zappa(object):
         # TODO Windows: %VIRTUAL_ENV%\Lib\site-packages
         temp_package_path = os.path.join(tempfile.gettempdir(), str(int(time.time() + 1)))
         site_packages = os.path.join(venv, 'lib', 'python2.7', 'site-packages')
-
         if minify:
             excludes = ZIP_EXCLUDES + exclude
             shutil.copytree(site_packages, temp_package_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
         else:
             shutil.copytree(site_packages, temp_package_path, symlinks=False)
+
+        # We may have 64-bin specific packages too.
+        site_packages_64 = os.path.join(venv, 'lib64', 'python2.7', 'site-packages')
+        if os.path.exists(site_packages_64):
+            if minify:
+                excludes = ZIP_EXCLUDES + exclude
+                shutil.copytree(site_packages_64, temp_package_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
+            else:
+                shutil.copytree(site_packages_64, temp_package_path, symlinks=False)
 
         copy_tree(temp_package_path, temp_project_path, update=True)
 
