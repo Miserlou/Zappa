@@ -960,11 +960,12 @@ class Zappa(object):
         """
 
         for event in events:
-            function = event['function']
-            name = event.get('name', function)
-            self.delete_rule(name)
+            if event.has_key('function'):
+                function = event['function']
+                name = event.get('name', function)
+                self.delete_rule(name)
 
-            print("Uncheduled " + name + ".")
+                print("Uncheduled " + name + ".")
 
 
     def create_keep_warm(self, lambda_arn, lambda_name, name="zappa-keep-warm", schedule_expression="rate(5 minutes)"):
