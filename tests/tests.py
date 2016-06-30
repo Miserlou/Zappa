@@ -432,6 +432,7 @@ class TestZappa(unittest.TestCase):
         zappa_cli.rollback(1)
         zappa_cli.tail(False)
         zappa_cli.schedule()
+        zappa_cli.unschedule()
         zappa_cli.undeploy(noconfirm=True)
 
 if __name__ == '__main__':
