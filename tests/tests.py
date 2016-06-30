@@ -435,5 +435,14 @@ class TestZappa(unittest.TestCase):
         zappa_cli.unschedule()
         zappa_cli.undeploy(noconfirm=True)
 
+    ##
+    # Util / Misc
+    ##
+
+    def test_human_units(self):
+        zappa = Zappa()
+        zappa.human_size(1)
+        zappa.human_size(9999999999999)
+
 if __name__ == '__main__':
     unittest.main()

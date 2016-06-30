@@ -282,7 +282,7 @@ class Zappa(object):
 
         # Ideally this should be avoided automatically,
         # but this serves as an okay stop-gap measure.
-        if split_venv[-1] == split_cwd[-1]:
+        if split_venv[-1] == split_cwd[-1]: # pragma: no cover
             print("Warning! Your project and virtualenv have the same name! You may want to re-create your venv with a new name, or explicitly define a 'project_name', as this may cause errors.")
 
         # First, do the project..
@@ -455,7 +455,7 @@ class Zappa(object):
         response = bucket.delete_objects(Delete=delete_keys)
         if response['ResponseMetadata']['HTTPStatusCode'] == 200:
             return True
-        else:
+        else: # pragma: no cover
             return False
     ##
     # Lambda
@@ -606,7 +606,7 @@ class Zappa(object):
         for item in response['items']:
             if item['path'] == '/':
                 root_id = item['id']
-        if not root_id:
+        if not root_id: # pragma: no cover
             return False
         self.create_and_setup_methods(api_id, root_id, lambda_arn, progress.update)
 
@@ -938,7 +938,7 @@ class Zappa(object):
 
         if 'Targets' in targets and targets['Targets']:
             response = self.events_client.remove_targets(Rule=rule_name, Ids=[x['Id'] for x in targets['Targets']])
-        else:
+        else: # pragma: no cover
             logger.debug('No target to delete')
 
         # Delete our rules.
