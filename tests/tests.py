@@ -345,8 +345,12 @@ class TestZappa(unittest.TestCase):
     # Handler
     ##
 
-    def test_handler(self):
+    @placebo_session
+    def test_handler(self, session):
+        # Init will test load_remote_settings
         lh = LambdaHandler('test_settings')
+        self.assertEqual(os.environ['hello'], 'world')
+
         event = {
             "body": {},
             "headers": {},
