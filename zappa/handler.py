@@ -36,12 +36,15 @@ class LambdaHandler(object):
     """
 
     __instance = None
+    settings = None
+    settings_name = None
+    session = None
 
-    def __new__(cls, settings_name="zappa_settings"):
+    def __new__(cls, settings_name="zappa_settings", session=None):
         """Singleton instance to avoid repeat setup"""
 
         if LambdaHandler.__instance is None:
-            LambdaHandler.__instance = object.__new__(cls)
+            LambdaHandler.__instance = object.__new__(cls, settings_name, session)
         return LambdaHandler.__instance
 
     def __init__(self, settings_name="zappa_settings", session=None):
@@ -57,7 +60,7 @@ class LambdaHandler(object):
         if remote_bucket and remote_file:
             self.load_remote_settings(remote_bucket, remote_file)
 
-    def load_remote_settings(self, remote_bucket, remote_file, session=None):
+    def load_remote_settings(self, remote_bucket, remote_file):
         """
         Attempt to read a file from s3 containing a flat json object. Adds each
         key->value pair as environment variables. Helpful for keeping
@@ -65,13 +68,14 @@ class LambdaHandler(object):
         version control.
         """
 
-        boto_session = boto3.Session(self.session)
+        if not self.session:
+            boto_session = boto3.Session()
+        else:
+            boto_session = self.session
+
         s3 = boto_session.resource('s3')
         try:
-            remote_env_object = s3.Object(
-                remote_bucket,
-                remote_file
-            ).get()
+            remote_env_object = s3.Object(remote_bucket, remote_file).get()
         except Exception as e:  # pragma: no cover
             # catch everything aws might decide to raise
             print('Could not load remote settings file.', e)
@@ -88,6 +92,7 @@ class LambdaHandler(object):
             settings_dict = json.loads(content)
         except (ValueError, TypeError): # pragma: no cover
             print('Failed to parse remote settings!')
+            print("Content is:" + content)
             return
 
         # add each key-value to environment - overwrites existing keys!

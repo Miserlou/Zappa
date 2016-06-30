@@ -1,0 +1,41 @@
+{
+    "status_code": 200, 
+    "data": {
+        "Body": {
+            "body": "{\n\t\"hello\": \"world\"\n}\n", 
+            "__module__": "botocore.response", 
+            "__class__": "StreamingBody"
+        }, 
+        "AcceptRanges": "bytes", 
+        "ContentType": "application/json", 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "HostId": "lVaFp3nkEtsVe+4Dm5eMCifL68dHBxqkCRU8pYt+H1A2no2oYcgeyTKOIDYnujWZK1CvUaRd2VY=", 
+            "RequestId": "70200E61AF5D2966", 
+            "HTTPHeaders": {
+                "content-length": "22", 
+                "x-amz-id-2": "lVaFp3nkEtsVe+4Dm5eMCifL68dHBxqkCRU8pYt+H1A2no2oYcgeyTKOIDYnujWZK1CvUaRd2VY=", 
+                "accept-ranges": "bytes", 
+                "server": "AmazonS3", 
+                "last-modified": "Thu, 30 Jun 2016 22:53:14 GMT", 
+                "x-amz-request-id": "70200E61AF5D2966", 
+                "etag": "\"4623dd8d925106bedd88a1b82f69f5b5\"", 
+                "date": "Thu, 30 Jun 2016 22:53:27 GMT", 
+                "content-type": "application/json"
+            }
+        }, 
+        "LastModified": {
+            "hour": 22, 
+            "__class__": "datetime", 
+            "month": 6, 
+            "second": 14, 
+            "microsecond": 0, 
+            "year": 2016, 
+            "day": 30, 
+            "minute": 53
+        }, 
+        "ContentLength": 22, 
+        "ETag": "\"4623dd8d925106bedd88a1b82f69f5b5\"", 
+        "Metadata": {}
+    }
+}
