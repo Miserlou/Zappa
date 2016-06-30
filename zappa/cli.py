@@ -451,6 +451,10 @@ class ZappaCLI(object):
             self.api_stage].get('use_apigateway', True)
         self.lambda_handler = self.zappa_settings[
             self.api_stage].get('lambda_handler', 'handler.lambda_handler')
+        self.remote_env_bucket = self.zappa_settings[
+            self.api_stage].get('remote_env_bucket', None)
+        self.remote_env_file = self.zappa_settings[
+            self.api_stage].get('remote_env_file', None)
 
         self.zappa = Zappa(boto_session=session, profile_name=self.profile_name, aws_region=self.aws_region)
 
@@ -508,6 +512,14 @@ class ZappaCLI(object):
                     settings_s = settings_s + "DOMAIN='{0!s}'\n".format((self.domain))
                 else:
                     settings_s = settings_s + "DOMAIN=None\n"
+
+                # Pass through remote config bucket and path
+                settings_s = settings_s + "REMOTE_ENV_BUCKET='{0!s}'\n".format(
+                    self.remote_env_bucket
+                )
+                settings_s = settings_s + "REMOTE_ENV_FILE".format(
+                    self.remote_env_file
+                )
 
                 # We can be environment-aware
                 settings_s = settings_s + "API_STAGE='{0!s}'\n".format((self.api_stage))

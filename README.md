@@ -168,6 +168,8 @@ to change Zappa's behavior. Use these at your own risk!
         "prebuild_script": "your_module.your_function", // Function to execute before uploading code
         "profile_name": "your-profile-name", // AWS profile credentials to use. Default 'default'.
         "project_name": "MyProject", // The name of the project as it appears on AWS. Defaults to a slugified `pwd`.
+        "remote_env_bucket": "my-project-config-files", // optional s3 bucket where remote_env_file can be located.
+        "remote_env_file": "filename.json", // file in remote_env_bucket containing a flat json object which will be used to set custom environment variables.
         "role_name": "MyLambdaRole", // Lambda execution Role
         "s3_bucket": "dev-bucket", // Zappa zip bucket,
         "settings_file": "~/Projects/MyApp/settings/dev_settings.py", // Server side settings file location,
@@ -194,6 +196,41 @@ To enable Cross-Origin Resource Sharing (CORS) for your application, follow the 
 #### Deploying to a Domain With a Let's Encrypt Certificate
 
 If you want to use Zappa on a domain with a free Let's Encrypt certificate, you can follow [this guide](https://github.com/Miserlou/Zappa/blob/master/docs/domain_with_free_ssl.md).
+
+#### Setting Environment Variables
+
+If you want to use environment variables to configure your application (especially useful for things like sensitive credentials) you can create a file and place it in an s3 bucket to which your lambda function has access (check your roles if you are having problems). Add the `remote_env_bucket` and `remote_env_file` keys to zappa_settings pointing to a file containing a flat, json-encoded object -- each key-value pair on the object will be set as an environment variable and value whenever a new lambda instance spins up.
+
+For Example:
+
+To ensure your application has access to the database credentials without storing them in your version control, you can add a file to s3 with the connection string and load it into the lambda environment using the remote_env_bucket and remote_env_file configuration settings.
+
+super-secret-config.json (uploaded to my-config-bucket)
+```
+{
+    "DB_CONNECTION_STRING": "super-secret:database"
+}
+```
+
+zappa_settings.json
+```
+{
+    "dev": {
+        ...
+        "remote_env_bucket": "my-config-bucket",
+        "remote_env_file": "super-secret-config.json"
+    },
+    ...
+}
+```
+
+Now in your application you can use:
+
+```
+import os
+db_string = os.environ('DB_CONNECTION_STRING')
+```
+
 
 ## Zappa Guides
 
