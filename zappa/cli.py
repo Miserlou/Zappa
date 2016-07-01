@@ -514,12 +514,13 @@ class ZappaCLI(object):
                     settings_s = settings_s + "DOMAIN=None\n"
 
                 # Pass through remote config bucket and path
-                settings_s = settings_s + "REMOTE_ENV_BUCKET='{0!s}'\n".format(
-                    self.remote_env_bucket
-                )
-                settings_s = settings_s + "REMOTE_ENV_FILE".format(
-                    self.remote_env_file
-                )
+                if self.remote_env_bucket and self.remote_env_file:
+                    settings_s = settings_s + "REMOTE_ENV_BUCKET='{0!s}'\n".format(
+                        self.remote_env_bucket
+                    )
+                    settings_s = settings_s + "REMOTE_ENV_FILE='{0!s}'\n".format(
+                        self.remote_env_file
+                    )
 
                 # We can be environment-aware
                 settings_s = settings_s + "API_STAGE='{0!s}'\n".format((self.api_stage))
