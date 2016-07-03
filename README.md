@@ -199,7 +199,7 @@ If you want to use Zappa on a domain with a free Let's Encrypt certificate, you 
 
 #### Setting Environment Variables
 
-If you want to use environment variables to configure your application (especially useful for things like sensitive credentials) you can create a file and place it in an s3 bucket to which your lambda function has access (check your roles if you are having problems). To do this, add the `remote_env_bucket` and `remote_env_file` keys to zappa_settings pointing to a file containing a flat JSON object, so that each key-value pair on the object will be set as an environment variable and value whenever a new lambda instance spins up.
+If you want to use environment variables to configure your application (which is especially useful for things like sensitive credentials), you can create a file and place it in an S3 bucket to which your Zappa application has access to. To do this, add the `remote_env_bucket` and `remote_env_file` keys to zappa_settings pointing to a file containing a flat JSON object, so that each key-value pair on the object will be set as an environment variable and value whenever a new lambda instance spins up.
 
 For example, to ensure your application has access to the database credentials without storing them in your version control, you can add a file to S3 with the connection string and load it into the lambda environment using the `remote_env_bucket` and `remote_env_file` configuration settings.
 
