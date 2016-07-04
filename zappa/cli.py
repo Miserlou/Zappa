@@ -155,7 +155,7 @@ class ZappaCLI(object):
         elif command == 'tail': # pragma: no cover
             self.tail()
         elif command == 'undeploy': # pragma: no cover
-            self.undeploy(noconfirm=args.y)
+            self.undeploy(noconfirm=vargs['yes'])
         elif command == 'schedule': # pragma: no cover
             self.schedule()
         elif command == 'unschedule': # pragma: no cover
