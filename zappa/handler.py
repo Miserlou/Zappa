@@ -226,6 +226,10 @@ class LambdaHandler(object):
 
             # Print statements are visible in the logs either way
             print(e)
+            
+            # If we didn't even build an app_module, just raise
+            if not app_module:
+                raise e
 
             # Print the error to the browser upon failure?
             debug = bool(getattr(app_module, settings.DEBUG, True))
