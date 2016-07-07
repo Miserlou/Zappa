@@ -910,7 +910,6 @@ class Zappa(object):
                     {
                         'Id': 'Id' + ''.join(random.choice(string.digits) for _ in range(12)),
                         'Arn': lambda_arn,
-                        'Input': json.dumps({'detail': function})
                     }
                 ]
             )
