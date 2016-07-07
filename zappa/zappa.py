@@ -196,7 +196,8 @@ class Zappa(object):
         'HEAD',
         'OPTIONS',
         'PATCH',
-        'POST'
+        'POST',
+        'PUT'
     ]
     parameter_depth = 8
     integration_response_codes = [200, 201, 301, 400, 401, 403, 404, 500]
