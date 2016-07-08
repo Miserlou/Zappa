@@ -228,7 +228,9 @@ class LambdaHandler(object):
             print(e)
             
             # If we didn't even build an app_module, just raise
-            if not app_module:
+            try:
+                app_module
+            except NameError:
                 raise e
 
             # Print the error to the browser upon failure?
