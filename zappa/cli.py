@@ -313,9 +313,9 @@ class ZappaCLI(object):
         except KeyboardInterrupt: # pragma: no cover
             # Die gracefully
             try:
-                sys.exit(0)
+                sys.exit(130)
             except SystemExit:
-                os._exit(0)
+                os._exit(130)
 
     def undeploy(self, noconfirm=False):
         """
@@ -405,7 +405,7 @@ class ZappaCLI(object):
         # Ensure we're passed a valid settings file.
         if not os.path.isfile(settings_file):
             print("Please configure your zappa_settings file.")
-            quit() # pragma: no cover
+            sys.exit(1) # pragma: no cover
 
         # Load up file
         self.load_settings_file(settings_file)
@@ -413,7 +413,7 @@ class ZappaCLI(object):
         # Make sure that this environment is our settings
         if self.api_stage not in self.zappa_settings.keys():
             print("Please define '{0!s}' in your Zappa settings.".format(self.api_stage))
-            quit() # pragma: no cover
+            sys.exit(1) # pragma: no cover
 
         # We need a working title for this project. Use one if supplied, else cwd dirname.
         if 'project_name' in self.zappa_settings[self.api_stage]: # pragma: no cover
@@ -472,7 +472,7 @@ class ZappaCLI(object):
         except Exception as e: # pragma: no cover
             print("Problem parsing settings file.")
             print(e)
-            quit() # pragma: no cover
+            sys.exit(1) # pragma: no cover
 
     def create_package(self):
         """
@@ -608,11 +608,12 @@ def handle(): # pragma: no cover
     except (KeyboardInterrupt, SystemExit): # pragma: no cover
         if cli.zip_path: # Remove the Zip from S3 upon failure.
             cli.remove_uploaded_zip()
-        return
+        sys.exit(130)
     except Exception as e:
         if cli.zip_path: # Remove the Zip from S3 upon failure.
             cli.remove_uploaded_zip()
         print(e)
+        sys.exit(1)
 
 if __name__ == '__main__': # pragma: no cover
     handle()
