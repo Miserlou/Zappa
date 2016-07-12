@@ -45,7 +45,8 @@ _Before you begin, make sure you have a valid AWS account and your [AWS credenti
 
     $ pip install zappa
 
-It is required to install zappa to the project's virtualenv.
+Please note that Zappa *must* be installed into your project's [virtual environment](http://docs.python-guide.org/en/latest/dev/virtualenvs/).
+
 If you're looking for Django-specific integration, you should probably check out _**[django-zappa](https://github.com/Miserlou/django-zappa)**_ instead.
 
 Next, you'll need to define your local and server-side settings.
