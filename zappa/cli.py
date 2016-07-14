@@ -42,6 +42,7 @@ CLI_COMMANDS = [
     'invoke',
     'rollback',
     'schedule',
+    'status',
     'tail',
     'undeploy',
     'unschedule',
@@ -381,6 +382,13 @@ class ZappaCLI(object):
             self.zappa.unschedule_events(events)
 
         return
+
+    def invoke(self):
+        """
+        Invoke a remote function.
+        """
+        message = "This ability is not yet available."
+        print(version)
 
     def print_version(self):
         """
