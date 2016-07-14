@@ -161,6 +161,8 @@ class ZappaCLI(object):
             self.schedule()
         elif command == 'unschedule': # pragma: no cover
             self.unschedule()
+        elif command == 'status': # pragma: no cover
+            self.status()
 
     ##
     # The Commands
@@ -314,7 +316,7 @@ class ZappaCLI(object):
         except KeyboardInterrupt: # pragma: no cover
             # Die gracefully
             try:
-                sys.exit(130)
+                sys.exit(0)
             except SystemExit:
                 os._exit(130)
 
@@ -388,7 +390,19 @@ class ZappaCLI(object):
         Invoke a remote function.
         """
         message = "This ability is not yet available."
-        print(version)
+        print(message)
+
+    def status(self):
+        """
+        Describe the status of the current deployment.
+        """
+
+        api_url = self.zappa.get_api_url(
+            self.lambda_name)
+
+        print("Status for %s:" % self.lambda_name)
+        print('\tAPI URL:\t'+ str(api_url))
+
 
     def print_version(self):
         """

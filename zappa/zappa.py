@@ -790,8 +790,12 @@ class Zappa(object):
         response = self.apigateway_client.get_rest_apis(limit=500)
 
         for item in response['items']:
-            if item['description'] == stage_name:
+            if item['name'] == stage_name:
+                import pdb
+                pdb.set_trace()
                 return "https://{}.execute-api.{}.amazonaws.com/{}".format(item['id'], self.boto_session.region_name, stage_name)
+
+        return None
 
     ##
     # IAM
