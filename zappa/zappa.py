@@ -791,8 +791,6 @@ class Zappa(object):
 
         for item in response['items']:
             if item['name'] == stage_name:
-                import pdb
-                pdb.set_trace()
                 return "https://{}.execute-api.{}.amazonaws.com/{}".format(item['id'], self.boto_session.region_name, stage_name)
 
         return None
