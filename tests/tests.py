@@ -179,7 +179,7 @@ class TestZappa(unittest.TestCase):
     def test_get_api_url(self, session):
         z = Zappa(session)
         z.credentials_arn = 'arn:aws:iam::724336686645:role/ZappaLambdaExecution'
-        url = z.get_api_url('Spheres-demonstration')
+        url = z.get_api_url('Spheres-demonstration', 'demonstration')
 
     @placebo_session
     def test_fetch_logs(self, session):
