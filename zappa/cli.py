@@ -272,7 +272,12 @@ class ZappaCLI(object):
         if self.zappa_settings[self.api_stage].get('delete_zip', True):
             os.remove(self.zip_path)
 
-        print("Your updated Zappa deployment is live!")
+        if self.zappa_settings[self.api_stage].get('domain', None):
+            endpoint_url = self.zappa_settings[self.api_stage].get('domain')
+        else:
+            endpoint_url = self.zappa.get_api_url(self.lambda_name, self.api_stage)
+
+        print("Your updated Zappa deployment is live! {}".format(endpoint_url))
 
         return
 
@@ -398,11 +403,14 @@ class ZappaCLI(object):
         """
 
         api_url = self.zappa.get_api_url(
-            self.lambda_name)
+            self.lambda_name,
+            self.api_stage)
+
+        domain_url = self.zappa_settings[self.api_stage].get('domain', None)
 
         print("Status for %s:" % self.lambda_name)
-        print('\tAPI URL:\t'+ str(api_url))
-
+        print('\tAPI Gateway URL:\t' + str(api_url))
+        print('\tDomain URL:\t\t' + str(domain_url))
 
     def print_version(self):
         """

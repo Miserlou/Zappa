@@ -495,7 +495,7 @@ class Zappa(object):
 
         """
 
-        print("Updating Lambda function..")
+        print("Updating Lambda function code..")
 
         response = self.lambda_client.update_function_code(
             FunctionName=function_name,
@@ -574,7 +574,7 @@ class Zappa(object):
 
         """
 
-        print("Creating API Gateway routes..")
+        print("Creating API Gateway routes (this only happens once)..")
 
         if not api_name:
             api_name = str(int(time.time()))
@@ -781,16 +781,16 @@ class Zappa(object):
             )
 
 
-    def get_api_url(self, stage_name):
+    def get_api_url(self, project_name, stage_name):
         """
-        Given a stage_name, return a valid API URL.
+        Given a project_name and stage_name, return a valid API URL.
 
         """
 
         response = self.apigateway_client.get_rest_apis(limit=500)
 
         for item in response['items']:
-            if item['name'] == stage_name:
+            if item['name'] == project_name:
                 return "https://{}.execute-api.{}.amazonaws.com/{}".format(item['id'], self.boto_session.region_name, stage_name)
 
         return None
