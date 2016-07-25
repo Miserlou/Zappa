@@ -9,6 +9,7 @@ import random
 import requests
 import shutil
 import string
+import subprocess
 import tarfile
 import tempfile
 import time
@@ -253,9 +254,18 @@ class Zappa(object):
         print("Packaging project as zip...")
 
         if not venv:
-            try:
+            if 'VIRTUAL_ENV' in os.environ:
                 venv = os.environ['VIRTUAL_ENV']
-            except KeyError as e: # pragma: no cover
+            elif os.path.exists('.python-version'): # pragma: no cover
+                print("pyenv environment detected.")
+                try:
+                    subprocess.check_output('pyenv', stderr=subprocess.STDOUT)
+                except OSError as e:
+                    print("This directory seems to have pyenv's local env"
+                          "but pyenv excecutable was not found.")
+                venv = subprocess.check_output('pyenv which python', shell=True).decode('utf-8')
+                venv = '/'.join(venv.split('/')[:-2])
+            else: # pragma: no cover
                 print("Zappa requires an active virtual environment.")
                 quit()
 
