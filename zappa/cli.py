@@ -469,8 +469,42 @@ class ZappaCLI(object):
         print("If you don't have a bucket yet, we'll create one for you too.")
         default_bucket = "zappa-" + ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(9))
         bucket = raw_input("What do you want call your bucket? (default '%s'): " % default_bucket) or default_bucket
+        # TODO actually create bucket.
+
 
         # Detect Django/Flask
+        try:
+            import django
+            has_django = True
+        except ImportError, e:
+            has_django = False
+
+        try:
+            import flask
+            has_flask = True
+        except ImportError, e:
+            has_flask = False
+
+        if has_django:
+            print("\nIt looks like this is a Django application.")
+            print("What's the modular path to your app's main function?")
+            print("This will likely be something like 'your_module.app'.")
+            app_function = None
+            while app_function in [None, '']:
+                app_function = raw_input("Where is your app's function?: ")
+
+        elif has_flask:
+            print("\nIt looks like this is a Flask application.")
+            print("What's the modular path to your app's main function?")
+            print("This will likely be something like 'your_module.app'.")
+            app_function = None
+            while app_function in [None, '']:
+                app_function = raw_input("Where is your app's function?: ")
+        else:
+            return
+
+
+
         # Create VPC?
         # Memory size? Time limit?
 
