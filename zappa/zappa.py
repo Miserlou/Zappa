@@ -556,7 +556,7 @@ class Zappa(object):
         Returns the response.
 
         """
-        print("Deleting lambda function..")
+        print("Deleting Lambda function..")
 
         return self.lambda_client.delete_function(
             FunctionName=function_name,

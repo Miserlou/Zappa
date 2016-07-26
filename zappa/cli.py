@@ -485,6 +485,8 @@ class ZappaCLI(object):
             self.api_stage].get('remote_env_bucket', None)
         self.remote_env_file = self.zappa_settings[
             self.api_stage].get('remote_env_file', None)
+        self.settings_file = self.zappa_settings[
+            self.api_stage].get('settings_file', None)
 
         self.zappa = Zappa(boto_session=session, profile_name=self.profile_name, aws_region=self.aws_region)
 
@@ -554,6 +556,14 @@ class ZappaCLI(object):
 
                 # We can be environment-aware
                 settings_s = settings_s + "API_STAGE='{0!s}'\n".format((self.api_stage))
+
+                if self.settings_file:
+                    settings_s = settings_s + "SETTINGS_FILE='{0!s}'\n".format((self.settings_file))
+
+                    # with open(self.settings_file, 'r') as f:
+                    #     all_contents = f.read()
+                    #     settings_s = settings_s + '\n# Copied:\n' + all_contents
+                    #     f.close()
 
                 # Lambda requires a specific chmod
                 temp_settings = tempfile.NamedTemporaryFile(delete=False)

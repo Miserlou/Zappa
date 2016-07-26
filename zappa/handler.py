@@ -25,6 +25,8 @@ logging.basicConfig()
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
+ERROR_CODES = [400, 401, 403, 404, 500]
+
 class LambdaException(Exception):
     pass
 
@@ -129,6 +131,8 @@ class LambdaHandler(object):
             app_function()
             return
 
+        # XXX TODO: Handle 'invoke' and 'command'
+
         try:
             # Timing
             time_start = datetime.datetime.now()
@@ -144,7 +148,9 @@ class LambdaHandler(object):
             app_module = importlib.import_module(settings.APP_MODULE)
 
             # The application
-            app_function = getattr(app_module, settings.APP_FUNCTION)
+            # XXX TODO : SUPER DJANGO AND NO DJANGO
+            app_function = getattr(app_module, settings.APP_FUNCTION)(None, None)
+            
             app = ZappaWSGIMiddleware(app_function)
 
             # This is a normal HTTP request
@@ -171,8 +177,10 @@ class LambdaHandler(object):
                                                 script_name=script_name,
                                                 trailing_slash=False
                                             )
+                # XXX TODO: NO TRAILING SLASH ON DJANGO
 
                 # We are always on https on Lambda, so tell our wsgi app that.
+                environ['HTTPS'] = 'on'
                 environ['wsgi.url_scheme'] = 'https'
 
                 # Execute the application
@@ -192,16 +200,18 @@ class LambdaHandler(object):
                 # as an error to match our APIGW regex.
                 # The DOCTYPE ensures that the page still renders in the browser.
                 exception = None
-                if response.status_code in [400, 401, 403, 404, 500]:
-                    content = "<!DOCTYPE html>" + str(response.status_code) + response.data
+                if response.status_code in ERROR_CODES:
+                    content = u"<!DOCTYPE html>" + unicode(response.status_code) + unicode('<meta charset="utf-8" />') + response.data.encode('utf-8')
                     exception = base64.b64encode(content)
                 # Internal are changed to become relative redirects
                 # so they still work for apps on raw APIGW and on a domain.
-                elif response.status_code in [301, 302]:
+                elif 300 <= response.status_code < 400 and hasattr(response, 'Location'):
                     # Location is by default relative on Flask. Location is by default
                     # absolute on Werkzeug. We can set autocorrect_location_header on
                     # the response to False, but it doesn't work. We have to manually
                     # remove the host part.
+                    print "HAS LOCATION"
+
                     location = response.location
                     hostname = 'https://' + environ['HTTP_HOST']
                     if location.startswith(hostname):
@@ -234,7 +244,8 @@ class LambdaHandler(object):
                 raise e
 
             # Print the error to the browser upon failure?
-            debug = bool(getattr(app_module, settings.DEBUG, True))
+            #debug = bool(getattr(app_module, settings.DEBUG, True))
+            debug = True
             if debug:
                 # Return this unspecified exception as a 500.
                 content = "<!DOCTYPE html>500. From Zappa: <pre>" + str(e) + "</pre><br /><pre>" + traceback.format_exc().replace('\n', '<br />') + "</pre>"
