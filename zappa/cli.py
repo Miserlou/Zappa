@@ -1,6 +1,7 @@
-#! /usr/bin/env python
-"""
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
+"""
 Zappa CLI
 
 Deploy arbitrary Python programs as serverless Zappa applications.
@@ -10,18 +11,20 @@ Deploy arbitrary Python programs as serverless Zappa applications.
 from __future__ import unicode_literals
 
 import argparse
+import botocore
+import hjson as json
 import inspect
 import imp
-import hjson as json
+import logging
 import os
+import pkg_resources
+import random
 import requests
 import slugify
+import string
 import sys
 import tempfile
 import zipfile
-import pkg_resources
-import logging
-import botocore
 
 from zappa import Zappa, logger
 
@@ -39,6 +42,7 @@ CUSTOM_SETTINGS = [
 
 CLI_COMMANDS = [
     'deploy',
+    'init',
     'invoke',
     'rollback',
     'schedule',
@@ -123,23 +127,24 @@ class ZappaCLI(object):
             print("The command '{}' is not recognized. {}".format(command, help_message))
             return
 
-        if len(command_env) < 2: # pragma: no cover
-            self.load_settings_file(vargs['settings_file'])
+        if command != 'init':
+            if len(command_env) < 2: # pragma: no cover
+                self.load_settings_file(vargs['settings_file'])
 
-            # If there's only one environment defined in the settings,
-            # use that as the default.
-            if len(self.zappa_settings.keys()) is 1:
-                self.api_stage = self.zappa_settings.keys()[0]
+                # If there's only one environment defined in the settings,
+                # use that as the default.
+                if len(self.zappa_settings.keys()) is 1:
+                    self.api_stage = self.zappa_settings.keys()[0]
+                else:
+                    parser.error("Please supply an environment to interact with.")
+                    return
             else:
-                parser.error("Please supply an environment to interact with.")
-                return
-        else:
-            self.api_stage = command_env[1]
+                self.api_stage = command_env[1]
 
-        # Load our settings
-        self.load_settings(vargs['settings_file'])
-        if vargs['app_function'] is not None:
-            self.app_function = vargs['app_function']
+            # Load our settings
+            self.load_settings(vargs['settings_file'])
+            if vargs['app_function'] is not None:
+                self.app_function = vargs['app_function']
 
         # Hand it off
         if command == 'deploy': # pragma: no cover
@@ -163,6 +168,8 @@ class ZappaCLI(object):
             self.unschedule()
         elif command == 'status': # pragma: no cover
             self.status()
+        elif command == 'init': # pragma: no cover
+            self.init()
 
     ##
     # The Commands
@@ -418,6 +425,50 @@ class ZappaCLI(object):
         """
         version = pkg_resources.require("zappa")[0].version
         print(version)
+
+    def init(self, settings_file="zappa_settings.json"):
+        """
+        Initialize a new Zappa project by creating a new zappa_settings.json in a guided process.
+        """
+
+        # Ensure that we don't already have a zappa_settings file.
+        if os.path.isfile(settings_file):
+            print("This project is already initialized!")
+            sys.exit() # pragma: no cover
+
+        # Ensure P2 until Lambda supports it.
+        if sys.version_info >= (3,0):
+            print("Zappa curently only works with Python 2, until AWS Lambda adds Python 3 support.")
+            sys.exit() # pragma: no cover
+
+        # Ensure inside virtualenv.
+        if not hasattr(sys, 'real_prefix'):
+            print("Zappa must be run inside of a virtual environment!")
+            print("Learn more about virtual environments here: http://docs.python-guide.org/en/latest/dev/virtualenvs/")
+            sys.exit() # pragma: no cover
+
+        # Explain system.
+        print(u"""\n███████╗ █████╗ ██████╗ ██████╗  █████╗ 
+╚══███╔╝██╔══██╗██╔══██╗██╔══██╗██╔══██╗
+  ███╔╝ ███████║██████╔╝██████╔╝███████║
+ ███╔╝  ██╔══██║██╔═══╝ ██╔═══╝ ██╔══██║
+███████╗██║  ██║██║     ██║     ██║  ██║
+╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝     ╚═╝  ╚═╝\n""")
+
+        print("Welcome to Zappa!\n")
+        print("Zappa is a system for running server-less Python web applications on AWS Lambda and AWS API Gateway.")
+        print("This `init` command will help you create and configure your new Zappa deployment.")
+        print("Let's get started!\n")
+
+        # Create Env
+        print("Your Zappa configuration can support multiple production environments, like 'dev', 'staging', and 'production'.")
+        env = raw_input("What do you want to call this environment (default 'dev'): ") or "dev"
+
+        # Create Bucket 
+        print("\nYour Zappa deployments will need to be uploaded to a private S3 bucket.")
+        print("If you don't have a bucket yet, we'll create one for you too.")
+        default_bucket = "zappa-" + ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(9))
+        bucket = raw_input("What do you want call your bucket? (default '%s'): " % default_bucket) or default_bucket
 
     ##
     # Utility

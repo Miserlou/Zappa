@@ -435,6 +435,16 @@ class TestZappa(unittest.TestCase):
         zappa_cli.unschedule()
         zappa_cli.undeploy(noconfirm=True)
 
+    def test_cli_init(self):
+
+        zappa_cli = ZappaCLI()
+
+        # Via http://stackoverflow.com/questions/2617057/how-to-supply-stdin-files-and-environment-variable-inputs-to-python-unit-tests
+        inputs = ['dev', 'lmbda', ]
+        input_generator = (i for i in inputs)
+        with mock.patch('__builtin__.raw_input', lambda prompt: next(input_generator)):
+            zappa_cli.init()
+
     ##
     # Util / Misc
     ##
