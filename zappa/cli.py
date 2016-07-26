@@ -486,12 +486,14 @@ class ZappaCLI(object):
             has_flask = False
 
         if has_django:
-            print("\nIt looks like this is a Django application.")
-            print("What's the modular path to your app's main function?")
-            print("This will likely be something like 'your_module.app'.")
-            app_function = None
-            while app_function in [None, '']:
-                app_function = raw_input("Where is your app's function?: ")
+            print("\nIt looks like this is a Django application!")
+            print("What is the modular path to your projects's Django settings?")
+            print("(This will likely be something like 'your_project.settings'.)")
+            django_settings = None
+            while django_settings in [None, '']:
+                django_settings = raw_input("Where are your project's settings?: ")
+            django_settings = django_settings.replace("'", "")
+            django_settings = django_settings.replace('"', "")
 
         elif has_flask:
             print("\nIt looks like this is a Flask application.")
@@ -500,16 +502,50 @@ class ZappaCLI(object):
             app_function = None
             while app_function in [None, '']:
                 app_function = raw_input("Where is your app's function?: ")
+            app_function = app_function.replace("'", "")
+            app_function = app_function.replace('"', "")
         else:
             return
-
-
 
         # Create VPC?
         # Memory size? Time limit?
 
         # Confirm
+        zappa_settings = {
+            env: {
+                'bucket': bucket,
+            }
+        }
+        if has_django:
+            zappa_settings[env]['django_settings'] = django_settings
+        else:
+            zappa_settings[env]['app_function'] = app_function
+
+        import json as json # hjson is fine for loading, not fine for writing.
+        zappa_settings_json = json.dumps(zappa_settings, sort_keys=True, indent=4)
+        
+        print("Okay, here's your zappa_settings.js:\n")
+        print(zappa_settings_json)
+
+        confirm = None
+        while confirm not in ['y', 'Y', 'yes']:
+            confirm = raw_input("\nDoes this look okay? (default y) [y/n]: ") or 'yes'     
+
         # Write
+        with open("zappa_settings.json", "w") as zappa_settings_file:
+            zappa_settings_file.write(zappa_settings_json)
+
+        print("\nDone! Now you can deploy your Zappa application by executing:\n")
+        print("\t$ zappa deploy %s" % env)
+
+        print("\nAfter that, you can update your application code with:\n")
+        print("\t$ zappa update %s" % env)
+
+        print("\nTo learn more, check out the Zappa project page on GitHub: https://github.com/Miserlou/Zappa")
+        print("or stop by our Slack channel: https://slackautoinviter.herokuapp.com/")
+        print("\nEnjoy!")
+
+        return
 
     ##
     # Utility
