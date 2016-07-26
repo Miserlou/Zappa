@@ -265,10 +265,10 @@ class Zappa(object):
                           "but pyenv executable was not found.")
                 with open('.python-version', 'r') as f:
                     env_name = f.read()[:-1]
-                    logger.debug('env name = %s' % env_name)
+                    logger.debug('env name = {}'.format(env_name))
                 bin_path = subprocess.check_output('pyenv which python', shell=True).decode('utf-8')
                 venv = bin_path[:bin_path.rfind(env_name)] + env_name
-                logger.debug('env path = %s' % venv)
+                logger.debug('env path = {}'.format(venv))
             else: # pragma: no cover
                 print("Zappa requires an active virtual environment.")
                 quit()
