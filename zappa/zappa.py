@@ -257,14 +257,18 @@ class Zappa(object):
             if 'VIRTUAL_ENV' in os.environ:
                 venv = os.environ['VIRTUAL_ENV']
             elif os.path.exists('.python-version'): # pragma: no cover
-                print("pyenv environment detected.")
+                logger.debug("Pyenv's local virtualenv detected.")
                 try:
                     subprocess.check_output('pyenv', stderr=subprocess.STDOUT)
                 except OSError as e:
-                    print("This directory seems to have pyenv's local env"
+                    print("This directory seems to have pyenv's local venv"
                           "but pyenv excecutable was not found.")
-                venv = subprocess.check_output('pyenv which python', shell=True).decode('utf-8')
-                venv = '/'.join(venv.split('/')[:-2])
+                with open('.python-version', 'r') as f:
+                    env_name = f.read()[:-1]
+                    logger.debug('env name = %s' % env_name)
+                bin_path = subprocess.check_output('pyenv which python', shell=True).decode('utf-8')
+                venv = bin_path[:bin_path.rfind(env_name)] + env_name
+                logger.debug('env path = %s' % venv)
             else: # pragma: no cover
                 print("Zappa requires an active virtual environment.")
                 quit()
