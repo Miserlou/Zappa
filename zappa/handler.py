@@ -144,13 +144,27 @@ class LambdaHandler(object):
                 level = logging.getLevelName(settings.LOG_LEVEL)
                 logger.setLevel(level)
 
-            # The app module
-            app_module = importlib.import_module(settings.APP_MODULE)
+            # Django gets special treatment.
+            if settings.DJANGO:
+                # The app module
+                app_module = importlib.import_module(settings.APP_MODULE)
 
-            # The application
-            # XXX TODO : SUPER DJANGO AND NO DJANGO
-            app_function = getattr(app_module, settings.APP_FUNCTION)(None, None)
-            
+                # The application
+                app_function = getattr(app_module, settings.APP_FUNCTION)(None, None)
+                trailing_slash = False
+            else:
+
+                # This file may be copied into a project's root,
+                # so handle both scenarios.
+                try:
+                    from zappa.ext.django import get_django_wsgi
+                except ImportError as e: # pragma: no cover
+                    from .ext.django import get_django_wsgi
+                
+                # The application
+                app_function = get_django_wsgi(settings.DJANGO_SETTINGS)
+                trailing_slash = True
+                
             app = ZappaWSGIMiddleware(app_function)
 
             # This is a normal HTTP request
@@ -175,9 +189,8 @@ class LambdaHandler(object):
                 # Create the environment for WSGI and handle the request
                 environ = create_wsgi_request(event, 
                                                 script_name=script_name,
-                                                trailing_slash=False
+                                                trailing_slash=trailing_slash
                                             )
-                # XXX TODO: NO TRAILING SLASH ON DJANGO
 
                 # We are always on https on Lambda, so tell our wsgi app that.
                 environ['HTTPS'] = 'on'
@@ -210,8 +223,6 @@ class LambdaHandler(object):
                     # absolute on Werkzeug. We can set autocorrect_location_header on
                     # the response to False, but it doesn't work. We have to manually
                     # remove the host part.
-                    print "HAS LOCATION"
-
                     location = response.location
                     hostname = 'https://' + environ['HTTP_HOST']
                     if location.startswith(hostname):
@@ -238,10 +249,11 @@ class LambdaHandler(object):
             print(e)
             
             # If we didn't even build an app_module, just raise
-            try:
-                app_module
-            except NameError:
-                raise e
+            if not settings.DJANGO:
+                try:
+                    app_module
+                except NameError:
+                    raise e
 
             # Print the error to the browser upon failure?
             #debug = bool(getattr(app_module, settings.DEBUG, True))
