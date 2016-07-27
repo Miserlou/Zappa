@@ -13,6 +13,7 @@ from __future__ import unicode_literals
 import argparse
 import botocore
 import hjson as json
+import fnmatch
 import inspect
 import imp
 import logging
@@ -474,7 +475,6 @@ class ZappaCLI(object):
         bucket = raw_input("What do you want call your bucket? (default '%s'): " % default_bucket) or default_bucket
         # TODO actually create bucket.
 
-
         # Detect Django/Flask
         try:
             import django
@@ -488,18 +488,45 @@ class ZappaCLI(object):
         except ImportError, e:
             has_flask = False
 
+        print('')
+        # App-specific 
         if has_django:
-            print("\nIt looks like this is a Django application!")
+            print("It looks like this is a Django application!")
             print("What is the modular path to your projects's Django settings?")
-            print("(This will likely be something like 'your_project.settings'.)")
             django_settings = None
+
+            def detect_django_settings():
+                """
+                Automatically try to discover Django settings files,
+                return them as relative module paths.
+                """
+
+                matches = []
+                for root, dirnames, filenames in os.walk(os.getcwd()):
+                    for filename in fnmatch.filter(filenames, '*settings.py'):
+                        full = os.path.join(root, filename)
+                        if 'site-packages' in full:
+                            continue
+                        full = os.path.join(root, filename)
+                        package_path = full.replace(os.getcwd(), '')
+                        package_module = package_path.replace(os.sep, '.').split('.', 1)[1].replace('.py', '')
+
+                        matches.append(package_module)
+                return matches
+
+            matches = detect_django_settings()
             while django_settings in [None, '']:
-                django_settings = raw_input("Where are your project's settings?: ")
+                if matches:
+                    print("We discovered: " + ', '.join('{}'.format(i) for v, i in enumerate(matches)))
+                    django_settings = raw_input("Where are your project's settings? (default '%s'): " % matches[0]) or matches[0]
+                else:
+                    print("(This will likely be something like 'your_project.settings')")
+                    django_settings = raw_input("Where are your project's settings?: ")
             django_settings = django_settings.replace("'", "")
             django_settings = django_settings.replace('"', "")
-
-        elif has_flask:
-            print("\nIt looks like this is a Flask application.")
+        else:
+            if has_flask:
+                print("It looks like this is a Flask application.")
             print("What's the modular path to your app's main function?")
             print("This will likely be something like 'your_module.app'.")
             app_function = None
@@ -507,10 +534,8 @@ class ZappaCLI(object):
                 app_function = raw_input("Where is your app's function?: ")
             app_function = app_function.replace("'", "")
             app_function = app_function.replace('"', "")
-        else:
-            return
 
-        # Create VPC?
+        # TODO: Create VPC?
         # Memory size? Time limit?
 
         # Confirm
@@ -527,12 +552,13 @@ class ZappaCLI(object):
         import json as json # hjson is fine for loading, not fine for writing.
         zappa_settings_json = json.dumps(zappa_settings, sort_keys=True, indent=4)
         
-        print("Okay, here's your zappa_settings.js:\n")
+        print("\nOkay, here's your zappa_settings.js:\n")
         print(zappa_settings_json)
 
-        confirm = None
-        while confirm not in ['y', 'Y', 'yes']:
-            confirm = raw_input("\nDoes this look okay? (default y) [y/n]: ") or 'yes'     
+        confirm = raw_input("\nDoes this look okay? (default y) [y/n]: ") or 'yes'  
+        if confirm[0] not in ['y', 'Y', 'yes', 'YES']:
+            print("Sorry to hear that! Please init again.")
+            return
 
         # Write
         with open("zappa_settings.json", "w") as zappa_settings_file:
