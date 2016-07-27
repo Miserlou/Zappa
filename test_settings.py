@@ -1,5 +1,6 @@
 APP_MODULE = 'tests.test_app'
 APP_FUNCTION = 'hello_world'
+DJANGO_SETTINGS = None 
 DEBUG = 'True'
 LOG_LEVEL = 'DEBUG'
 SCRIPT_NAME = 'hello_world'
