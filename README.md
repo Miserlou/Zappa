@@ -148,6 +148,8 @@ to change Zappa's behavior. Use these at your own risk!
 ```javascript
  {
     "dev": {
+        "assume_policy": "my_assume_policy.json", // optional, IAM assume policy JSON file
+        "attach_policy": "my_attach_policy.json", // optional, IAM attach policy JSON file
         "aws_region": "us-east-1", // AWS Region (default US East),
         "cache_cluster_enabled": false, // Use APIGW cache cluster (default False)
         "cache_cluster_size": .5, // APIGW Cache Cluster size (default 0.5)
