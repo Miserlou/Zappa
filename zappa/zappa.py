@@ -9,6 +9,7 @@ import random
 import requests
 import shutil
 import string
+import subprocess
 import tarfile
 import tempfile
 import time
@@ -217,6 +218,8 @@ class Zappa(object):
     ]
 
     role_name = "ZappaLambdaExecution"
+    assume_policy = ASSUME_POLICY
+    attach_policy = ATTACH_POLICY
     aws_region = 'us-east-1'
 
     ##
@@ -253,9 +256,22 @@ class Zappa(object):
         print("Packaging project as zip...")
 
         if not venv:
-            try:
+            if 'VIRTUAL_ENV' in os.environ:
                 venv = os.environ['VIRTUAL_ENV']
-            except KeyError as e: # pragma: no cover
+            elif os.path.exists('.python-version'): # pragma: no cover
+                logger.debug("Pyenv's local virtualenv detected.")
+                try:
+                    subprocess.check_output('pyenv', stderr=subprocess.STDOUT)
+                except OSError as e:
+                    print("This directory seems to have pyenv's local venv"
+                          "but pyenv executable was not found.")
+                with open('.python-version', 'r') as f:
+                    env_name = f.read()[:-1]
+                    logger.debug('env name = {}'.format(env_name))
+                bin_path = subprocess.check_output(['pyenv', 'which', 'python']).decode('utf-8')
+                venv = bin_path[:bin_path.rfind(env_name)] + env_name
+                logger.debug('env path = {}'.format(venv))
+            else: # pragma: no cover
                 print("Zappa requires an active virtual environment.")
                 quit()
 
@@ -805,11 +821,8 @@ class Zappa(object):
 
         If the IAM role already exists, it will be updated if necessary.
         """
-        assume_policy_s = ASSUME_POLICY
-        attach_policy_s = ATTACH_POLICY
-
-        attach_policy_obj = json.loads(attach_policy_s)
-        assume_policy_obj = json.loads(assume_policy_s)
+        attach_policy_obj = json.loads(self.attach_policy)
+        assume_policy_obj = json.loads(self.assume_policy)
 
         # Create the role if needed
         role = self.iam.Role(self.role_name)
@@ -820,7 +833,7 @@ class Zappa(object):
             print("Creating " + self.role_name + " IAM Role...")
 
             role = self.iam.create_role(RoleName=self.role_name,
-                                   AssumeRolePolicyDocument=assume_policy_s)
+                                   AssumeRolePolicyDocument=self.assume_policy)
             self.credentials_arn = role.arn
 
         # create or update the role's policies if needed
@@ -828,18 +841,18 @@ class Zappa(object):
         try:
             if policy.policy_document != attach_policy_obj:
                 print("Updating zappa-permissions policy on " + self.role_name + " IAM Role.")
-                policy.put(PolicyDocument=attach_policy_s)
+                policy.put(PolicyDocument=self.attach_policy)
 
         except botocore.client.ClientError:
             print("Creating zappa-permissions policy on " + self.role_name + " IAM Role.")
-            policy.put(PolicyDocument=attach_policy_s)
+            policy.put(PolicyDocument=self.attach_policy)
 
         if role.assume_role_policy_document != assume_policy_obj and \
                 set(role.assume_role_policy_document['Statement'][0]['Principal']['Service']) != set(assume_policy_obj['Statement'][0]['Principal']['Service']):
             print("Updating assume role policy on " + self.role_name + " IAM Role.")
             self.iam_client.update_assume_role_policy(
                 RoleName=self.role_name,
-                PolicyDocument=assume_policy_s
+                PolicyDocument=self.assume_policy
             )
 
         return self.credentials_arn

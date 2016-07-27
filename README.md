@@ -45,7 +45,7 @@ _Before you begin, make sure you have a valid AWS account and your [AWS credenti
 
     $ pip install zappa
 
-Please note that Zappa *must* be installed into your project's [virtual environment](http://docs.python-guide.org/en/latest/dev/virtualenvs/).
+Please note that Zappa *must* be installed into your project's [virtual environment](http://docs.python-guide.org/en/latest/dev/virtualenvs/). If you use pyenv and love to manage virtualenvs with **pyenv-virtualenv**, you just have to call `pyenv local [your_venv_name]` and it's ready.
 
 If you're looking for Django-specific integration, you should probably check out _**[django-zappa](https://github.com/Miserlou/django-zappa)**_ instead.
 
@@ -148,6 +148,8 @@ to change Zappa's behavior. Use these at your own risk!
 ```javascript
  {
     "dev": {
+        "assume_policy": "my_assume_policy.json", // optional, IAM assume policy JSON file
+        "attach_policy": "my_attach_policy.json", // optional, IAM attach policy JSON file
         "aws_region": "us-east-1", // AWS Region (default US East),
         "cache_cluster_enabled": false, // Use APIGW cache cluster (default False)
         "cache_cluster_size": .5, // APIGW Cache Cluster size (default 0.5)
