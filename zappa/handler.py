@@ -145,23 +145,21 @@ class LambdaHandler(object):
                 logger.setLevel(level)
 
             # Django gets special treatment.
-            if settings.DJANGO:
+            if not settings.DJANGO_SETTINGS:
                 # The app module
                 app_module = importlib.import_module(settings.APP_MODULE)
 
                 # The application
-                app_function = getattr(app_module, settings.APP_FUNCTION)(None, None)
+                app_function = getattr(app_module, settings.APP_FUNCTION)
                 trailing_slash = False
             else:
 
-                # This file may be copied into a project's root,
-                # so handle both scenarios.
-                try:
+                try: # Support both for tests
                     from zappa.ext.django import get_django_wsgi
                 except ImportError as e: # pragma: no cover
-                    from .ext.django import get_django_wsgi
-                
-                # The application
+                    from django_zappa_app import get_django_wsgi
+
+                # Get the Django WSGI app from our extension
                 app_function = get_django_wsgi(settings.DJANGO_SETTINGS)
                 trailing_slash = True
                 
@@ -249,7 +247,7 @@ class LambdaHandler(object):
             print(e)
             
             # If we didn't even build an app_module, just raise
-            if not settings.DJANGO:
+            if not settings.DJANGO_SETTINGS:
                 try:
                     app_module
                 except NameError:
