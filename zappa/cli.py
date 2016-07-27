@@ -652,6 +652,7 @@ class ZappaCLI(object):
         for setting in CUSTOM_SETTINGS:
             if setting in self.zappa_settings[self.api_stage]:
                 setting_val = self.zappa_settings[self.api_stage][setting]
+                # Read the policy file contents.
                 if setting.endswith('policy'):
                     with open(setting_val, 'r') as f:
                         setting_val = f.read()

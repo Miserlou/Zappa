@@ -1074,6 +1074,7 @@ class Zappa(object):
 
         # Automatically load credentials from config or environment
         if not boto_session:
+
             # Set aws_region to None to use the system's region instead
             if self.aws_region is None:
                 self.aws_region = boto3.Session().region_name
