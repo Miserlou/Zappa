@@ -26,6 +26,8 @@ import botocore
 from zappa import Zappa, logger
 
 CUSTOM_SETTINGS = [
+    'assume_policy',
+    'attach_policy',
     'aws_region',
     'delete_zip',
     'exclude',
@@ -460,8 +462,11 @@ class ZappaCLI(object):
 
         for setting in CUSTOM_SETTINGS:
             if setting in self.zappa_settings[self.api_stage]:
-                setattr(self.zappa, setting, self.zappa_settings[
-                        self.api_stage][setting])
+                setting_val = self.zappa_settings[self.api_stage][setting]
+                if setting.endswith('policy'):
+                    with open(setting_val, 'r') as f:
+                        setting_val = f.read()
+                setattr(self.zappa, setting, setting_val)
 
         return self.zappa
 
