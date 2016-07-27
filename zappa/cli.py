@@ -26,6 +26,8 @@ import botocore
 from zappa import Zappa, logger
 
 CUSTOM_SETTINGS = [
+    'assume_policy',
+    'attach_policy',
     'aws_region',
     'delete_zip',
     'exclude',
@@ -349,13 +351,13 @@ class ZappaCLI(object):
         if self.zappa_settings[self.api_stage].get('events'):
             events = self.zappa_settings[self.api_stage]['events']
 
-            if type(events) != list:
+            if not isinstance(events, list): # pragma: no cover
                 print("Events must be supplied as a list.")
                 return
 
             try:
                 function_response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name)
-            except botocore.exceptions.ClientError as e:
+            except botocore.exceptions.ClientError as e: # pragma: no cover
                 print("Function does not exist, please deploy first. Ex: zappa deploy {}".format(self.api_stage))
                 return
 
@@ -376,7 +378,7 @@ class ZappaCLI(object):
         if self.zappa_settings[self.api_stage].get('events', None):
             events = self.zappa_settings[self.api_stage]['events']
 
-            if type(events) != type([]):
+            if not isinstance(events, list): # pragma: no cover
                 print("Events must be supplied as a list.")
                 return
 
@@ -482,8 +484,11 @@ class ZappaCLI(object):
 
         for setting in CUSTOM_SETTINGS:
             if setting in self.zappa_settings[self.api_stage]:
-                setattr(self.zappa, setting, self.zappa_settings[
-                        self.api_stage][setting])
+                setting_val = self.zappa_settings[self.api_stage][setting]
+                if setting.endswith('policy'):
+                    with open(setting_val, 'r') as f:
+                        setting_val = f.read()
+                setattr(self.zappa, setting, setting_val)
 
         return self.zappa
 
