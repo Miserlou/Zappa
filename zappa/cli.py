@@ -348,7 +348,7 @@ class ZappaCLI(object):
         if self.zappa_settings[self.api_stage].get('events'):
             events = self.zappa_settings[self.api_stage]['events']
 
-            if not isinstance(events, list)
+            if not isinstance(events, list): # pragma: no cover
                 print("Events must be supplied as a list.")
                 return
 
@@ -375,7 +375,7 @@ class ZappaCLI(object):
         if self.zappa_settings[self.api_stage].get('events', None):
             events = self.zappa_settings[self.api_stage]['events']
 
-            if not isinstance(events, list):
+            if not isinstance(events, list): # pragma: no cover
                 print("Events must be supplied as a list.")
                 return
 
