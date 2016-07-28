@@ -18,6 +18,7 @@ import zipfile
 from distutils.dir_util import copy_tree
 from lambda_packages import lambda_packages
 from tqdm import tqdm
+from helper import copytree
 
 logging.basicConfig(format='%(levelname)s:%(message)s')
 logger = logging.getLogger(__name__)
@@ -307,9 +308,9 @@ class Zappa(object):
 
         if minify:
             excludes = ZIP_EXCLUDES + exclude + [split_venv[-1]]
-            shutil.copytree(cwd, temp_project_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
+            copytree(cwd, temp_project_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
         else:
-            shutil.copytree(cwd, temp_project_path, symlinks=False)
+            copytree(cwd, temp_project_path, symlinks=False)
 
         # Then, do the site-packages..
         # TODO Windows: %VIRTUAL_ENV%\Lib\site-packages
@@ -317,18 +318,18 @@ class Zappa(object):
         site_packages = os.path.join(venv, 'lib', 'python2.7', 'site-packages')
         if minify:
             excludes = ZIP_EXCLUDES + exclude
-            shutil.copytree(site_packages, temp_package_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
+            copytree(site_packages, temp_package_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
         else:
-            shutil.copytree(site_packages, temp_package_path, symlinks=False)
+            copytree(site_packages, temp_package_path, symlinks=False)
 
         # We may have 64-bin specific packages too.
         site_packages_64 = os.path.join(venv, 'lib64', 'python2.7', 'site-packages')
         if os.path.exists(site_packages_64):
             if minify:
                 excludes = ZIP_EXCLUDES + exclude
-                shutil.copytree(site_packages_64, temp_package_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
+                copytree(site_packages_64, temp_package_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
             else:
-                shutil.copytree(site_packages_64, temp_package_path, symlinks=False)
+                copytree(site_packages_64, temp_package_path, symlinks=False)
 
         copy_tree(temp_package_path, temp_project_path, update=True)
 
