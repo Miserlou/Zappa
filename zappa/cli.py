@@ -413,15 +413,21 @@ class ZappaCLI(object):
         Describe the status of the current deployment.
         """
 
+        print("Status for %s:" % self.lambda_name)
+
+        lambda_versions = self.zappa.get_lambda_function_versions(self.lambda_name)
+        if not lambda_versions:
+            print("\tNo Lambda detected - have you deployed yet?")
+        else:
+            print('\tLambda Versions:\t\t' + str(len(lambda_versions)))
+
         api_url = self.zappa.get_api_url(
             self.lambda_name,
             self.api_stage)
+        print('\tAPI Gateway URL:\t' + str(api_url))
 
         domain_url = self.zappa_settings[self.api_stage].get('domain', None)
-
-        print("Status for %s:" % self.lambda_name)
-        print('\tAPI Gateway URL:\t' + str(api_url))
-        print('\tDomain URL:\t\t' + str(domain_url))
+        print('\tDomain URL:\t\t' + str(domain_url))        
 
     def print_version(self):
         """
@@ -433,6 +439,10 @@ class ZappaCLI(object):
     def init(self, settings_file="zappa_settings.json"):
         """
         Initialize a new Zappa project by creating a new zappa_settings.json in a guided process.
+
+        This should probably be broken up into few separate componants once it's stable.
+        Testing these raw_inputs requires monkeypatching with mock, which isn't pretty.
+
         """
 
         # Ensure that we don't already have a zappa_settings file.
@@ -571,7 +581,7 @@ class ZappaCLI(object):
         print("\t$ zappa update %s" % env)
 
         print("\nTo learn more, check out the Zappa project page on GitHub: https://github.com/Miserlou/Zappa")
-        print("or stop by our Slack channel: https://slackautoinviter.herokuapp.com/")
+        print("or stop by our Slack channel: http://bit.do/zappa")
         print("\nEnjoy!")
 
         return

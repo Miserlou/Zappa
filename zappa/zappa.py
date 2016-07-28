@@ -565,6 +565,17 @@ class Zappa(object):
 
         return response['FunctionArn']
 
+    def get_lambda_function_versions(self, function_name):
+        """
+        Simply returns the versions available for a Lambda function, given a function name.
+
+        """
+        try:
+            response = self.lambda_client.list_versions_by_function(FunctionName=function_name)
+            return response
+        except Exception as e:
+            return []
+
     def delete_lambda_function(self, function_name):
         """
         Given a function name, delete it from AWS Lambda.
@@ -738,22 +749,6 @@ class Zappa(object):
                 report_progress()
 
         return resource_id
-
-    @staticmethod
-    def selection_pattern(status_code):
-        """
-        Generate a regex to match a given status code in a response.
-        """
-
-        pattern = ''
-
-        if status_code in ['301', '302']:
-            pattern = 'https://.*|/.*'
-        elif status_code != '200':
-            pattern = base64.b64encode("<!DOCTYPE html>" + str(status_code)) + '.*'
-            pattern = pattern.replace('+', r"\+")
-
-        return pattern
 
     def deploy_api_gateway(self, api_id, stage_name, stage_description="", description="", cache_cluster_enabled=False, cache_cluster_size='0.5', variables=None):
         """
@@ -1105,6 +1100,23 @@ class Zappa(object):
 
         if self.boto_session.region_name not in API_GATEWAY_REGIONS:
             print("Warning! AWS API Gateway may not be available in this AWS Region!")
+
+
+    @staticmethod
+    def selection_pattern(status_code):
+        """
+        Generate a regex to match a given status code in a response.
+        """
+
+        pattern = ''
+
+        if status_code in ['301', '302']:
+            pattern = 'https://.*|/.*'
+        elif status_code != '200':
+            pattern = base64.b64encode("<!DOCTYPE html>" + str(status_code)) + '.*'
+            pattern = pattern.replace('+', r"\+")
+
+        return pattern
 
     def human_size(self, num, suffix='B'):
         for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
