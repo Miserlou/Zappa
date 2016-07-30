@@ -11,9 +11,9 @@ Deploy arbitrary Python programs as serverless Zappa applications.
 from __future__ import unicode_literals
 
 import argparse
+import base64
 import botocore
 import hjson as json
-import fnmatch
 import inspect
 import imp
 import logging
@@ -28,6 +28,7 @@ import tempfile
 import zipfile
 
 from zappa import Zappa, logger
+from util import detect_django_settings, detect_flask_apps
 
 CUSTOM_SETTINGS = [
     'assume_policy',
@@ -401,11 +402,25 @@ class ZappaCLI(object):
 
         return
 
-    def invoke(self):
+    def invoke(self, function_name):
         """
         Invoke a remote function.
         """
-        message = "This ability is not yet available."
+
+        # Invoke it!
+        command = {"command": ' '.join(options['environment'][1:])}        
+
+        response = self.zappa.invoke_lambda_function(
+            self.lambda_name, 
+            json.dumps(command), 
+            invocation_type='RequestResponse'
+        )
+
+        if 'LogResult' in response:
+            print(base64.b64decode(response['LogResult']))
+        else:
+            print(response)
+
         print(message)
 
     def status(self):
@@ -505,25 +520,6 @@ class ZappaCLI(object):
             print("What is the modular path to your projects's Django settings?")
             django_settings = None
 
-            def detect_django_settings():
-                """
-                Automatically try to discover Django settings files,
-                return them as relative module paths.
-                """
-
-                matches = []
-                for root, dirnames, filenames in os.walk(os.getcwd()):
-                    for filename in fnmatch.filter(filenames, '*settings.py'):
-                        full = os.path.join(root, filename)
-                        if 'site-packages' in full:
-                            continue
-                        full = os.path.join(root, filename)
-                        package_path = full.replace(os.getcwd(), '')
-                        package_module = package_path.replace(os.sep, '.').split('.', 1)[1].replace('.py', '')
-
-                        matches.append(package_module)
-                return matches
-
             matches = detect_django_settings()
             while django_settings in [None, '']:
                 if matches:
@@ -535,13 +531,19 @@ class ZappaCLI(object):
             django_settings = django_settings.replace("'", "")
             django_settings = django_settings.replace('"', "")
         else:
+            matches = None
             if has_flask:
                 print("It looks like this is a Flask application.")
-            print("What's the modular path to your app's main function?")
+                matches = detect_flask_apps()
+            print("What's the modular path to your app's function?")
             print("This will likely be something like 'your_module.app'.")
             app_function = None
             while app_function in [None, '']:
-                app_function = raw_input("Where is your app's function?: ")
+                if matches:
+                    print("We discovered: " + ', '.join('{}'.format(i) for v, i in enumerate(matches)))
+                    app_function = raw_input("Where is your app's function? (default '%s'): " % matches[0]) or matches[0]      
+                else:              
+                    app_function = raw_input("Where is your app's function?: ")
             app_function = app_function.replace("'", "")
             app_function = app_function.replace('"', "")
 

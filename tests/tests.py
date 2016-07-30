@@ -16,7 +16,7 @@ from zappa.cli import ZappaCLI
 from zappa.handler import LambdaHandler, lambda_handler
 from zappa.wsgi import create_wsgi_request, common_log
 from zappa.zappa import Zappa, ASSUME_POLICY, ATTACH_POLICY
-
+from zappa.util import detect_django_settings, copytree, detect_flask_apps
 
 def random_string(length):
     return ''.join(random.choice(string.printable) for _ in range(length))
@@ -453,6 +453,12 @@ class TestZappa(unittest.TestCase):
         zappa = Zappa()
         zappa.human_size(1)
         zappa.human_size(9999999999999)
+
+    def test_detect_dj(self):
+        settings_modules = detect_django_settings()
+
+    def test_detect_flask(self):
+        settings_modules = detect_flask_apps()
 
 if __name__ == '__main__':
     unittest.main()

@@ -18,7 +18,9 @@ import zipfile
 from distutils.dir_util import copy_tree
 from lambda_packages import lambda_packages
 from tqdm import tqdm
-from helper import copytree
+
+# Zappa imports
+from util import copytree
 
 logging.basicConfig(format='%(levelname)s:%(message)s')
 logger = logging.getLogger(__name__)
