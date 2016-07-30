@@ -162,7 +162,13 @@ class ZappaCLI(object):
                 return
             self.rollback(vargs['num_rollback'])
         elif command == 'invoke': # pragma: no cover
-            self.invoke()
+
+            if len(command_env) < 2:
+                parser.error("Please enter the function to invoke.")
+                return
+
+            self.invoke(command_env[-1])
+
         elif command == 'tail': # pragma: no cover
             self.tail()
         elif command == 'undeploy': # pragma: no cover
@@ -408,7 +414,10 @@ class ZappaCLI(object):
         """
 
         # Invoke it!
-        command = {"command": ' '.join(options['environment'][1:])}        
+        command = {"command": function_name}
+
+        # Can't use hjson
+        import json as json
 
         response = self.zappa.invoke_lambda_function(
             self.lambda_name, 
@@ -420,8 +429,6 @@ class ZappaCLI(object):
             print(base64.b64decode(response['LogResult']))
         else:
             print(response)
-
-        print(message)
 
     def status(self):
         """

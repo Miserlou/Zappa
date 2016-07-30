@@ -131,7 +131,19 @@ class LambdaHandler(object):
             app_function()
             return
 
-        # XXX TODO: Handle 'invoke' and 'command'
+        # This is a direct command invocation.
+        elif event.get('command', None):
+
+            # This is non-Django specific.
+            whole_function = event['command']
+            module, function = whole_function.rsplit('.', 1)
+            app_module = importlib.import_module(module)
+            app_function = getattr(app_module, function)
+            result = app_function()
+            print("Result of %s:" % whole_function)
+            print(result)
+
+        # XXX TODO: Handle django 'command'
 
         try:
             # Timing
