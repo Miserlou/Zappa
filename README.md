@@ -82,7 +82,7 @@ Once your settings are configured, you can package and deploy your application t
 
 And now your app is **live!** How cool is that?!
 
-To explain what's going on, when you call 'deploy', Zappa will automatically package up your application and local virtual environment into a Lambda-compatible archive, replace any dependencies with versions [precompiled for Lambda](https://github.com/Miserlou/lambda-packages), set up the function handler and necessary WSGI Middleware, upload the archive to S3, register it as a new Lambda function, create a new API Gateway resource, create WSGI-compatible routes for it, link it to the new Lambda function, and finally delete the archive from your S3 bucket. Handy!
+To explain what's going on, when you call `deploy`, Zappa will automatically package up your application and local virtual environment into a Lambda-compatible archive, replace any dependencies with versions [precompiled for Lambda](https://github.com/Miserlou/lambda-packages), set up the function handler and necessary WSGI Middleware, upload the archive to S3, register it as a new Lambda function, create a new API Gateway resource, create WSGI-compatible routes for it, link it to the new Lambda function, and finally delete the archive from your S3 bucket. Handy!
 
 #### Updates
 
@@ -147,11 +147,11 @@ You can watch the logs of a deployment by calling the `tail` management command.
 
 You can execute any function in your application directly at any time by using the `invoke` command.
 
-For instance, suppose you have a basic application called in a file called "my_app.py", and you want to invoke a function in it called "my_function". Once your application is deployed, you can invoke that function at any time:
+For instance, suppose you have a basic application in a file called "my_app.py", and you want to invoke a function in it called "my_function". Once your application is deployed, you can invoke that function at any time by calling:
 
     $ zappa invoke production 'my_app.my_function'
 
-Any remote print statements made and the value the function returned will then be printed to your local console. Nifty!
+Any remote print statements made and the value the function returned will then be printed to your local console. **Nifty!**
 
 ## Advanced Usage
 
