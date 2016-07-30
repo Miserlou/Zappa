@@ -417,7 +417,19 @@ class Zappa(object):
         # Will likely fail, but that's apparently the best way to check
         # it exists, since boto3 doesn't expose a better check.
         try:
-            self.s3.create_bucket(Bucket=bucket_name, CreateBucketConfiguration={"LocationConstraint": self.aws_region})
+
+            # This is really stupid S3 quirk. Technically, us-east-1 one has no S3,
+            # it's actually "US Standard", or something.
+            # More here: https://github.com/boto/boto3/issues/125
+            if self.aws_region == 'us-east-1':
+                self.s3.create_bucket(
+                    Bucket=bucket_name,
+                )
+            else:
+                self.s3.create_bucket(
+                    Bucket=bucket_name,
+                    CreateBucketConfiguration={'LocationConstraint': self.aws_region},
+                )
         except botocore.exceptions.ClientError as e: # pragma: no cover
             pass
 
