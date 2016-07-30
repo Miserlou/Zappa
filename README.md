@@ -178,7 +178,7 @@ to change Zappa's behavior. Use these at your own risk!
             "function": "your_module.your_function", // The function to execute
             "expression": "rate(1 minute)" // When to execute it (in cron or rate format)
         }],
-        "exclude": ["*.gz", "*.pem"], // A list of regex patterns to exclude from the archive
+        "exclude": ["*.gz", "*.rar"], // A list of regex patterns to exclude from the archive
         "http_methods": ["GET", "POST"], // HTTP Methods to route,
         "integration_response_codes": [200, 301, 404, 500], // Integration response status codes to route
         "keep_warm": true, // Create CloudWatch events to keep the server warm.

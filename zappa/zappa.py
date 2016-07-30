@@ -177,7 +177,7 @@ REDIRECT_RESPONSE_TEMPLATE = ""
 API_GATEWAY_REGIONS = ['us-east-1', 'us-west-2', 'eu-west-1', 'eu-central-1', 'ap-northeast-1', 'ap-southeast-2']
 LAMBDA_REGIONS = ['us-east-1', 'us-west-2', 'eu-west-1', 'eu-central-1', 'ap-northeast-1', 'ap-southeast-2']
 
-ZIP_EXCLUDES =  ['*.exe', '*.DS_Store', '*.Python', '*.git', '.git/*', '*.zip', '*.tar.gz', '*.hg', '*.egg-info', 'botocore*', 'pip*', 'docutils*', 'boto3*', 'setuputils*', '*.dist-info', 'cacert.pem']
+ZIP_EXCLUDES =  ['*.exe', '*.DS_Store', '*.Python', '*.git', '.git/*', '*.zip', '*.tar.gz', '*.hg', '*.egg-info', 'botocore*', 'pip*', 'docutils*', 'boto3*', 'setuputils*', '*.dist-info']
 
 ##
 # Classes
