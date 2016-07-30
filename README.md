@@ -96,7 +96,7 @@ This creates a new archive, uploads it to S3 and updates the Lambda function to 
 
 #### Rollback
 
-You can also rollback the deployed code to a previous version by supplying the number of revisions to return to. For instance, to rollback to the version deployed 3 versions ago:
+You can also `rollback` the deployed code to a previous version by supplying the number of revisions to return to. For instance, to rollback to the version deployed 3 versions ago:
 
     $ zappa rollback production -n 3
 
@@ -123,7 +123,7 @@ And then:
 
 And now your function will execute every minute!
 
-If you want to cancel these, you can simply use the 'unschedule' command:
+If you want to cancel these, you can simply use the `unschedule` command:
 
     $ zappa unschedule production
 
@@ -139,9 +139,19 @@ You will be asked for confirmation before it executes.
 
 #### Tailing Logs
 
-You can watch the logs of a deployment by calling the "tail" management command.
+You can watch the logs of a deployment by calling the `tail` management command.
 
     $ zappa tail production
+
+#### Remote Function Invocation
+
+You can execute any function in your application directly at any time by using the `invoke` command.
+
+For instance, suppose you have a basic application called in a file called "my_app.py", and you want to invoke a function in it called "my_function". Once your application is deployed, you can invoke that function at any time:
+
+    $ zappa invoke production 'my_app.my_function'
+
+Any remote print statements made and the value the function returned will then be printed to your local console. Nifty!
 
 ## Advanced Usage
 
