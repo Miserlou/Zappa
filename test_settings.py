@@ -17,3 +17,6 @@ REMOTE_ENV_FILE='test_env.json'
 
 def prebuild_me():
     print("This is a prebuild script!")
+
+def callback(self):
+    print("this is a callback")

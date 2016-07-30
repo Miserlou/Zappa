@@ -164,6 +164,11 @@ to change Zappa's behavior. Use these at your own risk!
         "assume_policy": "my_assume_policy.json", // optional, IAM assume policy JSON file
         "attach_policy": "my_attach_policy.json", // optional, IAM attach policy JSON file
         "aws_region": "us-east-1", // AWS Region (default US East),
+        "callbacks": { // Call custom functions during the Zappa deployment/update process
+            "settings": "my_app.settings_callback", // After loading the settings
+            "zip": "my_app.zip_callback", // After creating the package
+            "post": "my_app.post_callback", // After command has excuted
+        },
         "cache_cluster_enabled": false, // Use APIGW cache cluster (default False)
         "cache_cluster_size": .5, // APIGW Cache Cluster size (default 0.5)
         "debug": true // Print Zappa configuration errors tracebacks in the 500

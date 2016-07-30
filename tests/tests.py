@@ -455,9 +455,11 @@ class TestZappa(unittest.TestCase):
         zappa.human_size(9999999999999)
 
     def test_detect_dj(self):
+        # Sanity
         settings_modules = detect_django_settings()
 
     def test_detect_flask(self):
+        # Sanity
         settings_modules = detect_flask_apps()
 
 if __name__ == '__main__':

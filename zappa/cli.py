@@ -16,6 +16,7 @@ import botocore
 import hjson as json
 import inspect
 import imp
+import importlib
 import logging
 import os
 import pkg_resources
@@ -148,6 +149,8 @@ class ZappaCLI(object):
 
             # Load our settings
             self.load_settings(vargs['settings_file'])
+            self.callback('settings')
+
             if vargs['app_function'] is not None:
                 self.app_function = vargs['app_function']
 
@@ -202,6 +205,7 @@ class ZappaCLI(object):
 
         # Create the Lambda Zip
         self.create_package()
+        self.callback('zip')
 
         # Upload it to S3
         success = self.zappa.upload_to_s3(
@@ -250,6 +254,8 @@ class ZappaCLI(object):
         # Remove the uploaded zip from S3, because it is now registered..
         self.zappa.remove_from_s3(self.zip_path, self.s3_bucket_name)
 
+        self.callback('post')
+
         print("Deployed! {}".format(endpoint_url))
 
 
@@ -267,6 +273,7 @@ class ZappaCLI(object):
 
         # Create the Lambda Zip,
         self.create_package()
+        self.callback('zip')
 
         # Upload it to S3
         success = self.zappa.upload_to_s3(self.zip_path, self.s3_bucket_name)
@@ -294,6 +301,8 @@ class ZappaCLI(object):
             endpoint_url = self.zappa_settings[self.api_stage].get('domain')
         else:
             endpoint_url = self.zappa.get_api_url(self.lambda_name, self.api_stage)
+
+        self.callback('post')
 
         print("Your updated Zappa deployment is live! {}".format(endpoint_url))
 
@@ -599,6 +608,21 @@ class ZappaCLI(object):
     # Utility
     ##
 
+    def callback(self, position):
+        """
+        Allows the execution of custom code between creation of the zip file and deployment to AWS.
+
+        :return: None
+        """
+        callbacks = self.zappa_settings[self.api_stage].get('callbacks', {})
+        callback = callbacks.get(position)
+
+        if callback:
+            (mod_name, cb_func) = callback.rsplit('.', 1)
+
+            module_ = importlib.import_module(mod_name)
+            getattr(module_, cb_func)(self)  # Call the function passing self
+
     def load_settings(self, settings_file="zappa_settings.json", session=None):
         """
         Load the local zappa_settings.json file.
@@ -766,7 +790,6 @@ class ZappaCLI(object):
                 temp_settings.close()
                 lambda_zip.write(temp_settings.name, 'zappa_settings.py')
                 os.remove(temp_settings.name)
-                # lambda_zip.close()
 
     def remove_local_zip(self):
         """
