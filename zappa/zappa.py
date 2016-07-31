@@ -688,6 +688,7 @@ class Zappa(object):
             method.ApiKeyRequired = api_key_required
             method.MethodResponses = []
             self.cf_template.add_resource(method)
+            self.cf_api_resources.append(method.title)
 
             template_mapping = TEMPLATE_MAPPING
             post_template_mapping = POST_TEMPLATE_MAPPING
