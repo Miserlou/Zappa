@@ -870,6 +870,8 @@ class Zappa(object):
         except:
             pass
 
+        self.remove_from_s3(template, working_bucket)
+
     def stack_outputs(self, name):
         try:
             stack = self.cf_client.describe_stacks(StackName=name)['Stacks'][0]
