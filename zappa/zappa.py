@@ -315,9 +315,11 @@ class Zappa(object):
             copytree(cwd, temp_project_path, symlinks=False)
 
         # Then, do the site-packages..
-        # TODO Windows: %VIRTUAL_ENV%\Lib\site-packages
         temp_package_path = os.path.join(tempfile.gettempdir(), str(int(time.time() + 1)))
-        site_packages = os.path.join(venv, 'lib', 'python2.7', 'site-packages')
+        if os.sys.platform == 'win32':
+            site_packages = os.path.join(venv, 'Lib', 'site-packages')
+        else:
+            site_packages = os.path.join(venv, 'lib', 'python2.7', 'site-packages')
         if minify:
             excludes = ZIP_EXCLUDES + exclude
             copytree(site_packages, temp_package_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
