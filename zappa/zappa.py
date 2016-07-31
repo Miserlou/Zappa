@@ -853,7 +853,7 @@ class Zappa(object):
                                         Capabilities=capabilities,
                                         TemplateURL=url,
                                         Tags=tags)
-            print('Waiting for stack {0} to finish creating...'.format(name))
+            print('Waiting for stack {0} to create (this can take a bit)...'.format(name))
         else:
             self.cf_client.update_stack(StackName=name,
                                         Capabilities=capabilities,
