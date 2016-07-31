@@ -271,7 +271,6 @@ class ZappaCLI(object):
             self.zappa.update_stack(self.lambda_name, self.s3_bucket_name, wait=True)
 
         endpoint_url = self.zappa.stack_outputs(self.lambda_name).get('Endpoint', '')
-        print('Endpoint: ', endpoint_url)
 
         if self.zappa_settings[self.api_stage].get('touch', True):
             requests.get(endpoint_url)
