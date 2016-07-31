@@ -830,7 +830,7 @@ class Zappa(object):
 
         template = name + '-template-' + str(int(time.time())) + '.json'
         with open(template, 'w') as out:
-            out.write(self.cf_template.to_json())
+            out.write(self.cf_template.to_json(indent=None, separators=(',',':')))
 
         self.upload_to_s3(template, working_bucket)
 
@@ -838,32 +838,37 @@ class Zappa(object):
 
         tags = [{'Key':'ZappaProject','Value':name}]
 
+        update = False
+        waiter = 'stack_create_complete'
+
         try:
             stack = self.cf_client.describe_stacks(StackName=name)['Stacks'][0]
-
-            self.cf_client.update_stack(StackName=name,
-                                        Capabilities=capabilities,
-                                        TemplateURL=url,
-                                        Tags=tags)
-            if wait:
-                print('Waiting for stack {0} to update...'.format(name))
-                waiter = self.cf_client.get_waiter('stack_update_complete')
-                waiter.wait(StackName=name)
-
+            waiter = 'stack_update_complete'
         except botocore.client.ClientError:
+            update = True
+
+        if update:
             self.cf_client.create_stack(StackName=name,
                                         Capabilities=capabilities,
                                         TemplateURL=url,
                                         Tags=tags)
+            print('Waiting for stack {0} to finish creating...'.format(name))
+        else:
+            self.cf_client.update_stack(StackName=name,
+                                        Capabilities=capabilities,
+                                        TemplateURL=url,
+                                        Tags=tags)
+            print('Waiting for stack {0} to update...'.format(name))
 
-            if wait:
-                print('Waiting for stack {0} to finish creating...'.format(name))
-                waiter = self.cf_client.get_waiter('stack_create_complete')
-                waiter.wait(StackName=name)
-                # TODO cleanup if it fails!
+        if wait:
+            polling = self.cf_client.get_waiter(waiter)
+            polling.wait(StackName=name)
+            # TODO cleanup if it fails!
 
-        finally:
+        try:
             os.remove(template)
+        except:
+            pass
 
     def stack_outputs(self, name):
         try:
