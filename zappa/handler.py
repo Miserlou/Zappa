@@ -23,7 +23,7 @@ except ImportError as e: # pragma: no cover
 # Set up logging
 logging.basicConfig()
 logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 ERROR_CODES = [400, 401, 403, 404, 500]
 
@@ -98,10 +98,11 @@ class LambdaHandler(object):
 
         # add each key-value to environment - overwrites existing keys!
         for key, value in settings_dict.items():
-            print('Adding {} -> {} to environment'.format(
-                key,
-                value
-            ))
+            if self.settings.LOG_LEVEL == "DEBUG":
+                print('Adding {} -> {} to environment'.format(
+                    key,
+                    value
+                ))
             os.environ[key] = value
 
     @classmethod
@@ -109,18 +110,18 @@ class LambdaHandler(object):
         return cls().handler(event, context)
 
     def handler(self, event, context):
-        """ 
+        """
         An AWS Lambda function which parses specific API Gateway input into a
         WSGI request, feeds it to our WSGI app, procceses the response, and returns
         that back to the API Gateway.
-        
+
         """
 
         # TODO If this is invoked from a non-APIGW/Scheduled event source,
         # extract the method and process separately.
 
         if event.get('detail-type') == u'Scheduled Event':
-            
+
             whole_function = event['resources'][0].split('/')[-1]
             module, function = whole_function.rsplit('.', 1)
 
@@ -174,7 +175,7 @@ class LambdaHandler(object):
                 # Get the Django WSGI app from our extension
                 app_function = get_django_wsgi(settings.DJANGO_SETTINGS)
                 trailing_slash = True
-                
+
             app = ZappaWSGIMiddleware(app_function)
 
             # This is a normal HTTP request
@@ -197,7 +198,7 @@ class LambdaHandler(object):
                     script_name = '/' + settings.API_STAGE
 
                 # Create the environment for WSGI and handle the request
-                environ = create_wsgi_request(event, 
+                environ = create_wsgi_request(event,
                                                 script_name=script_name,
                                                 trailing_slash=trailing_slash
                                             )
@@ -257,7 +258,7 @@ class LambdaHandler(object):
 
             # Print statements are visible in the logs either way
             print(e)
-            
+
             # If we didn't even build an app_module, just raise
             if not settings.DJANGO_SETTINGS:
                 try:
