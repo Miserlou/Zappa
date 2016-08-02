@@ -234,9 +234,23 @@ class Zappa(object):
 
     def __init__(self, boto_session=None, profile_name=None, aws_region=aws_region):
         self.aws_region = aws_region
+
+        # Some common invokations, such as DB migrations,
+        # can take longer than the default.
+
+        # Note that this is set to 300s, but if connected to
+        # APIGW, Lambda will max out at 30s.
+        # Related: https://github.com/Miserlou/Zappa/issues/205
+        long_config_dict = {
+            'region_name': aws_region, 
+            'connect_timeout': 5, 
+            'read_timeout': 300
+        }
+        long_config = botocore.client.Config(**long_config_dict)
+
         self.load_credentials(boto_session, profile_name)
         self.s3_client = self.boto_session.client('s3')
-        self.lambda_client = self.boto_session.client('lambda')
+        self.lambda_client = self.boto_session.client('lambda', config=long_config)
         self.events_client = self.boto_session.client('events')
         self.apigateway_client = self.boto_session.client('apigateway')
         self.logs_client = self.boto_session.client('logs')
@@ -315,11 +329,9 @@ class Zappa(object):
             copytree(cwd, temp_project_path, symlinks=False)
 
         # Then, do the site-packages..
+        # TODO Windows: %VIRTUAL_ENV%\Lib\site-packages
         temp_package_path = os.path.join(tempfile.gettempdir(), str(int(time.time() + 1)))
-        if os.sys.platform == 'win32':
-            site_packages = os.path.join(venv, 'Lib', 'site-packages')
-        else:
-            site_packages = os.path.join(venv, 'lib', 'python2.7', 'site-packages')
+        site_packages = os.path.join(venv, 'lib', 'python2.7', 'site-packages')
         if minify:
             excludes = ZIP_EXCLUDES + exclude
             copytree(site_packages, temp_package_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
