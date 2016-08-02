@@ -15,12 +15,13 @@ import tempfile
 import time
 import zipfile
 
+import kappa
 from distutils.dir_util import copy_tree
 from lambda_packages import lambda_packages
 from tqdm import tqdm
 
 # Zappa imports
-from util import copytree
+from util import copytree, add_event_source
 
 logging.basicConfig(format='%(levelname)s:%(message)s')
 logger = logging.getLogger(__name__)
@@ -898,7 +899,8 @@ class Zappa(object):
         """
         for event in events:
             function = event['function']
-            expression = event['expression']
+            expression = event.get('expression', None)
+            event_source = event.get('event_source', None)
             name = event.get('name', function)
             description = event.get('description', function)
 
@@ -910,7 +912,7 @@ class Zappa(object):
             if not self.credentials_arn:
                 self.credentials_arn = self.create_iam_roles()
 
-            if 'cron' in expression or 'rate' in expression:
+            if expression:
                 rule_response = self.events_client.put_rule(
                     Name=name,
                     ScheduleExpression=expression,
@@ -918,47 +920,50 @@ class Zappa(object):
                     Description=description,
                     RoleArn=self.credentials_arn
                 )
-            else:
-                rule_response = self.events_client.put_rule(
-                    Name=name,
-                    EventPattern=expression,
-                    State='ENABLED',
-                    Description=description,
-                    RoleArn=self.credentials_arn
+
+                if 'RuleArn' in rule_response:
+                    logger.debug('Rule created. ARN {}'.format(rule_response['RuleArn']))
+
+                logger.debug('Adding new permission to invoke Lambda function: {}'.format(lambda_name))
+                permission_response = self.lambda_client.add_permission(
+                    FunctionName=lambda_name,
+                    StatementId=''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8)),
+                    Action='lambda:InvokeFunction',
+                    Principal='events.amazonaws.com',
+                    SourceArn=rule_response['RuleArn'],
                 )
 
-            if 'RuleArn' in rule_response:
-                logger.debug('Rule created. ARN {}'.format(rule_response['RuleArn']))
+                if permission_response['ResponseMetadata']['HTTPStatusCode'] != 201:
+                    print('Problem creating permission to invoke Lambda function')
+                    return
 
-            logger.debug('Adding new permission to invoke Lambda function: {}'.format(lambda_name))
-            permission_response = self.lambda_client.add_permission(
-                FunctionName=lambda_name,
-                StatementId=''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8)),
-                Action='lambda:InvokeFunction',
-                Principal='events.amazonaws.com',
-                SourceArn=rule_response['RuleArn'],
-            )
+                # Create the CloudWatch event ARN for this function.
+                target_response = self.events_client.put_targets(
+                    Rule=name,
+                    Targets=[
+                        {
+                            'Id': 'Id' + ''.join(random.choice(string.digits) for _ in range(12)),
+                            'Arn': lambda_arn,
+                        }
+                    ]
+                )
+                
+                if target_response['ResponseMetadata']['HTTPStatusCode'] == 200:
+                    print("Scheduled {}!".format(name))
+                else:
+                    print("Problem scheduling {}.".format(name))
 
-            if permission_response['ResponseMetadata']['HTTPStatusCode'] != 201:
-                print('Problem creating permission to invoke Lambda function')
-                return
-
-            # Create the CloudWatch event ARN for this function.
-            target_response = self.events_client.put_targets(
-                Rule=name,
-                Targets=[
-                    {
-                        'Id': 'Id' + ''.join(random.choice(string.digits) for _ in range(12)),
-                        'Arn': lambda_arn,
-                    }
-                ]
-            )
-
-            if target_response['ResponseMetadata']['HTTPStatusCode'] == 200:
-                print("Scheduled {} at {}.".format(name, expression))
             else:
-                print("Problem scheduling {} at {}.".format(name, expression))
 
+                rule_response = add_event_source(  
+                                                    event_source,
+                                                    lambda_arn,
+                                                    function, 
+                                                    self.boto_session
+                                                )
+                #if rule_response: # Kappa doesn't give us this yet.
+                svc = ','.join(event['event_source']['events'])
+                print("Created %s event schedule for %s!" % (svc, function))
 
     def delete_rule(self, rule_name):
         """

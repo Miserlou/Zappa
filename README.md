@@ -106,7 +106,7 @@ Zappa can be used to easily schedule functions to occur on regular intervals. Ju
 
 ```javascript
 {
-    "dev": {
+    "production": {
        ...
        "events": [{
            "function": "your_module.your_function", // The function to execute
@@ -128,6 +128,36 @@ If you want to cancel these, you can simply use the `unschedule` command:
     $ zappa unschedule production
 
 And now your scheduled event rules are deleted.
+
+#### Executing in Response to AWS Events
+
+Similarly, you can have your functions execute in response to events that happen in the AWS ecosystem, such as S3 uploads, DynamoDB entries, Kinesis streams, and SNS messages.
+
+In your *zappa_settings.json* file, define your [event sources](http://docs.aws.amazon.com/lambda/latest/dg/invoking-lambda-function.html) and the function you wish to execute. For instance, this will execute `your_module.your_function` in response to new objects in your `my-bucket` S3 bucket. Note that `your_function` must accept `event` and `context` paramaters.
+
+```javascript
+{
+    "production": {
+       ...
+       "events": [{
+            "function": "your_module.your_function",
+            "event_source": {
+                  "arn":  "arn:aws:s3:::my-bucket",
+                  "events": [
+                    "s3:ObjectCreated:*"
+                  ]
+               }
+            }],
+       ...
+    }
+}
+```
+
+And then:
+
+    $ zappa schedule production
+
+And now your function will execute every time a new upload appears in your bucket!
 
 #### Undeploy
 

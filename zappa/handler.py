@@ -105,6 +105,17 @@ class LambdaHandler(object):
                 ))
             os.environ[key] = value
 
+    def import_module_and_get_function(whole_function):
+        """
+        Given a modular path to a function, import that module
+        and return the function.
+        """
+
+        module, function = whole_function.rsplit('.', 1)
+        app_module = importlib.import_module(module)
+        app_function = getattr(app_module, function)
+        return app_function
+
     @classmethod
     def lambda_handler(cls, event, context): # pragma: no cover
         return cls().handler(event, context)
@@ -116,16 +127,23 @@ class LambdaHandler(object):
         that back to the API Gateway.
 
         """
+        settings = self.settings
+
+        # If in DEBUG mode, log all raw incoming events.
+        if settings.DEBUG:
+            logger.debug('Zappa Event: {}'.format(event))
+
+        # Custom log level
+        if settings.LOG_LEVEL:
+            level = logging.getLevelName(settings.LOG_LEVEL)
+            logger.setLevel(level)
 
         # This is the result of a keep alive
         # or scheduled event.
         if event.get('detail-type') == u'Scheduled Event':
 
             whole_function = event['resources'][0].split('/')[-1]
-            module, function = whole_function.rsplit('.', 1)
-
-            app_module = importlib.import_module(module)
-            app_function = getattr(app_module, function)
+            app_function = import_module_and_get_function(whole_function)
 
             # Execute the function!
             app_function()
@@ -135,13 +153,12 @@ class LambdaHandler(object):
         elif event.get('command', None):
 
             whole_function = event['command']
-            module, function = whole_function.rsplit('.', 1)
-            app_module = importlib.import_module(module)
-            app_function = getattr(app_module, function)
+            app_function = import_module_and_get_function(whole_function)
             result = app_function()
             print("Result of %s:" % whole_function)
+            print(result)
 
-            return
+            return result
 
         # This is a Django management command invocation.
         elif event.get('manage', None):
@@ -163,20 +180,26 @@ class LambdaHandler(object):
             management.call_command(*event['manage'].split(' '))
             return {}
 
+        # This is an AWS-event triggered invokation.
+        elif event.get('Records', None):
+
+            records = event.get('Records')
+            event_types = ['dynamodb', 'kinesis', 's3', 'sns', 'events']
+
+            for record in records:
+                for event_type in event_types:
+                    if record.has_key(event_type):
+
+                        whole_function = record[event_type]['configurationId']
+                        app_function = import_module_and_get_function(whole_function)
+                        result = app_function(event, context)
+                        print(result)
+
+            return result
+
         try:
             # Timing
             time_start = datetime.datetime.now()
-
-            settings = self.settings
-
-            # If in DEBUG mode, log all raw incoming events.
-            if settings.DEBUG:
-                logger.debug('Zappa Event: {}'.format(event))
-
-            # Custom log level
-            if settings.LOG_LEVEL:
-                level = logging.getLevelName(settings.LOG_LEVEL)
-                logger.setLevel(level)
 
             # Django gets special treatment.
             if not settings.DJANGO_SETTINGS:
@@ -295,7 +318,6 @@ class LambdaHandler(object):
                 raise Exception(exception)
             else:
                 raise e
-
 
 def lambda_handler(event, context): # pragma: no cover
 

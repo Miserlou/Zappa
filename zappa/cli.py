@@ -408,7 +408,8 @@ class ZappaCLI(object):
             self.zappa.schedule_events(
                 lambda_arn=function_response['Configuration']['FunctionArn'],
                 lambda_name=function_response['Configuration']['FunctionName'],
-                events=events)
+                events=events
+                )
 
 
     def unschedule(self):
