@@ -3,7 +3,7 @@ boto3==1.3.1
 botocore==1.4.41
 docutils==0.12
 futures==3.0.5
-hjson==1.5.8
+hjson==2.0.0
 jmespath==0.9.0
 lambda-packages==0.7.0
 python-dateutil==2.5.3
