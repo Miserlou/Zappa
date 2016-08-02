@@ -110,16 +110,16 @@ class TestZappa(unittest.TestCase):
         z.credentials_arn = 'arn:aws:iam::12345:role/ZappaLambdaExecution'
 
         arn = z.create_lambda_function(
-            bucket=bucket_name, 
-            s3_key=zip_path, 
-            function_name='test_lmbda_function55', 
+            bucket=bucket_name,
+            s3_key=zip_path,
+            function_name='test_lmbda_function55',
             handler='runme.lambda_handler'
         )
 
         arn = z.update_lambda_function(
-            bucket=bucket_name, 
-            s3_key=zip_path, 
-            function_name='test_lmbda_function55', 
+            bucket=bucket_name,
+            s3_key=zip_path,
+            function_name='test_lmbda_function55',
         )
 
     @placebo_session
@@ -368,15 +368,15 @@ class TestZappa(unittest.TestCase):
         lh.handler(event, None)
 
         # Test scheduled event
-        event = {   
-                    u'account': u'72333333333', 
-                    u'region': u'us-east-1', 
-                    u'detail': {}, 
-                    u'detail-type': u'Scheduled Event', 
-                    u'source': u'aws.events', 
-                    u'version': u'0', 
-                    u'time': u'2016-05-10T21:05:39Z', 
-                    u'id': u'0d6a6db0-d5e7-4755-93a0-750a8bf49d55', 
+        event = {
+                    u'account': u'72333333333',
+                    u'region': u'us-east-1',
+                    u'detail': {},
+                    u'detail-type': u'Scheduled Event',
+                    u'source': u'aws.events',
+                    u'version': u'0',
+                    u'time': u'2016-05-10T21:05:39Z',
+                    u'id': u'0d6a6db0-d5e7-4755-93a0-750a8bf49d55',
                     u'resources': [u'arn:aws:events:us-east-1:72333333333:rule/tests.test_app.schedule_me']
                 }
         lh.handler(event, None)
@@ -408,7 +408,7 @@ class TestZappa(unittest.TestCase):
                 'timestamp': '12345',
                 'message': '[END RequestId] test'
             },
-            { 
+            {
                 'timestamp': '12345',
                 'message': 'test'
             }
@@ -425,6 +425,7 @@ class TestZappa(unittest.TestCase):
     def test_cli_aws(self, session):
         zappa_cli = ZappaCLI()
         zappa_cli.api_stage = 'ttt888'
+        zappa_cli.api_key_required = True
         zappa_cli.load_settings('test_settings.json', session)
         zappa_cli.zappa.credentials_arn = 'arn:aws:iam::724336686645:role/ZappaLambdaExecution'
         zappa_cli.deploy()
