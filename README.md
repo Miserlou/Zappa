@@ -257,7 +257,7 @@ Zappa will automatically set up a regularly occuring execution of your applicati
 
 To enable Cross-Origin Resource Sharing (CORS) for your application, follow the [AWS "How to CORS" Guide](https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-cors.html) to enable CORS via the API Gateway Console. Don't forget to enable CORS per parameter and re-deploy your API after making the changes!
 
-### Enabling Secure Endpoints on API Gateway
+#### Enabling Secure Endpoints on API Gateway
 
 You can use the `api_key_required` setting to generate and assign an API key to all the routes of your API Gateway. After redeployment, you can then pass the provided key as a header called `x-api-key` to access the restricted endpoints. Without the `x-api-key` header, you will receive a 403. [More information on api keys in the API Gateway](http://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-api-keys.html) 
 
