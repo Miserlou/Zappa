@@ -155,6 +155,8 @@ class ZappaCLI(object):
             if vargs['app_function'] is not None:
                 self.app_function = vargs['app_function']
 
+            self.api_key_required = self.zappa_settings[self.api_stage].get('api_key_required', False)
+
         # Hand it off
         if command == 'deploy': # pragma: no cover
             self.deploy()
@@ -245,7 +247,7 @@ class ZappaCLI(object):
         if self.use_apigateway:
             # Create and configure the API Gateway
             api_id = self.zappa.create_api_gateway_routes(
-                self.lambda_arn, self.lambda_name)
+                self.lambda_arn, self.lambda_name, self.api_key_required)
 
             # Deploy the API!
             cache_cluster_enabled = self.zappa_settings[self.api_stage].get('cache_cluster_enabled', False)
@@ -254,7 +256,8 @@ class ZappaCLI(object):
                                         api_id=api_id,
                                         stage_name=self.api_stage,
                                         cache_cluster_enabled=cache_cluster_enabled,
-                                        cache_cluster_size=cache_cluster_size
+                                        cache_cluster_size=cache_cluster_size,
+                                        api_key_required=self.api_key_required
                                     )
 
             if self.zappa_settings[self.api_stage].get('touch', True):
@@ -442,8 +445,8 @@ class ZappaCLI(object):
         import json as json
 
         response = self.zappa.invoke_lambda_function(
-            self.lambda_name, 
-            json.dumps(command), 
+            self.lambda_name,
+            json.dumps(command),
             invocation_type='RequestResponse'
         )
 
@@ -471,7 +474,7 @@ class ZappaCLI(object):
         print('\tAPI Gateway URL:\t' + str(api_url))
 
         domain_url = self.zappa_settings[self.api_stage].get('domain', None)
-        print('\tDomain URL:\t\t' + str(domain_url))        
+        print('\tDomain URL:\t\t' + str(domain_url))
 
     def print_version(self):
         """
@@ -506,7 +509,7 @@ class ZappaCLI(object):
             sys.exit() # pragma: no cover
 
         # Explain system.
-        print(u"""\n███████╗ █████╗ ██████╗ ██████╗  █████╗ 
+        print(u"""\n███████╗ █████╗ ██████╗ ██████╗  █████╗
 ╚══███╔╝██╔══██╗██╔══██╗██╔══██╗██╔══██╗
   ███╔╝ ███████║██████╔╝██████╔╝███████║
  ███╔╝  ██╔══██║██╔═══╝ ██╔═══╝ ██╔══██║
@@ -522,7 +525,7 @@ class ZappaCLI(object):
         print("Your Zappa configuration can support multiple production environments, like 'dev', 'staging', and 'production'.")
         env = raw_input("What do you want to call this environment (default 'dev'): ") or "dev"
 
-        # Create Bucket 
+        # Create Bucket
         print("\nYour Zappa deployments will need to be uploaded to a private S3 bucket.")
         print("If you don't have a bucket yet, we'll create one for you too.")
         default_bucket = "zappa-" + ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(9))
@@ -543,7 +546,7 @@ class ZappaCLI(object):
             has_flask = False
 
         print('')
-        # App-specific 
+        # App-specific
         if has_django:
             print("It looks like this is a Django application!")
             print("What is the modular path to your projects's Django settings?")
@@ -570,8 +573,8 @@ class ZappaCLI(object):
             while app_function in [None, '']:
                 if matches:
                     print("We discovered: " + ', '.join('{}'.format(i) for v, i in enumerate(matches)))
-                    app_function = raw_input("Where is your app's function? (default '%s'): " % matches[0]) or matches[0]      
-                else:              
+                    app_function = raw_input("Where is your app's function? (default '%s'): " % matches[0]) or matches[0]
+                else:
                     app_function = raw_input("Where is your app's function?: ")
             app_function = app_function.replace("'", "")
             app_function = app_function.replace('"', "")
@@ -592,11 +595,11 @@ class ZappaCLI(object):
 
         import json as json # hjson is fine for loading, not fine for writing.
         zappa_settings_json = json.dumps(zappa_settings, sort_keys=True, indent=4)
-        
+
         print("\nOkay, here's your zappa_settings.js:\n")
         print(zappa_settings_json)
 
-        confirm = raw_input("\nDoes this look okay? (default y) [y/n]: ") or 'yes'  
+        confirm = raw_input("\nDoes this look okay? (default y) [y/n]: ") or 'yes'
         if confirm[0] not in ['y', 'Y', 'yes', 'YES']:
             print("Sorry to hear that! Please init again.")
             return

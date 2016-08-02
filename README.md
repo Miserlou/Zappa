@@ -169,6 +169,7 @@ to change Zappa's behavior. Use these at your own risk!
 ```javascript
  {
     "dev": {
+        "api_key_required": false // enable securing API Gateway endpoints with x-api-key header (default False)
         "assume_policy": "my_assume_policy.json", // optional, IAM assume policy JSON file
         "attach_policy": "my_attach_policy.json", // optional, IAM attach policy JSON file
         "aws_region": "us-east-1", // AWS Region (default US East),
@@ -223,6 +224,10 @@ Zappa will automatically set up a regularly occuring execution of your applicati
 #### Enabling CORS
 
 To enable Cross-Origin Resource Sharing (CORS) for your application, follow the [AWS "How to CORS" Guide](https://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-cors.html) to enable CORS via the API Gateway Console. Don't forget to enable CORS per parameter and re-deploy your API after making the changes!
+
+### Enabling Secure Endpoints on API Gateway
+
+You can use the api_key_required setting to generate and assign an api key to all levels of api gateway. You can pass the provided key as a header called x-api-key to access the newly restricted endpoints. Without x-api-key header you will receive a 403. [More information on api keys in the API Gateway](http://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-api-keys.html) 
 
 #### Deploying to a Domain With a Let's Encrypt Certificate
 

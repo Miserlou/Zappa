@@ -242,8 +242,8 @@ class Zappa(object):
         # APIGW, Lambda will max out at 30s.
         # Related: https://github.com/Miserlou/Zappa/issues/205
         long_config_dict = {
-            'region_name': aws_region, 
-            'connect_timeout': 5, 
+            'region_name': aws_region,
+            'connect_timeout': 5,
             'read_timeout': 300
         }
         long_config = botocore.client.Config(**long_config_dict)
@@ -622,7 +622,7 @@ class Zappa(object):
     # API Gateway
     ##
 
-    def create_api_gateway_routes(self, lambda_arn, api_name=None):
+    def create_api_gateway_routes(self, lambda_arn, api_name=None, api_key_required=False):
         """
         Creates the API Gateway for this Zappa deployment.
 
@@ -665,7 +665,7 @@ class Zappa(object):
                 root_id = item['id']
         if not root_id: # pragma: no cover
             return False
-        self.create_and_setup_methods(api_id, root_id, lambda_arn, progress.update)
+        self.create_and_setup_methods(api_id, root_id, lambda_arn, progress.update, api_key_required)
 
         parent_id = root_id
         for i in range(1, self.parameter_depth):
@@ -678,25 +678,24 @@ class Zappa(object):
             resource_id = response['id']
             parent_id = resource_id
 
-            self.create_and_setup_methods(api_id, resource_id, lambda_arn, progress.update) # pragma: no cover
+            self.create_and_setup_methods(api_id, resource_id, lambda_arn, progress.update, api_key_required) # pragma: no cover
 
         return api_id
 
-    def create_and_setup_methods(self, api_id, resource_id, lambda_arn, report_progress):
+    def create_and_setup_methods(self, api_id, resource_id, lambda_arn, report_progress, api_key_required):
         """
         Sets up the methods, integration responses and method responses for a given API Gateway resource.
 
         Returns the given API's resource_id.
 
         """
-
         for method in self.http_methods:
             response = self.apigateway_client.put_method(
                     restApiId=api_id,
                     resourceId=resource_id,
                     httpMethod=method,
                     authorizationType='none',
-                    apiKeyRequired=False
+                    apiKeyRequired=api_key_required
             )
             report_progress()
 
@@ -779,7 +778,7 @@ class Zappa(object):
 
         return resource_id
 
-    def deploy_api_gateway(self, api_id, stage_name, stage_description="", description="", cache_cluster_enabled=False, cache_cluster_size='0.5', variables=None):
+    def deploy_api_gateway(self, api_id, stage_name, stage_description="", description="", cache_cluster_enabled=False, cache_cluster_size='0.5', variables=None, api_key_required=False):
         """
         Deploy the API Gateway!
 
@@ -798,6 +797,21 @@ class Zappa(object):
             cacheClusterSize=cache_cluster_size,
             variables=variables or {}
         )
+
+        if api_key_required:
+            print("Creating API Key..")
+            api_key = self.apigateway_client.create_api_key(
+                    name='{}_{}'.format(stage_name, api_id),
+                    description='Api Key for {}'.format(api_id),
+                    enabled=True,
+                    stageKeys=[
+                        {
+                            'restApiId': '{}'.format(api_id),
+                            'stageName': '{}'.format(stage_name)
+                        },
+                    ]
+                    )
+            print('x-api-key: {}'.format(api_key['id']))
 
         return "https://{}.execute-api.{}.amazonaws.com/{}".format(api_id, self.boto_session.region_name, stage_name)
 
