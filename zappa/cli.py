@@ -49,6 +49,7 @@ CLI_COMMANDS = [
     'deploy',
     'init',
     'invoke',
+    'manage',
     'rollback',
     'schedule',
     'status',
@@ -171,6 +172,18 @@ class ZappaCLI(object):
                 return
 
             self.invoke(command_env[-1])
+        elif command == 'manage': # pragma: no cover
+
+            if len(command_env) < 2:
+                parser.error("Please enter the management command to invoke.")
+                return
+
+            if not self.django_settings:
+                print("This command is for Django projects only!")
+                print("If this is a Django project, please define django_settings in your zappa_settings.")
+                return
+
+            self.invoke(command_env[-1], "manage")
 
         elif command == 'tail': # pragma: no cover
             self.tail()
@@ -417,13 +430,13 @@ class ZappaCLI(object):
 
         return
 
-    def invoke(self, function_name):
+    def invoke(self, function_name, command="command"):
         """
         Invoke a remote function.
         """
 
         # Invoke it!
-        command = {"command": function_name}
+        command = {command: function_name}
 
         # Can't use hjson
         import json as json

@@ -117,9 +117,8 @@ class LambdaHandler(object):
 
         """
 
-        # TODO If this is invoked from a non-APIGW/Scheduled event source,
-        # extract the method and process separately.
-
+        # This is the result of a keep alive
+        # or scheduled event.
         if event.get('detail-type') == u'Scheduled Event':
 
             whole_function = event['resources'][0].split('/')[-1]
@@ -135,22 +134,34 @@ class LambdaHandler(object):
         # This is a direct command invocation.
         elif event.get('command', None):
 
-            # This is non-Django specific.
             whole_function = event['command']
             module, function = whole_function.rsplit('.', 1)
             app_module = importlib.import_module(module)
             app_function = getattr(app_module, function)
             result = app_function()
             print("Result of %s:" % whole_function)
-            print(result)
 
-        # XXX TODO: Handle django 'command'
+            return
+
+        # This is a Django management command invocation.
+        elif event.get('manage', None):
+
+            from django.core import management
+
+            # Couldn't figure out how to get the value into stdout with StringIO..
+            # Read the log for now. :[]
+            management.call_command(*event['command'].split(' '))
+            return {}
 
         try:
             # Timing
             time_start = datetime.datetime.now()
 
             settings = self.settings
+
+            # If in DEBUG mode, log all raw incoming events.
+            if settings.DEBUG:
+                logger.debug('Zappa Event: {}'.format(event))
 
             # Custom log level
             if settings.LOG_LEVEL:
@@ -259,7 +270,7 @@ class LambdaHandler(object):
             # Print statements are visible in the logs either way
             print(e)
 
-            # If we didn't even build an app_module, just raise
+            # If we didn't even build an app_module, just raise.
             if not settings.DJANGO_SETTINGS:
                 try:
                     app_module
@@ -267,9 +278,7 @@ class LambdaHandler(object):
                     raise e
 
             # Print the error to the browser upon failure?
-            #debug = bool(getattr(app_module, settings.DEBUG, True))
-            debug = True
-            if debug:
+            if settings.DEBUG:
                 # Return this unspecified exception as a 500.
                 content = "<!DOCTYPE html>500. From Zappa: <pre>" + str(e) + "</pre><br /><pre>" + traceback.format_exc().replace('\n', '<br />') + "</pre>"
                 exception = base64.b64encode(content)
