@@ -148,9 +148,19 @@ class LambdaHandler(object):
 
             from django.core import management
 
+            try: # Support both for tests
+                from zappa.ext.django import get_django_wsgi
+            except ImportError as e: # pragma: no cover
+                from django_zappa_app import get_django_wsgi
+
+            # Get the Django WSGI app from our extension
+            # We don't actually need the function,
+            # but we do need to do all of the required setup for it.
+            app_function = get_django_wsgi(self.settings.DJANGO_SETTINGS)
+
             # Couldn't figure out how to get the value into stdout with StringIO..
             # Read the log for now. :[]
-            management.call_command(*event['command'].split(' '))
+            management.call_command(*event['manage'].split(' '))
             return {}
 
         try:
