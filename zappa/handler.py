@@ -105,7 +105,7 @@ class LambdaHandler(object):
                 ))
             os.environ[key] = value
 
-    def import_module_and_get_function(whole_function):
+    def import_module_and_get_function(self, whole_function):
         """
         Given a modular path to a function, import that module
         and return the function.
@@ -143,7 +143,7 @@ class LambdaHandler(object):
         if event.get('detail-type') == u'Scheduled Event':
 
             whole_function = event['resources'][0].split('/')[-1]
-            app_function = import_module_and_get_function(whole_function)
+            app_function = self.import_module_and_get_function(whole_function)
 
             # Execute the function!
             app_function()
@@ -153,7 +153,7 @@ class LambdaHandler(object):
         elif event.get('command', None):
 
             whole_function = event['command']
-            app_function = import_module_and_get_function(whole_function)
+            app_function = self.import_module_and_get_function(whole_function)
             result = app_function()
             print("Result of %s:" % whole_function)
             print(result)
