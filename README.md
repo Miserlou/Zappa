@@ -183,7 +183,7 @@ For instance, suppose you have a basic application in a file called "my_app.py",
 
 Any remote print statements made and the value the function returned will then be printed to your local console. **Nifty!**
 
-##### Django Management Commands
+#### Django Management Commands
 
 As a convenience, Zappa can also invoke remote Django 'manage.py' commands with the `manage` command. For instance, to perform the basic Django status check:
 
@@ -191,7 +191,7 @@ As a convenience, Zappa can also invoke remote Django 'manage.py' commands with 
 
 Obviously, this only works for Django projects which have their settings properly defined. _(Please note that commands which take over 30 seconds to execute may time-out. See [this related issue](https://github.com/Miserlou/Zappa/issues/205#issuecomment-236391248) for a work-around.)_ 
 
-## Advanced Usage
+## Advanced Settings
 
 There are other settings that you can define in your local settings
 to change Zappa's behavior. Use these at your own risk!
@@ -245,6 +245,8 @@ to change Zappa's behavior. Use these at your own risk!
     }
 }
 ```
+
+## Advanced Usage
 
 #### Keeping The Server Warm
 

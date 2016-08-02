@@ -3,7 +3,7 @@ python:
   - "2.7"
 # command to install dependencies
 install:
-  - "pip install setuptools --upgrade; pip install -r test_requirements.txt; python setup.py install"
+  - "pip install -r requirements.txt; pip install -r test_requirements.txt; python setup.py install"
 # command to run tests
 script: nosetests --with-coverage --cover-package=zappa
 after_success:
