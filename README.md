@@ -53,9 +53,13 @@ If you're looking for Django-specific integration, you should probably check out
 
 Next, you'll need to define your local and server-side settings.
 
-#### Settings
+#### Running the Initial Setup / Settings
 
-Next, you'll need to define a few settings for your Zappa deployment environments in a file named *zappa_settings.json* in your project directory. The simplest example is:
+**Zappa** can automatically set up your deployment settings for you with the `init` command:
+
+    $ zappa init
+
+This will automatically detect your application type and help you define your deployment configuration settings. Once you finish initialization, you'll have a file named *zappa_settings.json* in your project directory defining your deployment settings. It will probably look something like this:
 
 ```javascript
 {
