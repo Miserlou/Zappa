@@ -214,10 +214,21 @@ to change Zappa's behavior. Use these at your own risk!
         "delete_zip": true, // Delete the local zip archive after code updates
         "django_settings": "your_project.production_settings", // The modular path to your Django project's settings. For Django projects only.
         "domain": "yourapp.yourdomain.com", // Required if you're using a domain
-        "events": [{
-            "function": "your_module.your_function", // The function to execute
-            "expression": "rate(1 minute)" // When to execute it (in cron or rate format)
-        }],
+        "events": [
+            {   // Recurring events
+                "function": "your_module.your_recurring_function", // The function to execute
+                "expression": "rate(1 minute)" // When to execute it (in cron or rate format)
+            },
+            {   // AWS Reactive events
+                "function": "your_module.your_reactive_function", // The function to execute
+                "event_source": { 
+                      "arn":  "arn:aws:s3:::my-bucket", // The ARN of this event source
+                      "events": [
+                        "s3:ObjectCreated:*" // The specific event to execute in response to.
+                      ]
+                   }
+            }
+        ],
         "exclude": ["*.gz", "*.rar"], // A list of regex patterns to exclude from the archive
         "http_methods": ["GET", "POST"], // HTTP Methods to route,
         "integration_response_codes": [200, 301, 404, 500], // Integration response status codes to route
