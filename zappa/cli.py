@@ -486,7 +486,7 @@ class ZappaCLI(object):
         domain_url = self.zappa_settings[self.api_stage].get('domain', None)
         print('\tDomain URL:\t\t' + str(domain_url))
 
-    def print_version(self):
+    def print_version(self): # pragma: no cover
         """
         Print the current zappa version.
         """
@@ -508,15 +508,15 @@ class ZappaCLI(object):
             sys.exit() # pragma: no cover
 
         # Ensure P2 until Lambda supports it.
-        if sys.version_info >= (3,0):
+        if sys.version_info >= (3,0): # pragma: no cover
             print("Zappa curently only works with Python 2, until AWS Lambda adds Python 3 support.")
             sys.exit() # pragma: no cover
 
         # Ensure inside virtualenv.
-        if not hasattr(sys, 'real_prefix'):
+        if not hasattr(sys, 'real_prefix'): # pragma: no cover
             print("Zappa must be run inside of a virtual environment!")
             print("Learn more about virtual environments here: http://docs.python-guide.org/en/latest/dev/virtualenvs/")
-            sys.exit() # pragma: no cover
+            sys.exit()
 
         # Explain system.
         print(u"""\n███████╗ █████╗ ██████╗ ██████╗  █████╗
@@ -543,13 +543,13 @@ class ZappaCLI(object):
         # TODO actually create bucket.
 
         # Detect Django/Flask
-        try:
+        try: # pragma: no cover
             import django
             has_django = True
         except ImportError, e:
             has_django = False
 
-        try:
+        try: # pragma: no cover
             import flask
             has_flask = True
         except ImportError, e:
@@ -557,7 +557,7 @@ class ZappaCLI(object):
 
         print('')
         # App-specific
-        if has_django:
+        if has_django: # pragma: no cover
             print("It looks like this is a Django application!")
             print("What is the modular path to your projects's Django settings?")
             django_settings = None

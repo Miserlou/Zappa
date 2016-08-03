@@ -1,10 +1,7 @@
 import sys
 
-# add the hellodjango project path into the sys.path
+# add the Lambda root path into the sys.path
 sys.path.append('/var/task')
-
-# # add the virtualenv site-packages path to the sys.path
-# sys.path.append('<PATH_TO_VIRTUALENV>/Lib/site-packages')
 
 from django.core.handlers.wsgi import WSGIHandler
 from django.core.wsgi import get_wsgi_application
