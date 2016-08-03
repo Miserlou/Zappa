@@ -20,3 +20,9 @@ def prebuild_me():
 
 def callback(self):
     print("this is a callback")
+
+def aws_event(event, contect):
+    print("AWS EVENT")
+
+def command():
+    print("command")
