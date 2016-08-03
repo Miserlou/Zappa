@@ -438,7 +438,8 @@ class TestZappa(unittest.TestCase):
 
     def test_cli_init(self):
 
-        os.remove('zappa_settings.json')
+        if os.path.isfile('zappa_settings.json'):
+            os.remove('zappa_settings.json')
 
         zappa_cli = ZappaCLI()
         # Via http://stackoverflow.com/questions/2617057/how-to-supply-stdin-files-and-environment-variable-inputs-to-python-unit-tests
@@ -452,8 +453,9 @@ class TestZappa(unittest.TestCase):
             argv = ['init']
             zappa_cli.handle(argv)
 
-        os.remove('zappa_settings.json')
-
+        if os.path.isfile('zappa_settings.json'):
+            os.remove('zappa_settings.json')
+            
     ##
     # Util / Misc
     ##
