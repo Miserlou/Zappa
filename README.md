@@ -222,11 +222,11 @@ to change Zappa's behavior. Use these at your own risk!
             {   // AWS Reactive events
                 "function": "your_module.your_reactive_function", // The function to execute
                 "event_source": { 
-                      "arn":  "arn:aws:s3:::my-bucket", // The ARN of this event source
-                      "events": [
+                    "arn":  "arn:aws:s3:::my-bucket", // The ARN of this event source
+                    "events": [
                         "s3:ObjectCreated:*" // The specific event to execute in response to.
-                      ]
-                   }
+                    ]
+                }
             }
         ],
         "exclude": ["*.gz", "*.rar"], // A list of regex patterns to exclude from the archive
