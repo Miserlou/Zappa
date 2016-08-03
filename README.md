@@ -270,7 +270,7 @@ To enable Cross-Origin Resource Sharing (CORS) for your application, follow the 
 
 #### Enabling Secure Endpoints on API Gateway
 
-You can use the `api_key_required` setting to generate and assign an API key to all the routes of your API Gateway. After redeployment, you can then pass the provided key as a header called `x-api-key` to access the restricted endpoints. Without the `x-api-key` header, you will receive a 403. [More information on api keys in the API Gateway](http://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-api-keys.html) 
+You can use the `api_key_required` setting to generate and assign an API key to all the routes of your API Gateway. After redeployment, you can then pass the provided key as a header called `x-api-key` to access the restricted endpoints. Without the `x-api-key` header, you will receive a 403. [More information on API keys in the API Gateway](http://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-api-keys.html) 
 
 #### Deploying to a Domain With a Let's Encrypt Certificate
 

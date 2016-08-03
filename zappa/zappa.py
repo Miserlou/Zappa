@@ -983,6 +983,9 @@ class Zappa(object):
         """
         Delete a CWE rule.
 
+        This  deletes them, but they will still show up in the AWS console.
+        Annoying.
+
         """
         logger.debug('Deleting existing rule {}'.format(rule_name))
 
