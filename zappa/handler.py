@@ -191,7 +191,7 @@ class LambdaHandler(object):
                     if record.has_key(event_type):
 
                         whole_function = record[event_type]['configurationId']
-                        app_function = import_module_and_get_function(whole_function)
+                        app_function = self.import_module_and_get_function(whole_function)
                         result = app_function(event, context)
                         print(result)
 

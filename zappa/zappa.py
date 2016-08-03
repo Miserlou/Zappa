@@ -21,7 +21,7 @@ from lambda_packages import lambda_packages
 from tqdm import tqdm
 
 # Zappa imports
-from util import copytree, add_event_source
+from util import copytree, add_event_source, remove_event_source
 
 logging.basicConfig(format='%(levelname)s:%(message)s')
 logger = logging.getLogger(__name__)
@@ -1008,7 +1008,7 @@ class Zappa(object):
                     self.events_client.delete_rule(Name=rule_name)
 
 
-    def unschedule_events(self, events):
+    def unschedule_events(self, events, lambda_arn):
         """
         Given a list of events, unschedule these CloudWatch Events.
 
@@ -1018,12 +1018,25 @@ class Zappa(object):
         """
 
         for event in events:
-            if event.has_key('function'):
+
+            # These are scheduled CWEs.
+            if event.has_key('expression'):
                 function = event['function']
                 name = event.get('name', function)
                 self.delete_rule(name)
-
-                print("Uncheduled " + name + ".")
+                print("Unscheduled " + name + ".")
+            # These are non CWE event sources.
+            elif event.has_key('event_source'):
+                function = event['function']
+                name = event.get('name', function)
+                event_source = event.get('event_source', function)
+                rule_response = remove_event_source(  
+                                                    event_source,
+                                                    lambda_arn,
+                                                    function, 
+                                                    self.boto_session
+                                                )
+                print("Removed event " + name + ".")
 
 
     def create_keep_warm(self, lambda_arn, lambda_name, name="zappa-keep-warm", schedule_expression="rate(5 minutes)"):

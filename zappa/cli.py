@@ -429,8 +429,17 @@ class ZappaCLI(object):
                 print("Events must be supplied as a list.")
                 return
 
+            try:
+                function_response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name)
+            except botocore.exceptions.ClientError as e: # pragma: no cover
+                print("Function does not exist, please deploy first. Ex: zappa deploy {}".format(self.api_stage))
+                return
+
             print("Unscheduling..")
-            self.zappa.unschedule_events(events)
+            self.zappa.unschedule_events(
+                lambda_arn=function_response['Configuration']['FunctionArn'],
+                events=events
+                )
 
         return
 

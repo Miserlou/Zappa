@@ -94,12 +94,12 @@ def detect_flask_apps():
 
     return matches
 
-def add_event_source(event_source, lambda_arn, target_function, boto_session, dry=False):
+def get_event_source(event_source, lambda_arn, target_function, boto_session, dry=False):
     """
 
     Given an event_source dictionary item, a session and a lambda_arn,
     hack into Kappa's Gibson, create out an object we can call
-    to schedule this event, and add the event source.
+    to schedule this event, and return the event source.
 
     """
     import kappa.function
@@ -156,9 +156,39 @@ def add_event_source(event_source, lambda_arn, target_function, boto_session, dr
     funk._context = ctx
 
     event_source_obj = event_source_func(ctx, event_source)
+    return event_source_obj, ctx, funk
+
+def add_event_source(event_source, lambda_arn, target_function, boto_session, dry=False):
+    """
+    Given an event_source dictionary, create the object and add the event source.
+    """
+
+    event_source_obj, ctx, funk = get_event_source(event_source, lambda_arn, target_function, boto_session, dry=False)
     if not dry:
         rule_response = event_source_obj.add(funk)
         return rule_response
     else:
         return event_source_obj
 
+def remove_event_source(event_source, lambda_arn, target_function, boto_session, dry=False):
+    """
+    Given an event_source dictionary, create the object and remove the event source.
+    """
+
+    event_source_obj, ctx, funk = get_event_source(event_source, lambda_arn, target_function, boto_session, dry=False)
+    
+    # This is slightly dirty, but necessary for using Kappa this way.
+    funk.arn = lambda_arn
+    if not dry:
+        rule_response = event_source_obj.remove(funk)
+        return rule_response
+    else:
+        return event_source_obj
+
+def get_event_source_status(event_source, lambda_arn, target_function, boto_session, dry=False):
+    """
+    Given an event_source dictionary, create the object and get the event source status.
+    """
+
+    event_source_obj, ctx, funk = get_event_source(event_source, lambda_arn, target_function, boto_session, dry=False)
+    return event_source_obj.status(funk)

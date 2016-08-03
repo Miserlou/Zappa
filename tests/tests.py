@@ -16,7 +16,7 @@ from zappa.cli import ZappaCLI
 from zappa.handler import LambdaHandler, lambda_handler
 from zappa.wsgi import create_wsgi_request, common_log
 from zappa.zappa import Zappa, ASSUME_POLICY, ATTACH_POLICY
-from zappa.util import detect_django_settings, copytree, detect_flask_apps, add_event_source
+from zappa.util import detect_django_settings, copytree, detect_flask_apps, add_event_source, remove_event_source, get_event_source_status
 
 def random_string(length):
     return ''.join(random.choice(string.printable) for _ in range(length))
@@ -480,6 +480,8 @@ class TestZappa(unittest.TestCase):
                     "s3:ObjectCreated:*"
                   ]}
         add_event_source(event_source, 'lambda:lambda:lambda:lambda', 'test_settings.callback', session, dry=True)
+        remove_event_source(event_source, 'lambda:lambda:lambda:lambda', 'test_settings.callback', session, dry=True)
+        # get_event_source_status(event_source, 'lambda:lambda:lambda:lambda', 'test_settings.callback', session, dry=True)
 
 
 if __name__ == '__main__':
