@@ -49,8 +49,6 @@ Please note that Zappa _**must**_ be installed into your project's [virtual envi
 
 _(If you use [pyenv](https://github.com/yyuu/pyenv) and love to manage virtualenvs with **pyenv-virtualenv**, you just have to call `pyenv local [your_venv_name]` and it's ready. [Conda](http://conda.pydata.org/docs/) users should comment [here](https://github.com/Miserlou/Zappa/pull/108).)_
 
-If you're looking for Django-specific integration, you should probably check out _**[django-zappa](https://github.com/Miserlou/django-zappa)**_ instead.
-
 Next, you'll need to define your local and server-side settings.
 
 #### Running the Initial Setup / Settings
