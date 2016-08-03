@@ -448,6 +448,9 @@ class TestZappa(unittest.TestCase):
         with mock.patch('__builtin__.raw_input', lambda prompt: next(input_generator)):
             zappa_cli.init()
 
+        if os.path.isfile('zappa_settings.json'):
+            os.remove('zappa_settings.json')
+
         with mock.patch('__builtin__.raw_input', lambda prompt: next(input_generator)):
             zappa_cli = ZappaCLI()
             argv = ['init']
@@ -455,7 +458,7 @@ class TestZappa(unittest.TestCase):
 
         if os.path.isfile('zappa_settings.json'):
             os.remove('zappa_settings.json')
-            
+
     ##
     # Util / Misc
     ##
