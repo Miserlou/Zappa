@@ -94,7 +94,7 @@ def detect_flask_apps():
 
     return matches
 
-def add_event_source(event_source, lambda_arn, target_function, boto_session):
+def add_event_source(event_source, lambda_arn, target_function, boto_session, dry=False):
     """
 
     Given an event_source dictionary item, a session and a lambda_arn,
@@ -156,6 +156,9 @@ def add_event_source(event_source, lambda_arn, target_function, boto_session):
     funk._context = ctx
 
     event_source_obj = event_source_func(ctx, event_source)
-    rule_response = event_source_obj.add(funk)
-    return rule_response
+    if not dry:
+        rule_response = event_source_obj.add(funk)
+        return rule_response
+    else:
+        return event_source_obj
 

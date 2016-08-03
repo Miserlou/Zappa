@@ -16,7 +16,7 @@ from zappa.cli import ZappaCLI
 from zappa.handler import LambdaHandler, lambda_handler
 from zappa.wsgi import create_wsgi_request, common_log
 from zappa.zappa import Zappa, ASSUME_POLICY, ATTACH_POLICY
-from zappa.util import detect_django_settings, copytree, detect_flask_apps
+from zappa.util import detect_django_settings, copytree, detect_flask_apps, add_event_source
 
 def random_string(length):
     return ''.join(random.choice(string.printable) for _ in range(length))
@@ -462,6 +462,25 @@ class TestZappa(unittest.TestCase):
     def test_detect_flask(self):
         # Sanity
         settings_modules = detect_flask_apps()
+
+    @placebo_session
+    def test_add_event_source(self, session):
+
+        event_source = {'arn': 'blah:blah:blah:blah', 'events': [
+                    "s3:ObjectCreated:*"
+                  ]}
+        # Sanity. This should fail.
+        try:
+            es = add_event_source(event_source, 'blah:blah:blah:blah', 'test_settings.callback', session)
+            self.fail("Success should have failed.")
+        except ValueError:
+            pass
+
+        event_source = {'arn': 's3:s3:s3:s3', 'events': [
+                    "s3:ObjectCreated:*"
+                  ]}
+        add_event_source(event_source, 'lambda:lambda:lambda:lambda', 'test_settings.callback', session, dry=True)
+
 
 if __name__ == '__main__':
     unittest.main()

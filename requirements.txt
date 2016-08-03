@@ -5,6 +5,7 @@ docutils==0.12
 futures==3.0.5
 hjson==2.0.0
 jmespath==0.9.0
+kappa=0.6.0
 lambda-packages==0.8.0
 python-dateutil==2.5.3
 python-slugify==1.2.0
@@ -14,4 +15,3 @@ tqdm==4.8.3
 Werkzeug==0.11.10
 wheel==0.29.0
 wsgi-request-logger==0.4.5
--e git://github.com/garnaat/kappa.git@a1fd5288f80350dcfba5812211d13da1dc7c6474#egg=kappa-developcp
