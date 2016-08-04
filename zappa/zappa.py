@@ -159,7 +159,7 @@ ATTACH_POLICY = """{
             "Action": [
                 "sqs:*"
             ],
-            "Resource": "arn:aws:sqs:::*"
+            "Resource": "arn:aws:sqs:*:*:*"
         },
         {
             "Effect": "Allow",
