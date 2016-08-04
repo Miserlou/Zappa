@@ -9,7 +9,7 @@ kappa==0.6.0
 lambda-packages==0.8.0
 python-dateutil==2.5.3
 python-slugify==1.2.0
-requests[security]>=2.10.0
+requests>=2.10.0
 six==1.10.0
 tqdm==4.8.3
 Werkzeug==0.11.10
