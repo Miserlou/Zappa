@@ -682,7 +682,8 @@ class ZappaCLI(object):
         self.lambda_name = slugify.slugify(self.project_name + '-' + self.api_stage)
 
         # Load environment-specific settings
-        self.s3_bucket_name = self.zappa_settings[self.api_stage]['s3_bucket']
+        self.s3_bucket_name = self.zappa_settings[
+            self.api_stage].get('s3_bucket', "zappa-" + ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(9)))
         self.vpc_config = self.zappa_settings[
             self.api_stage].get('vpc_config', {})
         self.memory_size = self.zappa_settings[
