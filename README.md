@@ -133,6 +133,8 @@ If you want to cancel these, you can simply use the `unschedule` command:
 
 And now your scheduled event rules are deleted.
 
+See the [example](example/) for more details.
+
 #### Executing in Response to AWS Events
 
 Similarly, you can have your functions execute in response to events that happen in the AWS ecosystem, such as S3 uploads, DynamoDB entries, Kinesis streams, and SNS messages.

@@ -6,7 +6,7 @@
        "log_level": "DEBUG",
        "events": [{
          "function": "dev_event_zappa_test_flask_app",
-         "expression": "rate(1 minutes)"
+         "expression": "rate(1 minute)"
          }],
        "aws_region": "us-west-2",
        "s3_bucket": "zappa-test-bucket",
