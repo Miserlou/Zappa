@@ -7,6 +7,7 @@ import logging
 import traceback
 import os
 import json
+import inspect
 
 import boto3
 from werkzeug.wrappers import Response
@@ -146,15 +147,14 @@ class LambdaHandler(object):
             app_function = self.import_module_and_get_function(whole_function)
 
             # Execute the function!
-            app_function()
-            return
+            return self.run_function(app_function, event, context)
 
         # This is a direct command invocation.
         elif event.get('command', None):
 
             whole_function = event['command']
             app_function = self.import_module_and_get_function(whole_function)
-            result = app_function(event, context)
+            result = self.run_function(app_function, event, context)
             print("Result of %s:" % whole_function)
             print(result)
             return result
@@ -191,7 +191,7 @@ class LambdaHandler(object):
 
                         whole_function = record[event_type]['configurationId']
                         app_function = self.import_module_and_get_function(whole_function)
-                        result = app_function(event, context)
+                        result = self.run_function(app_function, event, context)
                         print(result)
 
             return result
@@ -319,6 +319,21 @@ class LambdaHandler(object):
             else:
                 raise e
 
-def lambda_handler(event, context): # pragma: no cover
+    @staticmethod
+    def run_function(app_function, event, context):
+        args, varargs, keywords, defaults = inspect.getargspec(app_function)
+        num_args = len(args)
+        if num_args == 0:
+            result = app_function(event, context) if varargs else app_function()
+        elif num_args == 1:
+            result = app_function(event, context) if varargs else app_function(event)
+        elif num_args == 2:
+            result = app_function(event, context)
+        else:
+            raise RuntimeError("Function signature is invalid. Expected a function that accepts at most "
+                               "2 arguments or varargs.")
+        return result
 
+
+def lambda_handler(event, context): # pragma: no cover
     return LambdaHandler.lambda_handler(event, context)
