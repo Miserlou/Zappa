@@ -35,6 +35,7 @@ You can also call a scheduled function packaged along with your normal WSGI app:
     $ zappa schedule prod
 
 This function can optionally take the usual `event` and `context` lambda arguments.
+See `mymodule.myfunc_with_events` for an example of this.
 
 ## Local Testing
 
@@ -47,3 +48,24 @@ For example, in "prod" it is defined as "mymodule.myfunc", so it can be called a
 
     $ python -c "import mymodule; mymodule.myfunc()"
 
+If your function uses the events argument you will need to send a dict with what the function expects.
+Scheduled events use a structure similar to the following:
+
+
+```python
+{
+  "account": "123456789012",
+  "region": "us-east-1",
+  "detail": {},
+  "detail-type": "Scheduled Event",
+  "source": "aws.events",
+  "time": "1970-01-01T00:00:00Z",
+  "id": "cdc73f9d-aea9-11e3-9d5a-835b769c0d9c",
+  "resources": [
+    "arn:aws:events:us-east-1:123456789012:rule/mymodule.myfunc"
+  ]
+}
+```
+
+If your function is also using the context, check out [mock](https://pypi.python.org/pypi/mock) for help building
+an artificial context object.
