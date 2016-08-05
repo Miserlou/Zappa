@@ -662,7 +662,16 @@ class Zappa(object):
 
         self.create_and_setup_methods(restapi, root_id, lambda_func, api_key_required, 0)
 
-            self.create_and_setup_methods(restapi, resource, lambda_func, i) # pragma: no cover
+        parent_id = root_id
+        for i in range(1, self.parameter_depth):
+            resource = troposphere.apigateway.Resource('Resource{0}'.format(i))
+            self.cf_api_resources.append(resource.title)
+            resource.RestApiId = troposphere.Ref(restapi)
+            resource.ParentId = parent_id
+            resource.PathPart = "{parameter_" + str(i) + "}"
+            self.cf_template.add_resource(resource)
+
+            self.create_and_setup_methods(restapi, resource, lambda_func, api_key_required, i)
             parent_id = troposphere.Ref(resource)
 
         return restapi
