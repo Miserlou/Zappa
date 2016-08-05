@@ -315,6 +315,7 @@ db_string = os.environ('DB_CONNECTION_STRING')
 * [Using Django-Zappa, Part 1](https://serverlesscode.com/post/zappa-wsgi-for-python/).
 * [Using Django-Zappa, Part 2: VPCs](https://serverlesscode.com/post/zappa-wsgi-for-python-pt-2/).
 * [Building Serverless Microservices with Zappa and Flask](https://gun.io/blog/serverless-microservices-with-zappa-and-flask/)
+* [Zappa で Hello World するまで (Japanese)](http://qiita.com/satoshi_iwashita/items/505492193317819772c7)
 * _Your guide here?_
 
 ## Zappa in the Press
