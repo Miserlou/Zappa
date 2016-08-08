@@ -104,7 +104,9 @@ You can also `rollback` the deployed code to a previous version by supplying the
 
 #### Scheduling
 
-Zappa can be used to easily schedule functions to occur on regular intervals. Just list your functions and the expression to schedule them using [cron or rate syntax](http://docs.aws.amazon.com/lambda/latest/dg/tutorial-scheduled-events-schedule-expressions.html) in your *zappa_settings.json* file:
+Zappa can be used to easily schedule functions to occur on regular intervals.
+These functions will be packaged and deployed along with your `app_function` and called from the handler automatically.
+Just list your functions and the expression to schedule them using [cron or rate syntax](http://docs.aws.amazon.com/lambda/latest/dg/tutorial-scheduled-events-schedule-expressions.html) in your *zappa_settings.json* file:
 
 ```javascript
 {
@@ -130,6 +132,8 @@ If you want to cancel these, you can simply use the `unschedule` command:
     $ zappa unschedule production
 
 And now your scheduled event rules are deleted.
+
+See the [example](example/) for more details.
 
 #### Executing in Response to AWS Events
 
