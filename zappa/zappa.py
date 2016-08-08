@@ -816,7 +816,7 @@ class Zappa(object):
 
         return "https://{}.execute-api.{}.amazonaws.com/{}".format(api_id, self.boto_session.region_name, stage_name)
 
-    def undeploy_api_gateway(self, project_name):
+    def undeploy_api_gateway(self, project_name, api_key_required=False):
         """
         Delete a deployed REST API Gateway.
 
@@ -834,6 +834,13 @@ class Zappa(object):
             response = self.apigateway_client.delete_rest_api(
                 restApiId=api['id']
             )
+            if api_key_required:
+                print("Removing API Key..")
+                api_key_id = [key for key in self.apigateway_client.get_api_keys()['items']
+                              if api['id'] in key['name']][0]['id']
+                api_key_response = self.apigateway_client.delete_api_key(
+                        apiKey="{}".format(api_key_id)
+                )
 
 
     def get_api_url(self, project_name, stage_name):
