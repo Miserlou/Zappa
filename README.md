@@ -256,6 +256,9 @@ to change Zappa's behavior. Use these at your own risk!
         "touch": false, // GET the production URL upon initial deployment (default True)
         "use_precompiled_packages": false, // If possible, use C-extension packages which have been pre-compiled for AWS Lambda
         "use_apigateway": true, // Set to false if you don't want to create API Gateway resource. Default true
+        "cloudwatch_log_level": 'OFF', // Enables/configures a level of logging for the given staging. Available options: "OFF", "INFO", "ERROR"
+        "cloudwatch_data_trace": false, // Logs all data about received events.
+        "cloudwatch_metrics_enabled": false, // Additional metrics for the api gateway.
         "vpc_config": { // Optional VPC configuration for Lambda function
             "SubnetIds": [ "subnet-12345678" ], // Note: not all availability zones support Lambda!
             "SecurityGroupIds": [ "sg-12345678" ]

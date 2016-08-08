@@ -257,7 +257,10 @@ class ZappaCLI(object):
                                         stage_name=self.api_stage,
                                         cache_cluster_enabled=cache_cluster_enabled,
                                         cache_cluster_size=cache_cluster_size,
-                                        api_key_required=self.api_key_required
+                                        api_key_required=self.api_key_required,
+                                        cloudwatch_log_level=self.zappa_settings[self.api_stage].get('cloudwatch_log_level', 'OFF'),
+                                        cloudwatch_data_trace=self.zappa_settings[self.api_stage].get('cloudwatch_data_trace', False),
+                                        cloudwatch_metrics_enabled=self.zappa_settings[self.api_stage].get('cloudwatch_metrics_enabled', False),
                                     )
 
             if self.zappa_settings[self.api_stage].get('touch', True):
@@ -318,6 +321,13 @@ class ZappaCLI(object):
         else:
             endpoint_url = self.zappa.get_api_url(self.lambda_name, self.api_stage)
 
+        self.zappa.update_stage_config(
+            self.lambda_name,
+            self.api_stage,
+            self.zappa_settings[self.api_stage].get('cloudwatch_log_level', 'OFF'),
+            self.zappa_settings[self.api_stage].get('cloudwatch_data_trace', False),
+            self.zappa_settings[self.api_stage].get('cloudwatch_metrics_enabled', False)
+        )
         self.callback('post')
 
         print("Your updated Zappa deployment is live! {}".format(endpoint_url))
