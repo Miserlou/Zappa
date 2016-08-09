@@ -883,9 +883,9 @@ class Zappa(object):
     def update_stage_config(self, project_name, stage_name, cloudwatch_log_level, cloudwatch_data_trace,
         cloudwatch_metrics_enabled):
         """
-        Update settings on staging.
+        Update CloudWatch metrics configuration.
+        
         """
-        print("Updating configuration on {}...".format(stage_name))
 
         if cloudwatch_log_level not in self.cloudwatch_log_levels:
             cloudwatch_log_level = 'OFF'
@@ -965,7 +965,7 @@ class Zappa(object):
     # CloudWatch Events
     ##
 
-    def schedule_events(self, lambda_arn, lambda_name, events):
+    def schedule_events(self, lambda_arn, lambda_name, events, default=True):
         """
         Given a Lambda ARN, name and a list of events, schedule this as CloudWatch Events.
 
@@ -976,6 +976,12 @@ class Zappa(object):
             http://docs.aws.amazon.com/lambda/latest/dg/tutorial-scheduled-events-schedule-expressions.html
 
         """
+
+        # XXX: Not available in Lambda yet.
+        # We probably want to execute the latest code.
+        # if default:
+        #     lambda_arn = lambda_arn + ":$LATEST"
+
         for event in events:
             function = event['function']
             expression = event.get('expression', None)
@@ -1033,7 +1039,6 @@ class Zappa(object):
                     print("Problem scheduling {}.".format(name))
 
             else:
-
                 rule_response = add_event_source(  
                                                     event_source,
                                                     lambda_arn,
@@ -1042,6 +1047,7 @@ class Zappa(object):
                                                 )
                 #if rule_response: # Kappa doesn't give us this yet.
                 svc = ','.join(event['event_source']['events'])
+
                 print("Created %s event schedule for %s!" % (svc, function))
 
     def delete_rule(self, rule_name):
@@ -1117,6 +1123,21 @@ class Zappa(object):
 
         print("Scheduling keep-warm..")
 
+        ##
+        #
+        # XXX: Lambda doesn't YET support adding permissions to $LATEST,
+        # so we have to add it for the each new function update
+        # and remove the last one. Boooo.
+        #
+        # We don't get the function version on the initial deployment.
+        # arn_parts = lambda_arn.split(':')
+        # if len(arn_parts) == 7:
+        #     latest_arn = lambda_arn + ":$LATEST"
+        # else:
+        #     latest_arn = ":".join(arn_parts[:-1]) + ":$LATEST"
+        ##
+        latest_arn = lambda_arn # See above
+
         # Do we have an old keepwarm for this?
         self.delete_rule(rule_name)
 
@@ -1129,7 +1150,7 @@ class Zappa(object):
         )
 
         response = self.lambda_client.add_permission(
-            FunctionName=lambda_name,
+            FunctionName=latest_arn,
             StatementId=''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8)),
             Action='lambda:InvokeFunction',
             Principal='events.amazonaws.com',
@@ -1141,7 +1162,7 @@ class Zappa(object):
             Targets=[
                 {
                     'Id': str(sum([ ord(c) for c in lambda_arn])), # Is this insane?
-                    'Arn': lambda_arn,
+                    'Arn': latest_arn,
                     'Input': '',
                 },
             ]

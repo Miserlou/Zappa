@@ -241,7 +241,8 @@ class ZappaCLI(object):
 
         # Create a Keep Warm for this deployment
         if self.zappa_settings[self.api_stage].get('keep_warm', True):
-            self.zappa.create_keep_warm(self.lambda_arn, self.lambda_name)
+            keep_warm_rate = self.zappa_settings[self.api_stage].get('keep_warm_expression', "rate(5 minutes)")
+            self.zappa.create_keep_warm(self.lambda_arn, self.lambda_name, schedule_expression=keep_warm_rate)
 
         endpoint_url = ''
         if self.use_apigateway:
@@ -307,7 +308,8 @@ class ZappaCLI(object):
 
         # Create a Keep Warm for this deployment
         if self.zappa_settings[self.api_stage].get('keep_warm', True):
-            self.zappa.create_keep_warm(self.lambda_arn, self.lambda_name)
+            keep_warm_rate = self.zappa_settings[self.api_stage].get('keep_warm_expression', "rate(5 minutes)")
+            self.zappa.create_keep_warm(self.lambda_arn, self.lambda_name, schedule_expression=keep_warm_rate)
 
         # Remove the uploaded zip from S3, because it is now registered..
         self.zappa.remove_from_s3(self.zip_path, self.s3_bucket_name)
@@ -328,6 +330,7 @@ class ZappaCLI(object):
             self.zappa_settings[self.api_stage].get('cloudwatch_data_trace', False),
             self.zappa_settings[self.api_stage].get('cloudwatch_metrics_enabled', False)
         )
+        
         self.callback('post')
 
         print("Your updated Zappa deployment is live! {}".format(endpoint_url))

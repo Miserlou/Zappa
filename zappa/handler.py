@@ -132,6 +132,7 @@ class LambdaHandler(object):
 
         # If in DEBUG mode, log all raw incoming events.
         if settings.DEBUG:
+            print('Zappa Event: {}'.format(event))
             logger.debug('Zappa Event: {}'.format(event))
 
         # Custom log level
@@ -144,10 +145,15 @@ class LambdaHandler(object):
         if event.get('detail-type') == u'Scheduled Event':
 
             whole_function = event['resources'][0].split('/')[-1]
-            app_function = self.import_module_and_get_function(whole_function)
 
-            # Execute the function!
-            return self.run_function(app_function, event, context)
+            # This is a scheduled, non-keep-alive function.
+            # This is not the best way to do this but it'll do.
+            if '.' in whole_function:
+                app_function = self.import_module_and_get_function(whole_function)
+
+                # Execute the function!
+                return self.run_function(app_function, event, context)
+            # Else, let this execute as it were.
 
         # This is a direct command invocation.
         elif event.get('command', None):

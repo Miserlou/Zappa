@@ -162,6 +162,7 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
     funk._context = ctx
 
     event_source_obj = event_source_func(ctx, event_source)
+
     return event_source_obj, ctx, funk
 
 def add_event_source(event_source, lambda_arn, target_function, boto_session, dry=False):

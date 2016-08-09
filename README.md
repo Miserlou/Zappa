@@ -242,6 +242,7 @@ to change Zappa's behavior. Use these at your own risk!
         "http_methods": ["GET", "POST"], // HTTP Methods to route,
         "integration_response_codes": [200, 301, 404, 500], // Integration response status codes to route
         "keep_warm": true, // Create CloudWatch events to keep the server warm.
+        "keep_warm_expressions": "rate(5 minutes)", // How often to execute the keep-warm, in cron and rate format. Default 5 minutes.
         "lambda_handler": "your_custom_handler", // The name of Lambda handler. Default: handler.lambda_handler
         "log_level": "DEBUG", // Set the Zappa log level. Default INFO, can be one of CRITICAL, ERROR, WARNING, INFO and DEBUG.
         "memory_size": 512, // Lambda function memory in MB
