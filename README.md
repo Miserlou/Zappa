@@ -173,6 +173,9 @@ If you need to remove the API Gateway and Lambda function that you have previous
 
 You will be asked for confirmation before it executes.
 
+If you enabled Cloudwatch Logs for your Api Gateway service and you don't
+want to keep logs, you can specify --remove-logs option to purge logs for an api gateway as well as a lambda function.
+
 #### Status
 
 If you need to see the status of your deployment and event schedules, simply use the `status` command.
