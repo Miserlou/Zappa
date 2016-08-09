@@ -232,6 +232,7 @@ class Zappa(object):
     assume_policy = ASSUME_POLICY
     attach_policy = ATTACH_POLICY
     aws_region = 'us-east-1'
+    cloudwatch_log_levels = ['OFF', 'ERROR', 'INFO']
 
     ##
     # Credentials
@@ -786,7 +787,8 @@ class Zappa(object):
 
         return resource_id
 
-    def deploy_api_gateway(self, api_id, stage_name, stage_description="", description="", cache_cluster_enabled=False, cache_cluster_size='0.5', variables=None, api_key_required=False):
+    def deploy_api_gateway(self, api_id, stage_name, stage_description="", description="", cache_cluster_enabled=False, cache_cluster_size='0.5', variables=None, api_key_required=False,
+            cloudwatch_log_level='OFF', cloudwatch_data_trace=False, cloudwatch_metrics_enabled=False):
         """
         Deploy the API Gateway!
 
@@ -821,7 +823,43 @@ class Zappa(object):
                     )
             print('x-api-key: {}'.format(api_key['id']))
 
+        if cloudwatch_log_level not in self.cloudwatch_log_levels:
+            cloudwatch_log_level = 'OFF'
+
+        self.apigateway_client.update_stage(
+            restApiId=api_id,
+            stageName=stage_name,
+            patchOperations=[
+                self.get_patch_op('logging/loglevel', cloudwatch_log_level),
+                self.get_patch_op('logging/dataTrace', cloudwatch_data_trace),
+                self.get_patch_op('metrics/enabled', cloudwatch_metrics_enabled),
+            ]
+        )
+
         return "https://{}.execute-api.{}.amazonaws.com/{}".format(api_id, self.boto_session.region_name, stage_name)
+
+    def get_patch_op(self, keypath, value, op='replace'):
+        """
+        Returns an object that describes a change of configuration on the given staging.
+        Setting will be applied on all available HTTP methods.
+
+        """
+        if isinstance(value, bool):
+            value = str(value).lower()
+        return {'op': op, 'path': '/*/*/{}'.format(keypath), 'value': value}
+
+    def get_rest_apis(self, project_name):
+        """
+        Generator that allows to iterate per every available apis.
+        """
+        all_apis = self.apigateway_client.get_rest_apis(
+            limit=500
+        )
+
+        for api in all_apis['items']:
+            if api['name'] != project_name:
+                continue
+            yield api
 
     def undeploy_api_gateway(self, project_name, api_key_required=False):
         """
@@ -830,16 +868,9 @@ class Zappa(object):
         """
 
         print("Deleting API Gateway..")
-
-        all_apis = self.apigateway_client.get_rest_apis(
-            limit=500
-        )
-
-        for api in all_apis['items']:
-            if api['name'] != project_name:
-                continue
-            response = self.apigateway_client.delete_rest_api(
-                restApiId=api['id']
+        for api in self.get_rest_apis(project_name):
+            self.apigateway_client.delete_rest_api(
+                    restApiId=api['id']
             )
             if api_key_required:
                 print("Removing API Key..")
@@ -849,6 +880,26 @@ class Zappa(object):
                         apiKey="{}".format(api_key_id)
                 )
 
+    def update_stage_config(self, project_name, stage_name, cloudwatch_log_level, cloudwatch_data_trace,
+        cloudwatch_metrics_enabled):
+        """
+        Update settings on staging.
+        """
+        print("Updating configuration on {}...".format(stage_name))
+
+        if cloudwatch_log_level not in self.cloudwatch_log_levels:
+            cloudwatch_log_level = 'OFF'
+
+        for api in self.get_rest_apis(project_name):
+            self.apigateway_client.update_stage(
+                restApiId=api['id'],
+                stageName=stage_name,
+                patchOperations=[
+                    self.get_patch_op('logging/loglevel', cloudwatch_log_level),
+                    self.get_patch_op('logging/dataTrace', cloudwatch_data_trace),
+                    self.get_patch_op('metrics/enabled', cloudwatch_metrics_enabled),
+                ]
+            )
 
     def get_api_url(self, project_name, stage_name):
         """

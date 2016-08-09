@@ -1,0 +1,28 @@
+{
+  "status_code": 201,
+  "data": {
+    "deploymentId" : "aioOASIHD1h",
+    "stageName" : "ttt888",
+    "description" : "Deployed by Zappa.",
+    "cacheClusterEnabled" : false,
+    "cacheClusterSize" : "1",
+    "cacheClusterStatus" : "AVAILABLE",
+    "methodSettings" : {
+      "String" : {
+        "metricsEnabled" : false,
+        "loggingLevel" : "OFF",
+        "dataTraceEnabled" : false,
+        "throttlingBurstLimit" : 100,
+        "throttlingRateLimit" : 100,
+        "cachingEnabled" : false,
+        "cacheTtlInSeconds" : 100,
+        "cacheDataEncrypted" : false,
+        "requireAuthorizationForCacheControl" : false
+      }
+    },
+    "variables" : {
+    },
+    "createdDate" : "2011-01-01T01:01:01Z+0000",
+    "lastUpdatedDate" : "2011-01-01T01:01:01Z+0000"
+  }
+}
