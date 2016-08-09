@@ -145,14 +145,20 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
     ctx = PseudoContext()
     ctx.session = boto_session
 
-    split_arn = lambda_arn.split(':')
-    arn_front = ':'.join(split_arn[:-1])
-    arn_back = split_arn[-1]
-    ctx.environment = arn_back
-
     funk = PseudoFunction()
     funk.name = target_function
-    funk.arn = arn_front
+    
+    # Kappa 0.6.0 requires this nasty hacking,
+    # hopefully we can remove at least some of this soon.
+    if svc == 's3':
+        split_arn = lambda_arn.split(':')
+        arn_front = ':'.join(split_arn[:-1])
+        arn_back = split_arn[-1]
+        ctx.environment = arn_back
+        funk.arn = arn_front
+    else:
+        funk.arn = lambda_arn
+
     funk._context = ctx
 
     event_source_obj = event_source_func(ctx, event_source)
