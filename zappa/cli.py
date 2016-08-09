@@ -26,6 +26,7 @@ import slugify
 import string
 import sys
 import tempfile
+import urllib
 import zipfile
 
 from zappa import Zappa, logger
@@ -111,6 +112,7 @@ class ZappaCLI(object):
                             help='The WSGI application function.')
         parser.add_argument('-v', '--version', action='store_true', help='Print the zappa version', default=False)
         parser.add_argument('-y', '--yes', action='store_true', help='Auto confirm yes', default=False)
+        parser.add_argument('--dryrun', action='store_true', help='Dry run (no deployment made)', default=False)
 
         args = parser.parse_args(argv)
 
@@ -159,9 +161,9 @@ class ZappaCLI(object):
 
         # Hand it off
         if command == 'deploy': # pragma: no cover
-            self.deploy()
+            self.deploy(dryrun=vargs['dryrun'])
         elif command == 'update': # pragma: no cover
-            self.update()
+            self.deploy(dryrun=vargs['dryrun'])
         elif command == 'rollback': # pragma: no cover
             if vargs['num_rollback'] < 1: # pragma: no cover
                 parser.error("Please enter the number of iterations to rollback.")
@@ -204,7 +206,7 @@ class ZappaCLI(object):
     # The Commands
     ##
 
-    def deploy(self):
+    def deploy(self, dryrun=False):
         """
         Package your project, upload it to S3, register the Lambda function
         and create the API Gateway routes.
@@ -214,9 +216,6 @@ class ZappaCLI(object):
         # Execute the prebuild script
         if self.prebuild_script:
             self.execute_prebuild_script()
-
-        # Make sure the necessary IAM execution roles are available
-        self.zappa.create_iam_roles()
 
         # Create the Lambda Zip
         self.create_package()
@@ -229,100 +228,48 @@ class ZappaCLI(object):
             print("Unable to upload to S3. Quitting.")
             return
 
-        # Register the Lambda function with that zip as the source
-        # You'll also need to define the path to your lambda_handler code.
-        self.lambda_arn = self.zappa.create_lambda_function(bucket=self.s3_bucket_name,
-                                                       s3_key=self.zip_path,
-                                                       function_name=self.lambda_name,
-                                                       handler=self.lambda_handler,
-                                                       vpc_config=self.vpc_config,
-                                                       timeout=self.timeout_seconds,
-                                                       memory_size=self.memory_size)
+        keep_warm = self.zappa_settings[self.api_stage].get('keep-warm', True)
+        cache_cluster_enabled = self.zappa_settings[self.api_stage].get('cache_cluster_enabled', False)
+        cache_cluster_size = str(self.zappa_settings[self.api_stage].get('cache_cluster_size', .5))
 
-        # Create a Keep Warm for this deployment
-        if self.zappa_settings[self.api_stage].get('keep_warm', True):
-            self.zappa.create_keep_warm(self.lambda_arn, self.lambda_name)
+        template = self.zappa.create_stack_template(self.lambda_name,
+                                                    self.api_stage,
+                                                    self.s3_bucket_name,
+                                                    self.zip_path,
+                                                    self.lambda_handler,
+                                                    self.vpc_config,
+                                                    self.timeout_seconds,
+                                                    self.memory_size,
+                                                    keep_warm,
+                                                    self.use_apigateway,
+                                                    cache_cluster_enabled,
+                                                    self.api_key_required)
 
-        endpoint_url = ''
-        if self.use_apigateway:
-            # Create and configure the API Gateway
-            api_id = self.zappa.create_api_gateway_routes(
-                self.lambda_arn, self.lambda_name, self.api_key_required)
-
-            # Deploy the API!
-            cache_cluster_enabled = self.zappa_settings[self.api_stage].get('cache_cluster_enabled', False)
-            cache_cluster_size = str(self.zappa_settings[self.api_stage].get('cache_cluster_size', .5))
-            endpoint_url = self.zappa.deploy_api_gateway(
-                                        api_id=api_id,
-                                        stage_name=self.api_stage,
-                                        cache_cluster_enabled=cache_cluster_enabled,
-                                        cache_cluster_size=cache_cluster_size,
-                                        api_key_required=self.api_key_required
-                                    )
-
-            if self.zappa_settings[self.api_stage].get('touch', True):
-                requests.get(endpoint_url)
-
-        # Finally, delete the local copy our zip package
-        if self.zappa_settings[self.api_stage].get('delete_zip', True):
-            os.remove(self.zip_path)
-
-        # Remove the uploaded zip from S3, because it is now registered..
-        self.zappa.remove_from_s3(self.zip_path, self.s3_bucket_name)
-
-        self.callback('post')
-
-        print("Deployed! {}".format(endpoint_url))
-
-
-    def update(self):
-        """
-        Repackage and update the function code.
-        """
-
-        # Execute the prebuild script
-        if self.prebuild_script:
-            self.execute_prebuild_script()
-
-        # Make sure the necessary IAM execution roles are available
-        self.zappa.create_iam_roles()
-
-        # Create the Lambda Zip,
-        self.create_package()
-        self.callback('zip')
-
-        # Upload it to S3
-        success = self.zappa.upload_to_s3(self.zip_path, self.s3_bucket_name)
-        if not success: # pragma: no cover
-            print("Unable to upload to S3. Quitting.")
-            return
-
-        # Register the Lambda function with that zip as the source
-        # You'll also need to define the path to your lambda_handler code.
-        self.lambda_arn = self.zappa.update_lambda_function(
-            self.s3_bucket_name, self.zip_path, self.lambda_name)
-
-        # Create a Keep Warm for this deployment
-        if self.zappa_settings[self.api_stage].get('keep_warm', True):
-            self.zappa.create_keep_warm(self.lambda_arn, self.lambda_name)
-
-        # Remove the uploaded zip from S3, because it is now registered..
-        self.zappa.remove_from_s3(self.zip_path, self.s3_bucket_name)
-
-        # Finally, delete the local copy our zip package
-        if self.zappa_settings[self.api_stage].get('delete_zip', True):
-            os.remove(self.zip_path)
-
-        if self.zappa_settings[self.api_stage].get('domain', None):
-            endpoint_url = self.zappa_settings[self.api_stage].get('domain')
+        if dryrun:
+            temp_json = tempfile.NamedTemporaryFile(delete=False)
+            temp_json.write(template.to_json(indent=None, separators=(',',':')))
+            temp_json.close()
+            print('Wrote CloudFormation template for {0} to {1}'.format(self.lambda_name, temp_json.name))
+            response = self.zappa.update_stack(self.lambda_name, self.s3_bucket_name, changeset=True)
+            change_url = 'https://console.aws.amazon.com/cloudformation/home?region={0}#/changeset/detail?changeSetId={1}'.format(
+                self.aws_region, urllib.quote(response['Id'], safe='')
+            )
+            print('Created changeset {0}').format(change_url)
         else:
-            endpoint_url = self.zappa.get_api_url(self.lambda_name, self.api_stage)
+            print('Updating CloudFormation template {0}...'.format(self.lambda_name))
+            self.zappa.update_stack(self.lambda_name, self.s3_bucket_name, wait=True)
+
+        endpoint_url = self.zappa.stack_outputs(self.lambda_name).get('Endpoint', '')
+
+        if self.zappa_settings[self.api_stage].get('touch', True) and not dryrun:
+            requests.get(endpoint_url)
+
+        self.remove_uploaded_zip()
 
         self.callback('post')
 
-        print("Your updated Zappa deployment is live! {}".format(endpoint_url))
-
-        return
+        if not dryrun:
+            print("Deployed! {}".format(endpoint_url))
 
     def rollback(self, revision):
         """
