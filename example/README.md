@@ -24,7 +24,7 @@ You can deploy just a function with a schedule:
     $ zappa schedule dev_event
 
     # watch log
-    $ zappa log dev_event
+    $ zappa tail dev_event
 
 You can also call a scheduled function packaged along with your normal WSGI app:
 
