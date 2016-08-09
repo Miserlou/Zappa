@@ -26,6 +26,7 @@ import slugify
 import string
 import sys
 import tempfile
+import urllib
 import zipfile
 
 from zappa import Zappa, logger
@@ -249,6 +250,11 @@ class ZappaCLI(object):
             temp_json.write(template.to_json(indent=None, separators=(',',':')))
             temp_json.close()
             print('Wrote CloudFormation template for {0} to {1}'.format(self.lambda_name, temp_json.name))
+            response = self.zappa.update_stack(self.lambda_name, self.s3_bucket_name, changeset=True)
+            change_url = 'https://console.aws.amazon.com/cloudformation/home?region={0}#/changeset/detail?changeSetId={1}'.format(
+                self.aws_region, urllib.quote(response['Id'], safe='')
+            )
+            print('Created changeset {0}').format(change_url)
         else:
             print('Updating CloudFormation template {0}...'.format(self.lambda_name))
             self.zappa.update_stack(self.lambda_name, self.s3_bucket_name, wait=True)

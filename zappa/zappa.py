@@ -263,7 +263,6 @@ class Zappa(object):
         self.s3_client = self.boto_session.client('s3')
         self.lambda_client = self.boto_session.client('lambda', config=long_config)
         self.events_client = self.boto_session.client('events')
-        #self.apigateway_client = self.boto_session.client('apigateway')
         self.logs_client = self.boto_session.client('logs')
         self.iam_client = self.boto_session.client('iam')
         self.iam = self.boto_session.resource('iam')
@@ -273,6 +272,7 @@ class Zappa(object):
         self.cf_api_resources = []
         self.cf_parameters = {}
         self.cf_role = None
+        self.cf_function = None
 
     ##
     # Packaging
@@ -523,12 +523,7 @@ class Zappa(object):
 
         """
 
-        if self.credentials_arn:
-            credentials = self.credentials_arn  # This must be a Role ARN
-        elif self.cf_role:
-            credentials = troposphere.GetAtt(self.cf_role, 'Arn')
-        else:
-            raise Exception('Could not find pre-made Role ARN or CloudFormation Role')
+        credentials = self.get_credentials_arn()
 
         function = troposphere.awslambda.Function('Function')
         function.Description = description
@@ -549,8 +544,17 @@ class Zappa(object):
         code.S3Bucket = bucket
         code.S3Key = s3_key
         function.Code = code
-
         self.cf_template.add_resource(function)
+
+        version = troposphere.awslambda.Version('Live')
+        version.FunctionName = troposphere.Ref(function)
+        self.cf_template.add_resource(version)
+
+        self.cf_template.add_output([
+            troposphere.Output('LambdaARN',
+                               Description='Lambda function ARN',
+                               Value=troposphere.Ref(version))
+        ])
 
         return function
 
@@ -625,19 +629,6 @@ class Zappa(object):
         except Exception as e:
             return []
 
-    def delete_lambda_function(self, function_name):
-        """
-        Given a function name, delete it from AWS Lambda.
-
-        Returns the response.
-
-        """
-        print("Deleting Lambda function..")
-
-        return self.lambda_client.delete_function(
-            FunctionName=function_name,
-        )
-
     def cache_param(self, value):
         '''Returns a troposphere Ref to a value cached as a parameter.'''
 
@@ -690,6 +681,15 @@ class Zappa(object):
 
         return restapi
 
+
+    def get_credentials_arn(self):
+        if self.credentials_arn:
+            return self.credentials_arn  # This must be a Role ARN
+        elif self.cf_role:
+            return troposphere.GetAtt(self.cf_role, 'Arn')
+        else:
+            raise Exception('Could not find pre-made Role ARN or CloudFormation Role')
+
     def create_and_setup_methods(self, restapi, resource, lambda_func, api_key_required, depth):
         """
         Sets up the methods, integration responses and method responses for a given API Gateway resource.
@@ -719,12 +719,7 @@ class Zappa(object):
                 'multipart/form-data': self.cache_param(FORM_ENCODED_TEMPLATE_MAPPING)
             }
 
-            if self.credentials_arn:
-                credentials = self.credentials_arn  # This must be a Role ARN
-            elif self.cf_role:
-                credentials = troposphere.GetAtt(self.cf_role, 'Arn')
-            else:
-                raise Exception('Could not find pre-made Role ARN or CloudFormation Role')
+            credentials = self.get_credentials_arn()
 
             uri = troposphere.Join('', [
                 'arn:aws:apigateway:',
@@ -882,7 +877,7 @@ class Zappa(object):
         return self.cf_template
 
 
-    def update_stack(self, name, working_bucket, wait=False):
+    def update_stack(self, name, working_bucket, wait=False, changeset=False):
         capabilities = []
         if self.cf_role:
             capabilities.append('CAPABILITY_IAM')
@@ -903,33 +898,43 @@ class Zappa(object):
         try:
             stack = self.cf_client.describe_stacks(StackName=name)['Stacks'][0]
             waiter = 'stack_update_complete'
-        except botocore.client.ClientError:
             update = True
-
-        if update:
-            self.cf_client.create_stack(StackName=name,
-                                        Capabilities=capabilities,
-                                        TemplateURL=url,
-                                        Tags=tags)
-            print('Waiting for stack {0} to create (this can take a bit)...'.format(name))
-        else:
-            self.cf_client.update_stack(StackName=name,
-                                        Capabilities=capabilities,
-                                        TemplateURL=url,
-                                        Tags=tags)
-            print('Waiting for stack {0} to update...'.format(name))
-
-        if wait:
-            polling = self.cf_client.get_waiter(waiter)
-            polling.wait(StackName=name)
-            # TODO cleanup if it fails!
+        except botocore.client.ClientError:
+            update = False
+            if changeset:
+                raise Exception("Cannot make changeset if stack doesn't exist yet")
 
         try:
-            os.remove(template)
-        except:
-            pass
+            if changeset:
+                return self.cf_client.create_change_set(StackName=name,
+                                                        Capabilities=capabilities,
+                                                        TemplateURL=url,
+                                                        Tags=tags,
+                                                        ChangeSetName='ZappaUpdate')
+            elif update:
+                self.cf_client.update_stack(StackName=name,
+                                            Capabilities=capabilities,
+                                            TemplateURL=url,
+                                            Tags=tags)
+                print('Waiting for stack {0} to update...'.format(name))
+            else:
+                self.cf_client.create_stack(StackName=name,
+                                            Capabilities=capabilities,
+                                            TemplateURL=url,
+                                            Tags=tags)
+                print('Waiting for stack {0} to create (this can take a bit)...'.format(name))
 
-        self.remove_from_s3(template, working_bucket)
+            if wait:
+                polling = self.cf_client.get_waiter(waiter)
+                polling.wait(StackName=name)
+                # TODO cleanup if it fails!
+        finally:
+            try:
+                os.remove(template)
+            except:
+                pass
+
+            self.remove_from_s3(template, working_bucket)
 
     def stack_outputs(self, name):
         try:
@@ -963,6 +968,7 @@ class Zappa(object):
         try:
             self.credentials_arn = role.arn
             self.cf_role = None
+            arn = role.arn
 
         except botocore.client.ClientError:
             role = troposphere.iam.Role(self.role_name)
@@ -970,6 +976,13 @@ class Zappa(object):
             role.Policies = [self.attach_policy]
             troposphere.add_resource(role)
             self.cf_role = role
+            arn = troposphere.GetAtt(role, 'Arn')
+
+        self.cf_template.add_output([
+            troposphere.Output('CredentialsARN',
+                               Description='Lambda IAM Credentials ARN',
+                               Value=arn)
+        ])
 
     ##
     # CloudWatch Events
