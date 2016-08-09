@@ -271,6 +271,7 @@ class Zappa(object):
         self.cf_template = troposphere.Template()
         self.cf_template.add_description('Automatically generated with Zappa')
         self.cf_api_resources = []
+        self.cf_parameters = {}
         self.cf_role = None
 
     ##
@@ -637,6 +638,19 @@ class Zappa(object):
             FunctionName=function_name,
         )
 
+    def cache_param(self, value):
+        '''Returns a troposphere Ref to a value cached as a parameter.'''
+
+        if value not in self.cf_parameters:
+            keyname = chr(ord('A') + len(self.cf_parameters))
+            param = self.cf_template.add_parameter(troposphere.Parameter(
+                keyname, Type="String", Default=value
+            ))
+
+            self.cf_parameters[value] = param
+
+        return troposphere.Ref(self.cf_parameters[value])
+
     ##
     # API Gateway
     ##
@@ -699,13 +713,10 @@ class Zappa(object):
             self.cf_template.add_resource(method)
             self.cf_api_resources.append(method.title)
 
-            template_mapping = TEMPLATE_MAPPING
-            post_template_mapping = POST_TEMPLATE_MAPPING
-            form_encoded_template_mapping = FORM_ENCODED_TEMPLATE_MAPPING
             content_mapping_templates = {
-                'application/json': post_template_mapping,
-                'application/x-www-form-urlencoded': post_template_mapping,
-                'multipart/form-data': form_encoded_template_mapping
+                'application/json': self.cache_param(POST_TEMPLATE_MAPPING),
+                'application/x-www-form-urlencoded': self.cache_param(POST_TEMPLATE_MAPPING),
+                'multipart/form-data': self.cache_param(FORM_ENCODED_TEMPLATE_MAPPING)
             }
 
             if self.credentials_arn:
@@ -759,18 +770,20 @@ class Zappa(object):
             for response in self.integration_response_codes:
                 status_code = str(response)
 
-                response_parameters = {"method.response.header." + header_type: "integration.response.body." + header_type for header_type in self.method_header_types}
+                response_parameters = {
+                    "method.response.header." + header_type: self.cache_param("integration.response.body." + header_type)
+                    for header_type in self.method_header_types}
 
                 # Error code matching RegEx
                 # Thanks to @KevinHornschemeier and @jayway
                 # for the discussion on this.
                 if status_code == '200':
-                    response_templates = {content_type: RESPONSE_TEMPLATE for content_type in self.integration_content_types}
+                    response_templates = {content_type: self.cache_param(RESPONSE_TEMPLATE) for content_type in self.integration_content_types}
                 elif status_code in ['301', '302']:
                     response_templates = {content_type: REDIRECT_RESPONSE_TEMPLATE for content_type in self.integration_content_types}
-                    response_parameters["method.response.header.Location"] = "integration.response.body.errorMessage"
+                    response_parameters["method.response.header.Location"] = self.cache_param("integration.response.body.errorMessage")
                 else:
-                    response_templates = {content_type: ERROR_RESPONSE_TEMPLATE for content_type in self.integration_content_types}
+                    response_templates = {content_type: self.cache_param(ERROR_RESPONSE_TEMPLATE) for content_type in self.integration_content_types}
 
                 integration_response = troposphere.apigateway.IntegrationResponse()
                 integration_response.ResponseParameters = response_parameters
@@ -832,6 +845,42 @@ class Zappa(object):
                                Description='HTTP Endpoint for this Zappa deployment',
                                Value = endpoint_value)
         ])
+
+    def create_stack_template(self, name, api_stage, working_bucket, zip_path,
+                              lambda_handler, vpc_config, timeout_seconds, memory_size,
+                              keep_warm, use_apigateway, cache_cluster_enabled,
+                              api_key_required):
+        '''
+        Create a the entire stack template and return it as a troposphere Template object.
+        '''
+
+        # wipe out an old template if it exists
+        self.cf_template = troposphere.Template()
+        self.cf_parameters = {}
+        self.cf_api_resources = []
+
+        self.create_iam_roles()
+
+        func = self.create_lambda_function(bucket=working_bucket,
+                                           s3_key=zip_path,
+                                           function_name=name,
+                                           handler=lambda_handler,
+                                           vpc_config=vpc_config,
+                                           timeout=timeout_seconds,
+                                           memory_size=memory_size)
+        if keep_warm:
+            # TODO
+            #self.create_keep_warm()
+            pass
+
+        if use_apigateway:
+            restapi = self.create_api_gateway_routes(name, func, api_key_required)
+            self.deploy_api_gateway(restapi=restapi, stage_name=api_stage,
+                                    cache_cluster_enabled=cache_cluster_enabled,
+                                    api_key_required=api_key_required)
+
+        return self.cf_template
+
 
     def update_stack(self, name, working_bucket, wait=False):
         capabilities = []

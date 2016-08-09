@@ -216,9 +216,6 @@ class ZappaCLI(object):
         if self.prebuild_script:
             self.execute_prebuild_script()
 
-        # Make sure the necessary IAM execution roles are available
-        self.zappa.create_iam_roles()
-
         # Create the Lambda Zip
         self.create_package()
         self.callback('zip')
@@ -230,40 +227,26 @@ class ZappaCLI(object):
             print("Unable to upload to S3. Quitting.")
             return
 
-        # Register the Lambda function with that zip as the source
-        # You'll also need to define the path to your lambda_handler code.
-        lambda_func = self.zappa.create_lambda_function(bucket=self.s3_bucket_name,
-                                                        s3_key=self.zip_path,
-                                                        function_name=self.lambda_name,
-                                                        handler=self.lambda_handler,
-                                                        vpc_config=self.vpc_config,
-                                                        timeout=self.timeout_seconds,
-                                                        memory_size=self.memory_size)
+        keep_warm = self.zappa_settings[self.api_stage].get('keep-warm', True)
+        cache_cluster_enabled = self.zappa_settings[self.api_stage].get('cache_cluster_enabled', False)
+        cache_cluster_size = str(self.zappa_settings[self.api_stage].get('cache_cluster_size', .5))
 
-        # Create a Keep Warm for this deployment
-        # TODO
-        if self.zappa_settings[self.api_stage].get('keep_warm', True):
-            self.zappa.create_keep_warm(self.lambda_arn, self.lambda_name)
-
-        endpoint_url = ''
-        if self.use_apigateway:
-            # Create and configure the API Gateway
-            restapi = self.zappa.create_api_gateway_routes(self.lambda_name, lambda_func, self.api_key_required)
-
-            # Deploy the API!
-            cache_cluster_enabled = self.zappa_settings[self.api_stage].get('cache_cluster_enabled', False)
-            cache_cluster_size = str(self.zappa_settings[self.api_stage].get('cache_cluster_size', .5))
-            self.zappa.deploy_api_gateway(
-                                        restapi=restapi,
-                                        stage_name=self.api_stage,
-                                        cache_cluster_enabled=cache_cluster_enabled,
-                                        cache_cluster_size=cache_cluster_size,
-                                        api_key_required=self.api_key_required
-                                    )
+        template = self.zappa.create_stack_template(self.lambda_name,
+                                                    self.api_stage,
+                                                    self.s3_bucket_name,
+                                                    self.zip_path,
+                                                    self.lambda_handler,
+                                                    self.vpc_config,
+                                                    self.timeout_seconds,
+                                                    self.memory_size,
+                                                    keep_warm,
+                                                    self.use_apigateway,
+                                                    cache_cluster_enabled,
+                                                    self.api_key_required)
 
         if dryrun:
             temp_json = tempfile.NamedTemporaryFile(delete=False)
-            temp_json.write(self.zappa.cf_template.to_json())
+            temp_json.write(template.to_json(indent=None, separators=(',',':')))
             temp_json.close()
             print('Wrote CloudFormation template for {0} to {1}'.format(self.lambda_name, temp_json.name))
         else:
@@ -272,7 +255,7 @@ class ZappaCLI(object):
 
         endpoint_url = self.zappa.stack_outputs(self.lambda_name).get('Endpoint', '')
 
-        if self.zappa_settings[self.api_stage].get('touch', True):
+        if self.zappa_settings[self.api_stage].get('touch', True) and not dryrun:
             requests.get(endpoint_url)
 
         self.remove_uploaded_zip()
