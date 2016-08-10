@@ -39,6 +39,7 @@ CUSTOM_SETTINGS = [
     'exclude',
     'http_methods',
     'integration_response_codes',
+    'method_header_types',
     'method_response_codes',
     'parameter_depth',
     'role_name',

@@ -246,6 +246,13 @@ to change Zappa's behavior. Use these at your own risk!
         "lambda_handler": "your_custom_handler", // The name of Lambda handler. Default: handler.lambda_handler
         "log_level": "DEBUG", // Set the Zappa log level. Default INFO, can be one of CRITICAL, ERROR, WARNING, INFO and DEBUG.
         "memory_size": 512, // Lambda function memory in MB
+        "method_header_types": [ // Which headers to include in the API response
+            'Content-Type',
+            'Location',
+            'Status',
+            'X-Frame-Options',
+            'Set-Cookie'
+        ]
         "method_response_codes": [200, 301, 404, 500], // Method response status codes to route
         "parameter_depth": 10, // Size of URL depth to route. Defaults to 8.
         "prebuild_script": "your_module.your_function", // Function to execute before uploading code
