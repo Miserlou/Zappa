@@ -249,7 +249,7 @@ class ZappaCLI(object):
         if self.use_apigateway:
             # Create and configure the API Gateway
             api_id = self.zappa.create_api_gateway_routes(
-                self.lambda_arn, self.lambda_name, self.api_key_required)
+                self.lambda_arn, self.lambda_name, self.api_key_required, self.integration_content_type_aliases)
 
             # Deploy the API!
             cache_cluster_enabled = self.zappa_settings[self.api_stage].get('cache_cluster_enabled', False)
@@ -720,6 +720,8 @@ class ZappaCLI(object):
             self.api_stage].get('timeout_seconds', 30)
         self.use_apigateway = self.zappa_settings[
             self.api_stage].get('use_apigateway', True)
+        self.integration_content_type_aliases = self.zappa_settings[
+            self.api_stage].get('integration_content_type_aliases', {})
         self.lambda_handler = self.zappa_settings[
             self.api_stage].get('lambda_handler', 'handler.lambda_handler')
         self.remote_env_bucket = self.zappa_settings[
