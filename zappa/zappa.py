@@ -988,6 +988,10 @@ class Zappa(object):
             expression = event.get('expression', None)
             event_source = event.get('event_source', None)
             name = event.get('name', function)
+            if name != function:
+                # a custom event name has been provided, make sure function name is included as postfix,
+                # otherwise zappa's handler won't be able to locate the function.
+                name = '{}-{}'.format(name, function)
             description = event.get('description', function)
 
             self.delete_rule(name)
