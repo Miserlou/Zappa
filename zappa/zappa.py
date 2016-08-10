@@ -730,7 +730,8 @@ class Zappa(object):
                 requestParameters={},
                 requestTemplates=content_mapping_templates,
                 cacheNamespace='none',
-                cacheKeyParameters=[]
+                passthroughBehavior='NEVER',
+                cacheKeyParameters=[],
             )
             report_progress()
 
