@@ -1087,12 +1087,31 @@ class Zappa(object):
                     self.events_client.delete_rule(Name=rule_name)
 
 
+    def get_event_rules_for_arn(self, lambda_arn):
+        """
+        Get all of the rules associated with this function.
+        """
+
+        rules = self.events_client.list_rule_names_by_target(TargetArn=lambda_arn)
+
+        lambda_rules = []
+        for rule in rules.get('RuleNames', []):
+            lambda_rules.append(self.events_client.describe_rule(
+                    Name=rule
+                )
+            )
+
+        return lambda_rules
+
     def unschedule_events(self, events, lambda_arn):
         """
         Given a list of events, unschedule these CloudWatch Events.
 
         'events' is a list of dictionaries, where the dict must contains the string
         of a 'function' and the string of the event 'expression', and an optional 'name' and 'description'.
+
+        # TODO: Will this miss events that have been deployed but changed names?
+        #       Should it use get_event_rules_for_arn instead?
 
         """
 

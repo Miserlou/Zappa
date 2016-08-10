@@ -13,6 +13,7 @@ from __future__ import unicode_literals
 import argparse
 import base64
 import botocore
+import click
 import hjson as json
 import inspect
 import imp
@@ -484,21 +485,54 @@ class ZappaCLI(object):
         Describe the status of the current deployment.
         """
 
-        print("Status for %s:" % self.lambda_name)
+        click.echo("Status for " + click.style(self.lambda_name, bold=True) + ": ")
+
+        def tabular_print(title, value):
+            """
+            Convience function for priting formatted table items.
+            """
+            click.echo('%-*s%s' % (32, click.style("\t" + title, fg='green') + ':', str(value)))
 
         lambda_versions = self.zappa.get_lambda_function_versions(self.lambda_name)
         if not lambda_versions:
-            print("\tNo Lambda detected - have you deployed yet?")
+            click.echo(click.style("\tNo Lambda detected - have you deployed yet?", fg='red'))
+            return
         else:
-            print('\tLambda Versions:\t\t' + str(len(lambda_versions)))
+            tabular_print("Lambda Versions", len(lambda_versions))
+
+        tabular_print("Lambda Name", self.lambda_name)
+
+        function_response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name)
+        conf = function_response['Configuration']
+
+        tabular_print("Lambda ARN", conf['FunctionArn'])
+        tabular_print("Lambda Role", conf['Role'])
+        tabular_print("Lambda Handler", conf['Handler'])
+        tabular_print("Lambda Code Size", conf['CodeSize'])
+        tabular_print("Lambda Version", conf['Version'])
+        tabular_print("Lambda Last Modified", conf['LastModified'])
+        tabular_print("Lambda Memory Size", conf['MemorySize'])
+        tabular_print("Lambda Timeout", conf['Timeout'])
+        tabular_print("Lambda Runtime", conf['Runtime'])
 
         api_url = self.zappa.get_api_url(
             self.lambda_name,
             self.api_stage)
-        print('\tAPI Gateway URL:\t' + str(api_url))
+        tabular_print("API Gateway URL", api_url)
 
         domain_url = self.zappa_settings[self.api_stage].get('domain', None)
-        print('\tDomain URL:\t\t' + str(domain_url))
+        tabular_print("Domain URL", domain_url)
+
+        event_rules = self.zappa.get_event_rules_for_arn(conf['FunctionArn'])
+        tabular_print("Num. Event Rules", len(event_rules))
+
+        for rule in event_rules:
+            rule_name = rule['Name']
+            print('')
+            tabular_print("Event Rule Name", rule_name)
+            tabular_print("Event Rule Schedule", rule.get(u'ScheduleExpression', None))
+            tabular_print("Event Rule State", rule.get(u'State', None).title())
+            tabular_print("Event Rule ARN", rule.get(u'Arn', None))
 
     def print_version(self): # pragma: no cover
         """
