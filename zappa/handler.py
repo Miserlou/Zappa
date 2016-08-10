@@ -144,7 +144,7 @@ class LambdaHandler(object):
         # or scheduled event.
         if event.get('detail-type') == u'Scheduled Event':
 
-            whole_function = event['resources'][0].split('/')[-1]
+            whole_function = event['resources'][0].split('/')[-1].split('-')[-1]
 
             # This is a scheduled, non-keep-alive function.
             # This is not the best way to do this but it'll do.
