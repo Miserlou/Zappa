@@ -9,6 +9,7 @@ Deploy arbitrary Python programs as serverless Zappa applications.
 """
 
 from __future__ import unicode_literals
+from __future__ import division
 
 import argparse
 import base64
@@ -28,7 +29,7 @@ import string
 import sys
 import tempfile
 import zipfile
-
+from datetime import datetime,timedelta
 from zappa import Zappa, logger
 from util import detect_django_settings, detect_flask_apps
 
@@ -332,7 +333,7 @@ class ZappaCLI(object):
             self.zappa_settings[self.api_stage].get('cloudwatch_data_trace', False),
             self.zappa_settings[self.api_stage].get('cloudwatch_metrics_enabled', False)
         )
-        
+
         self.callback('post')
 
         print("Your updated Zappa deployment is live! {}".format(endpoint_url))
@@ -505,6 +506,7 @@ class ZappaCLI(object):
         function_response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name)
         conf = function_response['Configuration']
 
+
         tabular_print("Lambda ARN", conf['FunctionArn'])
         tabular_print("Lambda Role", conf['Role'])
         tabular_print("Lambda Handler", conf['Handler'])
@@ -514,6 +516,42 @@ class ZappaCLI(object):
         tabular_print("Lambda Memory Size", conf['MemorySize'])
         tabular_print("Lambda Timeout", conf['Timeout'])
         tabular_print("Lambda Runtime", conf['Runtime'])
+
+        try:
+            function_invocations = self.zappa.cloudwatch.get_metric_statistics(
+                                       Namespace='AWS/Lambda',
+                                       MetricName='Invocations',
+                                       StartTime=datetime.utcnow()-timedelta(days=1),
+                                       EndTime=datetime.utcnow(),
+                                       Period=1440,
+                                       Statistics=['Sum'],
+                                       Dimensions=[{'Name': 'FunctionName',
+                                                    'Value': '{}'.format(self.lambda_name)}]
+                                       )['Datapoints'][0]['Sum']
+        except:
+            function_invocations = 0
+        try:
+            function_errors = self.zappa.cloudwatch.get_metric_statistics(
+                                       Namespace='AWS/Lambda',
+                                       MetricName='Errors',
+                                       StartTime=datetime.utcnow()-timedelta(days=1),
+                                       EndTime=datetime.utcnow(),
+                                       Period=1440,
+                                       Statistics=['Sum'],
+                                       Dimensions=[{'Name': 'FunctionName',
+                                                    'Value': '{}'.format(self.lambda_name)}]
+                                       )['Datapoints'][0]['Sum']
+        except:
+           function_errors = 0
+
+        try:
+            error_rate = "{0:.2f}%".format(function_errors / function_invocations * 100)
+        except:
+            error_rate = "Error calculating"
+
+        tabular_print("Invocations (24h)", function_invocations)
+        tabular_print("Errors (24h)", function_errors)
+        tabular_print("Error Rate(24h)", error_rate)
 
         api_url = self.zappa.get_api_url(
             self.lambda_name,
