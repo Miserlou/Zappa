@@ -23,7 +23,7 @@ def copytree(src, dst, symlinks=False, ignore=None):
         s = os.path.join(src, item)
         d = os.path.join(dst, item)
 
-        if symlinks and os.path.islink(s):
+        if symlinks and os.path.islink(s): # pragma: no cover
             if os.path.lexists(d):
                 os.remove(d)
             os.symlink(os.readlink(s), d)
