@@ -220,7 +220,7 @@ class ZappaCLI(object):
             self.execute_prebuild_script()
 
         # Make sure the necessary IAM execution roles are available
-        if self.manage_iam:
+        if self.manage_roles:
             self.zappa.create_iam_roles()
 
         # Create the Lambda Zip
