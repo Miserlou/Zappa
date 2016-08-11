@@ -552,7 +552,7 @@ class ZappaCLI(object):
 
         # Ensure that we don't already have a zappa_settings file.
         if os.path.isfile(settings_file):
-            print("This project is already initialized!")
+            click.echo("This project is " + click.style("already initialized", fg="red", bold=True) + "!")
             sys.exit() # pragma: no cover
 
         # Ensure P2 until Lambda supports it.
@@ -567,25 +567,25 @@ class ZappaCLI(object):
             sys.exit()
 
         # Explain system.
-        print(u"""\n███████╗ █████╗ ██████╗ ██████╗  █████╗
+        click.echo(click.style(u"""\n███████╗ █████╗ ██████╗ ██████╗  █████╗
 ╚══███╔╝██╔══██╗██╔══██╗██╔══██╗██╔══██╗
   ███╔╝ ███████║██████╔╝██████╔╝███████║
  ███╔╝  ██╔══██║██╔═══╝ ██╔═══╝ ██╔══██║
 ███████╗██║  ██║██║     ██║     ██║  ██║
-╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝     ╚═╝  ╚═╝\n""")
+╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝     ╚═╝  ╚═╝\n""", fg='green', bold=True))
 
-        print("Welcome to Zappa!\n")
-        print("Zappa is a system for running server-less Python web applications on AWS Lambda and AWS API Gateway.")
-        print("This `init` command will help you create and configure your new Zappa deployment.")
-        print("Let's get started!\n")
+        click.echo(click.style("Welcome to ", bold=True) + click.style("Zappa", fg='green', bold=True) + click.style("!\n", bold=True))
+        click.echo(click.style("Zappa", bold=True) + " is a system for running server-less Python web applications on AWS Lambda and AWS API Gateway.")
+        click.echo("This `init` command will help you create and configure your new Zappa deployment.")
+        click.echo("Let's get started!\n")
 
         # Create Env
-        print("Your Zappa configuration can support multiple production environments, like 'dev', 'staging', and 'production'.")
+        click.echo("Your Zappa configuration can support multiple production environments, like '" + click.style("dev", bold=True)  + "', '" + click.style("staging", bold=True)  + "', and '" + click.style("production", bold=True)  + "'.")
         env = raw_input("What do you want to call this environment (default 'dev'): ") or "dev"
 
         # Create Bucket
-        print("\nYour Zappa deployments will need to be uploaded to a private S3 bucket.")
-        print("If you don't have a bucket yet, we'll create one for you too.")
+        click.echo("\nYour Zappa deployments will need to be uploaded to a " + click.style("private S3 bucket", bold=True)  + ".")
+        click.echo("If you don't have a bucket yet, we'll create one for you too.")
         default_bucket = "zappa-" + ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(9))
         bucket = raw_input("What do you want call your bucket? (default '%s'): " % default_bucket) or default_bucket
         # TODO actually create bucket.
@@ -606,31 +606,31 @@ class ZappaCLI(object):
         print('')
         # App-specific
         if has_django: # pragma: no cover
-            print("It looks like this is a Django application!")
-            print("What is the modular path to your projects's Django settings?")
+            click.echo("It looks like this is a " + click.style("Django", bold=True)  + " application!")
+            click.echo("What is the " + click.style("module path", bold=True)  + " to your projects's Django settings?")
             django_settings = None
 
             matches = detect_django_settings()
             while django_settings in [None, '']:
                 if matches:
-                    print("We discovered: " + ', '.join('{}'.format(i) for v, i in enumerate(matches)))
+                    click.echo("We discovered: " + click.style(', '.join('{}'.format(i) for v, i in enumerate(matches)), bold=True))
                     django_settings = raw_input("Where are your project's settings? (default '%s'): " % matches[0]) or matches[0]
                 else:
-                    print("(This will likely be something like 'your_project.settings')")
+                    click.echo("(This will likely be something like 'your_project.settings')")
                     django_settings = raw_input("Where are your project's settings?: ")
             django_settings = django_settings.replace("'", "")
             django_settings = django_settings.replace('"', "")
         else:
             matches = None
             if has_flask:
-                print("It looks like this is a Flask application.")
+                click.echo("It looks like this is a " + click.style("Flask", bold=True)  + " application.")
                 matches = detect_flask_apps()
-            print("What's the modular path to your app's function?")
-            print("This will likely be something like 'your_module.app'.")
+            click.echo("What's the " + click.style("modular path", bold=True)  + " to your app's function?")
+            click.echo("This will likely be something like 'your_module.app'.")
             app_function = None
             while app_function in [None, '']:
                 if matches:
-                    print("We discovered: " + ', '.join('{}'.format(i) for v, i in enumerate(matches)))
+                    click.echo("We discovered: " + click.style(', '.join('{}'.format(i) for v, i in enumerate(matches)), bold=True))
                     app_function = raw_input("Where is your app's function? (default '%s'): " % matches[0]) or matches[0]
                 else:
                     app_function = raw_input("Where is your app's function?: ")
@@ -654,27 +654,28 @@ class ZappaCLI(object):
         import json as json # hjson is fine for loading, not fine for writing.
         zappa_settings_json = json.dumps(zappa_settings, sort_keys=True, indent=4)
 
-        print("\nOkay, here's your zappa_settings.js:\n")
-        print(zappa_settings_json)
+        click.echo("\nOkay, here's your " + click.style("zappa_settings.js", bold=True) + ":\n")
+        click.echo(click.style(zappa_settings_json, fg="yellow", bold=False))
 
-        confirm = raw_input("\nDoes this look okay? (default y) [y/n]: ") or 'yes'
+        confirm = raw_input("\nDoes this look " + click.style("okay", bold=True, fg="green")  + "? (default y) [y/n]: ") or 'yes'
         if confirm[0] not in ['y', 'Y', 'yes', 'YES']:
-            print("Sorry to hear that! Please init again.")
+            click.echo("" + click.style("Sorry", bold=True, fg='red') + " to hear that! Please init again.")
             return
 
         # Write
         with open("zappa_settings.json", "w") as zappa_settings_file:
             zappa_settings_file.write(zappa_settings_json)
 
-        print("\nDone! Now you can deploy your Zappa application by executing:\n")
-        print("\t$ zappa deploy %s" % env)
+        click.echo("\n" + click.style("Done", bold=True) + "! Now you can " + click.style("deploy", bold=True)  + " your Zappa application by executing:\n")
+        click.echo(click.style("\t$ zappa deploy %s" % env, bold=True))
 
-        print("\nAfter that, you can update your application code with:\n")
-        print("\t$ zappa update %s" % env)
+        click.echo("\nAfter that, you can " + click.style("update", bold=True) + " your application code with:\n")
+        click.echo(click.style("\t$ zappa update %s" % env, bold=True))
 
-        print("\nTo learn more, check out the Zappa project page on GitHub: https://github.com/Miserlou/Zappa")
-        print("or stop by our Slack channel: http://bit.do/zappa")
-        print("\nEnjoy!")
+        click.echo("\nTo learn more, check out our project page on " + click.style("GitHub", bold=True) + " here: " + click.style("https://github.com/Miserlou/Zappa", fg="cyan", bold=True))
+        click.echo("and stop by our " + click.style("Slack", bold=True) + " channel here: " + click.style("http://bit.do/zappa", fg="cyan", bold=True))
+        click.echo("\nEnjoy!,")
+        click.echo(" ~ Team " + click.style("Zappa", bold=True) + "!")
 
         return
 
