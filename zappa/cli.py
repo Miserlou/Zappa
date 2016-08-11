@@ -549,9 +549,9 @@ class ZappaCLI(object):
         except:
             error_rate = "Error calculating"
 
-        tabular_print("Invocations (24h)", function_invocations)
-        tabular_print("Errors (24h)", function_errors)
-        tabular_print("Error Rate(24h)", error_rate)
+        tabular_print("Invocations (24h)", int(function_invocations))
+        tabular_print("Errors (24h)", int(function_errors))
+        tabular_print("Error Rate (24h)", error_rate)
 
         api_url = self.zappa.get_api_url(
             self.lambda_name,
