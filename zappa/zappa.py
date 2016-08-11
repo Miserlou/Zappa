@@ -243,6 +243,7 @@ class Zappa(object):
         self.iam_client = self.boto_session.client('iam')
         self.iam = self.boto_session.resource('iam')
         self.s3 = self.boto_session.resource('s3')
+        self.cloudwatch = self.boto_session.client('cloudwatch')
 
     ##
     # Packaging
@@ -871,7 +872,7 @@ class Zappa(object):
         cloudwatch_metrics_enabled):
         """
         Update CloudWatch metrics configuration.
-        
+
         """
 
         if cloudwatch_log_level not in self.cloudwatch_log_levels:
@@ -1023,17 +1024,17 @@ class Zappa(object):
                         }
                     ]
                 )
-                
+
                 if target_response['ResponseMetadata']['HTTPStatusCode'] == 200:
                     print("Scheduled {}!".format(name))
                 else:
                     print("Problem scheduling {}.".format(name))
 
             else:
-                rule_response = add_event_source(  
+                rule_response = add_event_source(
                                                     event_source,
                                                     lambda_arn,
-                                                    function, 
+                                                    function,
                                                     self.boto_session
                                                 )
                 #if rule_response: # Kappa doesn't give us this yet.
@@ -1114,10 +1115,10 @@ class Zappa(object):
                 function = event['function']
                 name = event.get('name', function)
                 event_source = event.get('event_source', function)
-                rule_response = remove_event_source(  
+                rule_response = remove_event_source(
                                                     event_source,
                                                     lambda_arn,
-                                                    function, 
+                                                    function,
                                                     self.boto_session
                                                 )
                 print("Removed event " + name + ".")
