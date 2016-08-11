@@ -32,29 +32,6 @@ logger.setLevel(logging.INFO)
 # Policies And Template Mappings
 ##
 
-TEMPLATE_MAPPING = """{
-  "body" : "$util.base64Encode($input.json("$"))",
-  "headers": {
-    #foreach($header in $input.params().header.keySet())
-    "$header": "$util.escapeJavaScript($input.params().header.get($header))" #if($foreach.hasNext),#end
-
-    #end
-  },
-  "method": "$context.httpMethod",
-  "params": {
-    #foreach($param in $input.params().path.keySet())
-    "$param": "$util.escapeJavaScript($input.params().path.get($param))" #if($foreach.hasNext),#end
-
-    #end
-  },
-  "query": {
-    #foreach($queryParam in $input.params().querystring.keySet())
-    "$queryParam": "$util.escapeJavaScript($input.params().querystring.get($queryParam))" #if($foreach.hasNext),#end
-
-    #end
-  }
-}"""
-
 POST_TEMPLATE_MAPPING = """#set($rawPostData = $input.path("$"))
 {
   "body" : "$util.base64Encode($input.body)",
@@ -631,7 +608,8 @@ class Zappa(object):
     # API Gateway
     ##
 
-    def create_api_gateway_routes(self, lambda_arn, api_name=None, api_key_required=False):
+    def create_api_gateway_routes(self, lambda_arn, api_name=None, api_key_required=False,
+                                  integration_content_type_aliases=None):
         """
         Creates the API Gateway for this Zappa deployment.
 
@@ -674,7 +652,8 @@ class Zappa(object):
                 root_id = item['id']
         if not root_id: # pragma: no cover
             return False
-        self.create_and_setup_methods(api_id, root_id, lambda_arn, progress.update, api_key_required)
+        self.create_and_setup_methods(api_id, root_id, lambda_arn, progress.update, api_key_required,
+                                      integration_content_type_aliases)
 
         parent_id = root_id
         for i in range(1, self.parameter_depth):
@@ -687,11 +666,13 @@ class Zappa(object):
             resource_id = response['id']
             parent_id = resource_id
 
-            self.create_and_setup_methods(api_id, resource_id, lambda_arn, progress.update, api_key_required) # pragma: no cover
+            self.create_and_setup_methods(api_id, resource_id, lambda_arn, progress.update, api_key_required,
+                                          integration_content_type_aliases) # pragma: no cover
 
         return api_id
 
-    def create_and_setup_methods(self, api_id, resource_id, lambda_arn, report_progress, api_key_required):
+    def create_and_setup_methods(self, api_id, resource_id, lambda_arn, report_progress, api_key_required,
+                                 integration_content_type_aliases):
         """
         Sets up the methods, integration responses and method responses for a given API Gateway resource.
 
@@ -708,7 +689,6 @@ class Zappa(object):
             )
             report_progress()
 
-            template_mapping = TEMPLATE_MAPPING
             post_template_mapping = POST_TEMPLATE_MAPPING
             form_encoded_template_mapping = FORM_ENCODED_TEMPLATE_MAPPING
             content_mapping_templates = {
@@ -716,6 +696,12 @@ class Zappa(object):
                 'application/x-www-form-urlencoded': post_template_mapping,
                 'multipart/form-data': form_encoded_template_mapping
             }
+            if integration_content_type_aliases:
+                for content_type in content_mapping_templates.keys():
+                    aliases = integration_content_type_aliases.get(content_type, [])
+                    for alias in aliases:
+                        content_mapping_templates[alias] = content_mapping_templates[content_type]
+
             credentials = self.credentials_arn  # This must be a Role ARN
             uri = 'arn:aws:apigateway:' + self.boto_session.region_name + ':lambda:path/2015-03-31/functions/' + lambda_arn + '/invocations'
 
