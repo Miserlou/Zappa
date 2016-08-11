@@ -219,6 +219,12 @@ class ZappaCLI(object):
         if self.prebuild_script:
             self.execute_prebuild_script()
 
+        # Make sure this isn't already deployed.
+        deployed_versions = self.zappa.get_lambda_function_versions(self.lambda_name)
+        if len(deployed_versions) > 0:
+            click.echo("This application is " + click.style("already deployed", fg="red") + " - did you mean to call " + click.style("update", bold=True) + "?")
+            return
+
         # Make sure the necessary IAM execution roles are available
         if self.manage_roles:
             self.zappa.create_iam_roles()

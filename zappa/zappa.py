@@ -588,7 +588,7 @@ class Zappa(object):
         """
         try:
             response = self.lambda_client.list_versions_by_function(FunctionName=function_name)
-            return response
+            return response.get('Versions', [])
         except Exception as e:
             return []
 
