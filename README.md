@@ -252,6 +252,7 @@ to change Zappa's behavior. Use these at your own risk!
         "keep_warm_expression": "rate(5 minutes)", // How often to execute the keep-warm, in cron and rate format. Default 5 minutes.
         "lambda_handler": "your_custom_handler", // The name of Lambda handler. Default: handler.lambda_handler
         "log_level": "DEBUG", // Set the Zappa log level. Default INFO, can be one of CRITICAL, ERROR, WARNING, INFO and DEBUG.
+        "manage_roles": true, // Have Zappa automatically create and define IAM execution roles and policies. Default true. If false, you must define your own IAM Role and role_name setting.
         "memory_size": 512, // Lambda function memory in MB
         "method_header_types": [ // Which headers to include in the API response
             'Content-Type',
@@ -267,7 +268,7 @@ to change Zappa's behavior. Use these at your own risk!
         "project_name": "MyProject", // The name of the project as it appears on AWS. Defaults to a slugified `pwd`.
         "remote_env_bucket": "my-project-config-files", // optional s3 bucket where remote_env_file can be located.
         "remote_env_file": "filename.json", // file in remote_env_bucket containing a flat json object which will be used to set custom environment variables.
-        "role_name": "MyLambdaRole", // Lambda execution Role
+        "role_name": "MyLambdaRole", // Name of Zappa execution role. Default ZappaExecutionRole. To use a different, pre-existing policy, you must also set manage_roles to false.
         "s3_bucket": "dev-bucket", // Zappa zip bucket,
         "settings_file": "~/Projects/MyApp/settings/dev_settings.py", // Server side settings file location,
         "timeout_seconds": 30, // Maximum lifespan for the Lambda function (default 30)

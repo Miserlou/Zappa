@@ -94,6 +94,7 @@ class ZappaCLI(object):
     use_apigateway = None
     lambda_handler = None
     django_settings = None
+    manage_roles = True
 
     def handle(self, argv=None):
         """
@@ -219,7 +220,8 @@ class ZappaCLI(object):
             self.execute_prebuild_script()
 
         # Make sure the necessary IAM execution roles are available
-        self.zappa.create_iam_roles()
+        if self.manage_iam:
+            self.zappa.create_iam_roles()
 
         # Create the Lambda Zip
         self.create_package()
@@ -292,7 +294,8 @@ class ZappaCLI(object):
             self.execute_prebuild_script()
 
         # Make sure the necessary IAM execution roles are available
-        self.zappa.create_iam_roles()
+        if self.manage_roles:
+            self.zappa.create_iam_roles()
 
         # Create the Lambda Zip,
         self.create_package()
@@ -493,22 +496,20 @@ class ZappaCLI(object):
             Convience function for priting formatted table items.
             """
             click.echo('%-*s%s' % (32, click.style("\t" + title, fg='green') + ':', str(value)))
+            return
 
+        # Lambda Env Details
         lambda_versions = self.zappa.get_lambda_function_versions(self.lambda_name)
         if not lambda_versions:
             click.echo(click.style("\tNo Lambda detected - have you deployed yet?", fg='red'))
             return
         else:
             tabular_print("Lambda Versions", len(lambda_versions))
-
-        tabular_print("Lambda Name", self.lambda_name)
-
         function_response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name)
         conf = function_response['Configuration']
-
-
+        tabular_print("Lambda Name", self.lambda_name)
         tabular_print("Lambda ARN", conf['FunctionArn'])
-        tabular_print("Lambda Role", conf['Role'])
+        tabular_print("Lambda Role ARN", conf['Role'])
         tabular_print("Lambda Handler", conf['Handler'])
         tabular_print("Lambda Code Size", conf['CodeSize'])
         tabular_print("Lambda Version", conf['Version'])
@@ -516,7 +517,12 @@ class ZappaCLI(object):
         tabular_print("Lambda Memory Size", conf['MemorySize'])
         tabular_print("Lambda Timeout", conf['Timeout'])
         tabular_print("Lambda Runtime", conf['Runtime'])
+        if 'VpcConfig' in conf.keys():
+            tabular_print("Lambda VPC ID", conf['VpcConfig']['VpcId'])
+        else:
+            tabular_print("Lambda VPC ID", None)
 
+        # Calculated statistics
         try:
             function_invocations = self.zappa.cloudwatch.get_metric_statistics(
                                        Namespace='AWS/Lambda',
@@ -548,22 +554,21 @@ class ZappaCLI(object):
             error_rate = "{0:.2f}%".format(function_errors / function_invocations * 100)
         except:
             error_rate = "Error calculating"
-
         tabular_print("Invocations (24h)", int(function_invocations))
         tabular_print("Errors (24h)", int(function_errors))
         tabular_print("Error Rate (24h)", error_rate)
 
+        # URLs
         api_url = self.zappa.get_api_url(
             self.lambda_name,
             self.api_stage)
         tabular_print("API Gateway URL", api_url)
-
         domain_url = self.zappa_settings[self.api_stage].get('domain', None)
         tabular_print("Domain URL", domain_url)
 
+        # Scheduled Events
         event_rules = self.zappa.get_event_rules_for_arn(conf['FunctionArn'])
         tabular_print("Num. Event Rules", len(event_rules))
-
         for rule in event_rules:
             rule_name = rule['Name']
             print('')
@@ -571,6 +576,8 @@ class ZappaCLI(object):
             tabular_print("Event Rule Schedule", rule.get(u'ScheduleExpression', None))
             tabular_print("Event Rule State", rule.get(u'State', None).title())
             tabular_print("Event Rule ARN", rule.get(u'Arn', None))
+
+        # TODO: S3/SQS/etc. type events?
 
     def print_version(self): # pragma: no cover
         """
@@ -805,6 +812,8 @@ class ZappaCLI(object):
             self.api_stage].get('settings_file', None)
         self.django_settings = self.zappa_settings[
             self.api_stage].get('django_settings', None)
+        self.manage_roles = self.zappa_settings[
+            self.api_stage].get('manage_roles', True)
 
         self.zappa = Zappa(boto_session=session, profile_name=self.profile_name, aws_region=self.aws_region)
 
