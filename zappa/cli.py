@@ -556,10 +556,14 @@ class ZappaCLI(object):
         except:
            function_errors = 0
 
-        try:
-            error_rate = "{0:.2f}%".format(function_errors / function_invocations * 100)
-        except:
-            error_rate = "Error calculating"
+        if function_errors > 0:
+            try:
+                error_rate = "{0:.2f}%".format(function_errors / function_invocations * 100)
+            except:
+                error_rate = "Error calculating"
+        else:
+            error_rate = 0
+
         tabular_print("Invocations (24h)", int(function_invocations))
         tabular_print("Errors (24h)", int(function_errors))
         tabular_print("Error Rate (24h)", error_rate)
