@@ -12,7 +12,7 @@ from lambda_packages import lambda_packages
 
 from .utils import placebo_session
 
-from zappa.cli import ZappaCLI
+from zappa.cli import ZappaCLI, shamelessly_promote
 from zappa.handler import LambdaHandler, lambda_handler
 from zappa.wsgi import create_wsgi_request, common_log
 from zappa.zappa import Zappa, ASSUME_POLICY, ATTACH_POLICY
@@ -455,7 +455,7 @@ class TestZappa(unittest.TestCase):
         zappa_cli.api_stage = 'ttt888'
         zappa_cli.api_key_required = True
         zappa_cli.load_settings('test_settings.json', session)
-        zappa_cli.zappa.credentials_arn = 'arn:aws:iam::724336686645:role/ZappaLambdaExecution'
+        zappa_cli.zappa.credentials_arn = 'arn:aws:iam::12345:role/ZappaLambdaExecution'
         zappa_cli.deploy()
         zappa_cli.update()
         zappa_cli.rollback(1)
@@ -463,6 +463,16 @@ class TestZappa(unittest.TestCase):
         zappa_cli.schedule()
         zappa_cli.unschedule()
         zappa_cli.undeploy(noconfirm=True)
+
+    @placebo_session
+    def test_cli_aws_status(self, session):
+        zappa_cli = ZappaCLI()
+        zappa_cli.api_stage = 'ttt888'
+        zappa_cli.load_settings('test_settings.json', session)
+        zappa_cli.api_stage = 'devor'
+        zappa_cli.lambda_name = 'baby-flask-devor'        
+        zappa_cli.zappa.credentials_arn = 'arn:aws:iam::12345:role/ZappaLambdaExecution'
+        resp = zappa_cli.status()
 
     def test_cli_init(self):
 
@@ -524,6 +534,8 @@ class TestZappa(unittest.TestCase):
         remove_event_source(event_source, 'lambda:lambda:lambda:lambda', 'test_settings.callback', session, dry=True)
         # get_event_source_status(event_source, 'lambda:lambda:lambda:lambda', 'test_settings.callback', session, dry=True)
 
+    def test_shameless(self):
+        shamelessly_promote()
 
 if __name__ == '__main__':
     unittest.main()

@@ -508,7 +508,7 @@ class ZappaCLI(object):
         lambda_versions = self.zappa.get_lambda_function_versions(self.lambda_name)
         if not lambda_versions:
             click.echo(click.style("\tNo Lambda detected - have you deployed yet?", fg='red'))
-            return
+            return False
         else:
             tabular_print("Lambda Versions", len(lambda_versions))
         function_response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name)
@@ -584,6 +584,8 @@ class ZappaCLI(object):
             tabular_print("Event Rule ARN", rule.get(u'Arn', None))
 
         # TODO: S3/SQS/etc. type events?
+
+        return True
 
     def print_version(self): # pragma: no cover
         """
