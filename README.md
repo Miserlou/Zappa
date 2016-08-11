@@ -243,7 +243,7 @@ to change Zappa's behavior. Use these at your own risk!
         "integration_response_codes": [200, 301, 404, 500], // Integration response status codes to route
         "integration_content_type_aliases": {"application/json": ["application/vnd.webhooks+json"]} //Useful for routing requests with non-standard mime types.
         "keep_warm": true, // Create CloudWatch events to keep the server warm.
-        "keep_warm_expressions": "rate(5 minutes)", // How often to execute the keep-warm, in cron and rate format. Default 5 minutes.
+        "keep_warm_expression": "rate(5 minutes)", // How often to execute the keep-warm, in cron and rate format. Default 5 minutes.
         "lambda_handler": "your_custom_handler", // The name of Lambda handler. Default: handler.lambda_handler
         "log_level": "DEBUG", // Set the Zappa log level. Default INFO, can be one of CRITICAL, ERROR, WARNING, INFO and DEBUG.
         "memory_size": 512, // Lambda function memory in MB
@@ -325,13 +325,9 @@ import os
 db_string = os.environ('DB_CONNECTION_STRING')
 ```
 
-#### Setting integration content-type aliases
+#### Setting Integration Content-Type Aliases
 
-By default Zappa will route only following mime-types that are set explicitly via `Content-Type` header: `application/json`, `application/x-www-form-urlencoded`, and `multipart/form-data` (if not Content-Type header is set, application/json mapping will apply).
-
-If a request comes in with `Content-Type` header set to anything but those 3 values Amazon will return a 415 status code and a `Mime type not supported message`.
-
-If there is a need to support custom mime-types (e.g. when a third-party making requests to your API) you can specify aliases for the 3 default types:
+By default, Zappa will route only following MIME-types that are set explicitly via `Content-Type` header: `application/json`, `application/x-www-form-urlencoded`, and `multipart/form-data` (if the Content-Type header isn't set, `application/json` will be the default). If a request comes in with `Content-Type` header set to anything but those 3 values, Amazon will return a 415 status code and a `MIME type not supported` message. If there is a need to support custom MIME-types (e.g. when a third-party making requests to your API) you can specify aliases for the 3 default types:
 
 zappa_settings.json:
 ```javascript
@@ -346,8 +342,7 @@ zappa_settings.json:
 }
 ```
 
-Now Zappa will use `application/json's` template to route requests with mime-type of `application/vnd.webhooks+json`.
-
+Now Zappa will use `application/json`'s template to route requests with MIME-type of `application/vnd.webhooks+json`.
 
 ## Zappa Guides
 
