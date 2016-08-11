@@ -173,6 +173,12 @@ If you need to remove the API Gateway and Lambda function that you have previous
 
 You will be asked for confirmation before it executes.
 
+#### Status
+
+If you need to see the status of your deployment and event schedules, simply use the `status` command.
+
+    $ zappa status production
+
 #### Tailing Logs
 
 You can watch the logs of a deployment by calling the `tail` management command.

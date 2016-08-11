@@ -952,13 +952,6 @@ def handle(): # pragma: no cover
         if cli.zip_path:
             cli.remove_uploaded_zip()
 
-        click.echo("Oh no! An " + click.style("error occured", fg='red', bold=True) + "! :(")
-        click.echo("\n==============\n")
-        import traceback
-        traceback.print_exc()
-        click.echo("\n==============\n")
-        shamelessly_promote()
-
         sys.exit(e.code)
 
     except KeyboardInterrupt: # pragma: no cover
