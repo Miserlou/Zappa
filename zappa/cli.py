@@ -779,13 +779,12 @@ class ZappaCLI(object):
         return self.zappa
 
     def load_settings_file(self, settings_file="zappa_settings.json"):
-        try:
-            with open(settings_file) as json_file:
-                self.zappa_settings = json.load(json_file)
-        except Exception as e: # pragma: no cover
-            print("Problem parsing settings file.")
-            print(e)
-            sys.exit(1) # pragma: no cover
+        """
+        Load our settings file.
+        """
+
+        with open(settings_file) as json_file:
+            self.zappa_settings = json.load(json_file)
 
     def create_package(self):
         """
@@ -928,6 +927,17 @@ class ZappaCLI(object):
 # Main
 ####################################################################
 
+def shamelessly_promote():
+    """
+    Shamelessly promote our little community.
+    """
+
+    click.echo("Need " + click.style("help", fg='green', bold=True) + "? Found a " + click.style("bug", fg='green', bold=True) + "? Let us " + click.style("know", fg='green', bold=True) + "! :D")
+    click.echo("File bug reports on " + click.style("GitHub", bold=True) + " here: " + click.style("https://github.com/Miserlou/Zappa", fg='cyan', bold=True))
+    click.echo("And join our " + click.style("Slack", bold=True) + " channel here: " + click.style("http://bit.do/zappa", fg='cyan', bold=True))
+    click.echo("Love!,")
+    click.echo(" ~ Team " + click.style("Zappa", bold=True) + "!")
+
 def handle(): # pragma: no cover
     """
     Main program execution handler.
@@ -939,7 +949,16 @@ def handle(): # pragma: no cover
     except SystemExit as e: # pragma: no cover
         if cli.zip_path:
             cli.remove_uploaded_zip()
+
+        click.echo("Oh no! An " + click.style("error occured", fg='red', bold=True) + "! :(")
+        click.echo("\n==============\n")
+        import traceback
+        traceback.print_exc()
+        click.echo("\n==============\n")
+        shamelessly_promote()
+
         sys.exit(e.code)
+
     except KeyboardInterrupt: # pragma: no cover
         if cli.zip_path: # Remove the Zip from S3 upon failure.
             cli.remove_uploaded_zip()
@@ -947,7 +966,14 @@ def handle(): # pragma: no cover
     except Exception as e:
         if cli.zip_path: # Remove the Zip from S3 upon failure.
             cli.remove_uploaded_zip()
-        print(e)
+
+        click.echo("Oh no! An " + click.style("error occured", fg='red', bold=True) + "! :(")
+        click.echo("\n==============\n")
+        import traceback
+        traceback.print_exc()
+        click.echo("\n==============\n")
+        shamelessly_promote()
+
         sys.exit(1)
 
 if __name__ == '__main__': # pragma: no cover
