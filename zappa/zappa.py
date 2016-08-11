@@ -953,6 +953,29 @@ class Zappa(object):
     # CloudWatch Events
     ##
 
+    def create_event_permission(self, lambda_name, principal, source_arn):
+        """
+        Create permissions to link to an event.
+
+        Related: http://docs.aws.amazon.com/lambda/latest/dg/with-s3-example-configure-event-source.html
+
+        """
+
+        logger.debug('Adding new permission to invoke Lambda function: {}'.format(lambda_name))
+        permission_response = self.lambda_client.add_permission(
+            FunctionName=lambda_name,
+            StatementId=''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8)),
+            Action='lambda:InvokeFunction',
+            Principal=principal,
+            SourceArn=source_arn,
+        )
+
+        if permission_response['ResponseMetadata']['HTTPStatusCode'] != 201:
+            print('Problem creating permission to invoke Lambda function')
+            return None # XXX: Raise?
+
+        return permission_response
+
     def schedule_events(self, lambda_arn, lambda_name, events, default=True):
         """
         Given a Lambda ARN, name and a list of events, schedule this as CloudWatch Events.
@@ -1001,18 +1024,8 @@ class Zappa(object):
                 if 'RuleArn' in rule_response:
                     logger.debug('Rule created. ARN {}'.format(rule_response['RuleArn']))
 
-                logger.debug('Adding new permission to invoke Lambda function: {}'.format(lambda_name))
-                permission_response = self.lambda_client.add_permission(
-                    FunctionName=lambda_name,
-                    StatementId=''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8)),
-                    Action='lambda:InvokeFunction',
-                    Principal='events.amazonaws.com',
-                    SourceArn=rule_response['RuleArn'],
-                )
-
-                if permission_response['ResponseMetadata']['HTTPStatusCode'] != 201:
-                    print('Problem creating permission to invoke Lambda function')
-                    return
+                # Specific permissions are necessary for any trigger to work.
+                self.create_event_permission(lambda_name, 'events.amazonaws.com', rule_response['RuleArn'])
 
                 # Create the CloudWatch event ARN for this function.
                 target_response = self.events_client.put_targets(
@@ -1031,15 +1044,24 @@ class Zappa(object):
                     print("Problem scheduling {}.".format(name))
 
             else:
+
+                svc = ','.join(event['event_source']['events'])
+                service = svc.split(':')[0]
+
+                self.create_event_permission(   
+                                                lambda_name, 
+                                                service + '.amazonaws.com', 
+                                                event['event_source']['arn']
+                                            )
+
                 rule_response = add_event_source(
                                                     event_source,
                                                     lambda_arn,
                                                     function,
                                                     self.boto_session
                                                 )
-                #if rule_response: # Kappa doesn't give us this yet.
-                svc = ','.join(event['event_source']['events'])
-
+                # # if rule_response: # Kappa doesn't give us this yet.
+                # So, we print as if was sucessful.
                 print("Created %s event schedule for %s!" % (svc, function))
 
     def delete_rule(self, rule_name):
