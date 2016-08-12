@@ -12,6 +12,7 @@
 # serve to show the default.
 
 import sys, os
+import sphinx_rtd_theme
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -40,8 +41,9 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'sample'
-copyright = u'2012, Kenneth Reitz'
+project = u'Zappa'
+# copyright = u'2012, Kenneth Reitz'
+copyright = u'2016'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -91,7 +93,7 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'default'
+html_theme = 'sphinx_rtd_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -99,7 +101,7 @@ html_theme = 'default'
 #html_theme_options = {}
 
 # Add any paths that contain custom themes here, relative to this directory.
-#html_theme_path = []
+html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
@@ -184,7 +186,7 @@ latex_elements = {
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
   ('index', 'sample.tex', u'sample Documentation',
-   u'Kenneth Reitz', 'manual'),
+   u'Development', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -214,7 +216,7 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'sample', u'sample Documentation',
-     [u'Kenneth Reitz'], 1)
+     [u'Development'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -228,7 +230,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
   ('index', 'sample', u'sample Documentation',
-   u'Kenneth Reitz', 'sample', 'One line description of project.',
+   u'Developmnet', 'sample', 'One line description of project.',
    'Miscellaneous'),
 ]
 
