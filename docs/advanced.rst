@@ -27,12 +27,14 @@ Zappa can be used to easily schedule functions to occur on regular intervals. Ju
     }
 
 And then:
+::
 
     $ zappa schedule production
 
 And now your function will execute every minute!
 
 If you want to cancel these, you can simply use the 'unschedule' command:
+::
 
     $ zappa unschedule production
 
@@ -64,6 +66,7 @@ In your *zappa_settings.json* file, define your `event sources <http://docs.aws.
     }
 
 And then:
+::
 
     $ zappa schedule production
 
@@ -73,6 +76,7 @@ Undeploy
 ========
 
 If you need to remove the API Gateway and Lambda function that you have previously published, you can simply:
+::
 
     $ zappa undeploy production
 
@@ -82,6 +86,7 @@ Tailing Logs
 ============
 
 You can watch the logs of a deployment by calling the ``tail`` management command.
+::
 
     $ zappa tail production
 
@@ -91,6 +96,7 @@ Remote Function Invocation
 You can execute any function in your application directly at any time by using the ``invoke`` command.
 
 For instance, suppose you have a basic application in a file called "my_app.py", and you want to invoke a function in it called "my_function". Once your application is deployed, you can invoke that function at any time by calling:
+::
 
     $ zappa invoke production 'my_app.my_function'
 
@@ -100,6 +106,7 @@ Django Management Commands
 ==========================
 
 As a convenience, Zappa can also invoke remote Django 'manage.py' commands with the ``manage`` command. For instance, to perform the basic Django status check:
+::
 
     $ zappa manage production check
 

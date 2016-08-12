@@ -8,13 +8,13 @@ Envirnments, such as *dev*, *staging*, and *production* are configured in the *z
 
     {
         "dev": {
-            **"api_key_required": false, // enable securing API Gateway endpoints with x-api-key header (default False)
-            **"assume_policy": "my_assume_policy.json", // optional, IAM assume policy JSON file
-            **"attach_policy": "my_attach_policy.json", // optional, IAM attach policy JSON file
+            "api_key_required": false, // enable securing API Gateway endpoints with x-api-key header (default False)
+            "assume_policy": "my_assume_policy.json", //
+            "attach_policy": "my_attach_policy.json", // optional, IAM attach policy JSON file
             "aws_region": "us-east-1",
             "cache_cluster_enabled": false,
             "cache_cluster_size": .5,
-            **"callbacks": { // Call custom functions during the local Zappa deployment/update process
+            "callbacks": { // Call custom functions during the local Zappa deployment/update process
                 "settings": "my_app.settings_callback", // After loading the settings
                 "zip": "my_app.zip_callback", // After creating the package
                 "post": "my_app.post_callback", // After command has excuted
@@ -22,27 +22,21 @@ Envirnments, such as *dev*, *staging*, and *production* are configured in the *z
             "debug": true
             "delete_zip": true
             "domain": "yourapp.yourdomain.com",
-            "events": [
-                            {
-                            "function": "your_module.your_function",
-                            "expression": "rate(1 minute)"
-                            }
-                      ],
-           ***"events": [
+           "events": [
                 {   // Recurring events
                     "function": "your_module.your_recurring_function", // The function to execute
                     "expression": "rate(1 minute)" // When to execute it (in cron or rate format)
                 },
                 {   // AWS Reactive events
                     "function": "your_module.your_reactive_function", // The function to execute
-                    "event_source": { 
+                    "event_source": {
                         "arn":  "arn:aws:s3:::my-bucket", // The ARN of this event source
                         "events": [
                             "s3:ObjectCreated:*" // The specific event to execute in response to.
                         ]
                     }
                 }
-            ],            
+            ],
             "exclude": ["*.gz", "*.pem"],
             "http_methods": ["GET", "POST"],
             "integration_response_codes": [200, 301, 404, 500],
@@ -55,8 +49,8 @@ Envirnments, such as *dev*, *staging*, and *production* are configured in the *z
             "prebuild_script": "your_module.your_function",
             "profile_name": "your-profile-name",
             "project_name": "MyProject",
-            **"remote_env_bucket": "my-project-config-files", // optional s3 bucket where remote_env_file can be located.
-            **"remote_env_file": "filename.json", 
+            "remote_env_bucket": "my-project-config-files", // optional s3 bucket where remote_env_file can be located.
+            "remote_env_file": "filename.json",
                 // file in remote_env_bucket containing a flat json object which will be used to set custom environment variables.
             "role_name": "MyLambdaRole",
             "s3_bucket": "dev-bucket",
@@ -74,6 +68,25 @@ Envirnments, such as *dev*, *staging*, and *production* are configured in the *z
 
 
 All values are standard JSON data types (Numbers, Strings, Booleans, Arrays, and Objects).
+
+api_key_required
+================
+
+(Optional) This bool determines whether or not to enable securing API Gateway endpoints with x-api-key header (default False)
+
+assume_policy
+=============
+
+(Optional) IAM assume policy JSON file
+
+attach_policy
+=============
+(Optional) IAM attach policy JSON file
+
+callbacks
+=========
+
+(Optional) Call custom functions during the local Zappa deployment/update process
 
 aws_region
 ==========
