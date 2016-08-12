@@ -8,31 +8,35 @@ Envirnments, such as *dev*, *staging*, and *production* are configured in the *z
 
     {
         "dev": {
-            "api_key_required": false, // enable securing API Gateway endpoints with x-api-key header (default False)
-            "assume_policy": "my_assume_policy.json", //
-            "attach_policy": "my_attach_policy.json", // optional, IAM attach policy JSON file
+            "api_key_required": false,
+            "assume_policy": "my_assume_policy.json",
+            "attach_policy": "my_attach_policy.json",
             "aws_region": "us-east-1",
             "cache_cluster_enabled": false,
             "cache_cluster_size": .5,
-            "callbacks": { // Call custom functions during the local Zappa deployment/update process
-                "settings": "my_app.settings_callback", // After loading the settings
-                "zip": "my_app.zip_callback", // After creating the package
-                "post": "my_app.post_callback", // After command has excuted
+            "callbacks": {
+                "settings": "my_app.settings_callback",
+                "zip": "my_app.zip_callback",
+                "post": "my_app.post_callback",
             },
+            "cloudwatch_log_level": "OFF",
+            "cloudwatch_data_trace": false,
+            "cloudwatch_metrics_enabled": false,
             "debug": true
             "delete_zip": true
+            "django_settings": "your_project.production_settings",
             "domain": "yourapp.yourdomain.com",
-           "events": [
+            "events": [
                 {   // Recurring events
-                    "function": "your_module.your_recurring_function", // The function to execute
-                    "expression": "rate(1 minute)" // When to execute it (in cron or rate format)
+                    "function": "your_module.your_recurring_function",
+                    "expression": "rate(1 minute)"
                 },
                 {   // AWS Reactive events
-                    "function": "your_module.your_reactive_function", // The function to execute
+                    "function": "your_module.your_reactive_function",
                     "event_source": {
-                        "arn":  "arn:aws:s3:::my-bucket", // The ARN of this event source
+                        "arn":  "arn:aws:s3:::my-bucket",
                         "events": [
-                            "s3:ObjectCreated:*" // The specific event to execute in response to.
+                            "s3:ObjectCreated:*"
                         ]
                     }
                 }
@@ -49,9 +53,8 @@ Envirnments, such as *dev*, *staging*, and *production* are configured in the *z
             "prebuild_script": "your_module.your_function",
             "profile_name": "your-profile-name",
             "project_name": "MyProject",
-            "remote_env_bucket": "my-project-config-files", // optional s3 bucket where remote_env_file can be located.
+            "remote_env_bucket": "my-project-config-files",
             "remote_env_file": "filename.json",
-                // file in remote_env_bucket containing a flat json object which will be used to set custom environment variables.
             "role_name": "MyLambdaRole",
             "s3_bucket": "dev-bucket",
             "settings_file": "~/Projects/MyApp/settings/dev_settings.py",
@@ -66,27 +69,22 @@ Envirnments, such as *dev*, *staging*, and *production* are configured in the *z
         }    
     }
 
-
 All values are standard JSON data types (Numbers, Strings, Booleans, Arrays, and Objects).
 
 api_key_required
 ================
 
-(Optional) This bool determines whether or not to enable securing API Gateway endpoints with x-api-key header (default False)
+This boolean setting determines whether or not to enable securing API Gateway endpoints with x-api-key header.  The default value is *false*.
 
 assume_policy
 =============
 
-(Optional) IAM assume policy JSON file
+This string setting indicates the name of the IAM assume policy JSON file.  This is an optional setting.
 
 attach_policy
 =============
-(Optional) IAM attach policy JSON file
 
-callbacks
-=========
-
-(Optional) Call custom functions during the local Zappa deployment/update process
+This string setting indicates the name of the IAM attach policy JSON file.  This is an optional setting.
 
 aws_region
 ==========
@@ -109,6 +107,43 @@ This number setting specifies the APIGW Cache Cluster size.
 
 The default value is *0.5*.
 
+callbacks
+=========
+
+This is an array with settings which define any custom functions during the Zappa deployment/update process.  This is an optional setting.
+
+*settings*
+----------
+
+This is a string which names the custom callback used after loading the settings.
+
+*zip*
+-----
+
+This is a string which names the custom callback used after creating the package.
+
+*post*
+------
+
+This is a string which names the custom callback used after the command has executed.
+
+cloudwatch_data_trace
+=====================
+
+This boolean setting indicates whether to log all data about received events.
+
+cloudwatch_log_level
+====================
+
+This string setting enables and configures the desired logging level for the given staging.
+
+Available options are *"OFF"* (default), *"INFO"*, and *"ERROR"*. 
+
+cloudwatch_metrics_enabled
+==========================
+
+This boolean setting indicates whether additional API Gateway metrics are desired.
+
 debug
 =====
 
@@ -118,6 +153,11 @@ delete_zip
 ==========
 
 This boolean setting specifies wheter to delete the local zip archive after code updates.
+
+django_settings
+===============
+
+This string setting indicates the modular path to your Django project's settings.  It is for Django projects only.
 
 domain
 ======
@@ -131,18 +171,17 @@ events
 
 This is an array with settings which describe the functions and schedules to execute them.
 
-Each event should contain objects with values for *function* and *expression*?
+Each event should contain objects with values for *function* and *expression*.
 
-function
---------
+*function*
+----------
 
 This string setting identifies the function being referenced in an event.
 
 It should have a format like *"your_module.your_function"*.
 
-
-expression
-----------
+*expression*
+------------
 
 This string setting provides an AWS Lambda schedule expression using Rate or Cron formats.  See the `AWS documentation <http://docs.aws.amazon.com/lambda/latest/dg/tutorial-scheduled-events-schedule-expressions.html>`_ for a description of currently accepable formats for this setting.  This is the setting that defines when the function should be executed.
 
@@ -224,7 +263,17 @@ project_name
 
 This string setting is the name of the project as it appears on AWS. 
 
-It defaults to *a slugified `pwd`*.  <TODO: What does THAT mean??!>
+It defaults to *a slugified `pwd`*.
+
+remote_env_bucket
+=================
+
+This string setting defines an optional S3 bucket where the remote_env_file can be located.
+
+remote_env_file
+===============
+
+This string setting names the file in the remote_env_bucket which contains a flat json object which is used to set custom environment variables.
 
 role_name
 =========
@@ -272,15 +321,15 @@ vpc_config
 
 This setting provides some optional VPC configuration for Lambda function.  This value for this setting is an object with sub-settings.
 
-SubnetsIds
-----------
+*SubnetsIds*
+------------
 
 This is an array setting that is used to select subnets, which is a list of strings.
 
 Note that not all availability zones support Lambda.
 
 
-SecurityGroupIds
-----------------
+*SecurityGroupIds*
+------------------
 
 This is an array setting that is used to select security groups, which is a list of strings.
