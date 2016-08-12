@@ -12,11 +12,11 @@ from lambda_packages import lambda_packages
 
 from .utils import placebo_session
 
-from zappa.cli import ZappaCLI
+from zappa.cli import ZappaCLI, shamelessly_promote
 from zappa.handler import LambdaHandler, lambda_handler
 from zappa.wsgi import create_wsgi_request, common_log
 from zappa.zappa import Zappa, ASSUME_POLICY, ATTACH_POLICY
-
+from zappa.util import detect_django_settings, copytree, detect_flask_apps, add_event_source, remove_event_source, get_event_source_status
 
 def random_string(length):
     return ''.join(random.choice(string.printable) for _ in range(length))
@@ -110,16 +110,16 @@ class TestZappa(unittest.TestCase):
         z.credentials_arn = 'arn:aws:iam::12345:role/ZappaLambdaExecution'
 
         arn = z.create_lambda_function(
-            bucket=bucket_name, 
-            s3_key=zip_path, 
-            function_name='test_lmbda_function55', 
+            bucket=bucket_name,
+            s3_key=zip_path,
+            function_name='test_lmbda_function55',
             handler='runme.lambda_handler'
         )
 
         arn = z.update_lambda_function(
-            bucket=bucket_name, 
-            s3_key=zip_path, 
-            function_name='test_lmbda_function55', 
+            bucket=bucket_name,
+            s3_key=zip_path,
+            function_name='test_lmbda_function55',
         )
 
     @placebo_session
@@ -179,7 +179,7 @@ class TestZappa(unittest.TestCase):
     def test_get_api_url(self, session):
         z = Zappa(session)
         z.credentials_arn = 'arn:aws:iam::724336686645:role/ZappaLambdaExecution'
-        url = z.get_api_url('Spheres-demonstration')
+        url = z.get_api_url('Spheres-demonstration', 'demonstration')
 
     @placebo_session
     def test_fetch_logs(self, session):
@@ -345,8 +345,16 @@ class TestZappa(unittest.TestCase):
     # Handler
     ##
 
-    def test_handler(self):
-        lh = LambdaHandler('test_settings')
+    @placebo_session
+    def test_handler(self, session):
+        # Init will test load_remote_settings
+        lh = LambdaHandler('test_settings', session=session)
+
+        # Annoyingly, this will fail during record, but
+        # the result will actually be okay to use in playback.
+        # See: https://github.com/garnaat/placebo/issues/48
+        self.assertEqual(os.environ['hello'], 'world')
+
         event = {
             "body": {},
             "headers": {},
@@ -360,15 +368,43 @@ class TestZappa(unittest.TestCase):
         lh.handler(event, None)
 
         # Test scheduled event
-        event = {   
-                    u'account': u'72333333333', 
-                    u'region': u'us-east-1', 
-                    u'detail': {}, 
-                    u'detail-type': u'Scheduled Event', 
-                    u'source': u'aws.events', 
-                    u'version': u'0', 
-                    u'time': u'2016-05-10T21:05:39Z', 
-                    u'id': u'0d6a6db0-d5e7-4755-93a0-750a8bf49d55', 
+        event = {
+                    u'account': u'72333333333',
+                    u'region': u'us-east-1',
+                    u'detail': {},
+                    u'detail-type': u'Scheduled Event',
+                    u'source': u'aws.events',
+                    u'version': u'0',
+                    u'time': u'2016-05-10T21:05:39Z',
+                    u'id': u'0d6a6db0-d5e7-4755-93a0-750a8bf49d55',
+                    u'resources': [u'arn:aws:events:us-east-1:72333333333:rule/tests.test_app.schedule_me']
+                }
+        lh.handler(event, None)
+
+        # Test command event
+        event = {
+                    u'account': u'72333333333',
+                    u'region': u'us-east-1',
+                    u'detail': {},
+                    u'command': u'test_settings.command',
+                    u'source': u'aws.events',
+                    u'version': u'0',
+                    u'time': u'2016-05-10T21:05:39Z',
+                    u'id': u'0d6a6db0-d5e7-4755-93a0-750a8bf49d55',
+                    u'resources': [u'arn:aws:events:us-east-1:72333333333:rule/tests.test_app.schedule_me']
+                }
+        lh.handler(event, None)
+
+        # Test AWS event
+        event = {
+                    u'account': u'72333333333',
+                    u'region': u'us-east-1',
+                    u'detail': {},
+                    u'Records': [{'s3': {'configurationId': 'test_settings.aws_event'}}],
+                    u'source': u'aws.events',
+                    u'version': u'0',
+                    u'time': u'2016-05-10T21:05:39Z',
+                    u'id': u'0d6a6db0-d5e7-4755-93a0-750a8bf49d55',
                     u'resources': [u'arn:aws:events:us-east-1:72333333333:rule/tests.test_app.schedule_me']
                 }
         lh.handler(event, None)
@@ -400,7 +436,7 @@ class TestZappa(unittest.TestCase):
                 'timestamp': '12345',
                 'message': '[END RequestId] test'
             },
-            { 
+            {
                 'timestamp': '12345',
                 'message': 'test'
             }
@@ -417,14 +453,89 @@ class TestZappa(unittest.TestCase):
     def test_cli_aws(self, session):
         zappa_cli = ZappaCLI()
         zappa_cli.api_stage = 'ttt888'
+        zappa_cli.api_key_required = True
         zappa_cli.load_settings('test_settings.json', session)
-        zappa_cli.zappa.credentials_arn = 'arn:aws:iam::724336686645:role/ZappaLambdaExecution'
+        zappa_cli.zappa.credentials_arn = 'arn:aws:iam::12345:role/ZappaLambdaExecution'
         zappa_cli.deploy()
         zappa_cli.update()
         zappa_cli.rollback(1)
         zappa_cli.tail(False)
         zappa_cli.schedule()
+        zappa_cli.unschedule()
         zappa_cli.undeploy(noconfirm=True)
+
+    @placebo_session
+    def test_cli_aws_status(self, session):
+        zappa_cli = ZappaCLI()
+        zappa_cli.api_stage = 'ttt888'
+        zappa_cli.load_settings('test_settings.json', session)
+        zappa_cli.api_stage = 'devor'
+        zappa_cli.lambda_name = 'baby-flask-devor'        
+        zappa_cli.zappa.credentials_arn = 'arn:aws:iam::12345:role/ZappaLambdaExecution'
+        resp = zappa_cli.status()
+
+    def test_cli_init(self):
+
+        if os.path.isfile('zappa_settings.json'):
+            os.remove('zappa_settings.json')
+
+        zappa_cli = ZappaCLI()
+        # Via http://stackoverflow.com/questions/2617057/how-to-supply-stdin-files-and-environment-variable-inputs-to-python-unit-tests
+        inputs = ['dev', 'lmbda', 'test_settings', '']
+        input_generator = (i for i in inputs)
+        with mock.patch('__builtin__.raw_input', lambda prompt: next(input_generator)):
+            zappa_cli.init()
+
+        if os.path.isfile('zappa_settings.json'):
+            os.remove('zappa_settings.json')
+
+        # with mock.patch('__builtin__.raw_input', lambda prompt: next(input_generator)):
+        #     zappa_cli = ZappaCLI()
+        #     argv = ['init']
+        #     zappa_cli.handle(argv)
+
+        # if os.path.isfile('zappa_settings.json'):
+        #     os.remove('zappa_settings.json')
+
+    ##
+    # Util / Misc
+    ##
+
+    def test_human_units(self):
+        zappa = Zappa()
+        zappa.human_size(1)
+        zappa.human_size(9999999999999)
+
+    def test_detect_dj(self):
+        # Sanity
+        settings_modules = detect_django_settings()
+
+    def test_detect_flask(self):
+        # Sanity
+        settings_modules = detect_flask_apps()
+
+    @placebo_session
+    def test_add_event_source(self, session):
+
+        event_source = {'arn': 'blah:blah:blah:blah', 'events': [
+                    "s3:ObjectCreated:*"
+                  ]}
+        # Sanity. This should fail.
+        try:
+            es = add_event_source(event_source, 'blah:blah:blah:blah', 'test_settings.callback', session)
+            self.fail("Success should have failed.")
+        except ValueError:
+            pass
+
+        event_source = {'arn': 's3:s3:s3:s3', 'events': [
+                    "s3:ObjectCreated:*"
+                  ]}
+        add_event_source(event_source, 'lambda:lambda:lambda:lambda', 'test_settings.callback', session, dry=True)
+        remove_event_source(event_source, 'lambda:lambda:lambda:lambda', 'test_settings.callback', session, dry=True)
+        # get_event_source_status(event_source, 'lambda:lambda:lambda:lambda', 'test_settings.callback', session, dry=True)
+
+    def test_shameless(self):
+        shamelessly_promote()
 
 if __name__ == '__main__':
     unittest.main()

@@ -35,8 +35,8 @@
     "prod": {
       "project_name": "dev_zappa_test_flask_app",
       "events": [{
-        "function": "production_zappa_test_flask_app",
-        "expression": "rate(5 minute)"
+        "function": "mymodule.myfunc",
+        "expression": "rate(5 minutes)"
         }],
       "aws_region": "us-west-2",
       "s3_bucket": "zappa-test-bucket",
