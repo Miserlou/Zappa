@@ -259,10 +259,8 @@ class ZappaCLI(object):
                                                        timeout=self.timeout_seconds,
                                                        memory_size=self.memory_size)
 
-        # Create a Keep Warm for this deployment
-        if self.stage_config.get('keep_warm', True):
-            keep_warm_rate = self.stage_config.get('keep_warm_expression', "rate(5 minutes)")
-            self.zappa.create_keep_warm(self.lambda_arn, self.lambda_name, schedule_expression=keep_warm_rate)
+        # Schedule events for this deployment
+        self.schedule()
         endpoint_url = ''
         if self.use_apigateway:
             # Create and configure the API Gateway
@@ -415,17 +413,12 @@ class ZappaCLI(object):
             self.zappa.remove_api_gateway_logs(self.lambda_name)
 
         gateway_id = self.zappa.undeploy_api_gateway(self.lambda_name, self.api_key_required)
-
-        if self.stage_config.get('keep_warm', True):
-            self.zappa.remove_keep_warm(self.lambda_name)
-
+        self.unschedule()  # removes event triggers, including warm up event.
         self.zappa.delete_lambda_function(self.lambda_name)
         if remove_logs:
             self.zappa.remove_lambda_function_logs(self.lambda_name)
 
         print("Done!")
-
-        return
 
     def schedule(self):
         """
@@ -433,24 +426,33 @@ class ZappaCLI(object):
         setup up regular execution.
 
         """
+        events = self.stage_config.get('events')
 
-        if self.stage_config.get('events'):
-            events = self.stage_config['events']
-
+        if events:
             if not isinstance(events, list): # pragma: no cover
                 print("Events must be supplied as a list.")
                 return
 
+        if self.zappa_settings[self.api_stage].get('keep_warm', True):
+            if not events:
+                events = []
+            keep_warm_rate = self.zappa_settings[self.api_stage].get('keep_warm_expression', "rate(5 minutes)")
+            events.append({'name': 'zappa-keep-warm',
+                           'function': self.lambda_handler,
+                           'expression': keep_warm_rate,
+                           'description': 'Zappa Keep Warm - {}'.format(self.lambda_name)})
+            print("Keep warm event will be scheduled.")
+        if events:
             try:
                 function_response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name)
             except botocore.exceptions.ClientError as e: # pragma: no cover
-                print("Function does not exist, please deploy first. Ex: zappa deploy {}".format(self.api_stage))
+                print("Function does not exist, please deploy first. Ex: zappa deploy {}.".format(self.api_stage))
                 return
 
             print("Scheduling..")
             self.zappa.schedule_events(
                 lambda_arn=function_response['Configuration']['FunctionArn'],
-                lambda_name=function_response['Configuration']['FunctionName'],
+                lambda_name=self.lambda_name,
                 events=events
                 )
 
@@ -462,26 +464,32 @@ class ZappaCLI(object):
 
         """
 
-        if self.stage_config.get('events', None):
-            events = self.stage_config['events']
+        # Run even events are not defined to remove previously existing ones (thus default to []).
+        events = self.stage_config.get('events', [])
 
-            if not isinstance(events, list): # pragma: no cover
-                print("Events must be supplied as a list.")
-                return
+        if not isinstance(events, list): # pragma: no cover
+            print("Events must be supplied as a list.")
+            return
 
-            try:
-                function_response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name)
-            except botocore.exceptions.ClientError as e: # pragma: no cover
-                print("Function does not exist, please deploy first. Ex: zappa deploy {}".format(self.api_stage))
-                return
+        if not events:
+            print("No events defined in zappa config. Proceeding to unschedule to remove leftovers (in case "
+                  "configuration was changed).")
 
-            print("Unscheduling..")
-            self.zappa.unschedule_events(
-                lambda_arn=function_response['Configuration']['FunctionArn'],
-                events=events
-                )
+        function_arn = None
+        try:
+            function_response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name)
+            function_arn = function_response['Configuration']['FunctionArn']
+        except botocore.exceptions.ClientError as e: # pragma: no cover
+            print("Function does not exist, you should deploy first. Ex: zappa deploy {}. "
+                  "Proceeding to unschedule CloudWatch based events.".format(self.api_stage))
 
-        return
+        print("Unscheduling..")
+        self.zappa.unschedule_events(
+            lambda_name=self.lambda_name,
+            lambda_arn=function_arn,
+            events=events
+            )
+
 
     def invoke(self, function_name, command="command"):
         """
@@ -592,7 +600,7 @@ class ZappaCLI(object):
         tabular_print("Domain URL", domain_url)
 
         # Scheduled Events
-        event_rules = self.zappa.get_event_rules_for_arn(conf['FunctionArn'])
+        event_rules = self.zappa.get_event_rules_for_lambda(lambda_name=self.lambda_name)
         tabular_print("Num. Event Rules", len(event_rules))
         for rule in event_rules:
             rule_name = rule['Name']

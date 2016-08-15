@@ -1136,19 +1136,14 @@ class Zappa(object):
         # We probably want to execute the latest code.
         # if default:
         #     lambda_arn = lambda_arn + ":$LATEST"
-
+        self.unschedule_events(lambda_name=lambda_name, lambda_arn=lambda_arn, events=events)
         for event in events:
             function = event['function']
             expression = event.get('expression', None)
             event_source = event.get('event_source', None)
-            name = event.get('name', function)
-            if name != function:
-                # a custom event name has been provided, make sure function name is included as postfix,
-                # otherwise zappa's handler won't be able to locate the function.
-                name = '{}-{}'.format(name, function)
+            name = self.get_scheduled_event_name(event, function, lambda_name)
             description = event.get('description', function)
 
-            self.delete_rule(name)
             #   - If 'cron' or 'rate' in expression, use ScheduleExpression
             #   - Else, use EventPattern
             #       - ex https://github.com/awslabs/aws-lambda-ddns-function
@@ -1208,6 +1203,20 @@ class Zappa(object):
                 # So, we print as if was sucessful.
                 print("Created %s event schedule for %s!" % (svc, function))
 
+    @staticmethod
+    def get_scheduled_event_name(event, function, lambda_name):
+        name = event.get('name', function)
+        if name != function:
+            # a custom event name has been provided, make sure function name is included as postfix,
+            # otherwise zappa's handler won't be able to locate the function.
+            name = '{}-{}'.format(name, function)
+        # prefix scheduled event names with lambda name. So we can look them up later via the prefix.
+        return Zappa.get_event_name(lambda_name, name)
+
+    @staticmethod
+    def get_event_name(lambda_name, name):
+        return '{}-{}'.format(lambda_name, name)
+
     def delete_rule(self, rule_name):
         """
         Delete a CWE rule.
@@ -1231,130 +1240,44 @@ class Zappa(object):
         else: # pragma: no cover
             logger.debug('No target to delete')
 
-        # Delete our rules.
-        rules = self.events_client.list_rules(NamePrefix=rule_name)
-        if 'Rules' in rules and rules['Rules']:
-            for rule in rules['Rules']:
-                if rule['Name'] == rule_name:
-                    logger.debug('Deleting rule: {}'.format(rule_name))
-                    self.events_client.delete_rule(Name=rule_name)
+        # Delete our rule.
+        self.events_client.delete_rule(Name=rule_name)
 
-
-    def get_event_rules_for_arn(self, lambda_arn):
+    def get_event_rules_for_lambda(self, lambda_name):
         """
         Get all of the rules associated with this function.
         """
+        rules = [r['Name'] for r in self.events_client.list_rules(NamePrefix=lambda_name)['Rules']]
+        return [self.events_client.describe_rule(Name=r) for r in rules]
 
-        rules = self.events_client.list_rule_names_by_target(TargetArn=lambda_arn)
-
-        lambda_rules = []
-        for rule in rules.get('RuleNames', []):
-            lambda_rules.append(self.events_client.describe_rule(
-                    Name=rule
-                )
-            )
-
-        return lambda_rules
-
-    def unschedule_events(self, events, lambda_arn):
+    def unschedule_events(self, events, lambda_arn=None, lambda_name=None):
         """
         Given a list of events, unschedule these CloudWatch Events.
 
         'events' is a list of dictionaries, where the dict must contains the string
         of a 'function' and the string of the event 'expression', and an optional 'name' and 'description'.
-
-        # TODO: Will this miss events that have been deployed but changed names?
-        #       Should it use get_event_rules_for_arn instead?
-
         """
+        rules = self.events_client.list_rules(NamePrefix=lambda_name)
+        for rule in rules['Rules']:
+            rule_name = rule['Name']
+            self.delete_rule(rule_name)
+            print('Unscheduled ' + rule_name + '.')
 
-        for event in events:
-
-            # These are scheduled CWEs.
-            if event.has_key('expression'):
-                function = event['function']
-                name = event.get('name', function)
-                self.delete_rule(name)
-                print("Unscheduled " + name + ".")
+        non_cwe = [e for e in events if e.has_key('event_source')]
+        for event in non_cwe:
+            # TODO: This WILL miss non CW events that have been deployed but changed names. Figure out a way to remove
+            # them no matter what.
             # These are non CWE event sources.
-            elif event.has_key('event_source'):
-                function = event['function']
-                name = event.get('name', function)
-                event_source = event.get('event_source', function)
-                rule_response = remove_event_source(
-                                                    event_source,
-                                                    lambda_arn,
-                                                    function,
-                                                    self.boto_session
-                                                )
-                print("Removed event " + name + ".")
-
-
-    def create_keep_warm(self, lambda_arn, lambda_name, name="zappa-keep-warm", schedule_expression="rate(5 minutes)"):
-        """
-        Schedule a regularly occuring execution to keep the function warm in cache.
-
-        """
-
-        rule_name = name + "-" + str(lambda_name)
-
-        print("Scheduling keep-warm..")
-
-        ##
-        #
-        # XXX: Lambda doesn't YET support adding permissions to $LATEST,
-        # so we have to add it for the each new function update
-        # and remove the last one. Boooo.
-        #
-        # We don't get the function version on the initial deployment.
-        # arn_parts = lambda_arn.split(':')
-        # if len(arn_parts) == 7:
-        #     latest_arn = lambda_arn + ":$LATEST"
-        # else:
-        #     latest_arn = ":".join(arn_parts[:-1]) + ":$LATEST"
-        ##
-        latest_arn = lambda_arn # See above
-
-        # Do we have an old keepwarm for this?
-        self.delete_rule(rule_name)
-
-        response = self.events_client.put_rule(
-            Name=rule_name,
-            ScheduleExpression=schedule_expression,
-            State='ENABLED',
-            Description='Zappa Keep Warm - ' + str(lambda_name),
-            RoleArn=self.credentials_arn
-        )
-
-        response = self.lambda_client.add_permission(
-            FunctionName=latest_arn,
-            StatementId=''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8)),
-            Action='lambda:InvokeFunction',
-            Principal='events.amazonaws.com',
-            SourceArn=response['RuleArn'],
-        )
-
-        response = self.events_client.put_targets(
-            Rule=rule_name,
-            Targets=[
-                {
-                    'Id': str(sum([ ord(c) for c in lambda_arn])), # Is this insane?
-                    'Arn': latest_arn,
-                    'Input': '',
-                },
-            ]
-        )
-
-    def remove_keep_warm(self, lambda_name, name="zappa-keep-warm"):
-        """
-        Unschedule the regularly occuring execution to keep the function warm in cache.
-
-        """
-
-        print("Removing keep-warm..")
-
-        self.delete_rule("{}-{}".format(name, str(lambda_name)))
-
+            function = event['function']
+            name = event.get('name', function)
+            event_source = event.get('event_source', function)
+            rule_response = remove_event_source(
+                                                event_source,
+                                                lambda_arn,
+                                                function,
+                                                self.boto_session
+                                            )
+            print("Removed event " + name + ".")
 
     ##
     # CloudWatch Logging
