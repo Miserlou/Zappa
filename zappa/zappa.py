@@ -444,7 +444,7 @@ class Zappa(object):
         try:
             source_size = os.stat(source_path).st_size
             print("Uploading zip (" + str(self.human_size(source_size)) + ")...")
-            progress = tqdm(total=float(os.path.getsize(source_path)), unit_scale=True)
+            progress = tqdm(total=float(os.path.getsize(source_path)), unit_scale=True, unit='B')
 
             # Attempt to upload to S3 using the S3 meta client with the progress bar.
             # If we're unable to do that, try one more time using a session client,
@@ -645,7 +645,7 @@ class Zappa(object):
         # count how many put requests we'll be reporting for progress bar
         progress_total = self.parameter_depth * len(self.http_methods) * (
                              2 + len(self.integration_response_codes) + len(self.method_response_codes)) - 1
-        progress = tqdm(total=progress_total)
+        progress = tqdm(total=progress_total, unit=' endpoint')
 
         # AWS seems to create this by default,
         # but not sure if that'll be the case forever.
@@ -917,6 +917,7 @@ class Zappa(object):
         """
         attach_policy_obj = json.loads(self.attach_policy)
         assume_policy_obj = json.loads(self.assume_policy)
+        updated = False
 
         # Create the role if needed
         role = self.iam.Role(self.role_name)
@@ -929,6 +930,7 @@ class Zappa(object):
             role = self.iam.create_role(RoleName=self.role_name,
                                    AssumeRolePolicyDocument=self.assume_policy)
             self.credentials_arn = role.arn
+            updated = True
 
         # create or update the role's policies if needed
         policy = self.iam.RolePolicy(self.role_name, 'zappa-permissions')
@@ -936,10 +938,12 @@ class Zappa(object):
             if policy.policy_document != attach_policy_obj:
                 print("Updating zappa-permissions policy on " + self.role_name + " IAM Role.")
                 policy.put(PolicyDocument=self.attach_policy)
+                updated = True
 
         except botocore.client.ClientError:
             print("Creating zappa-permissions policy on " + self.role_name + " IAM Role.")
             policy.put(PolicyDocument=self.attach_policy)
+            updated = True
 
         if role.assume_role_policy_document != assume_policy_obj and \
                 set(role.assume_role_policy_document['Statement'][0]['Principal']['Service']) != set(assume_policy_obj['Statement'][0]['Principal']['Service']):
@@ -948,8 +952,9 @@ class Zappa(object):
                 RoleName=self.role_name,
                 PolicyDocument=self.assume_policy
             )
+            updated = True
 
-        return self.credentials_arn
+        return self.credentials_arn, updated
 
     ##
     # CloudWatch Events
