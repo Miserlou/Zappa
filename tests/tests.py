@@ -145,7 +145,7 @@ class TestZappa(unittest.TestCase):
     @placebo_session
     def test_create_iam_roles(self, session):
         z = Zappa(session)
-        arn = z.create_iam_roles()
+        arn, updated = z.create_iam_roles()
         self.assertEqual(arn, "arn:aws:iam::123:role/{}".format(z.role_name))
 
     @placebo_session
