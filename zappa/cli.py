@@ -336,6 +336,8 @@ class ZappaCLI(object):
         else:
             endpoint_url = self.zappa.get_api_url(self.lambda_name, self.api_stage)
 
+        self.schedule()
+
         self.zappa.update_stage_config(
             self.lambda_name,
             self.api_stage,
