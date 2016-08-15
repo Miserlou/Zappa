@@ -343,3 +343,7 @@ class LambdaHandler(object):
 
 def lambda_handler(event, context): # pragma: no cover
     return LambdaHandler.lambda_handler(event, context)
+
+
+def heater(event, context):
+    return "I'm warm!"
