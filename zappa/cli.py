@@ -324,11 +324,6 @@ class ZappaCLI(object):
         self.lambda_arn = self.zappa.update_lambda_function(
             self.s3_bucket_name, self.zip_path, self.lambda_name)
 
-        # Create a Keep Warm for this deployment
-        if self.stage_config.get('keep_warm', True):
-            keep_warm_rate = self.stage_config.get('keep_warm_expression', "rate(5 minutes)")
-            self.zappa.create_keep_warm(self.lambda_arn, self.lambda_name, schedule_expression=keep_warm_rate)
-
         # Remove the uploaded zip from S3, because it is now registered..
         self.zappa.remove_from_s3(self.zip_path, self.s3_bucket_name)
 

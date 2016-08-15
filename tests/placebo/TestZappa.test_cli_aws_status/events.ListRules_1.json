@@ -1,0 +1,19 @@
+{
+    "status_code": 200, 
+    "data": {
+        "Rules": [
+            {
+                "ScheduleExpression": "rate(5 minutes)", 
+                "Name": "zappa-keep-warm-zappa-ttt666", 
+                "RoleArn": "arn:aws:iam::724336686645:role/ZappaLambdaExecution", 
+                "State": "ENABLED", 
+                "Arn": "arn:aws:events:us-east-1:724336686645:rule/zappa-keep-warm-zappa-ttt666", 
+                "Description": "Zappa Keep Warm - zappa-ttt666"
+            }
+        ], 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "RequestId": "afe859ba-28f4-11e6-aa28-4d9f2eb25de5"
+        }
+    }
+}
