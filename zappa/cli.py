@@ -930,7 +930,9 @@ class ZappaCLI(object):
                 # Copy our Django app into root of our package.
                 # It doesn't work otherwise.
                 base = __file__.rsplit(os.sep, 1)[0]
-                django_py = ''.join(os.path.join([base, os.sep, 'ext', os.sep, 'django.py']))
+
+                # Zappa Issue 251: this is a regular join because of how it interacts with Windows.
+                django_py = ''.join([base, os.sep, 'ext', os.sep, 'django.py'])
                 lambda_zip.write(django_py, 'django_zappa_app.py')
 
                 # Lambda requires a specific chmod
