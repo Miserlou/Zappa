@@ -906,14 +906,14 @@ class Zappa(object):
 
         return None
 
-    def create_domain_name(self, 
-                domain_name, 
-                certificate_name, 
-                certificate_body, 
-                certificate_private_key,
-                certificate_chain,
-                api_name
-                ):
+    def create_domain_name( self, 
+                            domain_name, 
+                            certificate_name, 
+                            certificate_body, 
+                            certificate_private_key,
+                            certificate_chain,
+                            api_name
+                        ):
         """
         """
 
@@ -934,13 +934,13 @@ class Zappa(object):
 
         return response
 
-    def update_domain_name(self
-                domain_name, 
-                certificate_name, 
-                certificate_body, 
-                certificate_private_key,
-                certificate_chain,
-                ):
+    def update_domain_name( self,
+                            domain_name, 
+                            certificate_name, 
+                            certificate_body, 
+                            certificate_private_key,
+                            certificate_chain,
+                        ):
         """
         """
 
