@@ -244,6 +244,7 @@ class Zappa(object):
         self.iam = self.boto_session.resource('iam')
         self.s3 = self.boto_session.resource('s3')
         self.cloudwatch = self.boto_session.client('cloudwatch')
+        self.route53 = self.boto_session.client('route53')
 
     ##
     # Packaging
@@ -905,6 +906,85 @@ class Zappa(object):
 
         return None
 
+    def create_domain_name(self, 
+                domain_name, 
+                certificate_name, 
+                certificate_body, 
+                certificate_private_key,
+                certificate_chain,
+                api_name
+                ):
+        """
+        """
+
+        response = self.apigateway_client.create_domain_name(
+            domainName=domain_name,
+            certificateName=certificate_name,
+            certificateBody=certificate_body,
+            certificatePrivateKey=certificate_private_key,
+            certificateChain=certificate_chain
+        )
+
+        response = client.create_base_path_mapping(
+            domainName=domain_name,
+            basePath='',
+            restApiId=api_name,
+            stage=''
+        )
+
+        return response
+
+    def update_domain_name(self
+                domain_name, 
+                certificate_name, 
+                certificate_body, 
+                certificate_private_key,
+                certificate_chain,
+                ):
+        """
+        """
+
+        # Patch operations described here: https://tools.ietf.org/html/rfc6902#section-4
+        # and here: http://boto3.readthedocs.io/en/latest/reference/services/apigateway.html#APIGateway.Client.update_domain_name
+        response = self.apigateway_client.update_domain_name(
+            domainName=domain_name,
+            patchOperations=[
+                {
+                    'op': 'replace',
+                    'path': 'certificateName',
+                    'value': certificate_name,
+                },
+                {
+                    'op': 'replace',
+                    'path': 'certificateBody',
+                    'value': certificate_body,
+                },
+                {
+                    'op': 'replace',
+                    'path': 'certificatePrivateKey',
+                    'value': certificate_name,
+                },
+                {
+                    'op': 'replace',
+                    'path': 'certificateChain',
+                    'value': certificate_chain,
+                },
+            ]
+        )
+
+        return
+
+    def get_domain_name(self, domain_name):
+        """
+        """
+        try:
+            response = self.apigateway_client.get_domain_name(
+                domainName=domain_name
+            )
+            return response
+        except Exception, e:
+            return None
+
     ##
     # IAM
     ##
@@ -1242,6 +1322,45 @@ class Zappa(object):
                             limit=limit)
 
         return response['events']
+
+    ##
+    # Route53 Domain Name Entries
+    ##
+
+    def get_hosted_zone_id_for_domain(self, domain):
+        """
+        """
+        all_zones = self.route53.list_hosted_zones()
+
+        for zone in all_zones['HostedZones']:
+            if zone['Name'][:-1] == domain:
+                return zone['Id']
+
+        return None
+
+
+    def set_dns_challenge_txt(self, zone_id, domain, txt_challenge):
+        """
+        """
+
+        resp = self.route53.change_resource_record_sets(
+            HostedZoneId=zone_id,
+            ChangeBatch={
+                'Changes': [{
+                    'Action': 'UPSERT',
+                    'ResourceRecordSet': {
+                        'Name': '_acme-challenge.{0}'.format(domain),
+                        'Type': 'TXT',
+                        'TTL': 60,
+                        'ResourceRecords': [{
+                            'Value': '"{0}"'.format(txt_challenge)
+                        }]
+                    }
+                }]
+            }
+        )
+
+        return resp
 
     ##
     # Utility
