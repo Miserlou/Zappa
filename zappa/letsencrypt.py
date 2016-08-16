@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 Create and install a Let's Encrypt cert for an API Gateway.
 
@@ -9,7 +10,6 @@ openssl genrsa 2048 > account.key # Keep it secret, keep safe!
 
 """
 
-#!/usr/bin/env python
 import argparse, subprocess, json, os, sys, base64, binascii, time, hashlib, re, copy, textwrap, logging
 try:
     from urllib.request import urlopen # Python 3
