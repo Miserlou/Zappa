@@ -435,7 +435,7 @@ class ZappaCLI(object):
                 events = []
             keep_warm_rate = self.zappa_settings[self.api_stage].get('keep_warm_expression', "rate(5 minutes)")
             events.append({'name': 'zappa-keep-warm',
-                           'function': 'handler.heater',
+                           'function': 'handler.keep_warm_callback',
                            'expression': keep_warm_rate,
                            'description': 'Zappa Keep Warm - {}'.format(self.lambda_name)})
             print("Keep warm event will be scheduled.")

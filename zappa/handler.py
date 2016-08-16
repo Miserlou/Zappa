@@ -345,5 +345,7 @@ def lambda_handler(event, context): # pragma: no cover
     return LambdaHandler.lambda_handler(event, context)
 
 
-def heater(event, context):
-    return "I'm warm!"
+def keep_warm_callback(event, context):
+    """This method is triggered by the CloudWatch event scheduled when keep_warm setting is set to true. """
+    lambda_handler(event={}, context=context)  # overriding event with an empty one so that web app initialization will
+    # be triggered.
