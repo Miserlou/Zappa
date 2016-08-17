@@ -173,8 +173,10 @@ If you need to remove the API Gateway and Lambda function that you have previous
 
 You will be asked for confirmation before it executes.
 
-If you enabled Cloudwatch Logs for your Api Gateway service and you don't
-want to keep logs, you can specify --remove-logs option to purge logs for an api gateway as well as a lambda function.
+If you enabled CloudWatch Logs for your API Gateway service and you don't
+want to keep those logs, you can specify the `--remove-logs` argument to purge the logs for your API Gateway and your Lambda function:
+
+    $ zappa undeploy production --remove-logs
 
 #### Status
 
