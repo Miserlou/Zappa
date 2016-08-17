@@ -208,6 +208,16 @@ As a convenience, Zappa can also invoke remote Django 'manage.py' commands with 
 
 Obviously, this only works for Django projects which have their settings properly defined. _(Please note that commands which take over 30 seconds to execute may time-out. See [this related issue](https://github.com/Miserlou/Zappa/issues/205#issuecomment-236391248) for a work-around.)_ 
 
+#### Let's Encrypt SSL Domain Certification and Installation
+
+If you want to use Zappa applications on a custom domain or subdomain, you'll need to supply a valid SSL certificate. Fortunately for you, Zappa can automatically create and install free valid SSL certificates using Let's Encrypt!
+
+If your domain is located within an AWS Route 53 Hosted Zone and you've defined `domain` and `lets_encrypt_key` settings, all you need to do is:
+
+    $ zappa certify production
+
+And your domain will be verified, certified and registered! _(Please note that this can take around 45 minutes to take effect the first time your run the command, and around 60 seconds every time after that.)_
+
 ## Advanced Settings
 
 There are other settings that you can define in your local settings
@@ -260,6 +270,7 @@ to change Zappa's behavior. Use these at your own risk!
         "keep_warm": true, // Create CloudWatch events to keep the server warm.
         "keep_warm_expression": "rate(5 minutes)", // How often to execute the keep-warm, in cron and rate format. Default 5 minutes.
         "lambda_handler": "your_custom_handler", // The name of Lambda handler. Default: handler.lambda_handler
+        "lets_encrypt_key": "s3://your-bucket/account.key", // Let's Encrypt account key path. Can either be an S3 path or a local file path.
         "log_level": "DEBUG", // Set the Zappa log level. Default INFO, can be one of CRITICAL, ERROR, WARNING, INFO and DEBUG.
         "manage_roles": true, // Have Zappa automatically create and define IAM execution roles and policies. Default true. If false, you must define your own IAM Role and role_name setting.
         "memory_size": 512, // Lambda function memory in MB

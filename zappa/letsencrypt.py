@@ -25,7 +25,6 @@ DEFAULT_CA = "https://acme-v01.api.letsencrypt.org"
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())
-LOGGER.setLevel(logging.INFO)
 
 def get_cert_and_update_domain(zappa_instance, lambda_name, api_stage, domain):
     """
@@ -34,7 +33,6 @@ def get_cert_and_update_domain(zappa_instance, lambda_name, api_stage, domain):
     """
 
     try:
-        cleanup()
         create_domain_key()
         create_domain_csr(domain)
         get_cert(zappa_instance)
@@ -69,7 +67,6 @@ def get_cert_and_update_domain(zappa_instance, lambda_name, api_stage, domain):
                 certificate_private_key,
                 certificate_chain 
                 )
-            print("Certificate updated!")
 
     except Exception as e:
         print(e)
@@ -229,7 +226,7 @@ def get_cert(zappa_instance, log=LOGGER, CA=DEFAULT_CA):
             raise ValueError("Could not find Zone ID for: " + domain)
         resp = zappa_instance.set_dns_challenge_txt(zone_id, domain, digest)
 
-        log.info("Sleeping while DNS propagates..")
+        print("Waiting for DNS to propagate..")
 
         # What's optimal here?
         import time
@@ -285,10 +282,11 @@ def get_cert(zappa_instance, log=LOGGER, CA=DEFAULT_CA):
 
 def cleanup():
     """
+    Delete any temporary files.
     """
 
     filenames = [
-        #'/tmp/account.key', XXXXXX
+        '/tmp/account.key',
         '/tmp/domain.key',
         '/tmp/domain.csr',
         '/tmp/signed.crt',

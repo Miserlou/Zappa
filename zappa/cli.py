@@ -49,6 +49,7 @@ CUSTOM_SETTINGS = [
 ]
 
 CLI_COMMANDS = [
+    'certify',
     'deploy',
     'init',
     'invoke',
@@ -167,14 +168,6 @@ class ZappaCLI(object):
 
             self.api_key_required = self.stage_config.get('api_key_required', False)
 
-        # from letsencrypt import get_cert_and_update_domain
-        # get_cert_and_update_domain(
-        #         self.zappa, 
-        #         self.lambda_name,
-        #         self.api_stage, 
-        #         self.zappa_settings[self.api_stage].get('domain')
-        #     )
-
         # Hand it off
         if command == 'deploy': # pragma: no cover
             self.deploy()
@@ -217,6 +210,8 @@ class ZappaCLI(object):
             self.status()
         elif command == 'init': # pragma: no cover
             self.init()
+        elif command == 'certify': # pragma: no cover
+            self.certify()
 
     ##
     # The Commands
@@ -755,6 +750,44 @@ class ZappaCLI(object):
         click.echo(" ~ Team " + click.style("Zappa", bold=True) + "!")
 
         return
+
+    def certify(self):
+        """
+        Register or update a domain certificate for this env.
+        """
+
+        # Get install account_key to /tmp/account_key.pem
+        account_key_location = self.stage_config.get('lets_encrypt_key')
+        domain = self.stage_config.get('domain')
+
+        if not account_key_location:
+            click.echo("Can't certify a domain without " + click.style("lets_encrypt_key", fg="red", bold=True) + " configured!")
+            return
+        if not domain:
+            click.echo("Can't certify a domain without " + click.style("domain", fg="red", bold=True) + " configured!")
+            return
+
+        if 's3://' in account_key_location:
+            bucket = account_key_location.split('s3://')[1].split('/')[0]
+            key_name = account_key_location.split('s3://')[1].split('/')[0]
+            s3_client.download_file(bucket, key_name, '/tmp/account.key')
+        else:
+            from shutil import copyfile
+            copyfile(account_key_location, '/tmp/account.key')
+
+        click.echo("Certifying domain " + click.style(domain, fg="green", bold=True) + "..")
+
+        # Get cert and update domain.
+        from letsencrypt import get_cert_and_update_domain, cleanup
+        get_cert_and_update_domain(
+                self.zappa, 
+                self.lambda_name,
+                self.api_stage, 
+                domain
+            )
+        cleanup()
+
+        click.echo("Certificate " + click.style("updated", fg="green", bold=True) + "!")
 
     ##
     # Utility

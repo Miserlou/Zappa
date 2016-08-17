@@ -1410,6 +1410,7 @@ class Zappa(object):
 
     def get_hosted_zone_id_for_domain(self, domain):
         """
+        Get the Hosted Zone ID for a given domain.
         """
         all_zones = self.route53.list_hosted_zones()
 
@@ -1421,8 +1422,10 @@ class Zappa(object):
 
     def set_dns_challenge_txt(self, zone_id, domain, txt_challenge):
         """
+        Set DNS challenge TXT.
         """
-
+        
+        print("Setting DNS challenge..")
         resp = self.route53.change_resource_record_sets(
             HostedZoneId=zone_id,
             ChangeBatch={
