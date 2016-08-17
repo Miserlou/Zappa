@@ -1,6 +1,8 @@
-# Using Let's Encrypt with Zappa
+# Using Let's Encrypt with Zappa (HTTP Validation)
 
-This guide will show you the slightly convoluted way of running a Zappa website on an API Gateway Custom Domain Name with a free valid SSL certificate via Let's Encrypt.
+## IMPORTANT!: Zappa now supports DNS-based validation out of the box, so you should probably use that if possible!
+
+This guide will show you the slightly convoluted way of running a Zappa website on an API Gateway Custom Domain Name with a free valid SSL certificate via Let's Encrypt with HTTP validation.
 
 ## Tool Installation
 
