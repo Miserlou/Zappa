@@ -1,0 +1,55 @@
+{
+    "status_code": 200, 
+    "data": {
+        "stageName": "ttt888", 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "RequestId": "4eaeb6b1-6e0a-11e6-aaec-e994c773c0ae", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "4eaeb6b1-6e0a-11e6-aaec-e994c773c0ae", 
+                "date": "Mon, 29 Aug 2016 17:02:03 GMT", 
+                "content-length": "548", 
+                "content-type": "application/json"
+            }
+        }, 
+        "cacheClusterSize": "0.5", 
+        "variables": {}, 
+        "cacheClusterEnabled": false, 
+        "cacheClusterStatus": "NOT_AVAILABLE", 
+        "deploymentId": "lc0eqn", 
+        "lastUpdatedDate": {
+            "hour": 12, 
+            "__class__": "datetime", 
+            "month": 8, 
+            "second": 3, 
+            "microsecond": 0, 
+            "year": 2016, 
+            "day": 29, 
+            "minute": 2
+        }, 
+        "createdDate": {
+            "hour": 12, 
+            "__class__": "datetime", 
+            "month": 8, 
+            "second": 2, 
+            "microsecond": 0, 
+            "year": 2016, 
+            "day": 29, 
+            "minute": 2
+        }, 
+        "methodSettings": {
+            "*/*": {
+                "cacheTtlInSeconds": 300, 
+                "loggingLevel": "OFF", 
+                "dataTraceEnabled": false, 
+                "metricsEnabled": false, 
+                "unauthorizedCacheControlHeaderStrategy": "SUCCEED_WITH_RESPONSE_HEADER", 
+                "throttlingRateLimit": 1000.0, 
+                "cacheDataEncrypted": false, 
+                "cachingEnabled": false, 
+                "throttlingBurstLimit": 2000, 
+                "requireAuthorizationForCacheControl": true
+            }
+        }
+    }
+}

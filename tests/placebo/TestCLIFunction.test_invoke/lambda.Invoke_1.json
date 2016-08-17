@@ -1,0 +1,27 @@
+{
+    "status_code": 200, 
+    "data": {
+        "LogResult": "U1RBUlQgUmVxdWVzdElkOiBlMDAxMmI1MC02ZTBhLTExZTYtYTk3NC03MzY3MDQ1MGI5NjYgVmVyc2lvbjogJExBVEVTVAptb2R1bGUgaW5pdGlhbGl6YXRpb24gZXJyb3I6IEF0dGVtcHRlZCByZWxhdGl2ZSBpbXBvcnQgaW4gbm9uLXBhY2thZ2UKCkVORCBSZXF1ZXN0SWQ6IGUwMDEyYjUwLTZlMGEtMTFlNi1hOTc0LTczNjcwNDUwYjk2NgpSRVBPUlQgUmVxdWVzdElkOiBlMDAxMmI1MC02ZTBhLTExZTYtYTk3NC03MzY3MDQ1MGI5NjYJRHVyYXRpb246IDAuNDMgbXMJQmlsbGVkIER1cmF0aW9uOiAxMDAgbXMgCU1lbW9yeSBTaXplOiA1MTIgTUIJTWF4IE1lbW9yeSBVc2VkOiAzMiBNQgkK", 
+        "FunctionError": "Unhandled", 
+        "Payload": {
+            "body": "{\"errorMessage\": \"module initialization error\"}", 
+            "__module__": "botocore.response", 
+            "__class__": "StreamingBody"
+        }, 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "RequestId": "e0012b50-6e0a-11e6-a974-73670450b966", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "e0012b50-6e0a-11e6-a974-73670450b966", 
+                "content-length": "47", 
+                "x-amzn-remapped-content-length": "0", 
+                "x-amz-function-error": "Unhandled", 
+                "connection": "keep-alive", 
+                "x-amz-log-result": "U1RBUlQgUmVxdWVzdElkOiBlMDAxMmI1MC02ZTBhLTExZTYtYTk3NC03MzY3MDQ1MGI5NjYgVmVyc2lvbjogJExBVEVTVAptb2R1bGUgaW5pdGlhbGl6YXRpb24gZXJyb3I6IEF0dGVtcHRlZCByZWxhdGl2ZSBpbXBvcnQgaW4gbm9uLXBhY2thZ2UKCkVORCBSZXF1ZXN0SWQ6IGUwMDEyYjUwLTZlMGEtMTFlNi1hOTc0LTczNjcwNDUwYjk2NgpSRVBPUlQgUmVxdWVzdElkOiBlMDAxMmI1MC02ZTBhLTExZTYtYTk3NC03MzY3MDQ1MGI5NjYJRHVyYXRpb246IDAuNDMgbXMJQmlsbGVkIER1cmF0aW9uOiAxMDAgbXMgCU1lbW9yeSBTaXplOiA1MTIgTUIJTWF4IE1lbW9yeSBVc2VkOiAzMiBNQgkK", 
+                "date": "Mon, 29 Aug 2016 17:06:07 GMT", 
+                "content-type": "application/json"
+            }
+        }, 
+        "StatusCode": 200
+    }
+}

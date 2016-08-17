@@ -1,0 +1,18 @@
+{
+    "status_code": 201, 
+    "data": {
+        "apiKeyRequired": false, 
+        "httpMethod": "PUT", 
+        "authorizationType": "NONE", 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 201, 
+            "RequestId": "b50ff952-6e0a-11e6-9e18-d13c6ce86685", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "b50ff952-6e0a-11e6-9e18-d13c6ce86685", 
+                "date": "Mon, 29 Aug 2016 17:04:54 GMT", 
+                "content-length": "71", 
+                "content-type": "application/json"
+            }
+        }
+    }
+}

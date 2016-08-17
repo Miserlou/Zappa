@@ -1,0 +1,24 @@
+{
+    "status_code": 200, 
+    "data": {
+        "Deleted": [
+            {
+                "Key": "zappa-ttt888-1472490263.zip"
+            }
+        ], 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "HostId": "yTRwhvBRxm0Edy/mkb+XLiNfxt4vMMYbb6GhEWgTELqpkh8agOlcA3dZJLIZrJFv", 
+            "RequestId": "DAB8E8E8BE030BC7", 
+            "HTTPHeaders": {
+                "x-amz-id-2": "yTRwhvBRxm0Edy/mkb+XLiNfxt4vMMYbb6GhEWgTELqpkh8agOlcA3dZJLIZrJFv", 
+                "server": "AmazonS3", 
+                "transfer-encoding": "chunked", 
+                "connection": "close", 
+                "x-amz-request-id": "DAB8E8E8BE030BC7", 
+                "date": "Mon, 29 Aug 2016 17:05:00 GMT", 
+                "content-type": "application/xml"
+            }
+        }
+    }
+}

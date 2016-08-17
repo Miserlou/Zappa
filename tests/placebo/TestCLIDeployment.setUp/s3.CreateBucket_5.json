@@ -1,0 +1,19 @@
+{
+    "status_code": 200, 
+    "data": {
+        "Location": "/helloworld-lmbda", 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "HostId": "fBW6rTXhOAl8Oc4NyKkI7VsryfOuV0BU2fce61sL/bt6xBXFCAAHvKpO8QMygBfePdgAkxBnM5w=", 
+            "RequestId": "ADCC111BDD0244FF", 
+            "HTTPHeaders": {
+                "content-length": "0", 
+                "x-amz-id-2": "fBW6rTXhOAl8Oc4NyKkI7VsryfOuV0BU2fce61sL/bt6xBXFCAAHvKpO8QMygBfePdgAkxBnM5w=", 
+                "server": "AmazonS3", 
+                "x-amz-request-id": "ADCC111BDD0244FF", 
+                "location": "/helloworld-lmbda", 
+                "date": "Mon, 29 Aug 2016 17:01:32 GMT"
+            }
+        }
+    }
+}

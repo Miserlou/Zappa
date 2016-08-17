@@ -1,0 +1,46 @@
+{
+    "status_code": 200, 
+    "data": {
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "RequestId": "04faeadb-6e0a-11e6-ac5d-dba691864e52", 
+            "HTTPHeaders": {
+                "date": "Mon, 29 Aug 2016 16:59:59 GMT", 
+                "x-amzn-requestid": "04faeadb-6e0a-11e6-ac5d-dba691864e52", 
+                "content-length": "1054", 
+                "content-type": "application/json", 
+                "connection": "keep-alive"
+            }
+        }, 
+        "Versions": [
+            {
+                "Version": "$LATEST", 
+                "CodeSha256": "qfCx1QcH9gf1sA36QJ62Cn/+khDaUe9+GdGb1lQQs2Q=", 
+                "FunctionName": "zappa-ttt888", 
+                "MemorySize": 512, 
+                "CodeSize": 4070972, 
+                "FunctionArn": "arn:aws:lambda:us-east-1:611616856832:function:zappa-ttt888:$LATEST", 
+                "Handler": "handler.lambda_handler", 
+                "Role": "arn:aws:iam::611616856832:role/ZappaLambdaExecution", 
+                "Timeout": 30, 
+                "LastModified": "2016-08-29T16:56:17.874+0000", 
+                "Runtime": "python2.7", 
+                "Description": "Zappa Deployment"
+            }, 
+            {
+                "Version": "53", 
+                "CodeSha256": "qfCx1QcH9gf1sA36QJ62Cn/+khDaUe9+GdGb1lQQs2Q=", 
+                "FunctionName": "zappa-ttt888", 
+                "MemorySize": 512, 
+                "CodeSize": 4070972, 
+                "FunctionArn": "arn:aws:lambda:us-east-1:611616856832:function:zappa-ttt888:53", 
+                "Handler": "handler.lambda_handler", 
+                "Role": "arn:aws:iam::611616856832:role/ZappaLambdaExecution", 
+                "Timeout": 30, 
+                "LastModified": "2016-08-29T16:56:17.874+0000", 
+                "Runtime": "python2.7", 
+                "Description": "Zappa Deployment"
+            }
+        ]
+    }
+}

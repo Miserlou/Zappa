@@ -1,0 +1,34 @@
+{
+    "status_code": 200, 
+    "data": {
+        "Code": {
+            "RepositoryType": "S3", 
+            "Location": "https://prod-04-2014-tasks.s3.amazonaws.com/snapshots/611616856832/zappa-ttt888-181049f2-3b6d-4a69-bb9f-c8c0da2a6598?x-amz-security-token=FQoDYXdzEBoaDI4UPLXXil2MialjLyK3Axg%2BQ%2FmEY1khPf3P7EDarf2%2Fx4LXihYLFw9k99QT8H2jdikU4yLcG%2FkqnGvsWQ4FoLAd9kXGjimz0XaFM1exIa8Vx1XwTZux%2FobsjH59S2AXQULxpSe0bfdd9RT53H3v0y%2Bv0AL1E6xigp87QyqKx0ytwFWmJJfdIHdN63Te1MAP7HNq%2BLkzlfOvjelo1i%2BBLuiQ%2BnnQAwaJHeQu3ZovIk4C0NsX%2F4CjLHqiUlMNflUNJjrhiRodxf9cKlnYhzPROdQkDof2CKaG8arWo4ZZt0ef1hZJhgjAXSFyJtWlHzMd9IoZVujAsge4ErRYXjb9VNREWHPkQKpDewwlYmE8ZjF7MlLok06YFVBQpeGp%2FEg%2FhsCvWCBArcx%2BztiUfbzx0COVT4xYsxL1BreimBrNSIxSyMztWgsv8Xzq%2FCFjmLlb1FomKDDyzeHrUmkitpKr2KNj3nqo4iCUxF5juE2wJ8PijBQBKUPHLGNckLJPm7OzekJt2swx3a04IH%2BaCZxIbOHXjls7EfPeS2YC5GRzOztNFzNpbyt2E0oA0dtNwMfEHLsWs68wBhbdTxnukMT%2B0qx1aCk9iwwo6saRvgU%3D&AWSAccessKeyId=ASIAIQSHUMJXNIVMPQMA&Expires=1472490924&Signature=AiceMdK7%2Bvt6HNHALV7ZWPIk%2FK4%3D"
+        }, 
+        "Configuration": {
+            "Version": "$LATEST", 
+            "CodeSha256": "N5tBU5myZ4cg8aDzM/W9IrC4QvV3FDtEr+uoLnZvGuw=", 
+            "FunctionName": "zappa-ttt888", 
+            "MemorySize": 512, 
+            "CodeSize": 4622804, 
+            "FunctionArn": "arn:aws:lambda:us-east-1:611616856832:function:zappa-ttt888", 
+            "Handler": "handler.lambda_handler", 
+            "Role": "arn:aws:iam::611616856832:role/ZappaLambdaExecution", 
+            "Timeout": 30, 
+            "LastModified": "2016-08-29T17:05:18.400+0000", 
+            "Runtime": "python2.7", 
+            "Description": "Zappa Deployment"
+        }, 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "RequestId": "c6f51ee6-6e0a-11e6-a3e5-c709b64e190e", 
+            "HTTPHeaders": {
+                "date": "Mon, 29 Aug 2016 17:05:24 GMT", 
+                "x-amzn-requestid": "c6f51ee6-6e0a-11e6-a3e5-c709b64e190e", 
+                "content-length": "1470", 
+                "content-type": "application/json", 
+                "connection": "keep-alive"
+            }
+        }
+    }
+}

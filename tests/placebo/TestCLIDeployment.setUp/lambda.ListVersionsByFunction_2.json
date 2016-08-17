@@ -1,0 +1,21 @@
+{
+    "status_code": 404, 
+    "data": {
+        "ResponseMetadata": {
+            "HTTPStatusCode": 404, 
+            "RequestId": "7cca430a-6e09-11e6-88c6-37c329b71362", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "7cca430a-6e09-11e6-88c6-37c329b71362", 
+                "content-length": "107", 
+                "connection": "keep-alive", 
+                "date": "Mon, 29 Aug 2016 16:56:10 GMT", 
+                "content-type": "application/json", 
+                "x-amzn-errortype": "ResourceNotFoundException"
+            }
+        }, 
+        "Error": {
+            "Message": "Function not found: arn:aws:lambda:us-east-1:611616856832:function:zappa-ttt888", 
+            "Code": "ResourceNotFoundException"
+        }
+    }
+}

@@ -1,0 +1,21 @@
+{
+    "status_code": 200, 
+    "data": {
+        "ScheduleExpression": "rate(1 minute)", 
+        "Name": "zappa-ttt888-tests.test_app.schedule_me", 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "RequestId": "ee383c6a-6e0a-11e6-a540-41d64d8d09a0", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "ee383c6a-6e0a-11e6-a540-41d64d8d09a0", 
+                "date": "Mon, 29 Aug 2016 17:06:29 GMT", 
+                "content-length": "304", 
+                "content-type": "application/x-amz-json-1.1"
+            }
+        }, 
+        "RoleArn": "arn:aws:iam::611616856832:role/ZappaLambdaExecution", 
+        "State": "ENABLED", 
+        "Arn": "arn:aws:events:us-east-1:611616856832:rule/zappa-ttt888-tests.test_app.schedule_me", 
+        "Description": "tests.test_app.schedule_me"
+    }
+}

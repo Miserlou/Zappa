@@ -1,0 +1,21 @@
+{
+    "status_code": 200, 
+    "data": {
+        "items": [
+            {
+                "path": "/", 
+                "id": "crrpylkw6j"
+            }
+        ], 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "RequestId": "a8cc2c8d-6e0a-11e6-aaec-e994c773c0ae", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "a8cc2c8d-6e0a-11e6-aaec-e994c773c0ae", 
+                "date": "Mon, 29 Aug 2016 17:04:34 GMT", 
+                "content-length": "42", 
+                "content-type": "application/json"
+            }
+        }
+    }
+}

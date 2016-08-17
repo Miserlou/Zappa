@@ -2,23 +2,22 @@
 import base64
 import collections
 import json
-import mock
 import os
 import random
 import string
 import unittest
 
+import mock
 from lambda_packages import lambda_packages
+from zappa.handler import LambdaHandler
+from zappa.letsencrypt import create_domain_key, create_domain_csr, create_chained_certificate, cleanup, parse_account_key, parse_csr, sign_certificate, encode_certificate, register_account, verify_challenge
+from zappa.util import detect_django_settings, add_event_source, remove_event_source
+from zappa.util import detect_flask_settings
+from zappa.wsgi import create_wsgi_request, common_log
+from zappa.zappa import Zappa, ASSUME_POLICY, ATTACH_POLICY
 
 from .utils import placebo_session
 
-from zappa.cli import ZappaCLI, shamelessly_promote
-from zappa.ext.django import get_django_wsgi
-from zappa.handler import LambdaHandler, lambda_handler
-from zappa.letsencrypt import get_cert_and_update_domain, create_domain_key, create_domain_csr, create_chained_certificate, get_cert, cleanup, parse_account_key, parse_csr, sign_certificate, encode_certificate, register_account, verify_challenge
-from zappa.util import detect_django_settings, copytree, detect_flask_apps, add_event_source, remove_event_source, get_event_source_status
-from zappa.wsgi import create_wsgi_request, common_log
-from zappa.zappa import Zappa, ASSUME_POLICY, ATTACH_POLICY
 
 def random_string(length):
     return ''.join(random.choice(string.printable) for _ in range(length))
@@ -412,95 +411,6 @@ class TestZappa(unittest.TestCase):
         lh.handler(event, None)
 
     ##
-    # CLI
-    ##
-
-    def test_cli_sanity(self):
-        zappa_cli = ZappaCLI()
-        return
-
-    def test_cli_utility(self):
-        zappa_cli = ZappaCLI()
-        zappa_cli.api_stage = 'ttt888'
-        zappa_cli.load_settings('test_settings.json')
-        zappa_cli.create_package()
-        zappa_cli.remove_local_zip()
-        logs = [
-            {
-                'timestamp': '12345',
-                'message': '[START RequestId] test'
-            },
-            {
-                'timestamp': '12345',
-                'message': '[REPORT RequestId] test'
-            },
-            {
-                'timestamp': '12345',
-                'message': '[END RequestId] test'
-            },
-            {
-                'timestamp': '12345',
-                'message': 'test'
-            }
-        ]
-        zappa_cli.print_logs(logs)
-
-    def test_cli_args(self):
-        zappa_cli = ZappaCLI()
-        # Sanity
-        argv = '-s test_settings.json derp ttt888'.split()
-        zappa_cli.handle(argv)
-
-    @placebo_session
-    def test_cli_aws(self, session):
-        zappa_cli = ZappaCLI()
-        zappa_cli.api_stage = 'ttt888'
-        zappa_cli.api_key_required = True
-        zappa_cli.load_settings('test_settings.json', session)
-        zappa_cli.zappa.credentials_arn = 'arn:aws:iam::12345:role/ZappaLambdaExecution'
-        zappa_cli.deploy()
-        zappa_cli.update()
-        zappa_cli.rollback(1)
-        zappa_cli.tail(False)
-        zappa_cli.schedule()
-        zappa_cli.unschedule()
-        zappa_cli.undeploy(noconfirm=True, remove_logs=True)
-
-
-    @placebo_session
-    def test_cli_aws_status(self, session):
-        zappa_cli = ZappaCLI()
-        zappa_cli.api_stage = 'ttt888'
-        zappa_cli.load_settings('test_settings.json', session)
-        zappa_cli.api_stage = 'devor'
-        zappa_cli.lambda_name = 'baby-flask-devor'        
-        zappa_cli.zappa.credentials_arn = 'arn:aws:iam::12345:role/ZappaLambdaExecution'
-        resp = zappa_cli.status()
-
-    def test_cli_init(self):
-
-        if os.path.isfile('zappa_settings.json'):
-            os.remove('zappa_settings.json')
-
-        zappa_cli = ZappaCLI()
-        # Via http://stackoverflow.com/questions/2617057/how-to-supply-stdin-files-and-environment-variable-inputs-to-python-unit-tests
-        inputs = ['dev', 'lmbda', 'test_settings', '']
-        input_generator = (i for i in inputs)
-        with mock.patch('__builtin__.raw_input', lambda prompt: next(input_generator)):
-            zappa_cli.init()
-
-        if os.path.isfile('zappa_settings.json'):
-            os.remove('zappa_settings.json')
-
-        # with mock.patch('__builtin__.raw_input', lambda prompt: next(input_generator)):
-        #     zappa_cli = ZappaCLI()
-        #     argv = ['init']
-        #     zappa_cli.handle(argv)
-
-        # if os.path.isfile('zappa_settings.json'):
-        #     os.remove('zappa_settings.json')
-
-    ##
     # Let's Encrypt / ACME
     ##
 
@@ -567,7 +477,7 @@ class TestZappa(unittest.TestCase):
 
     def test_detect_flask(self):
         # Sanity
-        settings_modules = detect_flask_apps()
+        settings_modules = detect_flask_settings()
 
     @placebo_session
     def test_add_event_source(self, session):
@@ -588,9 +498,6 @@ class TestZappa(unittest.TestCase):
         add_event_source(event_source, 'lambda:lambda:lambda:lambda', 'test_settings.callback', session, dry=True)
         remove_event_source(event_source, 'lambda:lambda:lambda:lambda', 'test_settings.callback', session, dry=True)
         # get_event_source_status(event_source, 'lambda:lambda:lambda:lambda', 'test_settings.callback', session, dry=True)
-
-    def test_shameless(self):
-        shamelessly_promote()
 
 if __name__ == '__main__':
     unittest.main()

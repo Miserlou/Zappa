@@ -3,6 +3,7 @@ import os
 import shutil
 import stat
 
+
 def copytree(src, dst, symlinks=False, ignore=None):
     """
     This is a contributed re-implementation of 'copytree' that
@@ -38,6 +39,15 @@ def copytree(src, dst, symlinks=False, ignore=None):
         else:
             shutil.copy2(s, d)
 
+
+def detect_package(name):
+    try:  # pragma: no cover
+        __import__(name)
+        return True
+    except ImportError as e:
+        return False
+
+
 def detect_django_settings():
     """
     Automatically try to discover Django settings files,
@@ -50,14 +60,16 @@ def detect_django_settings():
             full = os.path.join(root, filename)
             if 'site-packages' in full:
                 continue
-            full = os.path.join(root, filename)
-            package_path = full.replace(os.getcwd(), '')
-            package_module = package_path.replace(os.sep, '.').split('.', 1)[1].replace('.py', '')
 
-            matches.append(package_module)
+            with open(full) as f:
+                if 'INSTALLED_APPS' in f.read():
+                    package_path = full.replace(os.getcwd(), '')
+                    package_module = package_path.replace(os.sep, '.').split('.', 1)[1].replace('.py', '')
+                    matches.append(package_module)
     return matches
 
-def detect_flask_apps():
+
+def detect_flask_settings():
     """
     Automatically try to discover Flask apps files,
     return them as relative module paths.
@@ -93,6 +105,7 @@ def detect_flask_apps():
                     matches.append(app_module)
 
     return matches
+
 
 def get_event_source(event_source, lambda_arn, target_function, boto_session, dry=False):
     """
@@ -136,7 +149,7 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
     event_source_func = event_source_map.get(svc, None)
     if not event_source_func:
         raise ValueError('Unknown event source: {0}'.format(arn))
-    
+
     def autoreturn(self, function_name):
         return function_name
 
@@ -147,7 +160,7 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
 
     funk = PseudoFunction()
     funk.name = target_function
-    
+
     # Kappa 0.6.0 requires this nasty hacking,
     # hopefully we can remove at least some of this soon.
     if svc == 's3':
@@ -165,6 +178,7 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
 
     return event_source_obj, ctx, funk
 
+
 def add_event_source(event_source, lambda_arn, target_function, boto_session, dry=False):
     """
     Given an event_source dictionary, create the object and add the event source.
@@ -177,13 +191,14 @@ def add_event_source(event_source, lambda_arn, target_function, boto_session, dr
     else:
         return event_source_obj
 
+
 def remove_event_source(event_source, lambda_arn, target_function, boto_session, dry=False):
     """
     Given an event_source dictionary, create the object and remove the event source.
     """
 
     event_source_obj, ctx, funk = get_event_source(event_source, lambda_arn, target_function, boto_session, dry=False)
-    
+
     # This is slightly dirty, but necessary for using Kappa this way.
     funk.arn = lambda_arn
     if not dry:
@@ -191,6 +206,7 @@ def remove_event_source(event_source, lambda_arn, target_function, boto_session,
         return rule_response
     else:
         return event_source_obj
+
 
 def get_event_source_status(event_source, lambda_arn, target_function, boto_session, dry=False):
     """

@@ -1,0 +1,28 @@
+{
+    "status_code": 201, 
+    "data": {
+        "id": "ft0o7fchi2", 
+        "name": "zappa-ttt888", 
+        "description": "zappa-ttt888 Zappa", 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 201, 
+            "RequestId": "401cdb77-6e0a-11e6-9e18-d13c6ce86685", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "401cdb77-6e0a-11e6-9e18-d13c6ce86685", 
+                "date": "Mon, 29 Aug 2016 17:01:38 GMT", 
+                "content-length": "102", 
+                "content-type": "application/json"
+            }
+        }, 
+        "createdDate": {
+            "hour": 12, 
+            "__class__": "datetime", 
+            "month": 8, 
+            "second": 39, 
+            "microsecond": 0, 
+            "year": 2016, 
+            "day": 29, 
+            "minute": 1
+        }
+    }
+}
