@@ -72,3 +72,4 @@ target/
 *.swp
 *.swo
 *~
+tests/zappa_settings.json

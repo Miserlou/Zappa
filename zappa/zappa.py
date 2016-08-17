@@ -244,7 +244,7 @@ class Zappa(object):
         self.iam_client = self.boto_session.client('iam')
         self.iam = self.boto_session.resource('iam')
         self.s3 = self.boto_session.resource('s3')
-        self.cloudwatch = self.boto_session.client('cloudwatch')
+        self.cloudwatch = self.boto_session.client('logs')
         self.route53 = self.boto_session.client('route53')
 
     ##
@@ -1489,3 +1489,24 @@ class Zappa(object):
                 return "{0:3.1f}{1!s}{2!s}".format(num, unit, suffix)
             num /= 1024.0
         return "{0:.1f}{1!s}{2!s}".format(num, 'Yi', suffix)
+
+    #
+    # Logs
+    #
+    def remove_log_group(self, group_name):
+        """Filters all log groups that match the name given in log_filter."""
+        print("Removing log group: {}".format(group_name))
+        try:
+            self.cloudwatch.delete_log_group(logGroupName=group_name)
+        except botocore.exceptions.ClientError, e:
+            print("Couldn't remove '{}' because of: {}".format(group_name, e))
+
+    def remove_lambda_function_logs(self, lambda_function_name):
+        """Removes all logs that are assigned to a given lambda function id."""
+        self.remove_log_group('/aws/lambda/{}'.format(lambda_function_name))
+
+    def remove_api_gateway_logs(self, project_name):
+        """Removed all logs that are assigned to a given rest api id."""
+        for rest_api in self.get_rest_apis(project_name):
+            for stage in self.apigateway_client.get_stages(restApiId=rest_api['id'])['item']:
+                self.remove_log_group('API-Gateway-Execution-Logs_{}/{}'.format(rest_api['id'], stage['stageName']))

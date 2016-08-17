@@ -96,6 +96,11 @@ class ZappaCLI(object):
     django_settings = None
     manage_roles = True
 
+    @property
+    def stage_config(self):
+        """A shortcut property for settings of staging."""
+        return self.zappa_settings[self.api_stage]
+
     def handle(self, argv=None):
         """
         Main function.
@@ -115,6 +120,7 @@ class ZappaCLI(object):
                             help='The WSGI application function.')
         parser.add_argument('-v', '--version', action='store_true', help='Print the zappa version', default=False)
         parser.add_argument('-y', '--yes', action='store_true', help='Auto confirm yes', default=False)
+        parser.add_argument('--remove-logs', action='store_true', help='Removes log groups of api gateway and lambda task during the undeployment.', default=False)
 
         args = parser.parse_args(argv)
 
@@ -159,7 +165,7 @@ class ZappaCLI(object):
             if vargs['app_function'] is not None:
                 self.app_function = vargs['app_function']
 
-            self.api_key_required = self.zappa_settings[self.api_stage].get('api_key_required', False)
+            self.api_key_required = self.stage_config.get('api_key_required', False)
 
         # from letsencrypt import get_cert_and_update_domain
         # get_cert_and_update_domain(
@@ -202,7 +208,7 @@ class ZappaCLI(object):
         elif command == 'tail': # pragma: no cover
             self.tail()
         elif command == 'undeploy': # pragma: no cover
-            self.undeploy(noconfirm=vargs['yes'])
+            self.undeploy(noconfirm=vargs['yes'], remove_logs=vargs['remove_logs'])
         elif command == 'schedule': # pragma: no cover
             self.schedule()
         elif command == 'unschedule': # pragma: no cover
@@ -259,10 +265,9 @@ class ZappaCLI(object):
                                                        memory_size=self.memory_size)
 
         # Create a Keep Warm for this deployment
-        if self.zappa_settings[self.api_stage].get('keep_warm', True):
-            keep_warm_rate = self.zappa_settings[self.api_stage].get('keep_warm_expression', "rate(5 minutes)")
+        if self.stage_config.get('keep_warm', True):
+            keep_warm_rate = self.stage_config.get('keep_warm_expression', "rate(5 minutes)")
             self.zappa.create_keep_warm(self.lambda_arn, self.lambda_name, schedule_expression=keep_warm_rate)
-
         endpoint_url = ''
         if self.use_apigateway:
             # Create and configure the API Gateway
@@ -270,8 +275,8 @@ class ZappaCLI(object):
                 self.lambda_arn, self.lambda_name, self.api_key_required, self.integration_content_type_aliases)
 
             # Deploy the API!
-            cache_cluster_enabled = self.zappa_settings[self.api_stage].get('cache_cluster_enabled', False)
-            cache_cluster_size = str(self.zappa_settings[self.api_stage].get('cache_cluster_size', .5))
+            cache_cluster_enabled = self.stage_config.get('cache_cluster_enabled', False)
+            cache_cluster_size = str(self.stage_config.get('cache_cluster_size', .5))
             endpoint_url = self.zappa.deploy_api_gateway(
                                         api_id=api_id,
                                         stage_name=self.api_stage,
@@ -283,11 +288,11 @@ class ZappaCLI(object):
                                         cloudwatch_metrics_enabled=self.zappa_settings[self.api_stage].get('cloudwatch_metrics_enabled', False),
                                     )
 
-            if self.zappa_settings[self.api_stage].get('touch', True):
+            if self.stage_config.get('touch', True):
                 requests.get(endpoint_url)
 
         # Finally, delete the local copy our zip package
-        if self.zappa_settings[self.api_stage].get('delete_zip', True):
+        if self.stage_config.get('delete_zip', True):
             os.remove(self.zip_path)
 
         # Remove the uploaded zip from S3, because it is now registered..
@@ -327,19 +332,19 @@ class ZappaCLI(object):
             self.s3_bucket_name, self.zip_path, self.lambda_name)
 
         # Create a Keep Warm for this deployment
-        if self.zappa_settings[self.api_stage].get('keep_warm', True):
-            keep_warm_rate = self.zappa_settings[self.api_stage].get('keep_warm_expression', "rate(5 minutes)")
+        if self.stage_config.get('keep_warm', True):
+            keep_warm_rate = self.stage_config.get('keep_warm_expression', "rate(5 minutes)")
             self.zappa.create_keep_warm(self.lambda_arn, self.lambda_name, schedule_expression=keep_warm_rate)
 
         # Remove the uploaded zip from S3, because it is now registered..
         self.zappa.remove_from_s3(self.zip_path, self.s3_bucket_name)
 
         # Finally, delete the local copy our zip package
-        if self.zappa_settings[self.api_stage].get('delete_zip', True):
+        if self.stage_config.get('delete_zip', True):
             os.remove(self.zip_path)
 
-        if self.zappa_settings[self.api_stage].get('domain', None):
-            endpoint_url = self.zappa_settings[self.api_stage].get('domain')
+        if self.stage_config.get('domain', None):
+            endpoint_url = self.stage_config.get('domain')
         else:
             endpoint_url = self.zappa.get_api_url(self.lambda_name, self.api_stage)
 
@@ -401,7 +406,7 @@ class ZappaCLI(object):
             except SystemExit:
                 os._exit(130)
 
-    def undeploy(self, noconfirm=False):
+    def undeploy(self, noconfirm=False, remove_logs=False):
         """
         Tear down an exiting deployment.
         """
@@ -411,10 +416,17 @@ class ZappaCLI(object):
             if confirm != 'y':
                 return
 
-        self.zappa.undeploy_api_gateway(self.lambda_name, self.api_key_required)
-        if self.zappa_settings[self.api_stage].get('keep_warm', True):
+        if remove_logs:
+            self.zappa.remove_api_gateway_logs(self.lambda_name)
+
+        gateway_id = self.zappa.undeploy_api_gateway(self.lambda_name, self.api_key_required)
+
+        if self.stage_config.get('keep_warm', True):
             self.zappa.remove_keep_warm(self.lambda_name)
+
         self.zappa.delete_lambda_function(self.lambda_name)
+        if remove_logs:
+            self.zappa.remove_lambda_function_logs(self.lambda_name)
 
         print("Done!")
 
@@ -427,8 +439,8 @@ class ZappaCLI(object):
 
         """
 
-        if self.zappa_settings[self.api_stage].get('events'):
-            events = self.zappa_settings[self.api_stage]['events']
+        if self.stage_config.get('events'):
+            events = self.stage_config['events']
 
             if not isinstance(events, list): # pragma: no cover
                 print("Events must be supplied as a list.")
@@ -455,8 +467,8 @@ class ZappaCLI(object):
 
         """
 
-        if self.zappa_settings[self.api_stage].get('events', None):
-            events = self.zappa_settings[self.api_stage]['events']
+        if self.stage_config.get('events', None):
+            events = self.stage_config['events']
 
             if not isinstance(events, list): # pragma: no cover
                 print("Events must be supplied as a list.")
@@ -576,8 +588,12 @@ class ZappaCLI(object):
         api_url = self.zappa.get_api_url(
             self.lambda_name,
             self.api_stage)
+
         tabular_print("API Gateway URL", api_url)
-        domain_url = self.zappa_settings[self.api_stage].get('domain', None)
+
+        # There literally isn't a better way to do this. 
+        # AWS provides no way to tie a APIGW domain name to its Lambda funciton.
+        domain_url = self.stage_config.get('domain', None) 
         tabular_print("Domain URL", domain_url)
 
         # Scheduled Events
@@ -750,7 +766,7 @@ class ZappaCLI(object):
 
         :return: None
         """
-        callbacks = self.zappa_settings[self.api_stage].get('callbacks', {})
+        callbacks = self.stage_config.get('callbacks', {})
         callback = callbacks.get(position)
 
         if callback:
@@ -782,8 +798,8 @@ class ZappaCLI(object):
             sys.exit(1) # pragma: no cover
 
         # We need a working title for this project. Use one if supplied, else cwd dirname.
-        if 'project_name' in self.zappa_settings[self.api_stage]: # pragma: no cover
-            self.project_name = self.zappa_settings[self.api_stage]['project_name']
+        if 'project_name' in self.stage_config: # pragma: no cover
+            self.project_name = self.stage_config['project_name']
         else:
             self.project_name = slugify.slugify(os.getcwd().split(os.sep)[-1])
 
@@ -834,8 +850,8 @@ class ZappaCLI(object):
         self.zappa = Zappa(boto_session=session, profile_name=self.profile_name, aws_region=self.aws_region)
 
         for setting in CUSTOM_SETTINGS:
-            if setting in self.zappa_settings[self.api_stage]:
-                setting_val = self.zappa_settings[self.api_stage][setting]
+            if setting in self.stage_config:
+                setting_val = self.stage_config[setting]
                 # Read the policy file contents.
                 if setting.endswith('policy'):
                     with open(setting_val, 'r') as f:
@@ -870,8 +886,8 @@ class ZappaCLI(object):
         self.zip_path = self.zappa.create_lambda_zip(
                 self.lambda_name,
                 handler_file=handler_file,
-                use_precompiled_packages=self.zappa_settings[self.api_stage].get('use_precompiled_packages', True),
-                exclude=self.zappa_settings[self.api_stage].get('exclude', [])
+                use_precompiled_packages=self.stage_config.get('use_precompiled_packages', True),
+                exclude=self.stage_config.get('exclude', [])
             )
 
         if self.app_function or self.django_settings:
@@ -936,7 +952,7 @@ class ZappaCLI(object):
         Remove our local zip file.
         """
 
-        if self.zappa_settings[self.api_stage].get('delete_zip', True):
+        if self.stage_config.get('delete_zip', True):
             try:
                 os.remove(self.zip_path)
             except Exception as e: # pragma: no cover

@@ -462,7 +462,8 @@ class TestZappa(unittest.TestCase):
         zappa_cli.tail(False)
         zappa_cli.schedule()
         zappa_cli.unschedule()
-        zappa_cli.undeploy(noconfirm=True)
+        zappa_cli.undeploy(noconfirm=True, remove_logs=True)
+
 
     @placebo_session
     def test_cli_aws_status(self, session):
