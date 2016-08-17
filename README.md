@@ -212,11 +212,13 @@ Obviously, this only works for Django projects which have their settings properl
 
 If you want to use Zappa applications on a custom domain or subdomain, you'll need to supply a valid SSL certificate. Fortunately for you, Zappa can automatically create and install free valid SSL certificates using Let's Encrypt!
 
-If your domain is located within an AWS Route 53 Hosted Zone and you've defined `domain` and `lets_encrypt_key` settings, all you need to do is:
+If your domain is located within an AWS Route 53 Hosted Zone and you've defined `domain` and `lets_encrypt_key` (ex: `openssl genrsa 2048 > account.key`) settings, all you need to do is:
 
     $ zappa certify production
 
-And your domain will be verified, certified and registered! _(Please note that this can take around 45 minutes to take effect the first time your run the command, and around 60 seconds every time after that.)_
+And your domain will be verified, certified and registered! 
+
+_(Please note that this can take around 45 minutes to take effect the first time your run the command, and around 60 seconds every time after that.)_
 
 ## Advanced Settings
 
