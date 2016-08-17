@@ -17,7 +17,8 @@ except ImportError:
     from urllib2 import urlopen # Python 2
 
 # Staging
-#DEFAULT_CA = "https://acme-staging.api.letsencrypt.org"
+# Amazon doesn't accept these though.
+# DEFAULT_CA = "https://acme-staging.api.letsencrypt.org"
 
 # Production
 DEFAULT_CA = "https://acme-v01.api.letsencrypt.org"
@@ -26,10 +27,7 @@ LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())
 LOGGER.setLevel(logging.INFO)
 
-# XXX Confify
-domain = 'zappa.io'
-
-def get_cert_and_update_domain(zappa_instance):
+def get_cert_and_update_domain(zappa_instance, lambda_name, api_stage, domain):
     """
     Main cert installer path.
     TODO: Replace z_i with local instance, since we won't have a Zappa on the server..
@@ -50,7 +48,7 @@ def get_cert_and_update_domain(zappa_instance):
 
         with open('/tmp/intermediate.pem') as f:
             certificate_chain = f.read()
-
+            
         if not zappa_instance.get_domain_name(domain):
 
             zappa_instance.create_domain_name(
@@ -58,7 +56,9 @@ def get_cert_and_update_domain(zappa_instance):
                 domain + "-Zappa-LE-Cert", 
                 certificate_body, 
                 certificate_private_key,
-                certificate_chain 
+                certificate_chain,
+                lambda_name,
+                api_stage
                 )
         else:
             zappa_instance.update_domain_name(
@@ -218,12 +218,12 @@ def get_cert(zappa_instance, log=LOGGER, CA=DEFAULT_CA):
         token = re.sub(r"[^A-Za-z0-9_\-]", "_", challenge['token'])
         keyauthorization = "{0}.{1}".format(token, thumbprint)
 
-        # sha256_b64\
-        digest = hashlib.sha256(keyauthorization).hexdigest()
+        # sha256_b64
         digest = _b64(hashlib.sha256(keyauthorization).digest())
 
-        domain = 'zappa.io'
         zone_id = zappa_instance.get_hosted_zone_id_for_domain(domain)
+        if not zone_id:
+            raise ValueError("Could not find Zone ID for: " + domain)
         resp = zappa_instance.set_dns_challenge_txt(zone_id, domain, digest)
 
         log.info("Sleeping while DNS propagates..")

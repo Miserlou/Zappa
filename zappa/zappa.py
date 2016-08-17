@@ -1,6 +1,7 @@
 import base64
 import boto3
 import botocore
+import datetime
 import json
 import logging
 import os
@@ -912,7 +913,8 @@ class Zappa(object):
                             certificate_body, 
                             certificate_private_key,
                             certificate_chain,
-                            api_name
+                            lambda_name,
+                            stage,
                         ):
         """
         """
@@ -925,12 +927,50 @@ class Zappa(object):
             certificateChain=certificate_chain
         )
 
-        response = client.create_base_path_mapping(
-            domainName=domain_name,
-            basePath='',
-            restApiId=api_name,
-            stage=''
-        )
+        dns_name = response['distributionDomainName']
+        zone_id = self.get_hosted_zone_id_for_domain(domain_name)
+
+        # Not pretty.
+        try:
+            api_id = self.get_api_url(lambda_name, stage).split('https://')[1].split('.execute-api')[0]
+            response = self.apigateway_client.create_base_path_mapping(
+                domainName=domain_name,
+                basePath='',
+                restApiId=api_id,
+                stage=stage
+            )
+        except Exception, e:
+            import debug
+
+        # Related: https://github.com/boto/boto3/issues/157
+        # and: http://docs.aws.amazon.com/Route53/latest/APIReference/CreateAliasRRSAPI.html
+        # This doesn't work yet.
+        try:
+            pure_zone_id = zone_id.split('/hostedzone/')[1]
+            response = self.route53.change_resource_record_sets(
+                HostedZoneId=pure_zone_id,
+                ChangeBatch={
+                    'Comment': 'WoootWoot',
+                    'Changes': [
+                        {
+                            'Action': 'CREATE',
+                            'ResourceRecordSet': {
+                                'Name': domain_name + '.',
+                                'SetIdentifier': 'ZappaDNS',
+                                'Type': 'A',
+                                'Region': self.aws_region,
+                                'AliasTarget': {
+                                    'HostedZoneId': pure_zone_id,
+                                    'DNSName': dns_name + '.',
+                                    'EvaluateTargetHealth': False
+                                }
+                            }
+                        }
+                    ]
+                }
+            )
+        except Exception as e:
+            import debug
 
         return response
 
@@ -946,29 +986,52 @@ class Zappa(object):
 
         # Patch operations described here: https://tools.ietf.org/html/rfc6902#section-4
         # and here: http://boto3.readthedocs.io/en/latest/reference/services/apigateway.html#APIGateway.Client.update_domain_name
+        
+        # This doesn't work.
+        # There is currently no way to update an existing SSL certificate.
+        # The domain has to be taken down and re-updated.
+
+        # response = self.apigateway_client.update_domain_name(
+        #     domainName=domain_name,
+        #     patchOperations=[
+        #         {
+        #             'op': 'replace',
+        #             'path': '/certificateName',
+        #             'value': certificate_name,
+        #         },
+        #         {
+        #             'op': 'replace',
+        #             'path': '/certificateBody',
+        #             'value': certificate_body,
+        #         },
+        #         {
+        #             'op': 'replace',
+        #             'path': '/certificatePrivateKey',
+        #             'value': certificate_name,
+        #         },
+        #         {
+        #             'op': 'replace',
+        #             'path': '/certificateChain',
+        #             'value': certificate_chain,
+        #         },
+        #     ]
+        # )
+
+        new_cert_name = 'LEZappa' + str(time.time())
+        server_certificate = self.iam.create_server_certificate(
+            ServerCertificateName=new_cert_name,
+            CertificateBody=certificate_body,
+            PrivateKey=certificate_private_key,
+            CertificateChain=certificate_chain
+        )
         response = self.apigateway_client.update_domain_name(
             domainName=domain_name,
             patchOperations=[
                 {
                     'op': 'replace',
-                    'path': 'certificateName',
-                    'value': certificate_name,
-                },
-                {
-                    'op': 'replace',
-                    'path': 'certificateBody',
-                    'value': certificate_body,
-                },
-                {
-                    'op': 'replace',
-                    'path': 'certificatePrivateKey',
-                    'value': certificate_name,
-                },
-                {
-                    'op': 'replace',
-                    'path': 'certificateChain',
-                    'value': certificate_chain,
-                },
+                    'path': '/certificateName',
+                    'value': new_cert_name,
+                }
             ]
         )
 
@@ -1333,11 +1396,10 @@ class Zappa(object):
         all_zones = self.route53.list_hosted_zones()
 
         for zone in all_zones['HostedZones']:
-            if zone['Name'][:-1] == domain:
+            if zone['Name'][:-1] in domain:
                 return zone['Id']
 
         return None
-
 
     def set_dns_challenge_txt(self, zone_id, domain, txt_challenge):
         """

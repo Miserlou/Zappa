@@ -161,6 +161,15 @@ class ZappaCLI(object):
 
             self.api_key_required = self.zappa_settings[self.api_stage].get('api_key_required', False)
 
+        # from letsencrypt import get_cert_and_update_domain
+        # get_cert_and_update_domain(
+        #         self.zappa, 
+        #         self.lambda_name,
+        #         self.api_stage, 
+        #         self.zappa_settings[self.api_stage].get('domain')
+
+        #     )
+
         # Hand it off
         if command == 'deploy': # pragma: no cover
             self.deploy()
@@ -227,13 +236,7 @@ class ZappaCLI(object):
 
         # Make sure the necessary IAM execution roles are available
         if self.manage_roles:
-            credentials_arn, updated = self.zappa.create_iam_roles()
-            if updated: 
-                # IAM has a delay. We won't be able to register
-                # the function if we pack and upload in less than ~7s.
-                # Related: https://github.com/Miserlou/Zappa/issues/249
-                import time
-                time.sleep(7)
+            self.zappa.create_iam_roles()
 
         # Create the Lambda Zip
         self.create_package()
@@ -307,13 +310,7 @@ class ZappaCLI(object):
 
         # Make sure the necessary IAM execution roles are available
         if self.manage_roles:
-            credentials_arn, updated = self.zappa.create_iam_roles()
-            if updated: 
-                # IAM has a delay. We won't be able to register
-                # the function if we pack and upload in less than ~7s.
-                # Related: https://github.com/Miserlou/Zappa/issues/249
-                import time
-                time.sleep(7)
+            self.zappa.create_iam_roles()
 
         # Create the Lambda Zip,
         self.create_package()
@@ -568,14 +565,10 @@ class ZappaCLI(object):
         except:
            function_errors = 0
 
-        if function_errors > 0:
-            try:
-                error_rate = "{0:.2f}%".format(function_errors / function_invocations * 100)
-            except:
-                error_rate = "Error calculating"
-        else:
-            error_rate = 0
-
+        try:
+            error_rate = "{0:.2f}%".format(function_errors / function_invocations * 100)
+        except:
+            error_rate = "Error calculating"
         tabular_print("Invocations (24h)", int(function_invocations))
         tabular_print("Errors (24h)", int(function_errors))
         tabular_print("Error Rate (24h)", error_rate)
@@ -585,9 +578,7 @@ class ZappaCLI(object):
             self.lambda_name,
             self.api_stage)
         tabular_print("API Gateway URL", api_url)
-        # There literally isn't a better way to do this. 
-        # AWS provides no way to tie a APIGW domain name to its Lambda funciton.
-        domain_url = self.zappa_settings[self.api_stage].get('domain', None) 
+        domain_url = self.zappa_settings[self.api_stage].get('domain', None)
         tabular_print("Domain URL", domain_url)
 
         # Scheduled Events
@@ -930,9 +921,7 @@ class ZappaCLI(object):
                 # Copy our Django app into root of our package.
                 # It doesn't work otherwise.
                 base = __file__.rsplit(os.sep, 1)[0]
-
-                # Zappa Issue 251: this is a regular join because of how it interacts with Windows.
-                django_py = ''.join([base, os.sep, 'ext', os.sep, 'django.py'])
+                django_py = ''.join(os.path.join([base, os.sep, 'ext', os.sep, 'django.py']))
                 lambda_zip.write(django_py, 'django_zappa_app.py')
 
                 # Lambda requires a specific chmod
