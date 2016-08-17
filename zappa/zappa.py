@@ -930,50 +930,41 @@ class Zappa(object):
         dns_name = agw_response['distributionDomainName']
         zone_id = self.get_hosted_zone_id_for_domain(domain_name)
 
-        import debug
-
         # Not pretty.
-        try:
-            api_id = self.get_api_url(lambda_name, stage).split('https://')[1].split('.execute-api')[0]
-            response = self.apigateway_client.create_base_path_mapping(
-                domainName=domain_name,
-                basePath='',
-                restApiId=api_id,
-                stage=stage
-            )
-        except Exception, e:
-            import debug
+        api_id = self.get_api_url(lambda_name, stage).split('https://')[1].split('.execute-api')[0]
+        response = self.apigateway_client.create_base_path_mapping(
+            domainName=domain_name,
+            basePath='',
+            restApiId=api_id,
+            stage=stage
+        )
 
         # Related: https://github.com/boto/boto3/issues/157
         # and: http://docs.aws.amazon.com/Route53/latest/APIReference/CreateAliasRRSAPI.html
         # and policy: https://spin.atomicobject.com/2016/04/28/route-53-hosted-zone-managment/
-        try:
-            pure_zone_id = zone_id.split('/hostedzone/')[1]
+        pure_zone_id = zone_id.split('/hostedzone/')[1]
 
-            # XXX: ClientError: An error occurred (InvalidChangeBatch) when calling the ChangeResourceRecordSets operation: Tried to create an alias that targets d1awfeji80d0k2.cloudfront.net., type A in zone Z1XWOQP59BYF6Z, but the alias target name does not lie within the target zone
-            response = self.route53.change_resource_record_sets(
-                HostedZoneId=zone_id,
-                ChangeBatch={
-                    'Changes': [
-                        {
-                            'Action': 'UPSERT',
-                            'ResourceRecordSet': {
-                                'Name': domain_name,
-                                'Type': 'CNAME',
-                                'ResourceRecords': [
-                                    {
-                                        'Value': dns_name
-                                    }
-                                ],
-                                'TTL': 60
-                            }
+        # XXX: ClientError: An error occurred (InvalidChangeBatch) when calling the ChangeResourceRecordSets operation: Tried to create an alias that targets d1awfeji80d0k2.cloudfront.net., type A in zone Z1XWOQP59BYF6Z, but the alias target name does not lie within the target zone
+        response = self.route53.change_resource_record_sets(
+            HostedZoneId=zone_id,
+            ChangeBatch={
+                'Changes': [
+                    {
+                        'Action': 'UPSERT',
+                        'ResourceRecordSet': {
+                            'Name': domain_name,
+                            'Type': 'CNAME',
+                            'ResourceRecords': [
+                                {
+                                    'Value': dns_name
+                                }
+                            ],
+                            'TTL': 60
                         }
-                    ]
-                }
-            )
-
-        except Exception as e:
-            import debug
+                    }
+                ]
+            }
+        )
 
         return response
 
@@ -1048,7 +1039,7 @@ class Zappa(object):
                 domainName=domain_name
             )
             return response
-        except Exception, e:
+        except Exception as e:
             return None
 
     ##

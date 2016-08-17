@@ -167,7 +167,6 @@ class ZappaCLI(object):
         #         self.lambda_name,
         #         self.api_stage, 
         #         self.zappa_settings[self.api_stage].get('domain')
-
         #     )
 
         # Hand it off

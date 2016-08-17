@@ -48,7 +48,7 @@ def get_cert_and_update_domain(zappa_instance, lambda_name, api_stage, domain):
 
         with open('/tmp/intermediate.pem') as f:
             certificate_chain = f.read()
-            
+
         if not zappa_instance.get_domain_name(domain):
 
             zappa_instance.create_domain_name(
@@ -60,6 +60,7 @@ def get_cert_and_update_domain(zappa_instance, lambda_name, api_stage, domain):
                 lambda_name,
                 api_stage
                 )
+            print("Created a new domain name. Please not that it can take up to 40 minutes for this domain to be created and propagated through AWS, but it requires no further work on your part.")
         else:
             zappa_instance.update_domain_name(
                 domain, 
@@ -67,7 +68,8 @@ def get_cert_and_update_domain(zappa_instance, lambda_name, api_stage, domain):
                 certificate_body, 
                 certificate_private_key,
                 certificate_chain 
-                )            
+                )
+            print("Certificate updated!")
 
     except Exception as e:
         print(e)
@@ -75,6 +77,7 @@ def get_cert_and_update_domain(zappa_instance, lambda_name, api_stage, domain):
 
     # Always clean-up.
     cleanup()
+    return True
 
 def create_domain_key():
     """
