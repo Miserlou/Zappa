@@ -291,7 +291,8 @@ def cleanup():
         '/tmp/domain.csr',
         '/tmp/signed.crt',
         '/tmp/intermediate.pem',
-        '/tmp/chained.pem'
+        '/tmp/chained.pem',
+        '/tmp/lets-encrypt-x3-cross-signed.pem'
     ]
 
     for filename in filenames:
