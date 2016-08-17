@@ -919,7 +919,7 @@ class Zappa(object):
         """
         """
 
-        response = self.apigateway_client.create_domain_name(
+        agw_response = self.apigateway_client.create_domain_name(
             domainName=domain_name,
             certificateName=certificate_name,
             certificateBody=certificate_body,
@@ -927,8 +927,10 @@ class Zappa(object):
             certificateChain=certificate_chain
         )
 
-        dns_name = response['distributionDomainName']
+        dns_name = agw_response['distributionDomainName']
         zone_id = self.get_hosted_zone_id_for_domain(domain_name)
+
+        import debug
 
         # Not pretty.
         try:
@@ -944,31 +946,32 @@ class Zappa(object):
 
         # Related: https://github.com/boto/boto3/issues/157
         # and: http://docs.aws.amazon.com/Route53/latest/APIReference/CreateAliasRRSAPI.html
-        # This doesn't work yet.
+        # and policy: https://spin.atomicobject.com/2016/04/28/route-53-hosted-zone-managment/
         try:
             pure_zone_id = zone_id.split('/hostedzone/')[1]
+
+            # XXX: ClientError: An error occurred (InvalidChangeBatch) when calling the ChangeResourceRecordSets operation: Tried to create an alias that targets d1awfeji80d0k2.cloudfront.net., type A in zone Z1XWOQP59BYF6Z, but the alias target name does not lie within the target zone
             response = self.route53.change_resource_record_sets(
-                HostedZoneId=pure_zone_id,
+                HostedZoneId=zone_id,
                 ChangeBatch={
-                    'Comment': 'WoootWoot',
                     'Changes': [
                         {
-                            'Action': 'CREATE',
+                            'Action': 'UPSERT',
                             'ResourceRecordSet': {
-                                'Name': domain_name + '.',
-                                'SetIdentifier': 'ZappaDNS',
-                                'Type': 'A',
-                                'Region': self.aws_region,
-                                'AliasTarget': {
-                                    'HostedZoneId': pure_zone_id,
-                                    'DNSName': dns_name + '.',
-                                    'EvaluateTargetHealth': False
-                                }
+                                'Name': domain_name,
+                                'Type': 'CNAME',
+                                'ResourceRecords': [
+                                    {
+                                        'Value': dns_name
+                                    }
+                                ],
+                                'TTL': 60
                             }
                         }
                     ]
                 }
             )
+
         except Exception as e:
             import debug
 
