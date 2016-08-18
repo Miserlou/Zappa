@@ -1144,7 +1144,7 @@ class Zappa(object):
             name = event.get('name', function)
             if name != function:
                 # a custom event name has been provided, make sure function name is included as postfix,
-                # otherwise zappa's handler won't be able to locate the function.
+                # otherwise Zappa's handler won't be able to locate the function.
                 name = '{}-{}'.format(name, function)
             description = event.get('description', function)
 
