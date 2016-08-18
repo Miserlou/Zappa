@@ -12,9 +12,8 @@
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
-- [Zappa - Serverless Python Web Services](#zappa---serverless-python-web-services)
+- [About](#about)
 - [Installation and Configuration](#installation-and-configuration)
     - [Running the Initial Setup / Settings](#running-the-initial-setup--settings)
 - [Basic Usage](#basic-usage)
@@ -47,6 +46,8 @@
 - [Contributing](#contributing)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+## About
 
 **Zappa** makes it super easy to deploy all Python WSGI applications on AWS Lambda + API Gateway. Think of it as "serverless" web hosting for your Python web apps.
 
