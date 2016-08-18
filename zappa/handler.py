@@ -122,6 +122,9 @@ class LambdaHandler(object):
         handler = cls()
         try:
             return handler.handler(event, context)
+        except LambdaException as lex:
+            # do nothing about LambdaExceptions since those are already handled (or should be handled by the wsgi app).
+            raise lex
         except Exception as ex:
             exception_handler = handler.settings.EXCEPTION_HANDLER
             if exception_handler:
