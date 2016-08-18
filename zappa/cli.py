@@ -555,7 +555,7 @@ class ZappaCLI(object):
                                        Dimensions=[{'Name': 'FunctionName',
                                                     'Value': '{}'.format(self.lambda_name)}]
                                        )['Datapoints'][0]['Sum']
-        except:
+        except Exception as e:
             function_invocations = 0
         try:
             function_errors = self.zappa.cloudwatch.get_metric_statistics(
@@ -568,8 +568,8 @@ class ZappaCLI(object):
                                        Dimensions=[{'Name': 'FunctionName',
                                                     'Value': '{}'.format(self.lambda_name)}]
                                        )['Datapoints'][0]['Sum']
-        except:
-           function_errors = 0
+        except Exception as e:
+            function_errors = 0
 
         try:
             error_rate = "{0:.2f}%".format(function_errors / function_invocations * 100)
@@ -633,7 +633,7 @@ class ZappaCLI(object):
             sys.exit() # pragma: no cover
 
         # Ensure inside virtualenv.
-        if not hasattr(sys, 'real_prefix'): # pragma: no cover
+        if not ( hasattr(sys, 'prefix') or hasattr(sys, 'real_prefix') or hasattr(sys, 'base_prefix') ): # pragma: no cover
             print("Zappa must be run inside of a virtual environment!")
             print("Learn more about virtual environments here: http://docs.python-guide.org/en/latest/dev/virtualenvs/")
             sys.exit()
