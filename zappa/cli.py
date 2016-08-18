@@ -461,16 +461,12 @@ class ZappaCLI(object):
 
         """
 
-        # Run even events are not defined to remove previously existing ones (thus default to []).
+        # Run even if events are not defined to remove previously existing ones (thus default to []).
         events = self.stage_config.get('events', [])
 
         if not isinstance(events, list): # pragma: no cover
             print("Events must be supplied as a list.")
             return
-
-        if not events:
-            print("No events defined in zappa config. Proceeding to unschedule to remove leftovers (in case "
-                  "configuration was changed).")
 
         function_arn = None
         try:
