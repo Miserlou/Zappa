@@ -96,6 +96,7 @@ class ZappaCLI(object):
     lambda_handler = None
     django_settings = None
     manage_roles = True
+    exception_handler = None
 
     @property
     def stage_config(self):
@@ -849,6 +850,8 @@ class ZappaCLI(object):
             self.api_stage].get('memory_size', 512)
         self.app_function = self.zappa_settings[
             self.api_stage].get('app_function', None)
+        self.exception_handler = self.zappa_settings[
+            self.api_stage].get('exception_handler', None)
         self.aws_region = self.zappa_settings[
             self.api_stage].get('aws_region', 'us-east-1')
         self.debug = self.zappa_settings[
@@ -932,6 +935,11 @@ class ZappaCLI(object):
                 if self.app_function:
                     app_module, app_function = self.app_function.rsplit('.', 1)
                     settings_s = settings_s + "APP_MODULE='{0!s}'\nAPP_FUNCTION='{1!s}'\n".format(app_module, app_function)
+
+                if self.exception_handler:
+                    settings_s += "EXCEPTION_HANDLER='{0!s}'\n".format(self.exception_handler)
+                else:
+                    settings_s += "EXCEPTION_HANDLER=None\n"
 
                 if self.debug:
                     settings_s = settings_s + "DEBUG='{0!s}'\n".format((self.debug)) # Cast to Bool in handler

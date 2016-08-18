@@ -119,7 +119,19 @@ class LambdaHandler(object):
 
     @classmethod
     def lambda_handler(cls, event, context): # pragma: no cover
-        return cls().handler(event, context)
+        handler = cls()
+        try:
+            return handler.handler(event, context)
+        except Exception as ex:
+            exception_handler = handler.settings.EXCEPTION_HANDLER
+            if exception_handler:
+                handler_function = handler.import_module_and_get_function(exception_handler)
+                try:
+                    handler_function(ex, event, context)
+                except Exception as cex:
+                    logger.error(msg='Failed to process exception via custom handler.')
+                    print(cex)
+            raise ex
 
     def handler(self, event, context):
         """
