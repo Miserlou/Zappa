@@ -263,6 +263,7 @@ to change Zappa's behavior. Use these at your own risk!
                 }
             }
         ],
+        "exception_handler": "your_module.report_exception", // function that will be invoked in case Zappa sees an unhandled exception raised from your code
         "exclude": ["*.gz", "*.rar"], // A list of regex patterns to exclude from the archive
         "http_methods": ["GET", "POST"], // HTTP Methods to route,
         "integration_response_codes": [200, 301, 404, 500], // Integration response status codes to route
@@ -380,6 +381,29 @@ zappa_settings.json:
 ```
 
 Now Zappa will use `application/json`'s template to route requests with MIME-type of `application/vnd.webhooks+json`. You will need to re-deploy your application for this change to take affect.
+
+#### Catching Unhandled Exceptions
+
+By default, if an exception happens in your code, Zappa will just print the stacktrace into a CloudWatch log. If you wish to use an external reporting tool to take note of those exceptions, you can use the `exception_handler` configuration option.
+
+zappa_settings.json:
+```javascript
+{
+    "dev": {
+        ...
+        "exception_handler": "your_module.unhandled_exceptions",
+    },
+    ...
+}
+```
+
+The function has to accept three arguments: exception, event, and context:
+
+your_module.py
+```python
+def unhandled_exceptions(e, event, context):
+    send_to_raygun(e, event)  # gather data you need and send
+```
 
 ## Zappa Guides
 

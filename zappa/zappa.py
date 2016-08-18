@@ -244,7 +244,7 @@ class Zappa(object):
         self.iam_client = self.boto_session.client('iam')
         self.iam = self.boto_session.resource('iam')
         self.s3 = self.boto_session.resource('s3')
-        self.cloudwatch = self.boto_session.client('logs')
+        self.cloudwatch = self.boto_session.client('cloudwatch')
         self.route53 = self.boto_session.client('route53')
 
     ##
@@ -1310,7 +1310,7 @@ class Zappa(object):
         """
         print("Removing log group: {}".format(group_name))
         try:
-            self.cloudwatch.delete_log_group(logGroupName=group_name)
+            self.logs_client.delete_log_group(logGroupName=group_name)
         except botocore.exceptions.ClientError as e:
             print("Couldn't remove '{}' because of: {}".format(group_name, e))
 
@@ -1348,7 +1348,7 @@ class Zappa(object):
         """
         Set DNS challenge TXT.
         """
-        
+
         print("Setting DNS challenge..")
         resp = self.route53.change_resource_record_sets(
             HostedZoneId=zone_id,

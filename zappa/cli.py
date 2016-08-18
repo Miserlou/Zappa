@@ -96,6 +96,7 @@ class ZappaCLI(object):
     lambda_handler = None
     django_settings = None
     manage_roles = True
+    exception_handler = None
 
     @property
     def stage_config(self):
@@ -556,7 +557,7 @@ class ZappaCLI(object):
                                        Dimensions=[{'Name': 'FunctionName',
                                                     'Value': '{}'.format(self.lambda_name)}]
                                        )['Datapoints'][0]['Sum']
-        except:
+        except Exception as e:
             function_invocations = 0
         try:
             function_errors = self.zappa.cloudwatch.get_metric_statistics(
@@ -569,8 +570,8 @@ class ZappaCLI(object):
                                        Dimensions=[{'Name': 'FunctionName',
                                                     'Value': '{}'.format(self.lambda_name)}]
                                        )['Datapoints'][0]['Sum']
-        except:
-           function_errors = 0
+        except Exception as e:
+            function_errors = 0
 
         try:
             error_rate = "{0:.2f}%".format(function_errors / function_invocations * 100)
@@ -634,7 +635,7 @@ class ZappaCLI(object):
             sys.exit() # pragma: no cover
 
         # Ensure inside virtualenv.
-        if not hasattr(sys, 'real_prefix'): # pragma: no cover
+        if not ( hasattr(sys, 'prefix') or hasattr(sys, 'real_prefix') or hasattr(sys, 'base_prefix') ): # pragma: no cover
             print("Zappa must be run inside of a virtual environment!")
             print("Learn more about virtual environments here: http://docs.python-guide.org/en/latest/dev/virtualenvs/")
             sys.exit()
@@ -850,6 +851,8 @@ class ZappaCLI(object):
             self.api_stage].get('memory_size', 512)
         self.app_function = self.zappa_settings[
             self.api_stage].get('app_function', None)
+        self.exception_handler = self.zappa_settings[
+            self.api_stage].get('exception_handler', None)
         self.aws_region = self.zappa_settings[
             self.api_stage].get('aws_region', 'us-east-1')
         self.debug = self.zappa_settings[
@@ -933,6 +936,11 @@ class ZappaCLI(object):
                 if self.app_function:
                     app_module, app_function = self.app_function.rsplit('.', 1)
                     settings_s = settings_s + "APP_MODULE='{0!s}'\nAPP_FUNCTION='{1!s}'\n".format(app_module, app_function)
+
+                if self.exception_handler:
+                    settings_s += "EXCEPTION_HANDLER='{0!s}'\n".format(self.exception_handler)
+                else:
+                    settings_s += "EXCEPTION_HANDLER=None\n"
 
                 if self.debug:
                     settings_s = settings_s + "DEBUG='{0!s}'\n".format((self.debug)) # Cast to Bool in handler
