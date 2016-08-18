@@ -6,7 +6,7 @@ If you want to deploy a Zappa application using a domain or a subdomain, you'll 
 
 To verify that you own your domain, Let's Encrypt issues a challenge for you to prove that you control your domain's DNS servers. To do this automatically, Zappa requires that you use AWS's [Route 53](https://aws.amazon.com/route53/) DNS service.
 
-In the AWS [Route 53 web console](https://console.aws.amazon.com/route53/), create a new "Hosted Zone" for your domain. Define this value as the _apex_ ("naked") domain of your target domain. (So even if you wanted 'test.zappa.io', call this zone 'zappa.io'). For your target domain, create This will give you a set of NS servers for your domain to use, like so:
+In the AWS [Route 53 web console](https://console.aws.amazon.com/route53/), create a new "Hosted Zone" for your domain. Define this value as the _apex_ ("naked") domain of your target domain. (So even if you wanted `test.zappa.io`, call this zone `zappa.io`). This will automatically give you a set of NS servers for your domain to use, like so:
 
 [![Console](http://i.imgur.com/1DflCR4.png)](https://console.aws.amazon.com/route53/)
 
