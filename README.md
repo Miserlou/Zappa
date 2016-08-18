@@ -10,6 +10,44 @@
 [![PyPI](https://img.shields.io/pypi/v/Zappa.svg)](https://pypi.python.org/pypi/zappa)
 [![Slack](https://img.shields.io/badge/chat-slack-ff69b4.svg)](https://slackautoinviter.herokuapp.com/)
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Zappa - Serverless Python Web Services](#zappa---serverless-python-web-services)
+- [Installation and Configuration](#installation-and-configuration)
+    - [Running the Initial Setup / Settings](#running-the-initial-setup--settings)
+- [Basic Usage](#basic-usage)
+    - [Initial Deployments](#initial-deployments)
+    - [Updates](#updates)
+    - [Rollback](#rollback)
+    - [Scheduling](#scheduling)
+    - [Executing in Response to AWS Events](#executing-in-response-to-aws-events)
+    - [Undeploy](#undeploy)
+    - [Status](#status)
+    - [Tailing Logs](#tailing-logs)
+    - [Remote Function Invocation](#remote-function-invocation)
+    - [Django Management Commands](#django-management-commands)
+    - [Let's Encrypt SSL Domain Certification and Installation](#lets-encrypt-ssl-domain-certification-and-installation)
+- [Advanced Settings](#advanced-settings)
+- [Advanced Usage](#advanced-usage)
+    - [Keeping The Server Warm](#keeping-the-server-warm)
+    - [Serving Static Files / Binary Uploads](#serving-static-files--binary-uploads)
+    - [Enabling CORS](#enabling-cors)
+    - [Enabling Secure Endpoints on API Gateway](#enabling-secure-endpoints-on-api-gateway)
+    - [Deploying to a Domain With a Let's Encrypt Certificate (DNS Auth)](#deploying-to-a-domain-with-a-lets-encrypt-certificate-dns-auth)
+    - [Deploying to a Domain With a Let's Encrypt Certificate (HTTP Auth)](#deploying-to-a-domain-with-a-lets-encrypt-certificate-http-auth)
+    - [Setting Environment Variables](#setting-environment-variables)
+    - [Setting Integration Content-Type Aliases](#setting-integration-content-type-aliases)
+    - [Catching Unhandled Exceptions](#catching-unhandled-exceptions)
+- [Zappa Guides](#zappa-guides)
+- [Zappa in the Press](#zappa-in-the-press)
+- [Sites Using Zappa](#sites-using-zappa)
+- [Hacks](#hacks)
+- [Contributing](#contributing)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 **Zappa** makes it super easy to deploy all Python WSGI applications on AWS Lambda + API Gateway. Think of it as "serverless" web hosting for your Python web apps.
 
 > What do you mean "serverless"?
