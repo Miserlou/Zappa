@@ -220,6 +220,8 @@ And your domain will be verified, certified and registered!
 
 _(Please note that this can take around 45 minutes to take effect the first time your run the command, and around 60 seconds every time after that.)_
 
+More detailed instructions are available [in this handy guide](https://github.com/Miserlou/Zappa/blob/master/docs/domain_with_free_ssl_dns.md).
+
 ## Advanced Settings
 
 There are other settings that you can define in your local settings
@@ -317,7 +319,11 @@ To enable Cross-Origin Resource Sharing (CORS) for your application, follow the 
 
 #### Enabling Secure Endpoints on API Gateway
 
-You can use the `api_key_required` setting to generate and assign an API key to all the routes of your API Gateway. After redeployment, you can then pass the provided key as a header called `x-api-key` to access the restricted endpoints. Without the `x-api-key` header, you will receive a 403. [More information on API keys in the API Gateway](http://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-api-keys.html) 
+You can use the `api_key_required` setting to generate and assign an API key to all the routes of your API Gateway. After redeployment, you can then pass the provided key as a header called `x-api-key` to access the restricted endpoints. Without the `x-api-key` header, you will receive a 403. [More information on API keys in the API Gateway](http://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-api-keys.html)
+
+#### Deploying to a Domain With a Let's Encrypt Certificate (DNS Auth)
+
+If you want to use Zappa on a domain with a free Let's Encrypt certificate using automatic Route 53 based DNS Authentication, you can follow [this handy guide](https://github.com/Miserlou/Zappa/blob/master/docs/domain_with_free_ssl_dns.md).
 
 #### Deploying to a Domain With a Let's Encrypt Certificate (HTTP Auth)
 
