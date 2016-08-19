@@ -379,6 +379,12 @@ If you want to use Zappa on a domain with a free Let's Encrypt certificate using
 
 However, it's now far easier to use Route 53-based DNS authentication, which will allow you to use a Let's Encrypt certificate with a single `$ zappa certify` command.
 
+#### Bundling Additionnal Packages like OpenCV
+
+Some python packages can't easily be added to your virtualenv. It is quite easy to bundle them using Zappa. Simply add them to the root directory.
+
+For example, to install OpenCV, go to [aeddi/aws-lambda-python-opencv](https://github.com/aeddi/aws-lambda-python-opencv) and download the pre-built archive. simply extract it in the root of your Zappa project.
+
 #### Setting Environment Variables
 
 If you want to use environment variables to configure your application (which is especially useful for things like sensitive credentials), you can create a file and place it in an S3 bucket to which your Zappa application has access to. To do this, add the `remote_env_bucket` and `remote_env_file` keys to zappa_settings pointing to a file containing a flat JSON object, so that each key-value pair on the object will be set as an environment variable and value whenever a new lambda instance spins up.
