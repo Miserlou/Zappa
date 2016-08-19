@@ -77,6 +77,7 @@ class ZappaCLI(object):
     # Zappa settings
     zappa = None
     zappa_settings = None
+    load_credentials = True
 
     api_stage = None
     app_function = None
@@ -97,6 +98,7 @@ class ZappaCLI(object):
     django_settings = None
     manage_roles = True
     exception_handler = None
+
 
     @property
     def stage_config(self):
@@ -166,8 +168,6 @@ class ZappaCLI(object):
 
             if vargs['app_function'] is not None:
                 self.app_function = vargs['app_function']
-
-            self.api_key_required = self.stage_config.get('api_key_required', False)
 
         # Hand it off
         if command == 'deploy': # pragma: no cover
@@ -354,7 +354,9 @@ class ZappaCLI(object):
 
         self.callback('post')
 
-        print("Your updated Zappa deployment is live! {}".format(endpoint_url))
+        if 'https://' not in endpoint_url:
+            endpoint_url = 'https://' + endpoint_url
+        click.echo("Your updated Zappa deployment is " + click.style("live", fg='green', bold=True) + "!: {}".format(endpoint_url))
 
         return
 
@@ -415,7 +417,12 @@ class ZappaCLI(object):
         if remove_logs:
             self.zappa.remove_api_gateway_logs(self.lambda_name)
 
-        gateway_id = self.zappa.undeploy_api_gateway(self.lambda_name, self.api_key_required)
+        domain_name = self.stage_config.get('domain', None) 
+        gateway_id = self.zappa.undeploy_api_gateway( 
+            self.lambda_name, 
+            api_key_required=self.api_key_required,
+            domain_name=domain_name
+        )
 
         if self.stage_config.get('keep_warm', True):
             self.zappa.remove_keep_warm(self.lambda_name)
@@ -590,7 +597,7 @@ class ZappaCLI(object):
         # There literally isn't a better way to do this. 
         # AWS provides no way to tie a APIGW domain name to its Lambda funciton.
         domain_url = self.stage_config.get('domain', None) 
-        tabular_print("Domain URL", domain_url)
+        tabular_print("Domain URL", 'https://' + domain_url)
 
         # Scheduled Events
         event_rules = self.zappa.get_event_rules_for_arn(conf['FunctionArn'])
@@ -882,8 +889,13 @@ class ZappaCLI(object):
             self.api_stage].get('django_settings', None)
         self.manage_roles = self.zappa_settings[
             self.api_stage].get('manage_roles', True)
+        self.api_key_required = self.stage_config.get('api_key_required', False)
 
-        self.zappa = Zappa(boto_session=session, profile_name=self.profile_name, aws_region=self.aws_region)
+        self.zappa = Zappa( boto_session=session, 
+                            profile_name=self.profile_name, 
+                            aws_region=self.aws_region,
+                            load_credentials=self.load_credentials
+                            )
 
         for setting in CUSTOM_SETTINGS:
             if setting in self.stage_config:

@@ -5,7 +5,6 @@ import datetime
 import json
 import logging
 import os
-import pip
 import random
 import requests
 import shutil
@@ -152,6 +151,13 @@ ATTACH_POLICY = """{
                 "dynamodb:*"
             ],
             "Resource": "arn:aws:dynamodb:*:*:*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "route53:*"
+            ],
+            "Resource": "*"
         }
     ]
 }"""
@@ -219,7 +225,7 @@ class Zappa(object):
     boto_session = None
     credentials_arn = None
 
-    def __init__(self, boto_session=None, profile_name=None, aws_region=aws_region):
+    def __init__(self, boto_session=None, profile_name=None, aws_region=aws_region, load_credentials=True):
         self.aws_region = aws_region
 
         # Some common invokations, such as DB migrations,
@@ -235,7 +241,9 @@ class Zappa(object):
         }
         long_config = botocore.client.Config(**long_config_dict)
 
-        self.load_credentials(boto_session, profile_name)
+        if load_credentials:
+            self.load_credentials(boto_session, profile_name)
+
         self.s3_client = self.boto_session.client('s3')
         self.lambda_client = self.boto_session.client('lambda', config=long_config)
         self.events_client = self.boto_session.client('events')
@@ -259,6 +267,8 @@ class Zappa(object):
         Returns path to that file.
 
         """
+        import pip
+
         print("Packaging project as zip...")
 
         if not venv:
@@ -853,7 +863,7 @@ class Zappa(object):
                 continue
             yield api
 
-    def undeploy_api_gateway(self, project_name, api_key_required=False):
+    def undeploy_api_gateway(self, project_name, api_key_required=False, domain_name=None):
         """
         Delete a deployed REST API Gateway.
 
@@ -861,9 +871,21 @@ class Zappa(object):
 
         print("Deleting API Gateway..")
         for api in self.get_rest_apis(project_name):
+
+            if domain_name:
+                try:
+                    self.apigateway_client.delete_base_path_mapping(
+                        domainName=domain_name,
+                        basePath='(none)'
+                    )
+                except Exception as e:
+                    # We may not have actually set up the domain.
+                    pass
+
             self.apigateway_client.delete_rest_api(
                     restApiId=api['id']
             )
+
             if api_key_required:
                 print("Removing API Key..")
                 api_key_id = [key for key in self.apigateway_client.get_api_keys()['items']
@@ -917,6 +939,7 @@ class Zappa(object):
                             stage,
                         ):
         """
+        Great the API GW domain.
         """
 
         agw_response = self.apigateway_client.create_domain_name(
@@ -976,41 +999,12 @@ class Zappa(object):
                             certificate_chain,
                         ):
         """
+        Update an IAM server cert and AGW domain name with it.
         """
 
         # Patch operations described here: https://tools.ietf.org/html/rfc6902#section-4
         # and here: http://boto3.readthedocs.io/en/latest/reference/services/apigateway.html#APIGateway.Client.update_domain_name
         
-        # This doesn't work.
-        # There is currently no way to update an existing SSL certificate.
-        # The domain has to be taken down and re-updated.
-
-        # response = self.apigateway_client.update_domain_name(
-        #     domainName=domain_name,
-        #     patchOperations=[
-        #         {
-        #             'op': 'replace',
-        #             'path': '/certificateName',
-        #             'value': certificate_name,
-        #         },
-        #         {
-        #             'op': 'replace',
-        #             'path': '/certificateBody',
-        #             'value': certificate_body,
-        #         },
-        #         {
-        #             'op': 'replace',
-        #             'path': '/certificatePrivateKey',
-        #             'value': certificate_name,
-        #         },
-        #         {
-        #             'op': 'replace',
-        #             'path': '/certificateChain',
-        #             'value': certificate_chain,
-        #         },
-        #     ]
-        # )
-
         new_cert_name = 'LEZappa' + str(time.time())
         server_certificate = self.iam.create_server_certificate(
             ServerCertificateName=new_cert_name,
