@@ -596,8 +596,11 @@ class ZappaCLI(object):
 
         # There literally isn't a better way to do this. 
         # AWS provides no way to tie a APIGW domain name to its Lambda funciton.
-        domain_url = self.stage_config.get('domain', None) 
-        tabular_print("Domain URL", 'https://' + domain_url)
+        domain_url = self.stage_config.get('domain', None)
+        if domain_url: 
+            tabular_print("Domain URL", 'https://' + domain_url)
+        else:
+            tabular_print("Domain URL", "None Supplied")
 
         # Scheduled Events
         event_rules = self.zappa.get_event_rules_for_arn(conf['FunctionArn'])
