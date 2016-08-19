@@ -354,7 +354,7 @@ class ZappaCLI(object):
 
         self.callback('post')
 
-        if 'https://' not in endpoint_url:
+        if endpoint_url and 'https://' not in endpoint_url:
             endpoint_url = 'https://' + endpoint_url
         click.echo("Your updated Zappa deployment is " + click.style("live", fg='green', bold=True) + "!: {}".format(endpoint_url))
 
