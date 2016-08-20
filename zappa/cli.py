@@ -420,9 +420,6 @@ class ZappaCLI(object):
             domain_name=domain_name
         )
 
-        if self.stage_config.get('keep_warm', True):
-            self.zappa.remove_keep_warm(self.lambda_name)
-
         self.unschedule()  # removes event triggers, including warm up event.
 
         self.zappa.delete_lambda_function(self.lambda_name)
