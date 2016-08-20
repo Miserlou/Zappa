@@ -262,6 +262,7 @@ class ZappaCLI(object):
 
         # Schedule events for this deployment
         self.schedule()
+
         endpoint_url = ''
         if self.use_apigateway:
             # Create and configure the API Gateway
@@ -451,7 +452,22 @@ class ZappaCLI(object):
                            'function': 'handler.keep_warm_callback',
                            'expression': keep_warm_rate,
                            'description': 'Zappa Keep Warm - {}'.format(self.lambda_name)})
-            print("Keep warm event will be scheduled.")
+
+
+        if self.zappa_settings[self.api_stage].get('lets_encrypt_expression'):
+
+            function_response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name)
+            conf = function_response['Configuration']
+            timeout = conf['Timeout']
+
+            if timeout < 60:
+                click.echo(click.style("Unable to schedule certificate autorenewer!", fg="red", bold=True) + " Please redeploy with a " + click.style("timeout_seconds", bold=True) + " greater than 60!")
+            else:
+                events.append({'name': 'zappa-le-certify',
+                               'function': 'handler.certify_callback',
+                               'expression': self.zappa_settings[self.api_stage].get('lets_encrypt_expression'),
+                               'description': 'Zappa LE Certificate Renewer - {}'.format(self.lambda_name)})
+
         if events:
             try:
                 function_response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name)
@@ -493,7 +509,7 @@ class ZappaCLI(object):
         self.zappa.unschedule_events(
             lambda_name=self.lambda_name,
             lambda_arn=function_arn,
-            events=events
+            events=events,
             )
 
 

@@ -15,11 +15,13 @@ from werkzeug.wrappers import Response
 # This file may be copied into a project's root,
 # so handle both scenarios.
 try:
-    from zappa.wsgi import create_wsgi_request, common_log
+    from zappa.cli import ZappaCLI
     from zappa.middleware import ZappaWSGIMiddleware
+    from zappa.wsgi import create_wsgi_request, common_log
 except ImportError as e: # pragma: no cover
-    from .wsgi import create_wsgi_request, common_log
+    from .cli import ZappaCLI
     from .middleware import ZappaWSGIMiddleware
+    from .wsgi import create_wsgi_request, common_log
 
 # Set up logging
 logging.basicConfig()
@@ -136,6 +138,40 @@ class LambdaHandler(object):
                     print(cex)
             raise ex
 
+    @staticmethod
+    def run_function(app_function, event, context):
+        """
+        Given a function and event context,
+        detect signature and execute, returning any result.
+        """
+        args, varargs, keywords, defaults = inspect.getargspec(app_function)
+        num_args = len(args)
+        if num_args == 0:
+            result = app_function(event, context) if varargs else app_function()
+        elif num_args == 1:
+            result = app_function(event, context) if varargs else app_function(event)
+        elif num_args == 2:
+            result = app_function(event, context)
+        else:
+            raise RuntimeError("Function signature is invalid. Expected a function that accepts at most "
+                               "2 arguments or varargs.")
+        return result
+
+    def update_certificate(self):
+        """
+        Call 'certify' locally.
+        """
+
+        import boto3
+        session = boto3.Session()
+
+        z_cli = ZappaCLI()
+        z_cli.api_stage = self.settings.API_STAGE
+        z_cli.load_settings(session=session)
+        z_cli.certify()
+
+        return
+
     def handler(self, event, context):
         """
         An AWS Lambda function which parses specific API Gateway input into a
@@ -155,19 +191,19 @@ class LambdaHandler(object):
             level = logging.getLevelName(settings.LOG_LEVEL)
             logger.setLevel(level)
 
-        # This is the result of a keep alive
+        # This is the result of a keep alive, recertify 
         # or scheduled event.
         if event.get('detail-type') == u'Scheduled Event':
 
             whole_function = event['resources'][0].split('/')[-1].split('-')[-1]
 
-            # This is a scheduled, non-keep-alive function.
-            # This is not the best way to do this but it'll do.
+            # This is a scheduled function.
             if '.' in whole_function:
                 app_function = self.import_module_and_get_function(whole_function)
 
                 # Execute the function!
                 return self.run_function(app_function, event, context)
+
             # Else, let this execute as it were.
 
         # This is a direct command invocation.
@@ -340,21 +376,6 @@ class LambdaHandler(object):
             else:
                 raise e
 
-    @staticmethod
-    def run_function(app_function, event, context):
-        args, varargs, keywords, defaults = inspect.getargspec(app_function)
-        num_args = len(args)
-        if num_args == 0:
-            result = app_function(event, context) if varargs else app_function()
-        elif num_args == 1:
-            result = app_function(event, context) if varargs else app_function(event)
-        elif num_args == 2:
-            result = app_function(event, context)
-        else:
-            raise RuntimeError("Function signature is invalid. Expected a function that accepts at most "
-                               "2 arguments or varargs.")
-        return result
-
 def lambda_handler(event, context): # pragma: no cover
     return LambdaHandler.lambda_handler(event, context)
 
@@ -363,3 +384,10 @@ def keep_warm_callback(event, context):
     """This method is triggered by the CloudWatch event scheduled when keep_warm setting is set to true. """
     lambda_handler(event={}, context=context)  # overriding event with an empty one so that web app initialization will
     # be triggered.
+
+def certify_callback(event, context):   
+    """
+    Load our LH settings and update our cert.
+    """
+    lh = LambdaHandler()
+    return lh.update_certificate()

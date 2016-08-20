@@ -63,3 +63,21 @@ And you're done! You can now use your SSL-secured Zappa application on your targ
 Note that the first time you run this command, it can take around 45 minutes for Amazon to create your domain, and it'll take about 60 seconds every time after that.
 
 Let's Encrypt certificates only last for 3 months, so make sure that you remember to renew in time.
+
+### Step 4 (Optional): Auto-Renew
+
+If you want your certificates to renew automatically, use simply need to define a `lets_encrypt_expression` in your settings, like so:
+
+```javascript
+{
+    "dev": {
+    ...
+       "domain": "test.zappa.io", // Your target domain
+       "lets_encrypt_key": "s3://your-secure-bucket/account.key", // S3 Path to account key
+       "lets_encrypt_expression": "rate(15 days)", // LE Renew schedule
+    ...
+    }
+}
+```
+
+The only caveat with this is that your functions `timeout_seconds` must be greater than `60`, as that's how long it takes the DNS to propagate. The auto-renewer will be installed whenvever you next `update` or `schedule`, though you may need to re`deploy` to up your `seconds_timeout`.
