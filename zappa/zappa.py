@@ -163,7 +163,7 @@ ATTACH_POLICY = """{
 }"""
 
 RESPONSE_TEMPLATE = """#set($inputRoot = $input.path('$'))\n$inputRoot.Content"""
-ERROR_RESPONSE_TEMPLATE = """#set($inputRoot = $input.path('$.errorMessage'))\n$util.base64Decode($inputRoot)"""
+ERROR_RESPONSE_TEMPLATE = """#set($_body = $util.parseJson($input.path('$.errorMessage'))['content'])\n$util.base64Decode($_body)"""
 REDIRECT_RESPONSE_TEMPLATE = ""
 
 API_GATEWAY_REGIONS = ['us-east-1', 'us-west-2', 'eu-west-1', 'eu-central-1', 'ap-northeast-1', 'ap-southeast-2']
@@ -1423,7 +1423,7 @@ class Zappa(object):
         if status_code in ['301', '302']:
             pattern = 'https://.*|/.*'
         elif status_code != '200':
-            pattern = base64.b64encode("<!DOCTYPE html>" + str(status_code)) + '.*'
+            pattern = '\{"http_status": ' + str(status_code) + '.*'
             pattern = pattern.replace('+', r"\+")
 
         return pattern
