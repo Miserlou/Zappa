@@ -976,7 +976,10 @@ class ZappaCLI(object):
                     settings_s += "EXCEPTION_HANDLER=None\n"
 
                 if self.debug:
-                    settings_s = settings_s + "DEBUG='{0!s}'\n".format((self.debug)) # Cast to Bool in handler
+                    settings_s = settings_s + "DEBUG=True\n"
+                else:
+                    settings_s = settings_s + "DEBUG=False\n"
+
                 settings_s = settings_s + "LOG_LEVEL='{0!s}'\n".format((self.log_level))
 
                 # If we're on a domain, we don't need to define the /<<env>> in
