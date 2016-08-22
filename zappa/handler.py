@@ -125,7 +125,7 @@ class LambdaHandler(object):
         try:
             return handler.handler(event, context)
         except LambdaException as lex:
-            # do nothing about LambdaExceptions since those are already handled (or should be handled by the wsgi app).
+            # do nothing about LambdaExceptions since those are already handled (or should be handled by the WSGI app).
             raise lex
         except Exception as ex:
             exception_handler = handler.settings.EXCEPTION_HANDLER

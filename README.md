@@ -471,10 +471,11 @@ def unhandled_exceptions(e, event, context):
 ## Sites Using Zappa
 
 * [zappa.gun.io](https://zappa.gun.io) - A Zappa "Hello, World" (real homepage coming.. soon..)
-* [spheres.gun.io](https://spheres.gun.io)  - Spheres, a photosphere host and viewer
 * [Mailchimp Signup Utility](https://github.com/sasha42/Mailchimp-utility) - A microservice for adding people to a mailing list via API.
+* [Zappa Slack Inviter](https://github.com/Miserlou/zappa-slack-inviter) - A tiny, server-less service for inviting new users to your Slack channel.
 * [Serverless Image Host](https://github.com/Miserlou/serverless-imagehost) - A thumbnailing service with Flask, Zappa and Pillow.
-* Your site here?
+
+Are you using Zappa? Let us know and we'll list your site here!
 
 ## Hacks
 
