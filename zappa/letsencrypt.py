@@ -36,7 +36,7 @@ def get_cert_and_update_domain(zappa_instance, lambda_name, api_stage, domain):
         create_domain_key()
         create_domain_csr(domain)
         get_cert(zappa_instance)
-        created_chained_certificate()
+        create_chained_certificate()
 
         with open('/tmp/signed.crt') as f:
             certificate_body = f.read()
@@ -98,7 +98,7 @@ def create_domain_csr(domain):
         raise IOError("OpenSSL Error: {0}".format(err))
     return True
 
-def created_chained_certificate():
+def create_chained_certificate():
     """
     """
     proc = subprocess.Popen(["wget -O - https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem > /tmp/intermediate.pem"],
@@ -301,6 +301,7 @@ def cleanup():
     filenames = [
         '/tmp/account.key',
         '/tmp/domain.key',
+        '/tmp/key.key',
         '/tmp/domain.csr',
         '/tmp/signed.crt',
         '/tmp/intermediate.pem',
