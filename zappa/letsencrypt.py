@@ -148,21 +148,16 @@ def parse_csr():
 
     return domains
 
-def get_cert(zappa_instance, log=LOGGER, CA=DEFAULT_CA):
+def get_boulder_header(key_bytes):
     """
+    Use regular expressions to find crypto values from parsed account key,
+    and return a header we can send to our Boulder instance.
 
     """
-    
-    def _b64(b):
-        """
-        Helper function base64 encode for jose spec
-        """
-        return base64.urlsafe_b64encode(b).decode('utf8').replace("=", "")
 
-    out = parse_account_key()
     pub_hex, pub_exp = re.search(
         r"modulus:\n\s+00:([a-f0-9\:\s]+?)\npublicExponent: ([0-9]+)",
-        out.decode('utf8'), re.MULTILINE|re.DOTALL).groups()
+        key_bytes.decode('utf8'), re.MULTILINE|re.DOTALL).groups()
     pub_exp = "{0:x}".format(int(pub_exp))
     pub_exp = "0{0}".format(pub_exp) if len(pub_exp) % 2 else pub_exp
     header = {
@@ -173,31 +168,18 @@ def get_cert(zappa_instance, log=LOGGER, CA=DEFAULT_CA):
             "n": _b64(binascii.unhexlify(re.sub(r"(\s|:)", "", pub_hex).encode("utf-8"))),
         },
     }
+
+    return header
+
+def get_cert(zappa_instance, log=LOGGER, CA=DEFAULT_CA):
+    """
+
+    """
+
+    out = parse_account_key()
+    header = get_boulder_header(out)
     accountkey_json = json.dumps(header['jwk'], sort_keys=True, separators=(',', ':'))
     thumbprint = _b64(hashlib.sha256(accountkey_json.encode('utf8')).digest())
-
-    def _send_signed_request(url, payload):
-        """
-        Helper function to make signed requests to Boulder
-        """
-        payload64 = _b64(json.dumps(payload).encode('utf8'))
-        protected = copy.deepcopy(header)
-        protected["nonce"] = urlopen(CA + "/directory").headers['Replay-Nonce']
-        protected64 = _b64(json.dumps(protected).encode('utf8'))
-        proc = subprocess.Popen(["openssl dgst -sha256 -sign /tmp/account.key"],
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        out, err = proc.communicate("{0}.{1}".format(protected64, payload64).encode('utf8'))
-        if proc.returncode != 0:
-            raise IOError("OpenSSL Error: {0}".format(err))
-        data = json.dumps({
-            "header": header, "protected": protected64,
-            "payload": payload64, "signature": _b64(out),
-        })
-        try:
-            resp = urlopen(url, data.encode('utf8'))
-            return resp.getcode(), resp.read()
-        except IOError as e:
-            return getattr(e, "code", None), getattr(e, "read", e.__str__)()
 
     # find domains
     domains = parse_csr()
@@ -270,28 +252,86 @@ def get_cert(zappa_instance, log=LOGGER, CA=DEFAULT_CA):
                 raise ValueError("{0} challenge did not pass: {1}".format(
                     domain, challenge_status))
 
-    # get the new certificate
-    log.info("Signing certificate...")
+    # Sign
+    result = sign_certificate()
+    # Encode to PEM formate
+    encode_certificate(result)
+
+    return True
+
+def sign_certificate():
+    """ 
+    Get the new certificate. 
+    Returns the signed bytes.
+
+    """
+    LOGGER.info("Signing certificate...")
     proc = subprocess.Popen(["openssl req -in /tmp/domain.csr -outform DER"],
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     csr_der, err = proc.communicate()
-    code, result = _send_signed_request(CA + "/acme/new-cert", {
+    code, result = _send_signed_request(DEFAULT_CA + "/acme/new-cert", {
         "resource": "new-cert",
         "csr": _b64(csr_der),
     })
     if code != 201:
         raise ValueError("Error signing certificate: {0} {1}".format(code, result))
+    LOGGER.info("Certificate signed!")
 
-    # return signed certificate!
-    log.info("Certificate signed!")
+    return result
+
+def encode_certificate(result):
+    """
+    Encode cert bytes to PEM encoded cert file.
+    """
+
     cert_body = """-----BEGIN CERTIFICATE-----\n{0}\n-----END CERTIFICATE-----\n""".format(
-"\n".join(textwrap.wrap(base64.b64encode(result).decode('utf8'), 64)))
-
+        "\n".join(textwrap.wrap(base64.b64encode(result).decode('utf8'), 64)))
     signed_crt = open("/tmp/signed.crt", "w")
     signed_crt.write(cert_body)
     signed_crt.close()
 
     return True
+
+##
+# Request Utility
+##
+
+def _b64(b):
+    """
+    Helper function base64 encode for jose spec
+    """
+    return base64.urlsafe_b64encode(b).decode('utf8').replace("=", "")
+
+def _send_signed_request(url, payload):
+    """
+    Helper function to make signed requests to Boulder
+    """
+    payload64 = _b64(json.dumps(payload).encode('utf8'))
+
+    out = parse_account_key()
+    header = get_boulder_header(out)
+
+    protected = copy.deepcopy(header) 
+    protected["nonce"] = urlopen(DEFAULT_CA + "/directory").headers['Replay-Nonce']
+    protected64 = _b64(json.dumps(protected).encode('utf8'))
+    proc = subprocess.Popen(["openssl dgst -sha256 -sign /tmp/account.key"],
+        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    out, err = proc.communicate("{0}.{1}".format(protected64, payload64).encode('utf8'))
+    if proc.returncode != 0:
+        raise IOError("OpenSSL Error: {0}".format(err))
+    data = json.dumps({
+        "header": header, "protected": protected64,
+        "payload": payload64, "signature": _b64(out),
+    })
+    try:
+        resp = urlopen(url, data.encode('utf8'))
+        return resp.getcode(), resp.read()
+    except IOError as e:
+        return getattr(e, "code", None), getattr(e, "read", e.__str__)()
+
+##
+# File Utility
+##
 
 def cleanup():
     """

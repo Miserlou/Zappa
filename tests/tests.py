@@ -14,7 +14,7 @@ from .utils import placebo_session
 
 from zappa.cli import ZappaCLI, shamelessly_promote
 from zappa.handler import LambdaHandler, lambda_handler
-from zappa.letsencrypt import get_cert_and_update_domain, create_domain_key, create_domain_csr, create_chained_certificate, get_cert, cleanup, parse_account_key, parse_csr
+from zappa.letsencrypt import get_cert_and_update_domain, create_domain_key, create_domain_csr, create_chained_certificate, get_cert, cleanup, parse_account_key, parse_csr, sign_certificate, encode_certificate
 from zappa.util import detect_django_settings, copytree, detect_flask_apps, add_event_source, remove_event_source, get_event_source_status
 from zappa.wsgi import create_wsgi_request, common_log
 from zappa.zappa import Zappa, ASSUME_POLICY, ATTACH_POLICY
@@ -519,11 +519,21 @@ class TestZappa(unittest.TestCase):
             raise IOError("OpenSSL Error: {0}".format(err))
 
         DEFAULT_CA = "https://acme-staging.api.letsencrypt.org"
+        CA = "https://acme-staging.api.letsencrypt.org"
+
         create_domain_key()
         create_domain_csr('herp.derp.wtf')
         parse_account_key()
         parse_csr()
         create_chained_certificate()
+
+        try:
+            result = sign_certificate()
+        except ValueError as e:
+            pass # that's fine.
+
+        encode_certificate(b'123')
+
         cleanup()
 
     ##
