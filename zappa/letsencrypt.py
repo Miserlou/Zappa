@@ -115,6 +115,39 @@ def created_chained_certificate():
 
     return True
 
+def parse_account_key():
+    """ parse account key to get public key """
+    LOGGER.info("Parsing account key...")
+    proc = subprocess.Popen(["openssl rsa -in /tmp/account.key -noout -text"],
+        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    out, err = proc.communicate()
+    if proc.returncode != 0:
+        raise IOError("OpenSSL Error: {0}".format(err))
+
+    return out
+
+def parse_csr():
+    """
+    Parse certificate signing request for domains
+    """
+    LOGGER.info("Parsing CSR...")
+    proc = subprocess.Popen(["openssl req -in /tmp/domain.csr -noout -text"],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    out, err = proc.communicate()
+    if proc.returncode != 0:
+        raise IOError("Error loading {0}: {1}".format(csr, err))
+    domains = set([])
+    common_name = re.search(r"Subject:.*? CN=([^\s,;/]+)", out.decode('utf8'))
+    if common_name is not None:
+        domains.add(common_name.group(1))
+    subject_alt_names = re.search(r"X509v3 Subject Alternative Name: \n +([^\n]+)\n", out.decode('utf8'), re.MULTILINE|re.DOTALL)
+    if subject_alt_names is not None:
+        for san in subject_alt_names.group(1).split(", "):
+            if san.startswith("DNS:"):
+                domains.add(san[4:])
+
+    return domains
+
 def get_cert(zappa_instance, log=LOGGER, CA=DEFAULT_CA):
     """
 
@@ -126,13 +159,7 @@ def get_cert(zappa_instance, log=LOGGER, CA=DEFAULT_CA):
         """
         return base64.urlsafe_b64encode(b).decode('utf8').replace("=", "")
 
-    # parse account key to get public key
-    log.info("Parsing account key...")
-    proc = subprocess.Popen(["openssl rsa -in /tmp/account.key -noout -text"],
-        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-    out, err = proc.communicate()
-    if proc.returncode != 0:
-        raise IOError("OpenSSL Error: {0}".format(err))
+    out = parse_account_key()
     pub_hex, pub_exp = re.search(
         r"modulus:\n\s+00:([a-f0-9\:\s]+?)\npublicExponent: ([0-9]+)",
         out.decode('utf8'), re.MULTILINE|re.DOTALL).groups()
@@ -173,21 +200,7 @@ def get_cert(zappa_instance, log=LOGGER, CA=DEFAULT_CA):
             return getattr(e, "code", None), getattr(e, "read", e.__str__)()
 
     # find domains
-    log.info("Parsing CSR...")
-    proc = subprocess.Popen(["openssl req -in /tmp/domain.csr -noout -text"],
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-    out, err = proc.communicate()
-    if proc.returncode != 0:
-        raise IOError("Error loading {0}: {1}".format(csr, err))
-    domains = set([])
-    common_name = re.search(r"Subject:.*? CN=([^\s,;/]+)", out.decode('utf8'))
-    if common_name is not None:
-        domains.add(common_name.group(1))
-    subject_alt_names = re.search(r"X509v3 Subject Alternative Name: \n +([^\n]+)\n", out.decode('utf8'), re.MULTILINE|re.DOTALL)
-    if subject_alt_names is not None:
-        for san in subject_alt_names.group(1).split(", "):
-            if san.startswith("DNS:"):
-                domains.add(san[4:])
+    domains = parse_csr()
 
     # get the certificate domains and expiration
     log.info("Registering account...")

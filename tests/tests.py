@@ -14,9 +14,10 @@ from .utils import placebo_session
 
 from zappa.cli import ZappaCLI, shamelessly_promote
 from zappa.handler import LambdaHandler, lambda_handler
+from zappa.letsencrypt import get_cert_and_update_domain, create_domain_key, create_domain_csr, created_chained_certificate, get_cert, cleanup, parse_account_key, parse_csr
+from zappa.util import detect_django_settings, copytree, detect_flask_apps, add_event_source, remove_event_source, get_event_source_status
 from zappa.wsgi import create_wsgi_request, common_log
 from zappa.zappa import Zappa, ASSUME_POLICY, ATTACH_POLICY
-from zappa.util import detect_django_settings, copytree, detect_flask_apps, add_event_source, remove_event_source, get_event_source_status
 
 def random_string(length):
     return ''.join(random.choice(string.printable) for _ in range(length))
@@ -497,6 +498,27 @@ class TestZappa(unittest.TestCase):
 
         # if os.path.isfile('zappa_settings.json'):
         #     os.remove('zappa_settings.json')
+
+    ##
+    # Let's Encrypt / ACME
+    ##
+
+    def test_lets_encrypt_sanity(self):
+        # We need a fake account key
+        import subprocess
+        proc = subprocess.Popen(["openssl genrsa 2048 > /tmp/account.key;"],
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        out, err = proc.communicate()
+        if proc.returncode != 0:
+            raise IOError("OpenSSL Error: {0}".format(err))
+
+        DEFAULT_CA = "https://acme-staging.api.letsencrypt.org"
+        create_domain_key()
+        create_domain_csr('herp.derp.wtf')
+        parse_account_key()
+        parse_csr()
+        #created_chained_certificate()
+        cleanup()
 
     ##
     # Util / Misc
