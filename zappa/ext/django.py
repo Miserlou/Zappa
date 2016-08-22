@@ -7,7 +7,7 @@ from django.core.handlers.wsgi import WSGIHandler
 from django.core.wsgi import get_wsgi_application
 import os
 
-def get_django_wsgi(settings_module):
+def get_django_wsgi(settings_module): # pragma: no cover
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", settings_module)
 
     import django
