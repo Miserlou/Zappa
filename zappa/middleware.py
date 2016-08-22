@@ -175,7 +175,10 @@ class ZappaWSGIMiddleware(object):
             for kvp in kvps:
                 kvp = kvp.strip()
                 if 'expires' in kvp.lower():
-                    exp = time.strptime(kvp.split('=')[1], "%a, %d-%b-%Y %H:%M:%S GMT")
+                    try:
+                        exp = time.strptime(kvp.split('=')[1], "%a, %d-%b-%Y %H:%M:%S GMT")
+                    except ValueError: # https://tools.ietf.org/html/rfc6265#section-5.1.1
+                        exp = time.strptime(kvp.split('=')[1], "%a, %d-%b-%y %H:%M:%S GMT")
                     yield name, exp
                     break
 
