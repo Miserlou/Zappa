@@ -70,7 +70,7 @@ def get_cert_and_update_domain(zappa_instance, lambda_name, api_stage, domain):
 
     except Exception as e:
         print(e)
-        pass
+        return False
 
     # Always clean-up.
     cleanup()

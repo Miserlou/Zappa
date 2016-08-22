@@ -954,7 +954,11 @@ class Zappa(object):
         zone_id = self.get_hosted_zone_id_for_domain(domain_name)
 
         # Not pretty.
-        api_id = self.get_api_url(lambda_name, stage).split('https://')[1].split('.execute-api')[0]
+        api_url = self.get_api_url(lambda_name, stage)
+        if not api_url:
+            raise LookupError("No API URL to certify found - did you deploy?")
+
+        api_id = api_url.split('https://')[1].split('.execute-api')[0]
         response = self.apigateway_client.create_base_path_mapping(
             domainName=domain_name,
             basePath='',

@@ -786,6 +786,12 @@ class ZappaCLI(object):
         Register or update a domain certificate for this env.
         """
 
+        # Make sure this isn't already deployed.
+        deployed_versions = self.zappa.get_lambda_function_versions(self.lambda_name)
+        if len(deployed_versions) == 0:
+            click.echo("This application " + click.style("isn't deployed yet", fg="red") + " - did you mean to call " + click.style("deploy", bold=True) + "?")
+            return
+
         # Get install account_key to /tmp/account_key.pem
         account_key_location = self.stage_config.get('lets_encrypt_key')
         domain = self.stage_config.get('domain')
@@ -809,7 +815,7 @@ class ZappaCLI(object):
 
         # Get cert and update domain.
         from letsencrypt import get_cert_and_update_domain, cleanup
-        get_cert_and_update_domain(
+        cert_success = get_cert_and_update_domain(
                 self.zappa, 
                 self.lambda_name,
                 self.api_stage, 
@@ -817,7 +823,12 @@ class ZappaCLI(object):
             )
         cleanup()
 
-        click.echo("Certificate " + click.style("updated", fg="green", bold=True) + "!")
+        if cert_success:
+            click.echo("Certificate " + click.style("updated", fg="green", bold=True) + "!")
+        else:
+            click.echo(click.style("Failed", fg="red", bold=True) + " to generate or install certificate! :(")
+            click.echo("\n==============\n")
+            shamelessly_promote()
 
     ##
     # Utility
