@@ -28,9 +28,7 @@ LOGGER.addHandler(logging.StreamHandler())
 
 def get_cert_and_update_domain(zappa_instance, lambda_name, api_stage, domain):
     """
-    Main cert installer path.
-    TODO: Replace z_i with local instance, since we won't have a Zappa on the server..
-    """
+    Main cert installer path.    """
 
     try:
         create_domain_key()
@@ -171,9 +169,25 @@ def get_boulder_header(key_bytes):
 
     return header
 
+def register_account():
+    """
+    Agree to LE TOS
+    """
+    LOGGER.info("Registering account...")
+    code, result = _send_signed_request(DEFAULT_CA + "/acme/new-reg", {
+        "resource": "new-reg",
+        "agreement": "https://letsencrypt.org/documents/LE-SA-v1.1.1-August-1-2016.pdf",
+    })
+    if code == 201: # pragma: no cover
+        LOGGER.info("Registered!")
+    elif code == 409: # pragma: no cover
+        LOGGER.info("Already registered!")
+    else: # pragma: no cover
+        raise ValueError("Error registering: {0} {1}".format(code, result))
+
 def get_cert(zappa_instance, log=LOGGER, CA=DEFAULT_CA):
     """
-
+    Call LE to get a new signed CA.
     """
 
     out = parse_account_key()
@@ -185,17 +199,7 @@ def get_cert(zappa_instance, log=LOGGER, CA=DEFAULT_CA):
     domains = parse_csr()
 
     # get the certificate domains and expiration
-    log.info("Registering account...")
-    code, result = _send_signed_request(CA + "/acme/new-reg", {
-        "resource": "new-reg",
-        "agreement": "https://letsencrypt.org/documents/LE-SA-v1.1.1-August-1-2016.pdf",
-    })
-    if code == 201:
-        log.info("Registered!")
-    elif code == 409:
-        log.info("Already registered!")
-    else:
-        raise ValueError("Error registering: {0} {1}".format(code, result))
+    register_account()
 
     # verify each domain
     for domain in domains:
@@ -236,21 +240,7 @@ def get_cert(zappa_instance, log=LOGGER, CA=DEFAULT_CA):
             raise ValueError("Error triggering challenge: {0} {1}".format(code, result))
 
         # wait for challenge to be verified
-        while True:
-            try:
-                resp = urlopen(challenge['uri'])
-                challenge_status = json.loads(resp.read().decode('utf8'))
-            except IOError as e:
-                raise ValueError("Error checking challenge: {0} {1}".format(
-                    e.code, json.loads(e.read().decode('utf8'))))
-            if challenge_status['status'] == "pending":
-                time.sleep(2)
-            elif challenge_status['status'] == "valid":
-                log.info("{0} verified!".format(domain))
-                break
-            else:
-                raise ValueError("{0} challenge did not pass: {1}".format(
-                    domain, challenge_status))
+        verify_challenge(challenge['uri'])
 
     # Sign
     result = sign_certificate()
@@ -258,6 +248,27 @@ def get_cert(zappa_instance, log=LOGGER, CA=DEFAULT_CA):
     encode_certificate(result)
 
     return True
+
+def verify_challenge(uri):
+    """
+    Loop until our challenge is verified, else fail.
+    """
+
+    while True:
+        try:
+            resp = urlopen(uri)
+            challenge_status = json.loads(resp.read().decode('utf8'))
+        except IOError as e:
+            raise ValueError("Error checking challenge: {0} {1}".format(
+                e.code, json.loads(e.read().decode('utf8'))))
+        if challenge_status['status'] == "pending":
+            time.sleep(2)
+        elif challenge_status['status'] == "valid":
+            LOGGER.info("Domain verified!")
+            break
+        else:
+            raise ValueError("Domain challenge did not pass: {0}".format(
+                challenge_status))
 
 def sign_certificate():
     """ 
