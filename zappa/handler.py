@@ -184,8 +184,11 @@ class LambdaHandler(object):
         # Let the system know that this will be a Lambda/Zappa/Stack
         os.environ["SERVERTYPE"] = "AWS Lambda"
         os.environ["FRAMEWORK"] = "Zappa"
-        os.environ["PROJECT"] = settings.PROJECT_NAME
-        os.environ["STAGE"] = settings.API_STAGE
+        try:
+            os.environ["PROJECT"] = settings.PROJECT_NAME
+            os.environ["STAGE"] = settings.API_STAGE
+        except Exception as e: # pragma: no cover
+            pass
 
         # If in DEBUG mode, log all raw incoming events.
         if settings.DEBUG:

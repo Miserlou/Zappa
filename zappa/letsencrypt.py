@@ -10,7 +10,8 @@ openssl genrsa 2048 > account.key # Keep it secret, keep safe!
 
 """
 
-import argparse, subprocess, json, os, sys, base64, binascii, time, hashlib, re, copy, textwrap, logging
+import argparse, subprocess, json, os, sys, base64, binascii, time, hashlib, re, copy, textwrap, logging, requests
+
 try:
     from urllib.request import urlopen # Python 3
 except ImportError:
@@ -99,11 +100,11 @@ def create_domain_csr(domain):
 def create_chained_certificate():
     """
     """
-    proc = subprocess.Popen(["wget -O - https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem > /tmp/intermediate.pem"],
-        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-    out, err = proc.communicate()
-    if proc.returncode != 0:
-        raise IOError("Error: {0}".format(err))
+
+    cross_cert_url = "https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem"
+    cert = requests.get(cross_cert_url)
+    with open('/tmp/intermediate.pem', 'wb') as intermediate_pem:
+        intermediate_pem.write(cert.content)
 
     proc = subprocess.Popen(["cat /tmp/signed.crt /tmp/intermediate.pem > /tmp/chained.pem"],
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
