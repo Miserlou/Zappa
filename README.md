@@ -99,13 +99,24 @@ Next, you'll need to define your local and server-side settings.
 
     $ zappa init
 
-This will automatically detect your application type and help you define your deployment configuration settings. Once you finish initialization, you'll have a file named *zappa_settings.json* in your project directory defining your deployment settings. It will probably look something like this:
+This will automatically detect your application type (Flask, Django, etc.) and help you define your deployment configuration settings. Once you finish initialization, you'll have a file named *zappa_settings.json* in your project directory defining your basic deployment settings. It will probably look something like this for most WSGI apps:
 
 ```javascript
 {
     "dev": { // The name of your environment
        "s3_bucket": "lmbda", // The name of your S3 bucket
        "app_function": "your_module.app" // The python path to your WSGI application function. In Flask, this is your 'app' object.
+    }
+}
+```
+
+or for Django:
+
+```javascript
+{
+    "dev": { // The name of your environment
+       "s3_bucket": "lmbda", // The name of your S3 bucket
+       "django_settings": "your_project.settings" // The python path to your Django settings.
     }
 }
 ```
