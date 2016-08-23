@@ -24,6 +24,8 @@ $ openssl genrsa 2048 > account.key;
 
 It's very important that you keep that key safe!
 
+_Note that this is a 2048b key. It's generally preferred to use a stronger 4096b key, but at time of writing, AWS did not support keys that large. Use larger keys at your own risk. If you get it working with a 4096b key, please file an issue so that we can update this documentation._
+
 ### Step 3: Certification
 
 Finally, configure your `zappa_settings.json` to use this domain and key:
