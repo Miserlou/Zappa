@@ -875,7 +875,10 @@ class ZappaCLI(object):
         if 'project_name' in self.stage_config: # pragma: no cover
             self.project_name = self.stage_config['project_name']
         else:
-            self.project_name = slugify.slugify(os.getcwd().split(os.sep)[-1])
+            self.project_name = slugify.slugify(os.getcwd().split(os.sep)[-1])[:15]
+
+        if len(self.project_name) > 15: # pragma: no cover
+            click.echo(click.style("Warning", fg="red", bold=True) + "! Your " + click.style("project_name", bold=True) + " may be too long to deploy! Please make it <16 characters.")
 
         # The name of the actual AWS Lambda function, ex, 'helloworld-dev'
         # Django's slugify doesn't replace _, but this does.
