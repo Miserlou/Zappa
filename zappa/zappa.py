@@ -658,7 +658,7 @@ class Zappa(object):
 
         # count how many put requests we'll be reporting for progress bar
         progress_total = self.parameter_depth * len(self.http_methods) * (
-                             2 + len(self.integration_response_codes) + len(self.method_response_codes)) - 1
+                             2 + len(self.integration_response_codes) + len(self.method_response_codes))
         progress = tqdm(total=progress_total, unit=' endpoint')
 
         # AWS seems to create this by default,
@@ -722,7 +722,7 @@ class Zappa(object):
             if not self.credentials_arn:
                 self.get_credentials_arn()           
             credentials = self.credentials_arn  # This must be a Role ARN
-            
+
             uri = 'arn:aws:apigateway:' + self.boto_session.region_name + ':lambda:path/2015-03-31/functions/' + lambda_arn + '/invocations'
 
             self.apigateway_client.put_integration(
