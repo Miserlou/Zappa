@@ -384,7 +384,34 @@ However, it's now far easier to use Route 53-based DNS authentication, which wil
 
 #### Setting Environment Variables
 
-If you want to use environment variables to configure your application (which is especially useful for things like sensitive credentials), you can create a file and place it in an S3 bucket to which your Zappa application has access to. To do this, add the `remote_env_bucket` and `remote_env_file` keys to zappa_settings pointing to a file containing a flat JSON object, so that each key-value pair on the object will be set as an environment variable and value whenever a new lambda instance spins up.
+##### Local
+
+If you want to set local remote environment variables for a deployment stage, you can simply set them in your `zappa_settings.json`:
+
+```javascript
+{
+    "dev": {
+        ...
+        "environment_variables": {
+            "your_key": "your_value"
+        }
+    },
+    ...
+}
+```
+
+You can then access these inside your application with:
+
+```python
+import os
+your_value = os.environ.get('your_key')
+```
+
+If your project needs to be aware of the type of environment you're deployed to, you'll also be able to get `SERVERTYPE`, `FRAMEWORK`, `PROJECT` and `STAGE` variables at any time.
+
+##### Remote
+
+If you want to use remote environment variables to configure your application (which is especially useful for things like sensitive credentials), you can create a file and place it in an S3 bucket to which your Zappa application has access to. To do this, add the `remote_env_bucket` and `remote_env_file` keys to zappa_settings pointing to a file containing a flat JSON object, so that each key-value pair on the object will be set as an environment variable and value whenever a new lambda instance spins up.
 
 For example, to ensure your application has access to the database credentials without storing them in your version control, you can add a file to S3 with the connection string and load it into the lambda environment using the `remote_env_bucket` and `remote_env_file` configuration settings.
 
