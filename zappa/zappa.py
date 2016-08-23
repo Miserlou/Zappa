@@ -516,6 +516,8 @@ class Zappa(object):
 
         if not vpc_config:
             vpc_config = {}
+        if not self.credentials_arn:
+            self.get_credentials_arn()
 
         response = self.lambda_client.create_function(
             FunctionName=function_name,
@@ -717,7 +719,10 @@ class Zappa(object):
                     for alias in aliases:
                         content_mapping_templates[alias] = content_mapping_templates[content_type]
 
+            if not self.credentials_arn:
+                self.get_credentials_arn()           
             credentials = self.credentials_arn  # This must be a Role ARN
+            
             uri = 'arn:aws:apigateway:' + self.boto_session.region_name + ':lambda:path/2015-03-31/functions/' + lambda_arn + '/invocations'
 
             self.apigateway_client.put_integration(
@@ -1044,6 +1049,15 @@ class Zappa(object):
     # IAM
     ##
 
+    def get_credentials_arn(self):
+        """
+        Given our role name, get and set the credentials_arn.
+
+        """
+        role = self.iam.Role(self.role_name)
+        self.credentials_arn = role.arn
+        return role, self.credentials_arn
+
     def create_iam_roles(self):
         """
         Creates and defines the IAM roles and policies necessary for Zappa.
@@ -1055,9 +1069,8 @@ class Zappa(object):
         updated = False
 
         # Create the role if needed
-        role = self.iam.Role(self.role_name)
         try:
-            self.credentials_arn = role.arn
+            role, credentials_arn = self.get_credentials_arn()
 
         except botocore.client.ClientError:
             print("Creating " + self.role_name + " IAM Role...")
@@ -1147,7 +1160,7 @@ class Zappa(object):
             #       - ex https://github.com/awslabs/aws-lambda-ddns-function
 
             if not self.credentials_arn:
-                self.credentials_arn = self.create_iam_roles()
+                self.get_credentials_arn()
 
             if expression:
                 rule_response = self.events_client.put_rule(
