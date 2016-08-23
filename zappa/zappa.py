@@ -381,6 +381,7 @@ class Zappa(object):
 
         zipf = zipfile.ZipFile(zip_path, 'w', compression_method)
         for root, dirs, files in os.walk(temp_project_path):
+
             for filename in files:
 
                 # If there is a .pyc file in this package,
@@ -400,6 +401,11 @@ class Zappa(object):
                             continue
 
                 zipf.write(os.path.join(root, filename), os.path.join(root.replace(temp_project_path, ''), filename))
+
+            if '__init__.py' not in files:
+                tmp_init = os.path.join(temp_project_path, '__init__.py')
+                open(tmp_init, 'a').close()
+                zipf.write(tmp_init, os.path.join(root.replace(temp_project_path, ''), os.path.join(root.replace(temp_project_path, ''), '__init__.py')))
 
         # And, we're done!
         zipf.close()
