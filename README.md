@@ -13,6 +13,7 @@
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
+
 - [About](#about)
 - [Installation and Configuration](#installation-and-configuration)
     - [Running the Initial Setup / Settings](#running-the-initial-setup--settings)
@@ -37,6 +38,8 @@
     - [Deploying to a Domain With a Let's Encrypt Certificate (DNS Auth)](#deploying-to-a-domain-with-a-lets-encrypt-certificate-dns-auth)
     - [Deploying to a Domain With a Let's Encrypt Certificate (HTTP Auth)](#deploying-to-a-domain-with-a-lets-encrypt-certificate-http-auth)
     - [Setting Environment Variables](#setting-environment-variables)
+      - [Local Environment Variables](#local-environment-variables)
+      - [Remote Environment Variables](#remote-environment-variables)
     - [Setting Integration Content-Type Aliases](#setting-integration-content-type-aliases)
     - [Catching Unhandled Exceptions](#catching-unhandled-exceptions)
 - [Zappa Guides](#zappa-guides)
@@ -384,7 +387,7 @@ However, it's now far easier to use Route 53-based DNS authentication, which wil
 
 #### Setting Environment Variables
 
-##### Local
+##### Local Environment Variables
 
 If you want to set local remote environment variables for a deployment stage, you can simply set them in your `zappa_settings.json`:
 
@@ -407,9 +410,9 @@ import os
 your_value = os.environ.get('your_key')
 ```
 
-If your project needs to be aware of the type of environment you're deployed to, you'll also be able to get `SERVERTYPE`, `FRAMEWORK`, `PROJECT` and `STAGE` variables at any time.
+If your project needs to be aware of the type of environment you're deployed to, you'll also be able to get `SERVERTYPE` (AWS Lambda), `FRAMEWORK` (Zappa), `PROJECT` (your project name) and `STAGE` (_dev_, _production_, etc.) variables at any time.
 
-##### Remote
+##### Remote Environment Variables
 
 If you want to use remote environment variables to configure your application (which is especially useful for things like sensitive credentials), you can create a file and place it in an S3 bucket to which your Zappa application has access to. To do this, add the `remote_env_bucket` and `remote_env_file` keys to zappa_settings pointing to a file containing a flat JSON object, so that each key-value pair on the object will be set as an environment variable and value whenever a new lambda instance spins up.
 
