@@ -16,6 +16,8 @@ REMOTE_ENV_FILE='test_env.json'
 #}
 #
 
+ENVIRONMENT_VARIABLES={'testenv': 'envtest'}
+
 def prebuild_me():
     print("This is a prebuild script!")
 
