@@ -88,6 +88,7 @@ class ZappaCLI(object):
     profile_name = None
     lambda_arn = None
     lambda_name = None
+    lambda_description = None
     s3_bucket_name = None
     settings_file = None
     zip_path = None
@@ -256,6 +257,7 @@ class ZappaCLI(object):
                                                        s3_key=self.zip_path,
                                                        function_name=self.lambda_name,
                                                        handler=self.lambda_handler,
+                                                       description=self.lambda_description,
                                                        vpc_config=self.vpc_config,
                                                        timeout=self.timeout_seconds,
                                                        memory_size=self.memory_size)
@@ -926,6 +928,8 @@ class ZappaCLI(object):
         self.manage_roles = self.zappa_settings[
             self.api_stage].get('manage_roles', True)
         self.api_key_required = self.stage_config.get('api_key_required', False)
+        self.lambda_description = self.zappa_settings[
+            self.api_stage].get('lambda_description', "Zappa Deployment")
 
         self.zappa = Zappa( boto_session=session, 
                             profile_name=self.profile_name, 
