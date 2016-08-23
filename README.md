@@ -287,6 +287,7 @@ to change Zappa's behavior. Use these at your own risk!
         "delete_zip": true, // Delete the local zip archive after code updates
         "django_settings": "your_project.production_settings", // The modular path to your Django project's settings. For Django projects only.
         "domain": "yourapp.yourdomain.com", // Required if you're using a domain
+        "environment_variables": {"your_key": "your_value"}, // A dictionary of environment variables that will be available to your deployed app. See also "remote_env_file". Default {}.
         "events": [
             {   // Recurring events
                 "function": "your_module.your_recurring_function", // The function to execute

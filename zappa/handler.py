@@ -65,6 +65,19 @@ class LambdaHandler(object):
         if remote_bucket and remote_file:
             self.load_remote_settings(remote_bucket, remote_file)
 
+        # Let the system know that this will be a Lambda/Zappa/Stack
+        os.environ["SERVERTYPE"] = "AWS Lambda"
+        os.environ["FRAMEWORK"] = "Zappa"
+        try:
+            os.environ["PROJECT"] = self.settings.PROJECT_NAME
+            os.environ["STAGE"] = self.settings.API_STAGE
+        except Exception as e: # pragma: no cover
+            pass
+
+        # Set any locally defined env vars
+        for key in self.settings.ENVIRONMENT_VARIABLES.keys():
+            os.environ[key] = self.settings.ENVIRONMENT_VARIABLES[key]
+
     def load_remote_settings(self, remote_bucket, remote_file):
         """
         Attempt to read a file from s3 containing a flat json object. Adds each
@@ -180,15 +193,6 @@ class LambdaHandler(object):
 
         """
         settings = self.settings
-
-        # Let the system know that this will be a Lambda/Zappa/Stack
-        os.environ["SERVERTYPE"] = "AWS Lambda"
-        os.environ["FRAMEWORK"] = "Zappa"
-        try:
-            os.environ["PROJECT"] = settings.PROJECT_NAME
-            os.environ["STAGE"] = settings.API_STAGE
-        except Exception as e: # pragma: no cover
-            pass
 
         # If in DEBUG mode, log all raw incoming events.
         if settings.DEBUG:

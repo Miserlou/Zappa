@@ -99,7 +99,7 @@ class ZappaCLI(object):
     django_settings = None
     manage_roles = True
     exception_handler = None
-
+    environment_variables = None
 
     @property
     def stage_config(self):
@@ -930,6 +930,8 @@ class ZappaCLI(object):
         self.api_key_required = self.stage_config.get('api_key_required', False)
         self.lambda_description = self.zappa_settings[
             self.api_stage].get('lambda_description', "Zappa Deployment")
+        self.environment_variables = self.zappa_settings[
+            self.api_stage].get('environment_variables', {})
 
         self.zappa = Zappa( boto_session=session, 
                             profile_name=self.profile_name, 
@@ -1014,6 +1016,11 @@ class ZappaCLI(object):
                     )
                     settings_s = settings_s + "REMOTE_ENV_FILE='{0!s}'\n".format(
                         self.remote_env_file
+                    )
+
+                # Local envs    
+                settings_s = settings_s + "ENVIRONMENT_VARIABLES={0}\n".format(
+                        dict(self.environment_variables)
                     )
 
                 # We can be environment-aware
