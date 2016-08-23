@@ -181,6 +181,12 @@ class LambdaHandler(object):
         """
         settings = self.settings
 
+        # Let the system know that this will be a Lambda/Zappa/Stack
+        os.environ["SERVERTYPE"] = "AWS Lambda"
+        os.environ["FRAMEWORK"] = "Zappa"
+        os.environ["PROJECT"] = settings.PROJECT_NAME
+        os.environ["STAGE"] = settings.API_STAGE
+
         # If in DEBUG mode, log all raw incoming events.
         if settings.DEBUG:
             print('Zappa Event: {}'.format(event))

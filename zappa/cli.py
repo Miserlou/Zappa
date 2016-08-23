@@ -1011,6 +1011,7 @@ class ZappaCLI(object):
 
                 # We can be environment-aware
                 settings_s = settings_s + "API_STAGE='{0!s}'\n".format((self.api_stage))
+                settings_s = settings_s + "PROJECT_NAME='{0!s}'\n".format((self.project_name))
 
                 if self.settings_file:
                     settings_s = settings_s + "SETTINGS_FILE='{0!s}'\n".format((self.settings_file))
