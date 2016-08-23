@@ -231,12 +231,12 @@ class TestZappa(unittest.TestCase):
                 self.assertRegexpMatches(url, pattern)
 
     def test_b64_pattern(self):
-        head = '<!DOCTYPE html>'
+        head = '\{"http_status": '
 
         for code in ['400', '401', '402', '403', '404', '500']:
             pattern = Zappa.selection_pattern(code)
 
-            document = base64.b64encode(head + code + random_string(50))
+            document = head + code + random_string(50)
             self.assertRegexpMatches(document, pattern)
 
             for bad_code in ['200', '301', '302']:

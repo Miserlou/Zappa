@@ -8,6 +8,7 @@ import traceback
 import os
 import json
 import inspect
+import collections
 
 import boto3
 from werkzeug.wrappers import Response
@@ -339,8 +340,10 @@ class LambdaHandler(object):
                 # The DOCTYPE ensures that the page still renders in the browser.
                 exception = None
                 if response.status_code in ERROR_CODES:
-                    content = u"<!DOCTYPE html>" + unicode(response.status_code) + unicode('<meta charset="utf-8" />') + response.data.encode('utf-8')
-                    exception = base64.b64encode(content)
+                    content = collections.OrderedDict()
+                    content['http_status'] = response.status_code
+                    content['content'] = base64.b64encode(response.data.encode('utf-8'))
+                    exception = json.dumps(content)
                 # Internal are changed to become relative redirects
                 # so they still work for apps on raw APIGW and on a domain.
                 elif 300 <= response.status_code < 400 and hasattr(response, 'Location'):
