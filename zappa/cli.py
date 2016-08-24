@@ -446,7 +446,7 @@ class ZappaCLI(object):
         if self.zappa_settings[self.api_stage].get('keep_warm', True):
             if not events:
                 events = []
-            keep_warm_rate = self.zappa_settings[self.api_stage].get('keep_warm_expression', "rate(2 minutes)")
+            keep_warm_rate = self.zappa_settings[self.api_stage].get('keep_warm_expression', "rate(4 minutes)")
             events.append({'name': 'zappa-keep-warm',
                            'function': 'handler.keep_warm_callback',
                            'expression': keep_warm_rate,

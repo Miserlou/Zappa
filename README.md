@@ -327,7 +327,7 @@ to change Zappa's behavior. Use these at your own risk!
             ]
         }, 
         "keep_warm": true, // Create CloudWatch events to keep the server warm.
-        "keep_warm_expression": "rate(2 minutes)", // How often to execute the keep-warm, in cron and rate format. Default 2 minutes.
+        "keep_warm_expression": "rate(4 minutes)", // How often to execute the keep-warm, in cron and rate format. Default 4 minutes.
         "lambda_description": "Your Description", // However you want to describe your project for the AWS console. Default "Zappa Deployment".
         "lambda_handler": "your_custom_handler", // The name of Lambda handler. Default: handler.lambda_handler
         "lets_encrypt_key": "s3://your-bucket/account.key", // Let's Encrypt account key path. Can either be an S3 path or a local file path.
