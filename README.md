@@ -327,7 +327,7 @@ to change Zappa's behavior. Use these at your own risk!
             ]
         }, 
         "keep_warm": true, // Create CloudWatch events to keep the server warm.
-        "keep_warm_expression": "rate(5 minutes)", // How often to execute the keep-warm, in cron and rate format. Default 5 minutes.
+        "keep_warm_expression": "rate(2 minutes)", // How often to execute the keep-warm, in cron and rate format. Default 2 minutes.
         "lambda_description": "Your Description", // However you want to describe your project for the AWS console. Default "Zappa Deployment".
         "lambda_handler": "your_custom_handler", // The name of Lambda handler. Default: handler.lambda_handler
         "lets_encrypt_key": "s3://your-bucket/account.key", // Let's Encrypt account key path. Can either be an S3 path or a local file path.
@@ -531,4 +531,8 @@ Zappa goes quite far beyond what Lambda and API Gateway were ever intended to ha
 
 ## Contributing
 
-This project is still young, so there is still plenty to be done. Contributions are more than welcome! Please file tickets before submitting patches, and submit your patches to the "dev" branch.
+This project is still young, so there is still plenty to be done. Contributions are more than welcome! Please file tickets before submitting patches, and submit your patches to the "dev" branch. (If dev falls behind master, feel free to rebase.)
+
+#### Using a Local Repo
+
+To use the git HEAD, you *can't* use `pip install -e `. Instead, you should clone the repo to your machine and then `pip install /path/to/zappa/repo` or `ln -s /path/to/zappa/repo/zappa zappa` in your local project.
