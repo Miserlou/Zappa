@@ -573,9 +573,6 @@ class Zappa(object):
         if not self.credentials_arn:
             self.get_credentials_arn()
 
-        import pdb
-        pdb.set_trace()
-
         response = self.lambda_client.update_function_configuration(
             FunctionName=function_name,
             Runtime='python2.7',
