@@ -61,9 +61,19 @@
 
 #### About Zappa
 
-**Zappa** makes it super easy to deploy all Python WSGI applications on AWS Lambda + API Gateway. Think of it as "serverless" web hosting for your Python web apps.
+**Zappa** makes it super easy to deploy all Python WSGI applications on AWS Lambda + API Gateway. Think of it as "serverless" web hosting for your Python web apps. That means **infinite scaling**, **zero downtime**, **zero maintaince** - and at a fraction of the cost of your current deployments.
 
-> What do you mean "serverless"?
+If you've got a Python web app (including Django and Flask apps), it's as easy as:
+
+```
+$ pip install zappa
+$ zappa init
+$ zappa deploy
+```
+
+and now you're server-less! _Wow!_
+
+#### What do you mean "serverless"?
 
 Okay, so there still is a server - but it only has a _40 millisecond_ life cycle! Serverless in this case means **"without any permanent infrastucture."**
 
