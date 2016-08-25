@@ -560,6 +560,35 @@ class Zappa(object):
 
         return response['FunctionArn']
 
+    def update_lambda_configuration(self, lambda_arn, function_name, handler, description="Zappa Deployment", timeout=30, memory_size=512, publish=True, vpc_config=None):
+        """
+        Given an existing function ARN, update the configuration variables.
+
+        """
+
+        print("Updating Lambda function configuration..")
+
+        if not vpc_config:
+            vpc_config = {}
+        if not self.credentials_arn:
+            self.get_credentials_arn()
+
+        import pdb
+        pdb.set_trace()
+
+        response = self.lambda_client.update_function_configuration(
+            FunctionName=function_name,
+            Runtime='python2.7',
+            Role=self.credentials_arn,
+            Handler=handler,
+            Description=description,
+            Timeout=timeout,
+            MemorySize=memory_size,
+            VpcConfig=vpc_config
+        )
+
+        return response['FunctionArn']
+
     def invoke_lambda_function(self, function_name, payload, invocation_type='Event', log_type='Tail', client_context=None, qualifier=None):
         """
         Directly invoke a named Lambda function with a payload.

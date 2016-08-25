@@ -331,6 +331,15 @@ class ZappaCLI(object):
         # Remove the uploaded zip from S3, because it is now registered..
         self.zappa.remove_from_s3(self.zip_path, self.s3_bucket_name)
 
+        # Update the configuration, in case there are changes.
+        self.lambda_arn = self.zappa.update_lambda_configuration(lambda_arn=self.lambda_arn,
+                                                       function_name=self.lambda_name,
+                                                       handler=self.lambda_handler,
+                                                       description=self.lambda_description,
+                                                       vpc_config=self.vpc_config,
+                                                       timeout=self.timeout_seconds,
+                                                       memory_size=self.memory_size)
+
         # Finally, delete the local copy our zip package
         if self.stage_config.get('delete_zip', True):
             os.remove(self.zip_path)
