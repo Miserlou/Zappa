@@ -1,0 +1,20 @@
+{
+    "status_code": 400, 
+    "data": {
+        "ResponseMetadata": {
+            "HTTPStatusCode": 400, 
+            "RequestId": "a24d6324-6a74-11e6-a70f-c33a89881a7c", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "a24d6324-6a74-11e6-a70f-c33a89881a7c", 
+                "date": "Thu, 25 Aug 2016 03:33:04 GMT", 
+                "content-length": "90", 
+                "content-type": "application/x-amz-json-1.1", 
+                "nncoection": "close"
+            }
+        }, 
+        "Error": {
+            "Message": "The specified log group does not exist.", 
+            "Code": "ResourceNotFoundException"
+        }
+    }
+}

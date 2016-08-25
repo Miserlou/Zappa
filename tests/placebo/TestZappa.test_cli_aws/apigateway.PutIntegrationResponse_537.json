@@ -1,0 +1,27 @@
+{
+    "status_code": 201, 
+    "data": {
+        "statusCode": "200", 
+        "responseTemplates": {
+            "text/html": "#set($inputRoot = $input.path('$'))\n$inputRoot.Content"
+        }, 
+        "selectionPattern": "", 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 201, 
+            "RequestId": "399e6013-6a74-11e6-aaec-e994c773c0ae", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "399e6013-6a74-11e6-aaec-e994c773c0ae", 
+                "date": "Thu, 25 Aug 2016 03:30:09 GMT", 
+                "content-length": "535", 
+                "content-type": "application/json"
+            }
+        }, 
+        "responseParameters": {
+            "method.response.header.Content-Type": "integration.response.body.Content-Type", 
+            "method.response.header.Location": "integration.response.body.Location", 
+            "method.response.header.X-Frame-Options": "integration.response.body.X-Frame-Options", 
+            "method.response.header.Status": "integration.response.body.Status", 
+            "method.response.header.Set-Cookie": "integration.response.body.Set-Cookie"
+        }
+    }
+}

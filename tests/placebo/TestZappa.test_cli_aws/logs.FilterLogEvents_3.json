@@ -1,0 +1,259 @@
+{
+    "status_code": 200, 
+    "data": {
+        "searchedLogStreams": [
+            {
+                "searchedCompletely": true, 
+                "logStreamName": "2016/08/25/[$LATEST]5b770117f3054648a526f9ea34aa950f"
+            }, 
+            {
+                "searchedCompletely": true, 
+                "logStreamName": "2016/08/25/[$LATEST]927fa33f345348748e693430dd9975ff"
+            }, 
+            {
+                "searchedCompletely": true, 
+                "logStreamName": "2016/06/02/[$LATEST]f03059c510ca4976987d6a56b799e4ab"
+            }, 
+            {
+                "searchedCompletely": true, 
+                "logStreamName": "2016/06/02/[$LATEST]a51710ea77034373868eeb2ca461c8f4"
+            }
+        ], 
+        "events": [
+            {
+                "ingestionTime": 1464895458153, 
+                "timestamp": 1464895458119, 
+                "message": "START RequestId: 9940e9d3-28f7-11e6-806c-8d2d134ad5bb Version: $LATEST\n", 
+                "eventId": "32668260353996606794341458938610688159080211542579544064", 
+                "logStreamName": "2016/06/02/[$LATEST]a51710ea77034373868eeb2ca461c8f4"
+            }, 
+            {
+                "ingestionTime": 1464895473222, 
+                "timestamp": 1464895458156, 
+                "message": "[INFO]\t2016-06-02T19:24:18.156Z\t9940e9d3-28f7-11e6-806c-8d2d134ad5bb\t96.90.37.59 - - [02/Jun/2016:19:24:18 +0000] \"GET / HTTP/1.1\" 200 30 \"\" \"python-requests/2.10.0\" 0/36.71\n", 
+                "eventId": "32668260354821734366687092013064740005169577899195826176", 
+                "logStreamName": "2016/06/02/[$LATEST]a51710ea77034373868eeb2ca461c8f4"
+            }, 
+            {
+                "ingestionTime": 1464895473222, 
+                "timestamp": 1464895458156, 
+                "message": "END RequestId: 9940e9d3-28f7-11e6-806c-8d2d134ad5bb\n", 
+                "eventId": "32668260354821734366687092013064740005169577899195826177", 
+                "logStreamName": "2016/06/02/[$LATEST]a51710ea77034373868eeb2ca461c8f4"
+            }, 
+            {
+                "ingestionTime": 1464895473222, 
+                "timestamp": 1464895458156, 
+                "message": "REPORT RequestId: 9940e9d3-28f7-11e6-806c-8d2d134ad5bb\tDuration: 37.62 ms\tBilled Duration: 100 ms \tMemory Size: 512 MB\tMax Memory Used: 18 MB\t\n", 
+                "eventId": "32668260354821734366687092013064740005169577899195826178", 
+                "logStreamName": "2016/06/02/[$LATEST]a51710ea77034373868eeb2ca461c8f4"
+            }, 
+            {
+                "ingestionTime": 1464895473352, 
+                "timestamp": 1464895458307, 
+                "message": "START RequestId: 9995728f-28f7-11e6-8401-a1f02f9e795a Version: $LATEST\n", 
+                "eventId": "32668260358189146891665216107594067979796140253731815424", 
+                "logStreamName": "2016/06/02/[$LATEST]f03059c510ca4976987d6a56b799e4ab"
+            }, 
+            {
+                "ingestionTime": 1464895473352, 
+                "timestamp": 1464895458308, 
+                "message": "END RequestId: 9995728f-28f7-11e6-8401-a1f02f9e795a\n", 
+                "eventId": "32668260358211447636863746730735603698068788615237795841", 
+                "logStreamName": "2016/06/02/[$LATEST]f03059c510ca4976987d6a56b799e4ab"
+            }, 
+            {
+                "ingestionTime": 1464895473352, 
+                "timestamp": 1464895458308, 
+                "message": "REPORT RequestId: 9995728f-28f7-11e6-8401-a1f02f9e795a\tDuration: 0.79 ms\tBilled Duration: 100 ms \tMemory Size: 512 MB\tMax Memory Used: 17 MB\t\n", 
+                "eventId": "32668260358211447636863746730735603698068788615237795842", 
+                "logStreamName": "2016/06/02/[$LATEST]f03059c510ca4976987d6a56b799e4ab"
+            }, 
+            {
+                "ingestionTime": 1472095819575, 
+                "timestamp": 1472095819556, 
+                "message": "START RequestId: 3e40e698-6a74-11e6-b010-0796037628bd Version: $LATEST\n", 
+                "eventId": "32828833779740469602282057220252583220417675906808610816", 
+                "logStreamName": "2016/08/25/[$LATEST]927fa33f345348748e693430dd9975ff"
+            }, 
+            {
+                "ingestionTime": 1472095834631, 
+                "timestamp": 1472095819557, 
+                "message": "Zappa Event: {u'account': u'724336686645', u'region': u'us-east-1', u'detail': {}, u'detail-type': u'Scheduled Event', u'source': u'aws.events', u'version': u'0', u'time': u'2016-08-25T03:29:50Z', u'id': u'd9ec5db0-e7f5-408c-981d-0960207128d7', u'resources': [u'arn:aws:events:us-east-1:724336686645:rule/zappa-ttt888-tests.test_app.schedule_me']}\n", 
+                "eventId": "32828833779762770347480587861595779102676387676361785344", 
+                "logStreamName": "2016/08/25/[$LATEST]927fa33f345348748e693430dd9975ff"
+            }, 
+            {
+                "ingestionTime": 1472095834631, 
+                "timestamp": 1472095819557, 
+                "message": "END RequestId: 3e40e698-6a74-11e6-b010-0796037628bd\n", 
+                "eventId": "32828833779762770347480587861595779102676387676361785345", 
+                "logStreamName": "2016/08/25/[$LATEST]927fa33f345348748e693430dd9975ff"
+            }, 
+            {
+                "ingestionTime": 1472095834631, 
+                "timestamp": 1472095819557, 
+                "message": "REPORT RequestId: 3e40e698-6a74-11e6-b010-0796037628bd\tDuration: 0.94 ms\tBilled Duration: 100 ms \tMemory Size: 512 MB\tMax Memory Used: 28 MB\t\n", 
+                "eventId": "32828833779762770347480587861595779102676387676361785346", 
+                "logStreamName": "2016/08/25/[$LATEST]927fa33f345348748e693430dd9975ff"
+            }, 
+            {
+                "ingestionTime": 1472095834631, 
+                "timestamp": 1472095831701, 
+                "message": "START RequestId: 463d939d-6a74-11e6-9e46-4372c0a7957b Version: $LATEST\n", 
+                "eventId": "32828834050583020038436475292405541805718089804987957251", 
+                "logStreamName": "2016/08/25/[$LATEST]927fa33f345348748e693430dd9975ff"
+            }, 
+            {
+                "ingestionTime": 1472095834631, 
+                "timestamp": 1472095831703, 
+                "message": "Zappa Event: {u'body': u'e30=', u'headers': {u'Via': u'1.1 b04a4cffa8fb4f524ff7edcab1b5ae31.cloudfront.net (CloudFront)', u'Accept-Encoding': u'gzip, deflate', u'CloudFront-Is-SmartTV-Viewer': u'false', u'CloudFront-Forwarded-Proto': u'https', u'X-Forwarded-For': u'24.23.178.45, 54.239.203.109', u'CloudFront-Viewer-Country': u'US', u'Accept': u'*/*', u'User-Agent': u'python-requests/2.10.0', u'Host': u'jkib1pg4l1.execute-api.us-east-1.amazonaws.com', u'X-Forwarded-Proto': u'https', u'X-Amz-Cf-Id': u'FheO8UOp1Mo2tBR9kxg5I8ChIcrsW2I5Ob5u3dEIeH3pg6jqbS7a-Q==', u'CloudFront-Is-Tablet-Viewer': u'false', u'X-Forwarded-Port': u'443', u'CloudFront-Is-Mobile-Viewer': u'false', u'CloudFront-Is-Desktop-Viewer': u'true'}, u'params': {}, u'method': u'GET', u'query': {}}\n", 
+                "eventId": "32828834050627621528833536538688613242263386527999918084", 
+                "logStreamName": "2016/08/25/[$LATEST]927fa33f345348748e693430dd9975ff"
+            }, 
+            {
+                "ingestionTime": 1472095834631, 
+                "timestamp": 1472095831704, 
+                "message": "[DEBUG]\t2016-08-25T03:30:31.704Z\t463d939d-6a74-11e6-9e46-4372c0a7957b\tZappa Event: {u'body': u'e30=', u'headers': {u'Via': u'1.1 b04a4cffa8fb4f524ff7edcab1b5ae31.cloudfront.net (CloudFront)', u'Accept-Encoding': u'gzip, deflate', u'CloudFront-Is-SmartTV-Viewer': u'false', u'CloudFront-Forwarded-Proto': u'https', u'X-Forwarded-For': u'24.23.178.45, 54.239.203.109', u'CloudFront-Viewer-Country': u'US', u'Accept': u'*/*', u'User-Agent': u'python-requests/2.10.0', u'Host': u'jkib1pg4l1.execute-api.us-east-1.amazonaws.com', u'X-Forwarded-Proto': u'https', u'X-Amz-Cf-Id': u'FheO8UOp1Mo2tBR9kxg5I8ChIcrsW2I5Ob5u3dEIeH3pg6jqbS7a-Q==', u'CloudFront-Is-Tablet-Viewer': u'false', u'X-Forwarded-Port': u'443', u'CloudFront-Is-Mobile-Viewer': u'false', u'CloudFront-Is-Desktop-Viewer': u'true'}, u'params': {}, u'method': u'GET', u'query': {}}\n", 
+                "eventId": "32828834050649922274032067161830148960536034889505898501", 
+                "logStreamName": "2016/08/25/[$LATEST]927fa33f345348748e693430dd9975ff"
+            }, 
+            {
+                "ingestionTime": 1472095834631, 
+                "timestamp": 1472095831705, 
+                "message": "[INFO]\t2016-08-25T03:30:31.705Z\t463d939d-6a74-11e6-9e46-4372c0a7957b\t24.23.178.45 - - [25/Aug/2016:03:30:31 +0000] \"GET / HTTP/1.1\" 200 30 \"\" \"python-requests/2.10.0\" 0/1.132\n", 
+                "eventId": "32828834050672223019230597784971684678808683251011878918", 
+                "logStreamName": "2016/08/25/[$LATEST]927fa33f345348748e693430dd9975ff"
+            }, 
+            {
+                "ingestionTime": 1472095834631, 
+                "timestamp": 1472095831705, 
+                "message": "END RequestId: 463d939d-6a74-11e6-9e46-4372c0a7957b\n", 
+                "eventId": "32828834050672223019230597784971684678808683251011878919", 
+                "logStreamName": "2016/08/25/[$LATEST]927fa33f345348748e693430dd9975ff"
+            }, 
+            {
+                "ingestionTime": 1472095834631, 
+                "timestamp": 1472095831705, 
+                "message": "REPORT RequestId: 463d939d-6a74-11e6-9e46-4372c0a7957b\tDuration: 2.02 ms\tBilled Duration: 100 ms \tMemory Size: 512 MB\tMax Memory Used: 28 MB\t\n", 
+                "eventId": "32828834050672223019230597784971684678808683251011878920", 
+                "logStreamName": "2016/08/25/[$LATEST]927fa33f345348748e693430dd9975ff"
+            }, 
+            {
+                "ingestionTime": 1472095837489, 
+                "timestamp": 1472095837474, 
+                "message": "START RequestId: 4a180eae-6a74-11e6-a770-3dfd80db1560 Version: $LATEST\n", 
+                "eventId": "32828834179325222069553762691946502590087704378856177664", 
+                "logStreamName": "2016/08/25/[$LATEST]927fa33f345348748e693430dd9975ff"
+            }, 
+            {
+                "ingestionTime": 1472095852547, 
+                "timestamp": 1472095837478, 
+                "message": "Zappa Event: {u'account': u'724336686645', u'region': u'us-east-1', u'detail': {}, u'detail-type': u'Scheduled Event', u'source': u'aws.events', u'version': u'0', u'time': u'2016-08-25T03:29:50Z', u'id': u'c6c1bea9-5846-4008-9947-57c1c5fb03d5', u'resources': [u'arn:aws:events:us-east-1:724336686645:rule/zappa-ttt888-zappa-keep-warm-handler.keep_warm_callback']}\n", 
+                "eventId": "32828834179414425050347885202716289686015888095690031104", 
+                "logStreamName": "2016/08/25/[$LATEST]927fa33f345348748e693430dd9975ff"
+            }, 
+            {
+                "ingestionTime": 1472095852547, 
+                "timestamp": 1472095837478, 
+                "message": "Zappa Event: {}\n", 
+                "eventId": "32828834179414425050347885202716289686015888095690031105", 
+                "logStreamName": "2016/08/25/[$LATEST]927fa33f345348748e693430dd9975ff"
+            }, 
+            {
+                "ingestionTime": 1472095852547, 
+                "timestamp": 1472095837479, 
+                "message": "[DEBUG]\t2016-08-25T03:30:37.478Z\t4a180eae-6a74-11e6-a770-3dfd80db1560\tZappa Event: {}\n", 
+                "eventId": "32828834179436725795546415825857825404288536457196011522", 
+                "logStreamName": "2016/08/25/[$LATEST]927fa33f345348748e693430dd9975ff"
+            }, 
+            {
+                "ingestionTime": 1472095852547, 
+                "timestamp": 1472095837479, 
+                "message": "END RequestId: 4a180eae-6a74-11e6-a770-3dfd80db1560\n", 
+                "eventId": "32828834179436725795546415825857825404288536457196011523", 
+                "logStreamName": "2016/08/25/[$LATEST]927fa33f345348748e693430dd9975ff"
+            }, 
+            {
+                "ingestionTime": 1472095852547, 
+                "timestamp": 1472095837479, 
+                "message": "REPORT RequestId: 4a180eae-6a74-11e6-a770-3dfd80db1560\tDuration: 0.73 ms\tBilled Duration: 100 ms \tMemory Size: 512 MB\tMax Memory Used: 28 MB\t\n", 
+                "eventId": "32828834179436725795546415825857825404288536457196011524", 
+                "logStreamName": "2016/08/25/[$LATEST]927fa33f345348748e693430dd9975ff"
+            }, 
+            {
+                "ingestionTime": 1472095876933, 
+                "timestamp": 1472095876906, 
+                "message": "START RequestId: 619f5090-6a74-11e6-bea3-9380ecc2bed9 Version: $LATEST\n", 
+                "eventId": "32828835058688206738013294456667706850429642808481021952", 
+                "logStreamName": "2016/08/25/[$LATEST]927fa33f345348748e693430dd9975ff"
+            }, 
+            {
+                "ingestionTime": 1472095891991, 
+                "timestamp": 1472095876909, 
+                "message": "Zappa Event: {u'account': u'724336686645', u'region': u'us-east-1', u'detail': {}, u'detail-type': u'Scheduled Event', u'source': u'aws.events', u'version': u'0', u'time': u'2016-08-25T03:30:50Z', u'id': u'8cc9414a-09ad-4e98-94c0-61cf8d913a54', u'resources': [u'arn:aws:events:us-east-1:724336686645:rule/zappa-ttt888-tests.test_app.schedule_me']}\n", 
+                "eventId": "32828835058755108973608886344296130140153400867786457088", 
+                "logStreamName": "2016/08/25/[$LATEST]927fa33f345348748e693430dd9975ff"
+            }, 
+            {
+                "ingestionTime": 1472095891991, 
+                "timestamp": 1472095876909, 
+                "message": "[DEBUG]\t2016-08-25T03:31:16.909Z\t619f5090-6a74-11e6-bea3-9380ecc2bed9\tZappa Event: {u'account': u'724336686645', u'region': u'us-east-1', u'detail': {}, u'detail-type': u'Scheduled Event', u'source': u'aws.events', u'version': u'0', u'time': u'2016-08-25T03:30:50Z', u'id': u'8cc9414a-09ad-4e98-94c0-61cf8d913a54', u'resources': [u'arn:aws:events:us-east-1:724336686645:rule/zappa-ttt888-tests.test_app.schedule_me']}\n", 
+                "eventId": "32828835058755108973608886344296130140153400867786457089", 
+                "logStreamName": "2016/08/25/[$LATEST]927fa33f345348748e693430dd9975ff"
+            }, 
+            {
+                "ingestionTime": 1472095891991, 
+                "timestamp": 1472095876909, 
+                "message": "END RequestId: 619f5090-6a74-11e6-bea3-9380ecc2bed9\n", 
+                "eventId": "32828835058755108973608886344296130140153400867786457090", 
+                "logStreamName": "2016/08/25/[$LATEST]927fa33f345348748e693430dd9975ff"
+            }, 
+            {
+                "ingestionTime": 1472095891991, 
+                "timestamp": 1472095876909, 
+                "message": "REPORT RequestId: 619f5090-6a74-11e6-bea3-9380ecc2bed9\tDuration: 0.61 ms\tBilled Duration: 100 ms \tMemory Size: 512 MB\tMax Memory Used: 28 MB\t\n", 
+                "eventId": "32828835058755108973608886344296130140153400867786457091", 
+                "logStreamName": "2016/08/25/[$LATEST]927fa33f345348748e693430dd9975ff"
+            }, 
+            {
+                "ingestionTime": 1472095939205, 
+                "timestamp": 1472095939120, 
+                "message": "START RequestId: 858894b4-6a74-11e6-9c5d-dfc74bd9e517 Version: $LATEST\n", 
+                "eventId": "32828836446106768519397482659453111578474681979771748352", 
+                "logStreamName": "2016/08/25/[$LATEST]5b770117f3054648a526f9ea34aa950f"
+            }, 
+            {
+                "ingestionTime": 1472095954272, 
+                "timestamp": 1472095939120, 
+                "message": "Zappa Event: {u'account': u'724336686645', u'region': u'us-east-1', u'detail': {}, u'detail-type': u'Scheduled Event', u'source': u'aws.events', u'version': u'0', u'time': u'2016-08-25T03:31:50Z', u'id': u'ed6d27eb-a878-4a17-ac83-55dea0af1a04', u'resources': [u'arn:aws:events:us-east-1:724336686645:rule/zappa-ttt888-tests.test_app.schedule_me']}\n", 
+                "eventId": "32828836446106768519397482677667903964769906316644384768", 
+                "logStreamName": "2016/08/25/[$LATEST]5b770117f3054648a526f9ea34aa950f"
+            }, 
+            {
+                "ingestionTime": 1472095954272, 
+                "timestamp": 1472095939121, 
+                "message": "END RequestId: 858894b4-6a74-11e6-9c5d-dfc74bd9e517\n", 
+                "eventId": "32828836446129069264596013300809439683042554678150365185", 
+                "logStreamName": "2016/08/25/[$LATEST]5b770117f3054648a526f9ea34aa950f"
+            }, 
+            {
+                "ingestionTime": 1472095954272, 
+                "timestamp": 1472095939121, 
+                "message": "REPORT RequestId: 858894b4-6a74-11e6-9c5d-dfc74bd9e517\tDuration: 1.00 ms\tBilled Duration: 100 ms \tMemory Size: 512 MB\tMax Memory Used: 28 MB\t\n", 
+                "eventId": "32828836446129069264596013300809439683042554678150365186", 
+                "logStreamName": "2016/08/25/[$LATEST]5b770117f3054648a526f9ea34aa950f"
+            }
+        ], 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "RequestId": "9e5e4e9d-6a74-11e6-8722-a741ba7570d8", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "9e5e4e9d-6a74-11e6-8722-a741ba7570d8", 
+                "date": "Thu, 25 Aug 2016 03:32:59 GMT", 
+                "content-length": "13280", 
+                "content-type": "application/x-amz-json-1.1"
+            }
+        }
+    }
+}

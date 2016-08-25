@@ -1,0 +1,17 @@
+{
+    "status_code": 201, 
+    "data": {
+        "Statement": "{\"Condition\":{\"ArnLike\":{\"AWS:SourceArn\":\"arn:aws:events:us-east-1:724336686645:rule/zappa-ttt888-tests.test_app.schedule_me\"}},\"Action\":[\"lambda:InvokeFunction\"],\"Resource\":\"arn:aws:lambda:us-east-1:724336686645:function:zappa-ttt888\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"events.amazonaws.com\"},\"Sid\":\"9LTNB0L6\"}", 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 201, 
+            "RequestId": "2b9738e5-6a74-11e6-b885-3d75db80b5c5", 
+            "HTTPHeaders": {
+                "date": "Thu, 25 Aug 2016 03:29:45 GMT", 
+                "x-amzn-requestid": "2b9738e5-6a74-11e6-b885-3d75db80b5c5", 
+                "content-length": "363", 
+                "content-type": "application/json", 
+                "connection": "keep-alive"
+            }
+        }
+    }
+}
