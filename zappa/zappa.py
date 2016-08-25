@@ -826,7 +826,7 @@ class Zappa(object):
 
         return resource_id
 
-    def deploy_api_gateway(self, api_id, stage_name, stage_description="", description="", cache_cluster_enabled=False, cache_cluster_size='0.5', variables=None, api_key_required=False,
+    def deploy_api_gateway(self, api_id, stage_name, stage_description="", description="", cache_cluster_enabled=False, cache_cluster_size='0.5', variables=None,
             cloudwatch_log_level='OFF', cloudwatch_data_trace=False, cloudwatch_metrics_enabled=False):
         """
         Deploy the API Gateway!
@@ -847,21 +847,6 @@ class Zappa(object):
             variables=variables or {}
         )
 
-        if api_key_required:
-            print("Creating API Key..")
-            api_key = self.apigateway_client.create_api_key(
-                    name='{}_{}'.format(stage_name, api_id),
-                    description='Api Key for {}'.format(api_id),
-                    enabled=True,
-                    stageKeys=[
-                        {
-                            'restApiId': '{}'.format(api_id),
-                            'stageName': '{}'.format(stage_name)
-                        },
-                    ]
-                    )
-            print('x-api-key: {}'.format(api_key['id']))
-
         if cloudwatch_log_level not in self.cloudwatch_log_levels:
             cloudwatch_log_level = 'OFF'
 
@@ -876,6 +861,59 @@ class Zappa(object):
         )
 
         return "https://{}.execute-api.{}.amazonaws.com/{}".format(api_id, self.boto_session.region_name, stage_name)
+
+    def create_api_key(self, api_id, stage_name):
+        """
+        Create new API key
+        """
+        try:
+            print("Creating API Key..")
+            response = self.apigateway_client.create_api_key(
+                name='{}_{}'.format(stage_name, api_id),
+                description='Api Key for {}'.format(api_id),
+                enabled=True,
+                stageKeys=[
+                        {
+                            'restApiId': '{}'.format(api_id),
+                            'stageName': '{}'.format(stage_name)
+                        },
+                    ]
+                )
+            print('x-api-key: {}'.format(response['id']))
+        except botocore.client.ClientError as e:
+            print('Cannot create API key: {} '.format(e))
+
+    def remove_api_key(self, api_key):
+        """
+        Remove API key
+        """
+        try:
+            print("Removing API Key..")
+            self.apigateway_client.delete_api_key(
+                apiKey="{}".format(api_key)
+            )
+        except botocore.client.ClientError as e:
+            print('Cannot remove API key: {}'.format(e))
+
+    def add_api_stage_to_api_key(self, api_key, api_id, stage_name):
+        """
+        Add api stage to Api key
+        """
+        try:
+            response = self.apigateway_client.update_api_key(
+                apiKey=api_key,
+                patchOperations=[
+                    {
+                        'op': 'add',
+                        'path': '/stages',
+                        'value': api_id + '/' + stage_name
+                    }
+                ]
+            )
+            return response['id']
+        except botocore.client.ClientError as e:
+            print('Cannot link API key {}: {}'.format(api_key, e))
+
 
     def get_patch_op(self, keypath, value, op='replace'):
         """
@@ -900,7 +938,7 @@ class Zappa(object):
                 continue
             yield api
 
-    def undeploy_api_gateway(self, project_name, api_key_required=False, domain_name=None):
+    def undeploy_api_gateway(self, project_name, remove_api_key=False, domain_name=None):
         """
         Delete a deployed REST API Gateway.
 
@@ -923,13 +961,13 @@ class Zappa(object):
                     restApiId=api['id']
             )
 
-            if api_key_required:
-                print("Removing API Key..")
-                api_key_id = [key for key in self.apigateway_client.get_api_keys()['items']
-                              if api['id'] in key['name']][0]['id']
-                api_key_response = self.apigateway_client.delete_api_key(
-                        apiKey="{}".format(api_key_id)
-                )
+            if remove_api_key:
+                try:
+                    api_key_id = [key for key in self.apigateway_client.get_api_keys()['items']
+                                  if api['id'] in key['name']][0]['id']
+                    self.remove_api_key(api_key_id)
+                except IndexError:
+                    print('API Key not found')
 
     def update_stage_config(self, project_name, stage_name, cloudwatch_log_level, cloudwatch_data_trace,
         cloudwatch_metrics_enabled):
