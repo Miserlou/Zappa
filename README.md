@@ -484,7 +484,7 @@ Now Zappa will use `application/json`'s template to route requests with MIME-typ
 
 #### Catching Unhandled Exceptions
 
-By default, if an exception happens in your code, Zappa will just print the stacktrace into a CloudWatch log. If you wish to use an external reporting tool to take note of those exceptions, you can use the `exception_handler` configuration option.
+By default, if an _unhandled_ exception happens in your code, Zappa will just print the stacktrace into a CloudWatch log. If you wish to use an external reporting tool to take note of those exceptions, you can use the `exception_handler` configuration option.
 
 zappa_settings.json:
 ```javascript
@@ -504,6 +504,8 @@ your_module.py
 def unhandled_exceptions(e, event, context):
     send_to_raygun(e, event)  # gather data you need and send
 ```
+
+You'll still need a similar exception handler inside your application, this is just a way to catch exception which happen at the Zappa/WSGI layer (typically misconfigured settings, bad Lambda packages, and permissions issues.)
 
 ## Zappa Guides
 
