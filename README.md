@@ -53,10 +53,11 @@
 ## About
 
 <p align="center">
-  <a href="https://htmlpreview.github.io/?https://raw.githubusercontent.com/Miserlou/Talks/master/serverless-sf/big.quickstart.html"><img src="http://i.imgur.com/c23kDNT.png?1" alt="Zappa Slides"/></a>/
-  In a hurry? Click to see <a href="https://htmlpreview.github.io/?https://raw.githubusercontent.com/Miserlou/Talks/master/serverless-sf/big.quickstart.html">slides from Serverless SF</a>!
+  <a href="https://htmlpreview.github.io/?https://raw.githubusercontent.com/Miserlou/Talks/master/serverless-sf/big.quickstart.html"><img src="http://i.imgur.com/c23kDNT.png?1" alt="Zappa Slides"/></a>
 </p>
-
+<p align="center">
+  <i>In a hurry? Click to see <a href="https://htmlpreview.github.io/?https://raw.githubusercontent.com/Miserlou/Talks/master/serverless-sf/big.quickstart.html">slides from Serverless SF</a>!</i>
+</p>
 
 #### About Zappa
 
