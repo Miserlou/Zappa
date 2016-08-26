@@ -1275,6 +1275,7 @@ class Zappa(object):
         try:
             targets = self.events_client.list_targets_by_rule(Rule=rule_name)
         except botocore.exceptions.ClientError as e:
+            # This avoids misbehavior if low permissions, related: https://github.com/Miserlou/Zappa/issues/286
             error_code = e.response['Error']['Code']
             if error_code == 'AccessDeniedException':
                 raise
