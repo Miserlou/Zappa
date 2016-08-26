@@ -532,6 +532,13 @@ You'll still need a similar exception handler inside your application, this is j
 
 Are you using Zappa? Let us know and we'll list your site here!
 
+## Related Projects
+
+* [lambda-packages](http://github.com/Miserlou/lambda-packages) - Precompiled C-extention packages for AWS Lambda. Used automatically by Zappa.
+* [zappa-cms](http://github.com/Miserlou/zappa-cms) - A tiny server-less CMS for busy hackers. Work in progress.
+* [flask-ask](https://github.com/johnwheeler/flask-ask) - A framework for building Amazon Alexa applications. Uses Zappa for deployments.
+* [zappa-file-widget](https://github.com/anush0247/zappa-file-widget) - A Django plugin for supporting binary file uploads in Django on Zappa.
+
 ## Hacks
 
 Zappa goes quite far beyond what Lambda and API Gateway were ever intended to handle. As a result, there are quite a few hacks in here that allow it to work. Some of those include, but aren't limited to..
@@ -543,7 +550,13 @@ Zappa goes quite far beyond what Lambda and API Gateway were ever intended to ha
 
 ## Contributing
 
-This project is still young, so there is still plenty to be done. Contributions are more than welcome! Please file tickets before submitting patches, and submit your patches to the "dev" branch. (If dev falls behind master, feel free to rebase.)
+This project is still young, so there is still plenty to be done. Contributions are more than welcome! 
+
+Please file tickets for discussion before submitting patches, and submit your patches to the "dev" branch if possible. If dev falls behind master, feel free to rebase.
+
+If you are adding a non-trivial amount of new code, please include a functioning test in your PR. For AWS calls, we use the placebo library, which you can learn to use [in the test writing guide](docs/README.md).
+
+Please also write comments along with your new code, including the URL of the ticket which you filed along with the PR. This greatly helps for project maintainability, as it allows us to trace back use cases and explain decision making.
 
 #### Using a Local Repo
 
