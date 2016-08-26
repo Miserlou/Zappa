@@ -1275,8 +1275,12 @@ class Zappa(object):
         try:
             targets = self.events_client.list_targets_by_rule(Rule=rule_name)
         except botocore.exceptions.ClientError as e:
-            logger.debug('No target found for this rule: {} {}'.format(rule_name, e.message))
-            return
+            error_code = e.response['Error']['Code']
+            if error_code == 'AccessDeniedException':
+                raise
+            else:
+                logger.debug('No target found for this rule: {} {}'.format(rule_name, e.message))
+                return
 
         if 'Targets' in targets and targets['Targets']:
             response = self.events_client.remove_targets(Rule=rule_name, Ids=[x['Id'] for x in targets['Targets']])
