@@ -287,7 +287,7 @@ class ZappaCLI(object):
             # Create/link API key
             if self.api_key_required:
                 if self.api_key is None:
-                    self.zappa.create_api_key(api_id=api_id,stage_name=self.api_stage)
+                    self.zappa.create_api_key(api_id=api_id, stage_name=self.api_stage)
                 else:
                     self.zappa.add_api_stage_to_api_key(api_key=self.api_key, api_id=api_id, stage_name=self.api_stage)
 
@@ -433,11 +433,12 @@ class ZappaCLI(object):
         domain_name = self.stage_config.get('domain', None)
 
         # Only remove the api key when not specified
-        remove_api_key = self.api_key_required and self.api_key is None
+        if self.api_key_required and self.api_key is None:
+            api_id = self.zappa.get_api_id(self.lambda_name)
+            self.zappa.remove_api_key(api_id, self.api_stage)
 
         gateway_id = self.zappa.undeploy_api_gateway( 
             self.lambda_name, 
-            remove_api_key=remove_api_key,
             domain_name=domain_name
         )
 
@@ -633,6 +634,11 @@ class ZappaCLI(object):
             self.api_stage)
 
         tabular_print("API Gateway URL", api_url)
+
+        # Api Keys
+        api_id = self.zappa.get_api_id(self.lambda_name)
+        for api_key in self.zappa.get_api_keys(api_id, self.api_stage):
+            tabular_print("API Gateway x-api-key", api_key)
 
         # There literally isn't a better way to do this. 
         # AWS provides no way to tie a APIGW domain name to its Lambda funciton.
@@ -946,8 +952,10 @@ class ZappaCLI(object):
             self.api_stage].get('django_settings', None)
         self.manage_roles = self.zappa_settings[
             self.api_stage].get('manage_roles', True)
-        self.api_key_required = self.stage_config.get('api_key_required', False)
-        self.api_key = self.stage_config.get('api_key', None)
+        self.api_key_required = self.zappa_settings[
+            self.api_stage].get('api_key_required', False)
+        self.api_key = self.zappa_settings[
+            self.api_stage].get('api_key')
         self.lambda_description = self.zappa_settings[
             self.api_stage].get('lambda_description', "Zappa Deployment")
         self.environment_variables = self.zappa_settings[

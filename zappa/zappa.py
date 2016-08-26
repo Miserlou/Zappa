@@ -862,58 +862,60 @@ class Zappa(object):
 
         return "https://{}.execute-api.{}.amazonaws.com/{}".format(api_id, self.boto_session.region_name, stage_name)
 
+    def get_api_keys(self, api_id, stage_name):
+        """
+        Generator that allows to iterate per API keys associated to an api_id and a stage_name.
+        """
+        response = self.apigateway_client.get_api_keys(limit=500)
+        stage_key = '{}/{}'.format(api_id, stage_name)
+        for api_key in response.get('items'):
+            if stage_key in api_key.get('stageKeys'):
+                yield api_key.get('id')
+
     def create_api_key(self, api_id, stage_name):
         """
-        Create new API key
+        Create new API key and link it with an api_id and a stage_name
         """
-        try:
-            print("Creating API Key..")
-            response = self.apigateway_client.create_api_key(
-                name='{}_{}'.format(stage_name, api_id),
-                description='Api Key for {}'.format(api_id),
-                enabled=True,
-                stageKeys=[
-                        {
-                            'restApiId': '{}'.format(api_id),
-                            'stageName': '{}'.format(stage_name)
-                        },
-                    ]
-                )
-            print('x-api-key: {}'.format(response['id']))
-        except botocore.client.ClientError as e:
-            print('Cannot create API key: {} '.format(e))
+        response = self.apigateway_client.create_api_key(
+            name='{}_{}'.format(stage_name, api_id),
+            description='Api Key for {}'.format(api_id),
+            enabled=True,
+            stageKeys=[
+                {
+                    'restApiId': '{}'.format(api_id),
+                    'stageName': '{}'.format(stage_name)
+                },
+            ]
+        )
+        print('Created a new x-api-key: {}'.format(response['id']))
 
-    def remove_api_key(self, api_key):
+    def remove_api_key(self, api_id, stage_name):
         """
-        Remove API key
+        Remove a generated API key for api_id and stage_name
         """
-        try:
-            print("Removing API Key..")
-            self.apigateway_client.delete_api_key(
-                apiKey="{}".format(api_key)
+        response = self.apigateway_client.get_api_keys(
+            limit=1,
+            nameQuery='{}_{}'.format(stage_name, api_id)
+        )
+        for api_key in response.get('items'):
+            resp = self.apigateway_client.delete_api_key(
+                apiKey="{}".format(api_key['id'])
             )
-        except botocore.client.ClientError as e:
-            print('Cannot remove API key: {}'.format(e))
 
     def add_api_stage_to_api_key(self, api_key, api_id, stage_name):
         """
         Add api stage to Api key
         """
-        try:
-            response = self.apigateway_client.update_api_key(
-                apiKey=api_key,
-                patchOperations=[
-                    {
-                        'op': 'add',
-                        'path': '/stages',
-                        'value': api_id + '/' + stage_name
-                    }
-                ]
-            )
-            return response['id']
-        except botocore.client.ClientError as e:
-            print('Cannot link API key {}: {}'.format(api_key, e))
-
+        self.apigateway_client.update_api_key(
+            apiKey=api_key,
+            patchOperations=[
+                {
+                    'op': 'add',
+                    'path': '/stages',
+                    'value': '{}/{}'.format(api_id, stage_name)
+                }
+            ]
+        )
 
     def get_patch_op(self, keypath, value, op='replace'):
         """
@@ -938,7 +940,7 @@ class Zappa(object):
                 continue
             yield api
 
-    def undeploy_api_gateway(self, project_name, remove_api_key=False, domain_name=None):
+    def undeploy_api_gateway(self, project_name, domain_name=None):
         """
         Delete a deployed REST API Gateway.
 
@@ -960,14 +962,6 @@ class Zappa(object):
             self.apigateway_client.delete_rest_api(
                     restApiId=api['id']
             )
-
-            if remove_api_key:
-                try:
-                    api_key_id = [key for key in self.apigateway_client.get_api_keys()['items']
-                                  if api['id'] in key['name']][0]['id']
-                    self.remove_api_key(api_key_id)
-                except IndexError:
-                    print('API Key not found')
 
     def update_stage_config(self, project_name, stage_name, cloudwatch_log_level, cloudwatch_data_trace,
         cloudwatch_metrics_enabled):
@@ -1004,6 +998,18 @@ class Zappa(object):
 
         return None
 
+    def get_api_id(self, project_name):
+        """
+        Given a project_name, return the API id.
+        """
+        response = self.apigateway_client.get_rest_apis(limit=500)
+
+        for item in response['items']:
+            if item['name'] == project_name:
+                return item['id']
+
+        return None
+
     def create_domain_name( self, 
                             domain_name, 
                             certificate_name, 
@@ -1028,12 +1034,10 @@ class Zappa(object):
         dns_name = agw_response['distributionDomainName']
         zone_id = self.get_hosted_zone_id_for_domain(domain_name)
 
-        # Not pretty.
-        api_url = self.get_api_url(lambda_name, stage)
-        if not api_url:
+        api_id = self.get_api_id(lambda_name)
+        if not api_id:
             raise LookupError("No API URL to certify found - did you deploy?")
 
-        api_id = api_url.split('https://')[1].split('.execute-api')[0]
         response = self.apigateway_client.create_base_path_mapping(
             domainName=domain_name,
             basePath='',
