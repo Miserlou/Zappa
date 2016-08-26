@@ -1,0 +1,38 @@
+{
+    "status_code": 200,
+    "data": {
+        "items": [
+            {
+                "description": "Api Key for rdrde6pecd",
+                "enabled": true,
+                "stageKeys": [
+                    "rdrde6pecd/devor"
+                ],
+                "lastUpdatedDate": 1470384739,
+                "createdDate": 1470384739,
+                "id": "W9QTptojpE3bsg816Rrjh4was83amtaAx5s6NXaAl",
+                "name": "devor_rdrde6pecd"
+            },
+            {
+                "description": "test",
+                "enabled": true,
+                "stageKeys": [],
+                "lastUpdatedDate": 1472205619,
+                "createdDate": 1472126924,
+                "id": "BbMa34BFOj6fKevBXPhUc61L3R2eh4sz7QzC6NWK",
+                "name": "test"
+            },
+            {
+                "description": "test2",
+                "enabled": true,
+                "stageKeys": [
+                    "eoeoeo/test"
+                ],
+                "lastUpdatedDate": 1472205619,
+                "createdDate": 1472126924,
+                "id": "CbMa34BFOj6fKevBXPhUc61L3R2eh4sz7QzC6NWK",
+                "name": "test2"
+            }
+       ]
+    }
+}
