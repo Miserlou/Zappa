@@ -1,0 +1,26 @@
+{
+    "status_code": 201, 
+    "data": {
+        "id": "lc0eqn", 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 201, 
+            "RequestId": "4dc2d03c-6e0a-11e6-9e18-d13c6ce86685", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "4dc2d03c-6e0a-11e6-9e18-d13c6ce86685", 
+                "date": "Mon, 29 Aug 2016 17:02:02 GMT", 
+                "content-length": "41", 
+                "content-type": "application/json"
+            }
+        }, 
+        "createdDate": {
+            "hour": 12, 
+            "__class__": "datetime", 
+            "month": 8, 
+            "second": 2, 
+            "microsecond": 0, 
+            "year": 2016, 
+            "day": 29, 
+            "minute": 2
+        }
+    }
+}

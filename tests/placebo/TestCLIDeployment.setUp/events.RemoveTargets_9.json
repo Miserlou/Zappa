@@ -1,0 +1,17 @@
+{
+    "status_code": 200, 
+    "data": {
+        "FailedEntries": [], 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "RequestId": "bdf35d0e-6e0a-11e6-8b06-e102711ddba2", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "bdf35d0e-6e0a-11e6-8b06-e102711ddba2", 
+                "date": "Mon, 29 Aug 2016 17:05:09 GMT", 
+                "content-length": "41", 
+                "content-type": "application/x-amz-json-1.1"
+            }
+        }, 
+        "FailedEntryCount": 0
+    }
+}

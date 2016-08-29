@@ -1,0 +1,19 @@
+{
+    "status_code": 201, 
+    "data": {
+        "path": "/{parameter_1}", 
+        "pathPart": "{parameter_1}", 
+        "id": "z5nygc", 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 201, 
+            "RequestId": "46d7e158-6e0a-11e6-aaec-e994c773c0ae", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "46d7e158-6e0a-11e6-aaec-e994c773c0ae", 
+                "date": "Mon, 29 Aug 2016 17:01:49 GMT", 
+                "content-length": "91", 
+                "content-type": "application/json"
+            }
+        }, 
+        "parentId": "yq6anql58k"
+    }
+}

@@ -1,0 +1,91 @@
+{
+    "status_code": 200, 
+    "data": {
+        "items": [
+            {
+                "description": "helloworld-dev Zappa", 
+                "createdDate": {
+                    "hour": 11, 
+                    "__class__": "datetime", 
+                    "month": 8, 
+                    "second": 13, 
+                    "microsecond": 0, 
+                    "year": 2016, 
+                    "day": 22, 
+                    "minute": 14
+                }, 
+                "id": "dsfbfzzmrl", 
+                "name": "helloworld-dev"
+            }, 
+            {
+                "description": "zappa-ttt888 Zappa", 
+                "createdDate": {
+                    "hour": 12, 
+                    "__class__": "datetime", 
+                    "month": 8, 
+                    "second": 39, 
+                    "microsecond": 0, 
+                    "year": 2016, 
+                    "day": 29, 
+                    "minute": 1
+                }, 
+                "id": "ft0o7fchi2", 
+                "name": "zappa-ttt888"
+            }, 
+            {
+                "description": "tmp-dev Zappa", 
+                "createdDate": {
+                    "hour": 21, 
+                    "__class__": "datetime", 
+                    "month": 8, 
+                    "second": 11, 
+                    "microsecond": 0, 
+                    "year": 2016, 
+                    "day": 20, 
+                    "minute": 5
+                }, 
+                "id": "k5ma488nef", 
+                "name": "tmp-dev"
+            }, 
+            {
+                "description": "django-test-dev Zappa", 
+                "createdDate": {
+                    "hour": 11, 
+                    "__class__": "datetime", 
+                    "month": 8, 
+                    "second": 29, 
+                    "microsecond": 0, 
+                    "year": 2016, 
+                    "day": 18, 
+                    "minute": 31
+                }, 
+                "id": "nsuh0pp4ih", 
+                "name": "django-test-dev"
+            }, 
+            {
+                "createdDate": {
+                    "hour": 11, 
+                    "__class__": "datetime", 
+                    "month": 7, 
+                    "second": 19, 
+                    "microsecond": 0, 
+                    "year": 2016, 
+                    "day": 9, 
+                    "minute": 23
+                }, 
+                "id": "vxhcswpdzl", 
+                "name": "DynamoDBOperations"
+            }
+        ], 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "RequestId": "a15d3f7a-6e0a-11e6-831b-43c278515a41", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "a15d3f7a-6e0a-11e6-831b-43c278515a41", 
+                "date": "Mon, 29 Aug 2016 17:04:21 GMT", 
+                "content-length": "488", 
+                "content-type": "application/json"
+            }
+        }
+    }
+}

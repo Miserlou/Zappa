@@ -1,4 +1,7 @@
-from cgi import parse_qs, escape
+from urlparse import parse_qs
+
+from werkzeug.utils import escape
+
 
 def hello_world(environ, start_response):
     parameters = parse_qs(environ.get('QUERY_STRING', ''))
@@ -11,6 +14,7 @@ def hello_world(environ, start_response):
     Hello {subject!s}!
 
 '''.format(**{'subject': subject})]
+
 
 def schedule_me():
     return "Hello!"

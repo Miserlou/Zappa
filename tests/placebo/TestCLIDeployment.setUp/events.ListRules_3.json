@@ -1,0 +1,33 @@
+{
+    "status_code": 200, 
+    "data": {
+        "Rules": [
+            {
+                "ScheduleExpression": "rate(1 minute)", 
+                "Name": "zappa-ttt888-tests.test_app.schedule_me", 
+                "RoleArn": "arn:aws:iam::611616856832:role/ZappaLambdaExecution", 
+                "State": "ENABLED", 
+                "Arn": "arn:aws:events:us-east-1:611616856832:rule/zappa-ttt888-tests.test_app.schedule_me", 
+                "Description": "tests.test_app.schedule_me"
+            }, 
+            {
+                "ScheduleExpression": "rate(5 minutes)", 
+                "Name": "zappa-ttt888-zappa-keep-warm-handler.keep_warm_callback", 
+                "RoleArn": "arn:aws:iam::611616856832:role/ZappaLambdaExecution", 
+                "State": "ENABLED", 
+                "Arn": "arn:aws:events:us-east-1:611616856832:rule/zappa-ttt888-zappa-keep-warm-handler.keep_warm_callback", 
+                "Description": "Zappa Keep Warm - zappa-ttt888"
+            }
+        ], 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "RequestId": "3f587a0a-6e0a-11e6-954f-f192c7564217", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "3f587a0a-6e0a-11e6-954f-f192c7564217", 
+                "date": "Mon, 29 Aug 2016 17:01:37 GMT", 
+                "content-length": "658", 
+                "content-type": "application/x-amz-json-1.1"
+            }
+        }
+    }
+}

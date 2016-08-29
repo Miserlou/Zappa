@@ -15,12 +15,17 @@ from werkzeug.wrappers import Response
 
 # This file may be copied into a project's root,
 # so handle both scenarios.
+
 try:
-    from zappa.cli import ZappaCLI
+    from zappa.commands.certify import _certify
+    from zappa.loader import ZappaLoader, DEFAULT_SETTINGS_FILE
+    from zappa.settings import Settings
     from zappa.middleware import ZappaWSGIMiddleware
     from zappa.wsgi import create_wsgi_request, common_log
 except ImportError as e: # pragma: no cover
-    from .cli import ZappaCLI
+    from .commands.certify import _certify
+    from .loader import ZappaLoader, DEFAULT_SETTINGS_FILE
+    from .settings import Settings
     from .middleware import ZappaWSGIMiddleware
     from .wsgi import create_wsgi_request, common_log
 
@@ -179,10 +184,9 @@ class LambdaHandler(object):
         import boto3
         session = boto3.Session()
 
-        z_cli = ZappaCLI()
-        z_cli.api_stage = self.settings.API_STAGE
-        z_cli.load_settings(session=session)
-        z_cli.certify()
+        settings = Settings.from_file(DEFAULT_SETTINGS_FILE)
+        loader = ZappaLoader(settings, self.settings.API_STAGE, session=session)
+        _certify(loader)
 
         return
 
@@ -195,6 +199,15 @@ class LambdaHandler(object):
         """
         settings = self.settings
 
+        # Let the system know that this will be a Lambda/Zappa/Stack
+        os.environ["SERVERTYPE"] = "AWS Lambda"
+        os.environ["FRAMEWORK"] = "Zappa"
+        try:
+            os.environ["PROJECT"] = settings.PROJECT_NAME
+            os.environ["STAGE"] = settings.API_STAGE
+        except Exception as e: # pragma: no cover
+            pass
+
         # If in DEBUG mode, log all raw incoming events.
         if settings.DEBUG:
             print('Zappa Event: {}'.format(event))
@@ -205,7 +218,7 @@ class LambdaHandler(object):
             level = logging.getLevelName(settings.LOG_LEVEL)
             logger.setLevel(level)
 
-        # This is the result of a keep alive, recertify 
+        # This is the result of a keep alive, recertify
         # or scheduled event.
         if event.get('detail-type') == u'Scheduled Event':
 
@@ -401,7 +414,7 @@ def keep_warm_callback(event, context):
     lambda_handler(event={}, context=context)  # overriding event with an empty one so that web app initialization will
     # be triggered.
 
-def certify_callback(event, context):   
+def certify_callback(event, context):
     """
     Load our LH settings and update our cert.
     """

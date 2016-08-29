@@ -1,0 +1,21 @@
+{
+    "status_code": 200, 
+    "data": {
+        "ScheduleExpression": "rate(5 minutes)", 
+        "Name": "zappa-ttt888-zappa-keep-warm-handler.keep_warm_callback", 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "RequestId": "ee40ef09-6e0a-11e6-a540-41d64d8d09a0", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "ee40ef09-6e0a-11e6-a540-41d64d8d09a0", 
+                "date": "Mon, 29 Aug 2016 17:06:29 GMT", 
+                "content-length": "341", 
+                "content-type": "application/x-amz-json-1.1"
+            }
+        }, 
+        "RoleArn": "arn:aws:iam::611616856832:role/ZappaLambdaExecution", 
+        "State": "ENABLED", 
+        "Arn": "arn:aws:events:us-east-1:611616856832:rule/zappa-ttt888-zappa-keep-warm-handler.keep_warm_callback", 
+        "Description": "Zappa Keep Warm - zappa-ttt888"
+    }
+}

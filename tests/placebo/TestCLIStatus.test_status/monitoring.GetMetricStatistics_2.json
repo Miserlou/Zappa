@@ -1,0 +1,60 @@
+{
+    "status_code": 200, 
+    "data": {
+        "Datapoints": [
+            {
+                "Timestamp": {
+                    "hour": 15, 
+                    "__class__": "datetime", 
+                    "month": 8, 
+                    "second": 0, 
+                    "microsecond": 0, 
+                    "year": 2016, 
+                    "day": 29, 
+                    "minute": 54
+                }, 
+                "Sum": 80.0, 
+                "Unit": "Count"
+            }, 
+            {
+                "Timestamp": {
+                    "hour": 16, 
+                    "__class__": "datetime", 
+                    "month": 8, 
+                    "second": 0, 
+                    "microsecond": 0, 
+                    "year": 2016, 
+                    "day": 29, 
+                    "minute": 18
+                }, 
+                "Sum": 86.0, 
+                "Unit": "Count"
+            }, 
+            {
+                "Timestamp": {
+                    "hour": 16, 
+                    "__class__": "datetime", 
+                    "month": 8, 
+                    "second": 0, 
+                    "microsecond": 0, 
+                    "year": 2016, 
+                    "day": 29, 
+                    "minute": 42
+                }, 
+                "Sum": 73.0, 
+                "Unit": "Count"
+            }
+        ], 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "RequestId": "ed971add-6e0a-11e6-a53a-454613c57450", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "ed971add-6e0a-11e6-a53a-454613c57450", 
+                "date": "Mon, 29 Aug 2016 17:06:28 GMT", 
+                "content-length": "748", 
+                "content-type": "text/xml"
+            }
+        }, 
+        "Label": "Errors"
+    }
+}

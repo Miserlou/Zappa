@@ -1,0 +1,21 @@
+{
+    "status_code": 200, 
+    "data": {
+        "items": [
+            {
+                "path": "/", 
+                "id": "yq6anql58k"
+            }
+        ], 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "RequestId": "407b2869-6e0a-11e6-831b-43c278515a41", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "407b2869-6e0a-11e6-831b-43c278515a41", 
+                "date": "Mon, 29 Aug 2016 17:01:39 GMT", 
+                "content-length": "42", 
+                "content-type": "application/json"
+            }
+        }
+    }
+}

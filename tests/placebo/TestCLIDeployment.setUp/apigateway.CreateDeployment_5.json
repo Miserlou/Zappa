@@ -1,0 +1,26 @@
+{
+    "status_code": 201, 
+    "data": {
+        "id": "54pixm", 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 201, 
+            "RequestId": "dcbf1f58-6e0a-11e6-8cb8-5da02a42206c", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "dcbf1f58-6e0a-11e6-8cb8-5da02a42206c", 
+                "date": "Mon, 29 Aug 2016 17:06:03 GMT", 
+                "content-length": "41", 
+                "content-type": "application/json"
+            }
+        }, 
+        "createdDate": {
+            "hour": 12, 
+            "__class__": "datetime", 
+            "month": 8, 
+            "second": 3, 
+            "microsecond": 0, 
+            "year": 2016, 
+            "day": 29, 
+            "minute": 6
+        }
+    }
+}

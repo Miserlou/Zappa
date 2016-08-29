@@ -1,0 +1,28 @@
+{
+    "status_code": 200, 
+    "data": {
+        "CodeSha256": "N5tBU5myZ4cg8aDzM/W9IrC4QvV3FDtEr+uoLnZvGuw=", 
+        "FunctionName": "zappa-ttt888", 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "RequestId": "c150e0a5-6e0a-11e6-beb6-a1baaff10c04", 
+            "HTTPHeaders": {
+                "date": "Mon, 29 Aug 2016 17:05:19 GMT", 
+                "x-amzn-requestid": "c150e0a5-6e0a-11e6-beb6-a1baaff10c04", 
+                "content-length": "505", 
+                "content-type": "application/json", 
+                "connection": "keep-alive"
+            }
+        }, 
+        "CodeSize": 4622804, 
+        "MemorySize": 512, 
+        "FunctionArn": "arn:aws:lambda:us-east-1:611616856832:function:zappa-ttt888:58", 
+        "Version": "58", 
+        "Role": "arn:aws:iam::611616856832:role/ZappaLambdaExecution", 
+        "Timeout": 30, 
+        "LastModified": "2016-08-29T17:05:18.400+0000", 
+        "Handler": "handler.lambda_handler", 
+        "Runtime": "python2.7", 
+        "Description": "Zappa Deployment"
+    }
+}

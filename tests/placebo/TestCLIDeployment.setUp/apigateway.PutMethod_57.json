@@ -1,0 +1,18 @@
+{
+    "status_code": 201, 
+    "data": {
+        "apiKeyRequired": false, 
+        "httpMethod": "DELETE", 
+        "authorizationType": "NONE", 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 201, 
+            "RequestId": "89dbc0d9-6e09-11e6-aaec-e994c773c0ae", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "89dbc0d9-6e09-11e6-aaec-e994c773c0ae", 
+                "date": "Mon, 29 Aug 2016 16:56:32 GMT", 
+                "content-length": "74", 
+                "content-type": "application/json"
+            }
+        }
+    }
+}

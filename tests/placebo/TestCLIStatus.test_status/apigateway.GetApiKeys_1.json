@@ -1,0 +1,43 @@
+{
+    "status_code": 200, 
+    "data": {
+        "items": [
+            {
+                "name": "IOS App", 
+                "enabled": true, 
+                "stageKeys": [], 
+                "lastUpdatedDate": {
+                    "hour": 12, 
+                    "__class__": "datetime", 
+                    "month": 8, 
+                    "second": 1, 
+                    "microsecond": 0, 
+                    "year": 2016, 
+                    "day": 12, 
+                    "minute": 7
+                }, 
+                "createdDate": {
+                    "hour": 12, 
+                    "__class__": "datetime", 
+                    "month": 8, 
+                    "second": 1, 
+                    "microsecond": 0, 
+                    "year": 2016, 
+                    "day": 12, 
+                    "minute": 7
+                }, 
+                "id": "fix8bsg73g"
+            }
+        ], 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "RequestId": "ee49c8cc-6e0a-11e6-aaec-e994c773c0ae", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "ee49c8cc-6e0a-11e6-aaec-e994c773c0ae", 
+                "date": "Mon, 29 Aug 2016 17:06:30 GMT", 
+                "content-length": "132", 
+                "content-type": "application/json"
+            }
+        }
+    }
+}

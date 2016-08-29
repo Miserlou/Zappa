@@ -1,0 +1,19 @@
+{
+    "status_code": 201, 
+    "data": {
+        "path": "/{parameter_1}", 
+        "pathPart": "{parameter_1}", 
+        "id": "un9wgw", 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 201, 
+            "RequestId": "1464888c-6e0a-11e6-9c91-534638e31ec6", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "1464888c-6e0a-11e6-9c91-534638e31ec6", 
+                "date": "Mon, 29 Aug 2016 17:00:25 GMT", 
+                "content-length": "91", 
+                "content-type": "application/json"
+            }
+        }, 
+        "parentId": "sh53aokyk9"
+    }
+}

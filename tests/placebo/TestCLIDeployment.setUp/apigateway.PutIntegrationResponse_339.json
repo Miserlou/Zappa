@@ -1,0 +1,27 @@
+{
+    "status_code": 201, 
+    "data": {
+        "statusCode": "301", 
+        "responseTemplates": {
+            "text/html": null
+        }, 
+        "selectionPattern": "https://.*|/.*", 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 201, 
+            "RequestId": "a97b7f66-6e0a-11e6-aaec-e994c773c0ae", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "a97b7f66-6e0a-11e6-aaec-e994c773c0ae", 
+                "date": "Mon, 29 Aug 2016 17:04:35 GMT", 
+                "content-length": "500", 
+                "content-type": "application/json"
+            }
+        }, 
+        "responseParameters": {
+            "method.response.header.Content-Type": "integration.response.body.Content-Type", 
+            "method.response.header.Location": "integration.response.body.errorMessage", 
+            "method.response.header.X-Frame-Options": "integration.response.body.X-Frame-Options", 
+            "method.response.header.Status": "integration.response.body.Status", 
+            "method.response.header.Set-Cookie": "integration.response.body.Set-Cookie"
+        }
+    }
+}
