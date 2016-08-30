@@ -28,7 +28,9 @@ import slugify
 import string
 import sys
 import tempfile
+import time
 import zipfile
+from dateutil import parser
 from datetime import datetime,timedelta
 from zappa import Zappa, logger
 from util import detect_django_settings, detect_flask_apps
@@ -314,6 +316,16 @@ class ZappaCLI(object):
         # Execute the prebuild script
         if self.prebuild_script:
             self.execute_prebuild_script()
+
+        # Temporary version check
+        updated_time = 1472581018
+        function_response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name)
+        conf = function_response['Configuration']
+        last_updated = parser.parse(conf['LastModified'])
+        last_updated_unix = time.mktime(last_updated.timetuple())
+
+        if last_updated_unix <= updated_time:
+            click.echo(click.style("Warning!", fg="red") + " You may have upgraded Zappa since deploying this application. You will need to " + click.style("redeploy", bold=True) + " for this deployment to work properly!")
 
         # Make sure the necessary IAM execution roles are available
         if self.manage_roles:
