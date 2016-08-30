@@ -1425,14 +1425,20 @@ class Zappa(object):
     def get_hosted_zone_id_for_domain(self, domain):
         """
         Get the Hosted Zone ID for a given domain.
+
         """
         all_zones = self.route53.list_hosted_zones()
+        return self._get_best_match_zone(all_zones, domain)
 
-        for zone in all_zones['HostedZones']:
-            if zone['Name'][:-1] in domain:
-                return zone['Id']
-
-        return None
+    @staticmethod
+    def _get_best_match_zone(all_zones, domain):
+        """Returns zone id which name is closer matched with domain name."""
+        zones = {zone['Name'][:-1]: zone['Id'] for zone in all_zones['HostedZones'] if zone['Name'][:-1] in domain}
+        if zones:
+            keys = max(zones.keys(), key=lambda a: len(a))  # get longest key -- best match.
+            return zones[keys]
+        else:
+            return None
 
     def set_dns_challenge_txt(self, zone_id, domain, txt_challenge):
         """
