@@ -1067,9 +1067,10 @@ class ZappaCLI(object):
 
                 # Copy our Django app into root of our package.
                 # It doesn't work otherwise.
-                base = __file__.rsplit(os.sep, 1)[0]
-                django_py = ''.join(os.path.join([base, os.sep, 'ext', os.sep, 'django.py']))
-                lambda_zip.write(django_py, 'django_zappa_app.py')
+                if self.django_settings:
+                    base = __file__.rsplit(os.sep, 1)[0]
+                    django_py = ''.join(os.path.join([base, os.sep, 'ext', os.sep, 'django.py']))
+                    lambda_zip.write(django_py, 'django_zappa_app.py')
 
                 # Lambda requires a specific chmod
                 temp_settings = tempfile.NamedTemporaryFile(delete=False)
