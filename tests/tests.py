@@ -500,6 +500,42 @@ class TestZappa(unittest.TestCase):
         # if os.path.isfile('zappa_settings.json'):
         #     os.remove('zappa_settings.json')
 
+    def test_domain_name_match(self):
+        # Simple sanity check
+        zone = Zappa._get_best_match_zone(all_zones={ 'HostedZones': [
+            {
+                'Name': 'example.com.au.',
+                'Id': 'zone-correct'
+            }
+        ]},
+            domain='www.example.com.au')
+        assert zone == 'zone-correct'
+
+        # No match test
+        zone = Zappa._get_best_match_zone(all_zones={'HostedZones': [
+            {
+                'Name': 'example.com.au.',
+                'Id': 'zone-incorrect'
+            }
+        ]},
+            domain='something-else.com.au')
+        assert zone is None
+
+        # More involved, better match should win.
+        zone = Zappa._get_best_match_zone(all_zones={'HostedZones': [
+            {
+                'Name': 'example.com.au.',
+                'Id': 'zone-incorrect'
+            },
+            {
+                'Name': 'subdomain.example.com.au.',
+                'Id': 'zone-correct'
+            }
+        ]},
+            domain='www.subdomain.example.com.au')
+        assert zone == 'zone-correct'
+
+
     ##
     # Let's Encrypt / ACME
     ##
