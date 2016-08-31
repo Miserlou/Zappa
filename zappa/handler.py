@@ -186,6 +186,26 @@ class LambdaHandler(object):
 
         return
 
+    def get_function_for_aws_event(self, record):
+        """
+        Get the associated function to execute for a triggered AWS event
+
+        Support S3, SNS, DynamoDB and kinesis events
+        """
+        if 's3' in record:
+            return record['s3']['configurationId']
+
+        arn = None
+        if 'Sns' in record:
+            arn = record['Sns'].get('TopicArn')
+        elif 'dynamodb' in record or 'kinesis' in record:
+            arn = record.get('eventSourceARN')
+
+        if arn:
+            return self.settings.AWS_EVENT_MAPPING.get(arn)
+
+        return None
+
     def handler(self, event, context):
         """
         An AWS Lambda function which parses specific API Gateway input into a
@@ -254,17 +274,15 @@ class LambdaHandler(object):
         elif event.get('Records', None):
 
             records = event.get('Records')
-            event_types = ['dynamodb', 'kinesis', 's3', 'sns', 'events']
-
+            result = None
             for record in records:
-                for event_type in event_types:
-                    if record.has_key(event_type):
-
-                        whole_function = record[event_type]['configurationId']
-                        app_function = self.import_module_and_get_function(whole_function)
-                        result = self.run_function(app_function, event, context)
-                        print(result)
-
+                whole_function = self.get_function_for_aws_event(record)
+                if whole_function:
+                    app_function = self.import_module_and_get_function(whole_function)
+                    result = self.run_function(app_function, event, context)
+                    logger.debug(result)
+                else:
+                    logger.error("Cannot find a function to process the triggered event.")
             return result
 
         try:

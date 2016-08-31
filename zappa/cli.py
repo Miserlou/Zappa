@@ -1077,6 +1077,16 @@ class ZappaCLI(object):
                 else:
                     settings_s = settings_s + "DJANGO_SETTINGS=None\n"
 
+                # AWS Events function mapping
+                event_mapping = {}
+                events = self.stage_config.get('events', [])
+                for event in events:
+                    arn = event.get('event_source', {}).get('arn')
+                    function = event.get('function')
+                    if arn and function:
+                        event_mapping[arn] = function
+                settings_s = settings_s + "AWS_EVENT_MAPPING={0!s}\n".format(event_mapping)
+
                 # Copy our Django app into root of our package.
                 # It doesn't work otherwise.
                 if self.django_settings:

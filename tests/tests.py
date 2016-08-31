@@ -397,19 +397,111 @@ class TestZappa(unittest.TestCase):
                 }
         lh.handler(event, None)
 
-        # Test AWS event
+        # Test AWS S3 event
         event = {
                     u'account': u'72333333333',
                     u'region': u'us-east-1',
                     u'detail': {},
-                    u'Records': [{'s3': {'configurationId': 'test_settings.aws_event'}}],
+                    u'Records': [{'s3': {'configurationId': 'test_settings.aws_s3_event'}}],
                     u'source': u'aws.events',
                     u'version': u'0',
                     u'time': u'2016-05-10T21:05:39Z',
                     u'id': u'0d6a6db0-d5e7-4755-93a0-750a8bf49d55',
                     u'resources': [u'arn:aws:events:us-east-1:72333333333:rule/tests.test_app.schedule_me']
                 }
-        lh.handler(event, None)
+        self.assertEqual("AWS S3 EVENT", lh.handler(event, None))
+
+        # Test AWS SNS event
+        event = {
+            u'account': u'72333333333',
+            u'region': u'us-east-1',
+            u'detail': {},
+            u'Records': [
+                {
+                    u'EventVersion': u'1.0',
+                    u'EventSource': u'aws:sns',
+                    u'EventSubscriptionArn': u'arn:aws:sns:EXAMPLE',
+                    u'Sns': {
+                        u'SignatureVersion': u'1',
+                        u'Timestamp': u'1970-01-01T00:00:00.000Z',
+                        u'Signature': u'EXAMPLE',
+                        u'SigningCertUrl': u'EXAMPLE',
+                        u'MessageId': u'95df01b4-ee98-5cb9-9903-4c221d41eb5e',
+                        u'Message': u'Hello from SNS!',
+                        u'Subject': u'TestInvoke',
+                        u'Type': u'Notification',
+                        u'UnsubscribeUrl': u'EXAMPLE',
+                        u'TopicArn': u'arn:aws:sns:1',
+                        u'MessageAttributes': {
+                            u'Test': {u'Type': u'String', u'Value': u'TestString'},
+                            u'TestBinary': {u'Type': u'Binary', u'Value': u'TestBinary'}
+                        }
+                    }
+                }
+            ]
+        }
+        self.assertEqual("AWS SNS EVENT", lh.handler(event, None))
+
+        # Test AWS DynamoDB event
+        event = {
+            u'Records': [
+                {
+                    u'eventID': u'1',
+                    u'eventVersion': u'1.0',
+                    u'dynamodb': {
+                        u'Keys': {u'Id': {u'N': u'101'}},
+                        u'NewImage': {u'Message': {u'S': u'New item!'}, u'Id': {u'N': u'101'}},
+                        u'StreamViewType': u'NEW_AND_OLD_IMAGES',
+                        u'SequenceNumber': u'111', u'SizeBytes': 26
+                    },
+                    u'awsRegion': u'us-west-2',
+                    u'eventName': u'INSERT',
+                    u'eventSourceARN': u'arn:aws:dynamodb:1',
+                    u'eventSource': u'aws:dynamodb'
+                }
+            ]
+        }
+        self.assertEqual("AWS DYNAMODB EVENT", lh.handler(event, None))
+
+        # Test AWS kinesis event
+        event = {
+            u'Records': [
+                {
+                    u'eventID': u'shardId-000000000000:49545115243490985018280067714973144582180062593244200961',
+                    u'eventVersion': u'1.0',
+                    u'kinesis': {
+                        u'partitionKey': u'partitionKey-3',
+                        u'data': u'SGVsbG8sIHRoaXMgaXMgYSB0ZXN0IDEyMy4=',
+                        u'kinesisSchemaVersion': u'1.0',
+                        u'sequenceNumber': u'49545115243490985018280067714973144582180062593244200961'
+                    },
+                    u'invokeIdentityArn': u'arn:aws:iam::EXAMPLE',
+                    u'eventName': u'aws:kinesis:record',
+                    u'eventSourceARN': u'arn:aws:kinesis:1',
+                    u'eventSource': u'aws:kinesis',
+                    u'awsRegion': u'us-east-1'
+                 }
+            ]
+        }
+        self.assertEqual("AWS KINESIS EVENT", lh.handler(event, None))
+
+        # Unhandled event
+        event = {
+            u'Records': [
+                {
+                    u'eventID': u'shardId-000000000000:49545115243490985018280067714973144582180062593244200961',
+                    u'eventVersion': u'1.0',
+                    u'kinesis': {
+                        u'partitionKey': u'partitionKey-3',
+                        u'data': u'SGVsbG8sIHRoaXMgaXMgYSB0ZXN0IDEyMy4=',
+                        u'kinesisSchemaVersion': u'1.0',
+                        u'sequenceNumber': u'49545115243490985018280067714973144582180062593244200961'
+                    },
+                    u'eventSourceARN': u'bad:arn:1',
+                }
+            ]
+        }
+        self.assertIsNone(lh.handler(event, None))
 
     ##
     # CLI

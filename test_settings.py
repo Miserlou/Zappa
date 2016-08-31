@@ -16,16 +16,39 @@ REMOTE_ENV_FILE='test_env.json'
 #}
 #
 
+AWS_EVENT_MAPPING = {
+    'arn:aws:s3:1': 'test_settings.aws_s3_event',
+    'arn:aws:sns:1': 'test_settings.aws_sns_event',
+    'arn:aws:dynamodb:1': 'test_settings.aws_dynamodb_event',
+    'arn:aws:kinesis:1': 'test_settings.aws_kinesis_event'
+}
+
 ENVIRONMENT_VARIABLES={'testenv': 'envtest'}
+
 
 def prebuild_me():
     print("This is a prebuild script!")
 
+
 def callback(self):
     print("this is a callback")
 
-def aws_event(event, contect):
-    print("AWS EVENT")
+
+def aws_s3_event(event, content):
+    return "AWS S3 EVENT"
+
+
+def aws_sns_event(event, content):
+    return "AWS SNS EVENT"
+
+
+def aws_dynamodb_event(event, content):
+    return "AWS DYNAMODB EVENT"
+
+
+def aws_kinesis_event(event, content):
+    return "AWS KINESIS EVENT"
+
 
 def command():
     print("command")
