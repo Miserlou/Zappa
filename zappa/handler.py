@@ -256,7 +256,7 @@ class LambdaHandler(object):
             from django.core import management
 
             try: # Support both for tests
-                from zappa.ext.django import get_django_wsgi
+                from zappa.ext.django_zappa import get_django_wsgi
             except ImportError as e: # pragma: no cover
                 from django_zappa_app import get_django_wsgi
 
