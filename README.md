@@ -167,7 +167,7 @@ You can also `rollback` the deployed code to a previous version by supplying the
 
 #### Scheduling
 
-Zappa can be used to easily schedule functions to occur on regular intervals.
+Zappa can be used to easily schedule functions to occur on regular intervals. This provides a much nicer, maintenance-free alternative to Celery!
 These functions will be packaged and deployed along with your `app_function` and called from the handler automatically.
 Just list your functions and the expression to schedule them using [cron or rate syntax](http://docs.aws.amazon.com/lambda/latest/dg/tutorial-scheduled-events-schedule-expressions.html) in your *zappa_settings.json* file:
 
