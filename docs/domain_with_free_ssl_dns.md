@@ -62,7 +62,7 @@ $ zappa certify
 
 And you're done! You can now use your SSL-secured Zappa application on your target domain.
 
-Note that the first time you run this command, it can take around 45 minutes for Amazon to create your domain, and it'll take about 60 seconds every time after that.
+**Please note** that the first time you run this command, it can take around 45 minutes for Amazon to create your domain, and it'll take about 60 seconds every time after that.
 
 Let's Encrypt certificates only last for 3 months, so make sure that you remember to renew in time.
 
