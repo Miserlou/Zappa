@@ -17,6 +17,8 @@ import zipfile
 
 import kappa
 from distutils.dir_util import copy_tree
+
+from botocore.exceptions import ClientError
 from lambda_packages import lambda_packages
 from tqdm import tqdm
 
@@ -1348,6 +1350,8 @@ class Zappa(object):
         'events' is a list of dictionaries, where the dict must contains the string
         of a 'function' and the string of the event 'expression', and an optional 'name' and 'description'.
         """
+        self._clear_policy(lambda_name)
+
         rules = self.events_client.list_rules(NamePrefix=lambda_name)
         for rule in rules['Rules']:
             rule_name = rule['Name']
@@ -1369,6 +1373,32 @@ class Zappa(object):
                                                 self.boto_session
                                             )
             print("Removed event " + name + ".")
+
+    def _clear_policy(self, lambda_name):
+        """
+        Removes obsolete policy statements to prevent policy from bloating over the limit after repeated updates.
+        """
+        try:
+            policy_response = self.lambda_client.get_policy(
+                FunctionName=lambda_name
+            )
+            if policy_response['ResponseMetadata']['HTTPStatusCode'] == 200:
+                statement = json.loads(policy_response['Policy'])['Statement']
+                for s in statement:
+                    delete_response = self.lambda_client.remove_permission(
+                        FunctionName=lambda_name,
+                        StatementId=s['Sid']
+                    )
+                    if delete_response['ResponseMetadata']['HTTPStatusCode'] != 204:
+                        logger.error('Failed to delete an obsolete policy statement: {}'.format())
+            else:
+                logger.debug('Failed to load Lambda function policy: {}'.format(policy_response))
+        except ClientError as e:
+            if e.message.find('ResourceNotFoundException') > -1:
+                logger.debug('No policy found, must be first run.')
+            else:
+                logger.error('Unexpected client error {}'.format(e.message))
+
 
     ##
     # CloudWatch Logging
