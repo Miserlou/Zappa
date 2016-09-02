@@ -305,7 +305,7 @@ class ZappaCLI(object):
 
         self.callback('post')
 
-        print("Deployed! {}".format(endpoint_url))
+        click.echo(click.style("Deployment complete", fg="green", bold=True) + "!: {}".format(endpoint_url))
 
 
     def update(self):
@@ -318,11 +318,15 @@ class ZappaCLI(object):
             self.execute_prebuild_script()
 
         # Temporary version check
-        updated_time = 1472581018
-        function_response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name)
-        conf = function_response['Configuration']
-        last_updated = parser.parse(conf['LastModified'])
-        last_updated_unix = time.mktime(last_updated.timetuple())
+        try:
+            updated_time = 1472581018
+            function_response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name)
+            conf = function_response['Configuration']
+            last_updated = parser.parse(conf['LastModified'])
+            last_updated_unix = time.mktime(last_updated.timetuple())
+        except Exception as e:
+            click.echo(click.style("Warning!", fg="red") + " Couldn't get function - have you deployed yet?")
+            return
 
         if last_updated_unix <= updated_time:
             click.echo(click.style("Warning!", fg="red") + " You may have upgraded Zappa since deploying this application. You will need to " + click.style("redeploy", bold=True) + " for this deployment to work properly!")
@@ -460,7 +464,7 @@ class ZappaCLI(object):
         if remove_logs:
             self.zappa.remove_lambda_function_logs(self.lambda_name)
 
-        print("Done!")
+        click.echo(click.style("Done", fg="green", bold=True) + "!")
 
     def schedule(self):
         """
