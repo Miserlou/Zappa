@@ -34,9 +34,17 @@ ERROR_CODES = [400, 401, 403, 404, 500]
 
 
 class WSGIException(Exception):
+    """
+    This exception is used by the handler to indicate that underlying WSGI app has returned a non-2xx(3xx) code.
+    """
     pass
 
+
 class UncaughtWSGIException(Exception):
+    """
+    Indicates a problem that happened outside of WSGI app context (and thus wasn't handled by the WSGI app itself)
+    while processing a request from API Gateway.
+    """
     def __init__(self, message, original=None):
         super(UncaughtWSGIException, self).__init__(message)
         self.original = original
