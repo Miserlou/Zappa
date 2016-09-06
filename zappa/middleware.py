@@ -127,7 +127,8 @@ class ZappaWSGIMiddleware(object):
 
         # If setting cookie on a 301/2,
         # return 200 and replace the content with a javascript redirector
-        if status != '200 OK':
+        redirect_statuses = ['301 Moved Permanently', '302 Found']
+        if status in redirect_statuses:
             for key, value in new_headers:
                 if key != 'Location':
                     continue
