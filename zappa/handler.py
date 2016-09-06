@@ -429,7 +429,7 @@ class LambdaHandler(object):
             # Print statements are visible in the logs either way
             print(e)
             exc_info = sys.exc_info()
-            message = 'Uncaught exception happened outside of WSGI app context. Check your Cloud Watch logs.'
+            message = 'Uncaught exception happened while servicing an APIGateway request. Check your Cloud Watch logs.'
 
             # If we didn't even build an app_module, just raise.
             if not settings.DJANGO_SETTINGS:
