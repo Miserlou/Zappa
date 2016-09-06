@@ -42,11 +42,14 @@
       - [Remote Environment Variables](#remote-environment-variables)
     - [Setting Integration Content-Type Aliases](#setting-integration-content-type-aliases)
     - [Catching Unhandled Exceptions](#catching-unhandled-exceptions)
+    - [Using Custom AWS IAM Roles and Policies](#using-custom-aws-iam-roles-and-policies)
 - [Zappa Guides](#zappa-guides)
 - [Zappa in the Press](#zappa-in-the-press)
 - [Sites Using Zappa](#sites-using-zappa)
+- [Related Projects](#related-projects)
 - [Hacks](#hacks)
 - [Contributing](#contributing)
+    - [Using a Local Repo](#using-a-local-repo)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
