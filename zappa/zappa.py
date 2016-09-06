@@ -122,12 +122,11 @@ ATTACH_POLICY = """{
         {
             "Effect": "Allow",
             "Action": [
-                "ec2:CreateNetworkInterface",
-                "ec2:DescribeInstances",
-                "ec2:CreateNetworkInterface",
                 "ec2:AttachNetworkInterface",
-                "ec2:DescribeNetworkInterfaces",
+                "ec2:CreateNetworkInterface",
                 "ec2:DeleteNetworkInterface",
+                "ec2:DescribeInstances",
+                "ec2:DescribeNetworkInterfaces",
                 "ec2:DetachNetworkInterface",
                 "ec2:ModifyNetworkInterfaceAttribute",
                 "ec2:ResetNetworkInterfaceAttribute"
