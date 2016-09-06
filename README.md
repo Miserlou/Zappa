@@ -509,6 +509,26 @@ def unhandled_exceptions(e, event, context):
 
 You'll still need a similar exception handler inside your application, this is just a way to catch exception which happen at the Zappa/WSGI layer (typically misconfigured settings, bad Lambda packages, and permissions issues.)
 
+#### Using Custom AWS IAM Roles and Policies
+
+By default, the Zappa client will create and manage the necessary IAM policies and roles to deploy and execute Zappa applications. However, if you're using Zappa in a corporate environment or as part of a continuous integration, you may instead want to manually manage your policies instead. 
+
+To manually define the permissions policy of your Zappa execution role, you must define the following in your *zappa_settings.json*:
+
+```javascript
+{
+    "dev": {
+        ...
+        "manage_roles": false, // Disable Zappa client managing roles.
+        "role_name": "MyLambdaRole", // Name of your Zappa execution role. Default ZappaExecutionRole.
+        ...
+    },
+    ...
+}
+```
+
+Ongoing discussion about the minimum policy requirements necessary for a Zappa deployment [can be found here](https://github.com/Miserlou/Zappa/issues/244).
+
 ## Zappa Guides
 
 * [Django-Zappa tutorial screencast](https://www.youtube.com/watch?v=plUrbPN0xc8&feature=youtu.be).
