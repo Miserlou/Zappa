@@ -122,7 +122,15 @@ ATTACH_POLICY = """{
         {
             "Effect": "Allow",
             "Action": [
-                "ec2:CreateNetworkInterface"
+                "ec2:CreateNetworkInterface",
+                "ec2:DescribeInstances",
+                "ec2:CreateNetworkInterface",
+                "ec2:AttachNetworkInterface",
+                "ec2:DescribeNetworkInterfaces",
+                "ec2:DeleteNetworkInterface",
+                "ec2:DetachNetworkInterface",
+                "ec2:ModifyNetworkInterfaceAttribute",
+                "ec2:ResetNetworkInterfaceAttribute"
             ],
             "Resource": "*"
         },
@@ -754,7 +762,7 @@ class Zappa(object):
                         content_mapping_templates[alias] = content_mapping_templates[content_type]
 
             if not self.credentials_arn:
-                self.get_credentials_arn()           
+                self.get_credentials_arn()
             credentials = self.credentials_arn  # This must be a Role ARN
 
             uri = 'arn:aws:apigateway:' + self.boto_session.region_name + ':lambda:path/2015-03-31/functions/' + lambda_arn + '/invocations'
@@ -1012,10 +1020,10 @@ class Zappa(object):
 
         return None
 
-    def create_domain_name( self, 
-                            domain_name, 
-                            certificate_name, 
-                            certificate_body, 
+    def create_domain_name( self,
+                            domain_name,
+                            certificate_name,
+                            certificate_body,
                             certificate_private_key,
                             certificate_chain,
                             lambda_name,
@@ -1077,9 +1085,9 @@ class Zappa(object):
         return response
 
     def update_domain_name( self,
-                            domain_name, 
-                            certificate_name, 
-                            certificate_body, 
+                            domain_name,
+                            certificate_name,
+                            certificate_body,
                             certificate_private_key,
                             certificate_chain,
                         ):
@@ -1089,7 +1097,7 @@ class Zappa(object):
 
         # Patch operations described here: https://tools.ietf.org/html/rfc6902#section-4
         # and here: http://boto3.readthedocs.io/en/latest/reference/services/apigateway.html#APIGateway.Client.update_domain_name
-        
+
         new_cert_name = 'LEZappa' + str(time.time())
         server_certificate = self.iam.create_server_certificate(
             ServerCertificateName=new_cert_name,
@@ -1274,9 +1282,9 @@ class Zappa(object):
                 svc = ','.join(event['event_source']['events'])
                 service = svc.split(':')[0]
 
-                self.create_event_permission(   
-                                                lambda_name, 
-                                                service + '.amazonaws.com', 
+                self.create_event_permission(
+                                                lambda_name,
+                                                service + '.amazonaws.com',
                                                 event['event_source']['arn']
                                             )
 
