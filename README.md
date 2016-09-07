@@ -512,9 +512,7 @@ def unhandled_exception(e, event, context):
 ```
 You may still need a similar exception handler inside your application, this is just a way to catch exception which happen at the Zappa/WSGI layer (typically event-based invocations, misconfigured settings, bad Lambda packages, and permissions issues).
 
-By default, AWS Lambda will attempt to retry an event based (non-API Gateway, e.g. CloudWatch) invocation if an exception has been thrown.
-
-As in example above, if your handler return value resolves to True, Zappa will not re-raise the uncaught exception, thus preventing AWS Lambda from retrying current invocation.
+By default, AWS Lambda will attempt to retry an event based (non-API Gateway, e.g. CloudWatch) invocation if an exception has been thrown. However, you can prevent this by returning True, as in example above, so Zappa that will not re-raise the uncaught exception, thus preventing AWS Lambda from retrying the current invocation.
 
 #### Using Custom AWS IAM Roles and Policies
 
