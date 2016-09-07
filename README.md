@@ -506,26 +506,15 @@ The function has to accept three arguments: exception, event, and context:
 
 your_module.py
 ```python
-def unhandled_exceptions(e, event, context):
+def unhandled_exception(e, event, context):
     send_to_raygun(e, event)  # gather data you need and send
+    return True # Prevent invocation retry
 ```
-You'll still need a similar exception handler inside your application, this is just a way to catch exception which happen at the Zappa/WSGI layer (typically event-based invocations, misconfigured settings, bad Lambda packages, and permissions issues).
+You may still need a similar exception handler inside your application, this is just a way to catch exception which happen at the Zappa/WSGI layer (typically event-based invocations, misconfigured settings, bad Lambda packages, and permissions issues).
 
-#### Preventing re-tries on event based invocations
+By default, AWS Lambda will attempt to retry an event based (non-API Gateway, e.g. CloudWatch) invocation if an exception has been thrown.
 
-By default AWS Lambda would re-try an event based (non-APIGateway, e.g. Cloud Watch) invocation if an exception has been thrown.
-To prevent that you can advise Zappa not to throw an exception via exception handler (see above):
-
-```python
-def unhandled_exceptions(e, event, context):
-    send_to_raygun(e, event)
-    return True  # return True to indicate that the problem has been taken care of.
-```
-
-As in example above, if your handler return value resolves to True, Zappa will not re-raise the uncaught exception, 
-thus preventing AWS Lambda from retrying current invocation.
-
-
+As in example above, if your handler return value resolves to True, Zappa will not re-raise the uncaught exception, thus preventing AWS Lambda from retrying current invocation.
 
 #### Using Custom AWS IAM Roles and Policies
 
