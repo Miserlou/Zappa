@@ -20,7 +20,7 @@ try:
     from zappa.cli import ZappaCLI
     from zappa.middleware import ZappaWSGIMiddleware
     from zappa.wsgi import create_wsgi_request, common_log
-except ImportError as e: # pragma: no cover
+except ImportError as e:  # pragma: no cover
     from .cli import ZappaCLI
     from .middleware import ZappaWSGIMiddleware
     from .wsgi import create_wsgi_request, common_log
@@ -37,6 +37,7 @@ class WSGIException(Exception):
     """
     This exception is used by the handler to indicate that underlying WSGI app has returned a non-2xx(3xx) code.
     """
+
     pass
 
 
@@ -45,6 +46,7 @@ class UncaughtWSGIException(Exception):
     Indicates a problem that happened outside of WSGI app context (and thus wasn't handled by the WSGI app itself)
     while processing a request from API Gateway.
     """
+
     def __init__(self, message, original=None):
         super(UncaughtWSGIException, self).__init__(message)
         self.original = original
@@ -64,7 +66,6 @@ class LambdaHandler(object):
 
     def __new__(cls, settings_name="zappa_settings", session=None):
         """Singleton instance to avoid repeat setup"""
-
         if LambdaHandler.__instance is None:
             LambdaHandler.__instance = object.__new__(cls, settings_name, session)
         return LambdaHandler.__instance
@@ -88,7 +89,7 @@ class LambdaHandler(object):
         try:
             os.environ["PROJECT"] = self.settings.PROJECT_NAME
             os.environ["STAGE"] = self.settings.API_STAGE
-        except Exception as e: # pragma: no cover
+        except Exception:  # pragma: no cover
             pass
 
         # Set any locally defined env vars
@@ -102,7 +103,6 @@ class LambdaHandler(object):
         sensitiZve or stage-specific configuration variables in s3 instead of
         version control.
         """
-
         if not self.session:
             boto_session = boto3.Session()
         else:
@@ -118,14 +118,14 @@ class LambdaHandler(object):
 
         try:
             content = remote_env_object['Body'].read().decode('utf-8')
-        except Exception as e: # pragma: no cover
+        except Exception as e:  # pragma: no cover
             # catch everything aws might decide to raise
             print('Exception while reading remote settings file.', e)
             return
 
         try:
             settings_dict = json.loads(content)
-        except (ValueError, TypeError): # pragma: no cover
+        except (ValueError, TypeError):  # pragma: no cover
             print('Failed to parse remote settings!')
             return
 
@@ -144,14 +144,13 @@ class LambdaHandler(object):
         Given a modular path to a function, import that module
         and return the function.
         """
-
         module, function = whole_function.rsplit('.', 1)
         app_module = importlib.import_module(module)
         app_function = getattr(app_module, function)
         return app_function
 
     @classmethod
-    def lambda_handler(cls, event, context): # pragma: no cover
+    def lambda_handler(cls, event, context):  # pragma: no cover
         handler = cls()
         exception_handler = handler.settings.EXCEPTION_HANDLER
         try:
@@ -210,7 +209,6 @@ class LambdaHandler(object):
         """
         Call 'certify' locally.
         """
-
         import boto3
         session = boto3.Session()
 
@@ -260,7 +258,7 @@ class LambdaHandler(object):
             level = logging.getLevelName(settings.LOG_LEVEL)
             logger.setLevel(level)
 
-        # This is the result of a keep alive, recertify 
+        # This is the result of a keep alive, recertify
         # or scheduled event.
         if event.get('detail-type') == u'Scheduled Event':
 
@@ -290,9 +288,9 @@ class LambdaHandler(object):
 
             from django.core import management
 
-            try: # Support both for tests
+            try:  # Support both for tests
                 from zappa.ext.django_zappa import get_django_wsgi
-            except ImportError as e: # pragma: no cover
+            except ImportError as e:  # pragma: no cover
                 from django_zappa_app import get_django_wsgi
 
             # Get the Django WSGI app from our extension
@@ -334,9 +332,9 @@ class LambdaHandler(object):
                 trailing_slash = False
             else:
 
-                try: # Support both for tests
+                try:  # Support both for tests
                     from zappa.ext.django import get_django_wsgi
-                except ImportError as e: # pragma: no cover
+                except ImportError as e:  # pragma: no cover
                     from django_zappa_app import get_django_wsgi
 
                 # Get the Django WSGI app from our extension
@@ -365,10 +363,11 @@ class LambdaHandler(object):
                     script_name = '/' + settings.API_STAGE
 
                 # Create the environment for WSGI and handle the request
-                environ = create_wsgi_request(event,
-                                                script_name=script_name,
-                                                trailing_slash=trailing_slash
-                                            )
+                environ = create_wsgi_request(
+                    event,
+                    script_name=script_name,
+                    trailing_slash=trailing_slash
+                )
 
                 # We are always on https on Lambda, so tell our wsgi app that.
                 environ['HTTPS'] = 'on'
@@ -418,13 +417,13 @@ class LambdaHandler(object):
                 common_log(environ, response, response_time=response_time_ms)
 
                 # Finally, return the response to API Gateway.
-                if exception: # pragma: no cover
+                if exception:  # pragma: no cover
                     raise WSGIException(exception)
                 else:
                     return zappa_returndict
-        except WSGIException as e: # pragma: no cover
+        except WSGIException as e:  # pragma: no cover
             raise e
-        except Exception as e: # pragma: no cover
+        except Exception as e:  # pragma: no cover
 
             # Print statements are visible in the logs either way
             print(e)
@@ -449,17 +448,17 @@ class LambdaHandler(object):
             raise UncaughtWSGIException(exception, original=e), None, exc_info[2]  # Keep original traceback.
 
 
-def lambda_handler(event, context): # pragma: no cover
+def lambda_handler(event, context):  # pragma: no cover
     return LambdaHandler.lambda_handler(event, context)
 
 
 def keep_warm_callback(event, context):
-    """This method is triggered by the CloudWatch event scheduled when keep_warm setting is set to true. """
+    """Method is triggered by the CloudWatch event scheduled when keep_warm setting is set to true."""
     lambda_handler(event={}, context=context)  # overriding event with an empty one so that web app initialization will
     # be triggered.
 
 
-def certify_callback(event, context):   
+def certify_callback(event, context):
     """
     Load our LH settings and update our cert.
     """
