@@ -11,6 +11,7 @@ import inspect
 import collections
 
 import boto3
+import sys
 from werkzeug.wrappers import Response
 
 # This file may be copied into a project's root,
@@ -31,8 +32,23 @@ logger.setLevel(logging.INFO)
 
 ERROR_CODES = [400, 401, 403, 404, 500]
 
-class LambdaException(Exception):
+
+class WSGIException(Exception):
+    """
+    This exception is used by the handler to indicate that underlying WSGI app has returned a non-2xx(3xx) code.
+    """
     pass
+
+
+class UncaughtWSGIException(Exception):
+    """
+    Indicates a problem that happened outside of WSGI app context (and thus wasn't handled by the WSGI app itself)
+    while processing a request from API Gateway.
+    """
+    def __init__(self, message, original=None):
+        super(UncaughtWSGIException, self).__init__(message)
+        self.original = original
+
 
 class LambdaHandler(object):
     """
@@ -122,7 +138,8 @@ class LambdaHandler(object):
                 ))
             os.environ[key] = value
 
-    def import_module_and_get_function(self, whole_function):
+    @staticmethod
+    def import_module_and_get_function(whole_function):
         """
         Given a modular path to a function, import that module
         and return the function.
@@ -136,21 +153,39 @@ class LambdaHandler(object):
     @classmethod
     def lambda_handler(cls, event, context): # pragma: no cover
         handler = cls()
+        exception_handler = handler.settings.EXCEPTION_HANDLER
         try:
             return handler.handler(event, context)
-        except LambdaException as lex:
+        except WSGIException as wsgi_ex:
             # do nothing about LambdaExceptions since those are already handled (or should be handled by the WSGI app).
-            raise lex
+            raise wsgi_ex
+        except UncaughtWSGIException as u_wsgi_ex:
+            # hand over original error to exception handler, since the exception happened outside of WSGI app context
+            # (it wasn't propertly processed by the app itself)
+            cls._process_exception(exception_handler=exception_handler,
+                                   event=event, context=context, exception=u_wsgi_ex.original)
+            # raise unconditionally since it's an API gateway error (i.e. client expects to see a 500 and execution
+            # won't be retried).
+            raise u_wsgi_ex
         except Exception as ex:
-            exception_handler = handler.settings.EXCEPTION_HANDLER
-            if exception_handler:
-                handler_function = handler.import_module_and_get_function(exception_handler)
-                try:
-                    handler_function(ex, event, context)
-                except Exception as cex:
-                    logger.error(msg='Failed to process exception via custom handler.')
-                    print(cex)
-            raise ex
+            exception_processed = cls._process_exception(exception_handler=exception_handler,
+                                                         event=event, context=context, exception=ex)
+            if not exception_processed:
+                # Only re-raise exception if handler directed so. Allows handler to control if lambda has to retry
+                # an event execution in case of failure.
+                raise ex
+
+    @classmethod
+    def _process_exception(cls, exception_handler, event, context, exception):
+        exception_processed = False
+        if exception_handler:
+            try:
+                handler_function = cls.import_module_and_get_function(exception_handler)
+                exception_processed = handler_function(exception, event, context)
+            except Exception as cex:
+                logger.error(msg='Failed to process exception via custom handler.')
+                print(cex)
+        return exception_processed
 
     @staticmethod
     def run_function(app_function, event, context):
@@ -384,31 +419,35 @@ class LambdaHandler(object):
 
                 # Finally, return the response to API Gateway.
                 if exception: # pragma: no cover
-                    raise LambdaException(exception)
+                    raise WSGIException(exception)
                 else:
                     return zappa_returndict
-        except LambdaException as e: # pragma: no cover
+        except WSGIException as e: # pragma: no cover
             raise e
         except Exception as e: # pragma: no cover
 
             # Print statements are visible in the logs either way
             print(e)
+            exc_info = sys.exc_info()
+            message = 'Uncaught exception happened while servicing an APIGateway request. Check your Cloud Watch logs.'
 
             # If we didn't even build an app_module, just raise.
             if not settings.DJANGO_SETTINGS:
                 try:
                     app_module
-                except NameError:
-                    raise e
+                except NameError as ne:
+                    message = 'Failed to import module: {}'.format(ne.message)
 
-            # Print the error to the browser upon failure?
-            if settings.DEBUG:
-                # Return this unspecified exception as a 500.
-                content = "<!DOCTYPE html>500. From Zappa: <pre>" + str(e) + "</pre><br /><pre>" + traceback.format_exc().replace('\n', '<br />') + "</pre>"
-                exception = base64.b64encode(content)
-                raise Exception(exception)
-            else:
-                raise e
+            # Return this unspecified exception as a 500, using template that API Gateway expects.
+            content = collections.OrderedDict()
+            content['http_status'] = 500
+            body = {'message': message}
+            if settings.DEBUG:  # only include traceback if debug is on.
+                body['traceback'] = traceback.format_exception(*exc_info)  # traceback as a list for readability.
+            content['content'] = base64.b64encode(json.dumps(body, sort_keys=True, indent=4).encode('utf-8'))
+            exception = json.dumps(content)
+            raise UncaughtWSGIException(exception, original=e), None, exc_info[2]  # Keep original traceback.
+
 
 def lambda_handler(event, context): # pragma: no cover
     return LambdaHandler.lambda_handler(event, context)
@@ -418,6 +457,7 @@ def keep_warm_callback(event, context):
     """This method is triggered by the CloudWatch event scheduled when keep_warm setting is set to true. """
     lambda_handler(event={}, context=context)  # overriding event with an empty one so that web app initialization will
     # be triggered.
+
 
 def certify_callback(event, context):   
     """
