@@ -578,6 +578,7 @@ class TestZappa(unittest.TestCase):
         if os.path.isfile('zappa_settings.json'):
             os.remove('zappa_settings.json')
 
+        # Test directly
         zappa_cli = ZappaCLI()
         # Via http://stackoverflow.com/questions/2617057/how-to-supply-stdin-files-and-environment-variable-inputs-to-python-unit-tests
         inputs = ['dev', 'lmbda', 'test_settings', '']
@@ -588,13 +589,15 @@ class TestZappa(unittest.TestCase):
         if os.path.isfile('zappa_settings.json'):
             os.remove('zappa_settings.json')
 
-        # with mock.patch('__builtin__.raw_input', lambda prompt: next(input_generator)):
-        #     zappa_cli = ZappaCLI()
-        #     argv = ['init']
-        #     zappa_cli.handle(argv)
+        # Test via handle()
+        input_generator = (i for i in inputs)
+        with mock.patch('__builtin__.raw_input', lambda prompt: next(input_generator)):
+            zappa_cli = ZappaCLI()
+            argv = ['init']
+            zappa_cli.handle(argv)
 
-        # if os.path.isfile('zappa_settings.json'):
-        #     os.remove('zappa_settings.json')
+        if os.path.isfile('zappa_settings.json'):
+            os.remove('zappa_settings.json')
 
     def test_domain_name_match(self):
         # Simple sanity check

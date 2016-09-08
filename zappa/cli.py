@@ -152,14 +152,18 @@ class ZappaCLI(object):
         command_env = vargs['command_env']
         command = command_env[0]
 
-        # Load and Validate Settings File
-        self.load_settings_file(vargs['settings_file'])
-
         if command not in CLI_COMMANDS:
             print("The command '{}' is not recognized. {}".format(command, help_message))
             return
 
+        # Settings-based interactions will fail
+        # before a project has been initialized.
         if command != 'init':
+
+            # Load our settings
+            self.load_settings(vargs['settings_file'])
+            self.callback('settings')
+
             if len(command_env) < 2: # pragma: no cover
                 # If there's only one environment defined in the settings,
                 # use that as the default.
@@ -170,10 +174,6 @@ class ZappaCLI(object):
                     return
             else:
                 self.api_stage = command_env[1]
-
-            # Load our settings
-            self.load_settings(vargs['settings_file'])
-            self.callback('settings')
 
             if vargs['app_function'] is not None:
                 self.app_function = vargs['app_function']
