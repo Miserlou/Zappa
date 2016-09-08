@@ -50,6 +50,7 @@
 - [Hacks](#hacks)
 - [Contributing](#contributing)
     - [Using a Local Repo](#using-a-local-repo)
+- [Support / Development / Training / Consulting](#support--development--training--consulting)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -590,3 +591,15 @@ Please also write comments along with your new code, including the URL of the ti
 #### Using a Local Repo
 
 To use the git HEAD, you *can't* use `pip install -e `. Instead, you should clone the repo to your machine and then `pip install /path/to/zappa/repo` or `ln -s /path/to/zappa/repo/zappa zappa` in your local project.
+
+## Support / Development / Training / Consulting
+
+Do you need help with..
+ 
+  * Porting existing Flask and Django applications to Zappa?
+  * Building new applications and services that scale infinitely?
+  * Reducing your operations and hosting costs?
+  * Adding new custom features into Zappa?
+  * Training your team to use AWS and other server-less paradigms?
+
+Good news! We're currently available for remote and on-site consulting for small, large and enterprise teams. Please contact <miserlou@gmail.com> with your needs and let's work together!
