@@ -152,14 +152,15 @@ class ZappaCLI(object):
         command_env = vargs['command_env']
         command = command_env[0]
 
+        # Load and Validate Settings File
+        self.load_settings_file(vargs['settings_file'])
+
         if command not in CLI_COMMANDS:
             print("The command '{}' is not recognized. {}".format(command, help_message))
             return
 
         if command != 'init':
             if len(command_env) < 2: # pragma: no cover
-                self.load_settings_file(vargs['settings_file'])
-
                 # If there's only one environment defined in the settings,
                 # use that as the default.
                 if len(self.zappa_settings.keys()) is 1:
@@ -1007,7 +1008,10 @@ class ZappaCLI(object):
         """
 
         with open(settings_file) as json_file:
-            self.zappa_settings = json.load(json_file)
+            try:
+                self.zappa_settings = json.load(json_file)
+            except ValueError:
+                raise ValueError("Unable to load the zappa settings JSON. It may be malformed.")
 
     def create_package(self):
         """
