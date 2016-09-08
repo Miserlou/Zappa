@@ -160,9 +160,8 @@ class ZappaCLI(object):
         # before a project has been initialized.
         if command != 'init':
 
-            # Load our settings
-            self.load_settings(vargs['settings_file'])
-            self.callback('settings')
+             # Load and Validate Settings File
+            self.load_settings_file(vargs['settings_file'])
 
             if len(command_env) < 2: # pragma: no cover
                 # If there's only one environment defined in the settings,
@@ -177,6 +176,11 @@ class ZappaCLI(object):
 
             if vargs['app_function'] is not None:
                 self.app_function = vargs['app_function']
+
+            # Load our settings
+            self.load_settings(vargs['settings_file'])
+            self.callback('settings')
+
 
         # Hand it off
         if command == 'deploy': # pragma: no cover
@@ -304,7 +308,7 @@ class ZappaCLI(object):
 
         # Finally, delete the local copy our zip package
         if self.stage_config.get('delete_local_zip', True):
-            os.remove(self.zip_path)
+            self.remove_local_zip()
 
         # Remove the uploaded zip from S3, because it is now registered..
         if self.stage_config.get('delete_s3_zip', True):
@@ -372,7 +376,7 @@ class ZappaCLI(object):
 
         # Finally, delete the local copy our zip package
         if self.stage_config.get('delete_local_zip', True):
-            os.remove(self.zip_path)
+            self.remove_local_zip()
 
         if self.stage_config.get('domain', None):
             endpoint_url = self.stage_config.get('domain')
@@ -1137,10 +1141,6 @@ class ZappaCLI(object):
         if self.stage_config.get('delete_s3_zip', True):
             self.zappa.remove_from_s3(self.zip_path, self.s3_bucket_name)
 
-        # Finally, delete the local copy our zip package
-        if self.stage_config.get('delete_local_zip', True):
-            os.remove(self.zip_path)
-
     def print_logs(self, logs):
         """
         Parse, filter and print logs to the console.
@@ -1203,16 +1203,19 @@ def handle(): # pragma: no cover
     except SystemExit as e: # pragma: no cover
         if cli.zip_path:
             cli.remove_uploaded_zip()
+            cli.remove_local_zip()
 
         sys.exit(e.code)
 
     except KeyboardInterrupt: # pragma: no cover
         if cli.zip_path: # Remove the Zip from S3 upon failure.
             cli.remove_uploaded_zip()
+            cli.remove_local_zip()
         sys.exit(130)
     except Exception as e:
         if cli.zip_path: # Remove the Zip from S3 upon failure.
             cli.remove_uploaded_zip()
+            cli.remove_local_zip()
 
         click.echo("Oh no! An " + click.style("error occured", fg='red', bold=True) + "! :(")
         click.echo("\n==============\n")
