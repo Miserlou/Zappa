@@ -604,7 +604,7 @@ Do you need help with..
 
 Good news! We're currently available for remote and on-site consulting for small, large and enterprise teams. Please contact <miserlou@gmail.com> with your needs and let's work together!
 
-
+<br />
 <p align="center">
   <a href="https://gun.io"><img src="http://i.imgur.com/M7wJipR.png" alt="Made by Gun.io"/></a>
 </p>
