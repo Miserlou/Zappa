@@ -603,3 +603,8 @@ Do you need help with..
   * Training your team to use AWS and other server-less paradigms?
 
 Good news! We're currently available for remote and on-site consulting for small, large and enterprise teams. Please contact <miserlou@gmail.com> with your needs and let's work together!
+
+<p align="center">
+  <a href="https://gun.io"><img src="hhttp://i.imgur.com/4OjpK02.png" alt="Made by Gun.io"/></a>
+</p>
+
