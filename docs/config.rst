@@ -114,10 +114,16 @@ debug
 
 This boolean setting governs whether Zappa configuration errors tracebacks are to appear in HTTP 500 error pages.
 
-delete_zip
+
+delete_local_zip
 ==========
 
-This boolean setting specifies wheter to delete the local zip archive after code updates.
+This boolean setting specifies whether to delete the local zip archive after code updates.
+
+delete_s3_zip
+==========
+
+This boolean setting specifies whether to delete the s3 zip archive after code updates.
 
 domain
 ======
