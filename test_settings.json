@@ -7,7 +7,7 @@
            "post": "test_settings.callback",
            "zip": "test_settings.callback"
        },
-       "delete_zip": true,
+       "delete_local_zip": true,
        "debug": true,
        "parameter_depth": 2, 
        "prebuild_script": "test_settings.prebuild_me",
@@ -35,7 +35,7 @@
            "post": "test_settings.callback",
            "zip": "test_settings.callback"
        },
-       "delete_zip": true,
+       "delete_local_zip": true,
        "debug": true,
        "parameter_depth": 2, 
        "prebuild_script": "test_settings.prebuild_me",

@@ -312,7 +312,8 @@ to change Zappa's behavior. Use these at your own risk!
         "cloudwatch_data_trace": false, // Logs all data about received events.
         "cloudwatch_metrics_enabled": false, // Additional metrics for the API Gateway.
         "debug": true, // Print Zappa configuration errors tracebacks in the 500
-        "delete_zip": true, // Delete the local zip archive after code updates
+        "delete_local_zip": true, // Delete the local zip archive after code updates
+        "delete_s3_zip": true, // Delete the s3 zip archive
         "django_settings": "your_project.production_settings", // The modular path to your Django project's settings. For Django projects only.
         "domain": "yourapp.yourdomain.com", // Required if you're using a domain
         "environment_variables": {"your_key": "your_value"}, // A dictionary of environment variables that will be available to your deployed app. See also "remote_env_file". Default {}.
