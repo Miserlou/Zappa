@@ -543,6 +543,10 @@ class TestZappa(unittest.TestCase):
         argv = '-s test_settings.json derp ttt888'.split()
         zappa_cli.handle(argv)
 
+    def test_bad_json_catch(self):
+        zappa_cli = ZappaCLI()
+        self.assertRaises(ValueError, zappa_cli.load_settings_file('tests/test_bad_settings.json'))
+
     @placebo_session
     def test_cli_aws(self, session):
         zappa_cli = ZappaCLI()
