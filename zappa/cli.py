@@ -397,7 +397,25 @@ class ZappaCLI(object):
 
         if endpoint_url and 'https://' not in endpoint_url:
             endpoint_url = 'https://' + endpoint_url
-        click.echo("Your updated Zappa deployment is " + click.style("live", fg='green', bold=True) + "!: {}".format(endpoint_url))
+
+        deployed_string = "Your updated Zappa deployment is " + click.style("live", fg='green', bold=True) + "!: " + click.style("{}".format(endpoint_url), bold=True)
+        
+        api_url = None
+        if 'amazonaws.com' not in endpoint_url:
+            api_url = self.zappa.get_api_url(
+                self.lambda_name,
+                self.api_stage)
+
+            if endpoint_url != api_url:
+                deployed_string = deployed_string + " (" + api_url + ")"
+
+        if self.stage_config.get('touch', True):
+            if api_url:
+                requests.get(api_url)
+            else: 
+                requests.get(endpoint_url)
+
+        click.echo(deployed_string)
 
         return
 

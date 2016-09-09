@@ -64,6 +64,11 @@ class LambdaHandler(object):
     settings_name = None
     session = None
 
+    # Application
+    app_module = None
+    wsgi_app = None
+    trailing_slash = False
+
     def __new__(cls, settings_name="zappa_settings", session=None):
         """Singleton instance to avoid repeat setup"""
         if LambdaHandler.__instance is None:
@@ -72,29 +77,52 @@ class LambdaHandler(object):
 
     def __init__(self, settings_name="zappa_settings", session=None):
 
-        # Loading settings from a python module
-        self.settings = importlib.import_module(settings_name)
-        self.settings_name = settings_name
-        self.session = session
+        # We haven't cached our settings yet, load the settings and app.
+        if not self.settings:
+            # Loading settings from a python module
+            self.settings = importlib.import_module(settings_name)
+            self.settings_name = settings_name
+            self.session = session
 
-        remote_bucket = getattr(self.settings, 'REMOTE_ENV_BUCKET', None)
-        remote_file = getattr(self.settings, 'REMOTE_ENV_FILE', None)
+            remote_bucket = getattr(self.settings, 'REMOTE_ENV_BUCKET', None)
+            remote_file = getattr(self.settings, 'REMOTE_ENV_FILE', None)
 
-        if remote_bucket and remote_file:
-            self.load_remote_settings(remote_bucket, remote_file)
+            if remote_bucket and remote_file:
+                self.load_remote_settings(remote_bucket, remote_file)
 
-        # Let the system know that this will be a Lambda/Zappa/Stack
-        os.environ["SERVERTYPE"] = "AWS Lambda"
-        os.environ["FRAMEWORK"] = "Zappa"
-        try:
-            os.environ["PROJECT"] = self.settings.PROJECT_NAME
-            os.environ["STAGE"] = self.settings.API_STAGE
-        except Exception:  # pragma: no cover
-            pass
+            # Let the system know that this will be a Lambda/Zappa/Stack
+            os.environ["SERVERTYPE"] = "AWS Lambda"
+            os.environ["FRAMEWORK"] = "Zappa"
+            try:
+                os.environ["PROJECT"] = self.settings.PROJECT_NAME
+                os.environ["STAGE"] = self.settings.API_STAGE
+            except Exception:  # pragma: no cover
+                pass
 
-        # Set any locally defined env vars
-        for key in self.settings.ENVIRONMENT_VARIABLES.keys():
-            os.environ[key] = self.settings.ENVIRONMENT_VARIABLES[key]
+            # Set any locally defined env vars
+            for key in self.settings.ENVIRONMENT_VARIABLES.keys():
+                os.environ[key] = self.settings.ENVIRONMENT_VARIABLES[key]
+
+            # Django gets special treatment.
+            if not self.settings.DJANGO_SETTINGS:
+                # The app module
+                self.app_module = importlib.import_module(self.settings.APP_MODULE)
+
+                # The application
+                wsgi_app_function = getattr(self.app_module, self.settings.APP_FUNCTION)
+                self.trailing_slash = False
+            else:
+
+                try:  # Support both for tests
+                    from zappa.ext.django import get_django_wsgi
+                except ImportError as e:  # pragma: no cover
+                    from django_zappa_app import get_django_wsgi
+
+                # Get the Django WSGI app from our extension
+                wsgi_app_function = get_django_wsgi(self.settings.DJANGO_SETTINGS)
+                self.trailing_slash = True
+
+            self.wsgi_app = ZappaWSGIMiddleware(wsgi_app_function)
 
     def load_remote_settings(self, remote_bucket, remote_file):
         """
@@ -318,30 +346,10 @@ class LambdaHandler(object):
                     logger.error("Cannot find a function to process the triggered event.")
             return result
 
+        # Normal web app flow
         try:
             # Timing
             time_start = datetime.datetime.now()
-
-            # Django gets special treatment.
-            if not settings.DJANGO_SETTINGS:
-                # The app module
-                app_module = importlib.import_module(settings.APP_MODULE)
-
-                # The application
-                app_function = getattr(app_module, settings.APP_FUNCTION)
-                trailing_slash = False
-            else:
-
-                try:  # Support both for tests
-                    from zappa.ext.django import get_django_wsgi
-                except ImportError as e:  # pragma: no cover
-                    from django_zappa_app import get_django_wsgi
-
-                # Get the Django WSGI app from our extension
-                app_function = get_django_wsgi(settings.DJANGO_SETTINGS)
-                trailing_slash = True
-
-            app = ZappaWSGIMiddleware(app_function)
 
             # This is a normal HTTP request
             if event.get('method', None):
@@ -366,7 +374,7 @@ class LambdaHandler(object):
                 environ = create_wsgi_request(
                     event,
                     script_name=script_name,
-                    trailing_slash=trailing_slash
+                    trailing_slash=self. trailing_slash
                 )
 
                 # We are always on https on Lambda, so tell our wsgi app that.
@@ -375,7 +383,7 @@ class LambdaHandler(object):
                 environ['lambda.context'] = context
 
                 # Execute the application
-                response = Response.from_app(app, environ)
+                response = Response.from_app(self.wsgi_app, environ)
 
                 # This is the object we're going to return.
                 # Pack the WSGI response into our special dictionary.
@@ -433,7 +441,7 @@ class LambdaHandler(object):
             # If we didn't even build an app_module, just raise.
             if not settings.DJANGO_SETTINGS:
                 try:
-                    app_module
+                    self.app_module
                 except NameError as ne:
                     message = 'Failed to import module: {}'.format(ne.message)
 
