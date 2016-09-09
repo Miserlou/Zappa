@@ -401,7 +401,7 @@ class ZappaCLI(object):
         deployed_string = "Your updated Zappa deployment is " + click.style("live", fg='green', bold=True) + "!: " + click.style("{}".format(endpoint_url), bold=True)
         
         api_url = None
-        if 'amazonaws.com' not in endpoint_url:
+        if endpoint_url and 'amazonaws.com' not in endpoint_url:
             api_url = self.zappa.get_api_url(
                 self.lambda_name,
                 self.api_stage)
@@ -412,7 +412,7 @@ class ZappaCLI(object):
         if self.stage_config.get('touch', True):
             if api_url:
                 requests.get(api_url)
-            else: 
+            elif endpoint_url: 
                 requests.get(endpoint_url)
 
         click.echo(deployed_string)
