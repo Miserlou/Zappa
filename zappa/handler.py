@@ -374,7 +374,7 @@ class LambdaHandler(object):
                 environ = create_wsgi_request(
                     event,
                     script_name=script_name,
-                    trailing_slash=self. trailing_slash
+                    trailing_slash=self.trailing_slash
                 )
 
                 # We are always on https on Lambda, so tell our wsgi app that.
