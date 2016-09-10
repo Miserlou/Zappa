@@ -127,6 +127,8 @@ Enabling Secure Endpoints on API Gateway
 
 You can use the ``api_key_required`` setting to generate and assign an API key to all the routes of your API Gateway. After redeployment, you can then pass the provided key as a header called ``x-api-key`` to access the restricted endpoints. Without the ``x-api-key`` header, you will receive a 403. See `more information on API keys in the API Gateway <http://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-api-keys.html>`_. 
 
+You can enable IAM-based (v4 signing) authorization on an API by setting the ``authorization_type`` setting to ``AWS_IAM``. Your API will then require signed requests and access can be controlled via `IAM policy <https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-iam-policy-examples.html>`. Unsigned requests will receive a 403 response, as will requesters who are not authorized to access the API.
+
 Deploying to a Domain With a Let's Encrypt Certificate
 ======================================================
 
