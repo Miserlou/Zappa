@@ -113,7 +113,7 @@ Next, you'll need to define your local and server-side settings.
 
     $ zappa init
 
-This will automatically detect your application type (Flask, Django, etc.) and help you define your deployment configuration settings. Once you finish initialization, you'll have a file named *zappa_settings.json* in your project directory defining your basic deployment settings. It will probably look something like this for most WSGI apps:
+This will automatically detect your application type (Flask/Django - Pyramid users [see here](https://github.com/Miserlou/Zappa/issues/278#issuecomment-241917956)) and help you define your deployment configuration settings. Once you finish initialization, you'll have a file named *zappa_settings.json* in your project directory defining your basic deployment settings. It will probably look something like this for most WSGI apps:
 
 ```javascript
 {
@@ -231,6 +231,22 @@ And then:
     $ zappa schedule production
 
 And now your function will execute every time a new upload appears in your bucket!
+
+Similarly, for a [Simple Notification Service](https://aws.amazon.com/sns/) event:
+
+```javascript
+        "events": [
+            {
+                "function": "your_module.your_function",
+                "event_source": {
+                    "arn":  "arn:aws:sns:::your-event-topic-arn",
+                    "events": [
+                        "sns:Publish"
+                    ]
+                }
+            }
+        ]
+```
 
 #### Undeploy
 
