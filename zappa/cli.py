@@ -181,7 +181,6 @@ class ZappaCLI(object):
             self.load_settings(vargs['settings_file'])
             self.callback('settings')
 
-
         # Hand it off
         if command == 'deploy': # pragma: no cover
             self.deploy()
@@ -281,7 +280,12 @@ class ZappaCLI(object):
         if self.use_apigateway:
             # Create and configure the API Gateway
             api_id = self.zappa.create_api_gateway_routes(
-                self.lambda_arn, self.lambda_name, self.api_key_required, self.integration_content_type_aliases)
+                self.lambda_arn,
+                self.lambda_name,
+                self.api_key_required,
+                self.integration_content_type_aliases,
+                self.authorization_type,
+            )
 
             # Deploy the API!
             cache_cluster_enabled = self.stage_config.get('cache_cluster_enabled', False)
@@ -998,10 +1002,10 @@ class ZappaCLI(object):
             self.api_stage].get('django_settings', None)
         self.manage_roles = self.zappa_settings[
             self.api_stage].get('manage_roles', True)
-        self.api_key_required = self.zappa_settings[
-            self.api_stage].get('api_key_required', False)
+        self.api_key_required = self.stage_config.get('api_key_required', False)
         self.api_key = self.zappa_settings[
             self.api_stage].get('api_key')
+        self.authorization_type = self.stage_config.get('authorization_type', 'NONE')
         self.lambda_description = self.zappa_settings[
             self.api_stage].get('lambda_description', "Zappa Deployment")
         self.environment_variables = self.zappa_settings[

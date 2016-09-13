@@ -11,6 +11,7 @@ Envirnments, such as *dev*, *staging*, and *production* are configured in the *z
             "api_key_required": false, // enable securing API Gateway endpoints with x-api-key header (default False)
             "assume_policy": "my_assume_policy.json", //
             "attach_policy": "my_attach_policy.json", // optional, IAM attach policy JSON file
+            "authorization_type": "NONE", // optional, use "AWS_IAM" to require request signing
             "aws_region": "us-east-1",
             "cache_cluster_enabled": false,
             "cache_cluster_size": .5,
@@ -82,6 +83,10 @@ assume_policy
 attach_policy
 =============
 (Optional) IAM attach policy JSON file
+
+authorization_type
+==================
+(Optional) Default `NONE`. Use `AWS_IAM` to require signed requests
 
 callbacks
 =========

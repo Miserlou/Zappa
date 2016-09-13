@@ -667,7 +667,7 @@ class Zappa(object):
     ##
 
     def create_api_gateway_routes(self, lambda_arn, api_name=None, api_key_required=False,
-                                  integration_content_type_aliases=None):
+                                  integration_content_type_aliases=None, authorization_type='NONE'):
         """
         Creates the API Gateway for this Zappa deployment.
 
@@ -711,7 +711,7 @@ class Zappa(object):
         if not root_id: # pragma: no cover
             return False
         self.create_and_setup_methods(api_id, root_id, lambda_arn, progress.update, api_key_required,
-                                      integration_content_type_aliases)
+                                      integration_content_type_aliases, authorization_type)
 
         parent_id = root_id
         for i in range(1, self.parameter_depth):
@@ -725,12 +725,12 @@ class Zappa(object):
             parent_id = resource_id
 
             self.create_and_setup_methods(api_id, resource_id, lambda_arn, progress.update, api_key_required,
-                                          integration_content_type_aliases) # pragma: no cover
+                                          integration_content_type_aliases, authorization_type) # pragma: no cover
 
         return api_id
 
     def create_and_setup_methods(self, api_id, resource_id, lambda_arn, report_progress, api_key_required,
-                                 integration_content_type_aliases):
+                                 integration_content_type_aliases, authorization_type):
         """
         Sets up the methods, integration responses and method responses for a given API Gateway resource.
 
@@ -739,11 +739,11 @@ class Zappa(object):
         """
         for method in self.http_methods:
             response = self.apigateway_client.put_method(
-                    restApiId=api_id,
-                    resourceId=resource_id,
-                    httpMethod=method,
-                    authorizationType='none',
-                    apiKeyRequired=api_key_required
+                restApiId=api_id,
+                resourceId=resource_id,
+                httpMethod=method,
+                authorizationType=authorization_type,
+                apiKeyRequired=api_key_required
             )
             report_progress()
 
