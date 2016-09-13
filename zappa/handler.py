@@ -84,6 +84,11 @@ class LambdaHandler(object):
             self.settings_name = settings_name
             self.session = session
 
+            # Custom log level
+            if self.settings.LOG_LEVEL:
+                level = logging.getLevelName(self.settings.LOG_LEVEL)
+                logger.setLevel(level)
+
             remote_bucket = getattr(self.settings, 'REMOTE_ENV_BUCKET', None)
             remote_file = getattr(self.settings, 'REMOTE_ENV_FILE', None)
 
@@ -280,11 +285,6 @@ class LambdaHandler(object):
         if settings.DEBUG:
             print('Zappa Event: {}'.format(event))
             logger.debug('Zappa Event: {}'.format(event))
-
-        # Custom log level
-        if settings.LOG_LEVEL:
-            level = logging.getLevelName(settings.LOG_LEVEL)
-            logger.setLevel(level)
 
         # This is the result of a keep alive, recertify
         # or scheduled event.
