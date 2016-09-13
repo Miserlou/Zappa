@@ -53,6 +53,7 @@ class ZappaWSGIMiddleware(object):
         only passing cookies that are still valid to the WSGI app.
         """
         self.start_response = start_response
+        self.redirect_content = None # Make sure that nothing is cached from a previous request
 
         # Parse cookies from the WSGI environment
         parsed = parse_cookie(environ)
