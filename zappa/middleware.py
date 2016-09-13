@@ -21,9 +21,10 @@ REDIRECT_HTML = """<!DOCTYPE HTML>
     </body>
 </html>"""
 
+
 class ZappaWSGIMiddleware(object):
 
-    # Unpacked / Before Packed Cookies 
+    # Unpacked / Before Packed Cookies
     decoded_zappa = None
     request_cookies = {}
 
@@ -76,7 +77,7 @@ class ZappaWSGIMiddleware(object):
 
         # Call the application with our modifier
         response = self.application(environ, self.encode_response)
-        
+
         # If we have a redirect, smash in our response content.
         if self.redirect_content:
             response = [self.redirect_content for item in response]
@@ -96,13 +97,17 @@ class ZappaWSGIMiddleware(object):
             - Injecting redirect HTML if setting a Cookie on a redirect.
 
         """
-
         # All the non-cookie headers should be sent unharmed.
         new_headers = [(header[0], header[1]) for header in headers if header[0] != 'Set-Cookie']
 
         # Filter the headers for Set-Cookie header
-        cookie_dicts = [{header[1].split('=', 1)[0].strip():header[1].split('=',1)[1]} for header in headers if header[0] == 'Set-Cookie']
-        
+        cookie_dicts = [
+            {header[1].split('=', 1)[0].strip():header[1].split('=', 1)[1]}
+            for header
+            in headers
+            if header[0] == 'Set-Cookie'
+        ]
+
         # Update request_cookies with cookies from the response. If there are
         # multiple occuring cookies, the last one present in the headers wins.
         map(self.request_cookies.update, cookie_dicts)
@@ -117,12 +122,12 @@ class ZappaWSGIMiddleware(object):
         # JSON-ify the cookie and encode it.
         pack_s = json.dumps(self.request_cookies)
         encoded = base58.b58encode(pack_s)
-        
+
         # Set the result as the zappa cookie
         new_headers.append(
-            ('Set-Cookie', dump_cookie('zappa', 
-                        value=encoded, 
-                        expires=expires)
+            (
+                'Set-Cookie',
+                dump_cookie('zappa', value=encoded, expires=expires)
             )
         )
 
@@ -143,9 +148,7 @@ class ZappaWSGIMiddleware(object):
         """
         Eat our Zappa cookie.
         Save the parsed cookies, as we need to send them back on every update.
-
         """
-
         self.decoded_zappa = base58.b58decode(encoded_zappa)
         self.request_cookies = json.loads(self.decoded_zappa)
 
@@ -155,9 +158,7 @@ class ZappaWSGIMiddleware(object):
 
         The browser may send expired cookies, because it does not parse the
         the ZappaCookie into its constituent parts.
-
         """
-
         now = time.gmtime()  # GMT as struct_time
         for name, exp in self.iter_cookies_expires():
             if exp < now:
@@ -179,15 +180,13 @@ class ZappaWSGIMiddleware(object):
                 if 'expires' in kvp.lower():
                     try:
                         exp = time.strptime(kvp.split('=')[1], "%a, %d-%b-%Y %H:%M:%S GMT")
-                    except ValueError: # https://tools.ietf.org/html/rfc6265#section-5.1.1
+                    except ValueError:  # https://tools.ietf.org/html/rfc6265#section-5.1.1
                         exp = time.strptime(kvp.split('=')[1], "%a, %d-%b-%y %H:%M:%S GMT")
                     yield name, exp
                     break
-
 
     def cookie_environ_string(self):
         """
         Return the current set of cookies as a string for the HTTP_COOKIE environ.
         """
-
         return ';'.join([key + '=' + value for key, value in self.request_cookies.items()])
