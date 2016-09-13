@@ -34,7 +34,8 @@
     - [Keeping The Server Warm](#keeping-the-server-warm)
     - [Serving Static Files / Binary Uploads](#serving-static-files--binary-uploads)
     - [Enabling CORS](#enabling-cors)
-    - [Enabling Secure Endpoints on API Gateway](#enabling-secure-endpoints-on-api-gateway)
+    - [Enabling Secure Endpoints on API Gateway (API Key)](#enabling-secure-endpoints-on-api-gateway-api-key)
+    - [Enabling Secure Endpoints on API Gateway (IAM Policy)](#enabling-secure-endpoints-on-api-gateway-iam-policy)
     - [Deploying to a Domain With a Let's Encrypt Certificate (DNS Auth)](#deploying-to-a-domain-with-a-lets-encrypt-certificate-dns-auth)
     - [Deploying to a Domain With a Let's Encrypt Certificate (HTTP Auth)](#deploying-to-a-domain-with-a-lets-encrypt-certificate-http-auth)
     - [Setting Environment Variables](#setting-environment-variables)
@@ -417,9 +418,11 @@ To enable Cross-Origin Resource Sharing (CORS) for your application, follow the 
 
 You can also simply handle CORS directly in your application. If you do this, you'll need to add `Access-Control-Allow-Origin`, `Access-Control-Allow-Headers`, and `Access-Control-Allow-Methods` to the `method_header_types` key in your `zappa_settings.json`. See further [discussion here](https://github.com/Miserlou/Zappa/issues/41).
 
-#### Enabling Secure Endpoints on API Gateway
+#### Enabling Secure Endpoints on API Gateway (API Key)
 
 You can use the `api_key_required` setting to generate and assign an API key to all the routes of your API Gateway. After redeployment, you can then pass the provided key as a header called `x-api-key` to access the restricted endpoints. Without the `x-api-key` header, you will receive a 403. [More information on API keys in the API Gateway](http://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-api-keys.html)
+
+#### Enabling Secure Endpoints on API Gateway (IAM Policy)
 
 You can enable IAM-based (v4 signing) authorization on an API by setting the `authorization_type` setting to `AWS_IAM`. Your API will then require signed requests and access can be controlled via [IAM policy](https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-iam-policy-examples.html). Unsigned requests will receive a 403 response, as will requesters who are not authorized to access the API.
 
