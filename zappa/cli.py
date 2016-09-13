@@ -166,6 +166,7 @@ class ZappaCLI(object):
                 self.app_function = vargs['app_function']
 
             self.api_key_required = self.stage_config.get('api_key_required', False)
+            self.authorization_type = self.stage_config.get('authorization_type', 'NONE')
 
         # from letsencrypt import get_cert_and_update_domain
         # get_cert_and_update_domain(
@@ -272,7 +273,12 @@ class ZappaCLI(object):
         if self.use_apigateway:
             # Create and configure the API Gateway
             api_id = self.zappa.create_api_gateway_routes(
-                self.lambda_arn, self.lambda_name, self.api_key_required, self.integration_content_type_aliases)
+                self.lambda_arn,
+                self.lambda_name,
+                self.api_key_required,
+                self.integration_content_type_aliases,
+                self.authorization_type,
+            )
 
             # Deploy the API!
             cache_cluster_enabled = self.stage_config.get('cache_cluster_enabled', False)
