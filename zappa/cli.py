@@ -278,13 +278,19 @@ class ZappaCLI(object):
 
         endpoint_url = ''
         if self.use_apigateway:
+
+            if self.iam_authorization:
+                auth_type = "AWS_IAM"
+            else:
+                auth_type = "NONE"
+
             # Create and configure the API Gateway
             api_id = self.zappa.create_api_gateway_routes(
                 self.lambda_arn,
                 self.lambda_name,
                 self.api_key_required,
                 self.integration_content_type_aliases,
-                self.authorization_type,
+                auth_type,
             )
 
             # Deploy the API!
@@ -1005,7 +1011,7 @@ class ZappaCLI(object):
         self.api_key_required = self.stage_config.get('api_key_required', False)
         self.api_key = self.zappa_settings[
             self.api_stage].get('api_key')
-        self.authorization_type = self.stage_config.get('authorization_type', 'NONE')
+        self.iam_authorization = self.stage_config.get('iam_authorization', False)
         self.lambda_description = self.zappa_settings[
             self.api_stage].get('lambda_description', "Zappa Deployment")
         self.environment_variables = self.zappa_settings[
