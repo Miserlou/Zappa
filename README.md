@@ -582,6 +582,7 @@ Ongoing discussion about the minimum policy requirements necessary for a Zappa d
 * [Zappa Slack Inviter](https://github.com/Miserlou/zappa-slack-inviter) - A tiny, server-less service for inviting new users to your Slack channel.
 * [Serverless Image Host](https://github.com/Miserlou/serverless-imagehost) - A thumbnailing service with Flask, Zappa and Pillow.
 * [Gigger](https://www.gigger.rocks/) - The live music industry's search engine
+* [Zappa BitTorrent Tracker](https://github.com/Miserlou/zappa-bittorrent-tracker) - An experimental server-less BitTorrent tracker. Work in progress.
 * And many more!
 
 Are you using Zappa? Let us know and we'll list your site here!
