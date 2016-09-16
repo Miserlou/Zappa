@@ -644,7 +644,7 @@ class ZappaCLI(object):
         tabular_print("Lambda Timeout", conf['Timeout'])
         tabular_print("Lambda Runtime", conf['Runtime'])
         if 'VpcConfig' in conf.keys():
-            tabular_print("Lambda VPC ID", conf['VpcConfig']['VpcId'])
+            tabular_print("Lambda VPC ID", conf.get('VpcConfig', {}).get('VpcId', 'Not assigned'))
         else:
             tabular_print("Lambda VPC ID", None)
 
