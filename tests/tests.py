@@ -536,6 +536,7 @@ class TestZappa(unittest.TestCase):
             }
         ]
         zappa_cli.print_logs(logs)
+        zappa_cli.check_for_update()
 
     def test_cli_args(self):
         zappa_cli = ZappaCLI()

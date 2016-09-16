@@ -33,7 +33,7 @@ import zipfile
 from dateutil import parser
 from datetime import datetime,timedelta
 from zappa import Zappa, logger
-from util import detect_django_settings, detect_flask_apps
+from util import check_new_version_available, detect_django_settings, detect_flask_apps
 
 CUSTOM_SETTINGS = [
     'assume_policy',
@@ -247,6 +247,9 @@ class ZappaCLI(object):
             click.echo("This application is " + click.style("already deployed", fg="red") + " - did you mean to call " + click.style("update", bold=True) + "?")
             return
 
+        # Make sure there isn't a new version available
+        self.check_for_update()
+
         # Make sure the necessary IAM execution roles are available
         if self.manage_roles:
             self.zappa.create_iam_roles()
@@ -337,6 +340,9 @@ class ZappaCLI(object):
         # Execute the prebuild script
         if self.prebuild_script:
             self.execute_prebuild_script()
+
+        # Make sure there isn't a new version available
+        self.check_for_update()
 
         # Temporary version check
         try:
@@ -931,6 +937,21 @@ class ZappaCLI(object):
 
             module_ = importlib.import_module(mod_name)
             getattr(module_, cb_func)(self)  # Call the function passing self
+
+    def check_for_update(self):
+        """
+        Print a warning if there's a new Zappa version available.
+        """
+        try:
+            version = pkg_resources.require("zappa")[0].version
+            updateable = check_new_version_available(version)
+            if updateable:
+                click.echo(click.style("Important!", fg="yellow", bold=True) + " A new version of " + click.style("Zappa", bold=True) + " is available!")
+                click.echo("Upgrade with: " + click.style("pip install zappa --upgrade", bold=True))
+                click.echo("Visit the project page on GitHub to see the latest changes: " + click.style("https://github.com/Miserlou/Zappa", bold=True))
+        except Exception as e: # pragma: no cover
+            print(e)
+            return 
 
     def load_settings(self, settings_file="zappa_settings.json", session=None):
         """
