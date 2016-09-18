@@ -264,7 +264,6 @@ class Zappa(object):
         self.logs_client = self.boto_session.client('logs')
         self.iam_client = self.boto_session.client('iam')
         self.iam = self.boto_session.resource('iam')
-        self.s3 = self.boto_session.resource('s3')
         self.cloudwatch = self.boto_session.client('cloudwatch')
         self.route53 = self.boto_session.client('route53')
         self.cf_client = self.boto_session.client('cloudformation')
@@ -467,25 +466,21 @@ class Zappa(object):
         Returns True on success, false on failure.
 
         """
-        # If this bucket doesn't exist, make it.
-        # Will likely fail, but that's apparently the best way to check
-        # it exists, since boto3 doesn't expose a better check.
         try:
-
+            self.s3_client.head_bucket(Bucket=bucket_name)
+        except botocore.exceptions.ClientError:
             # This is really stupid S3 quirk. Technically, us-east-1 one has no S3,
             # it's actually "US Standard", or something.
             # More here: https://github.com/boto/boto3/issues/125
             if self.aws_region == 'us-east-1':
-                self.s3.create_bucket(
+                self.s3_client.create_bucket(
                     Bucket=bucket_name,
                 )
             else:
-                self.s3.create_bucket(
+                self.s3_client.create_bucket(
                     Bucket=bucket_name,
                     CreateBucketConfiguration={'LocationConstraint': self.aws_region},
                 )
-        except botocore.exceptions.ClientError:  # pragma: no cover
-            pass
 
         if not os.path.isfile(source_path) or os.stat(source_path).st_size == 0:
             print("Problem with source file {}".format(source_path))
@@ -494,7 +489,7 @@ class Zappa(object):
         dest_path = os.path.split(source_path)[1]
         try:
             source_size = os.stat(source_path).st_size
-            print("Uploading zip (" + str(self.human_size(source_size)) + ")...")
+            print("Uploading {0} ({1})...".format(dest_path, self.human_size(source_size)))
             progress = tqdm(total=float(os.path.getsize(source_path)), unit_scale=True, unit='B')
 
             # Attempt to upload to S3 using the S3 meta client with the progress bar.
@@ -502,7 +497,7 @@ class Zappa(object):
             # which cannot use the progress bar.
             # Related: https://github.com/boto/boto3/issues/611
             try:
-                self.s3.meta.client.upload_file(
+                self.s3_client.upload_file(
                     source_path, bucket_name, dest_path,
                     Callback=progress.update
                 )
@@ -526,10 +521,8 @@ class Zappa(object):
         Returns True on success, False on failure.
 
         """
-        bucket = self.s3.Bucket(bucket_name)
-
         try:
-            self.s3.meta.client.head_bucket(Bucket=bucket_name)
+            self.s3_client.head_bucket(Bucket=bucket_name)
         except botocore.exceptions.ClientError as e:  # pragma: no cover
             # If a client error is thrown, then check that it was a 404 error.
             # If it was a 404 error, then the bucket does not exist.
@@ -537,12 +530,12 @@ class Zappa(object):
             if error_code == 404:
                 return False
 
-        delete_keys = {'Objects': [{'Key': file_name}]}
-        response = bucket.delete_objects(Delete=delete_keys)
-        if response['ResponseMetadata']['HTTPStatusCode'] == 200:
+        try:
+            self.s3_client.delete_object(Bucket=bucket_name, Key=file_name)
             return True
-        else:  # pragma: no cover
+        except botocore.exceptions.ClientError:  # pragma: no cover
             return False
+
     ##
     # Lambda
     ##
