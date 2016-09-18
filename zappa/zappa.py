@@ -933,7 +933,7 @@ class Zappa(object):
                 # We may not have actually set up the domain.
                 pass
 
-        self.delete_stack(project_name)
+        self.delete_stack(lambda_name)
 
     def update_stage_config(self, project_name, stage_name, cloudwatch_log_level, cloudwatch_data_trace,
                             cloudwatch_metrics_enabled):
