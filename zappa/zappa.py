@@ -1043,7 +1043,7 @@ class Zappa(object):
 
         try:
             os.remove(template)
-        except:
+        except OSError:
             pass
 
         self.remove_from_s3(template, working_bucket)
