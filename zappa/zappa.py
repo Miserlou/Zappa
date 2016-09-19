@@ -933,7 +933,7 @@ class Zappa(object):
                 # We may not have actually set up the domain.
                 pass
 
-        self.delete_stack(lambda_name)
+        self.delete_stack(lambda_name, wait=True)
 
     def update_stage_config(self, project_name, stage_name, cloudwatch_log_level, cloudwatch_data_trace,
                             cloudwatch_metrics_enabled):
@@ -1037,9 +1037,30 @@ class Zappa(object):
                     raise
 
         if wait:
+            total_resources = len(self.cf_template.resources)
+            current_resources = 0
+            sr = self.cf_client.get_paginator('list_stack_resources')
+            progress = tqdm(total=total_resources)
             polling = self.cf_client.get_waiter(waiter)
+            while True:
+                time.sleep(3)
+                result = self.cf_client.describe_stacks(StackName=name)
+                if not result['Stacks']:
+                    continue  # might need to wait a bit
+
+                if result['Stacks'][0]['StackStatus'] == 'CREATE_COMPLETE':
+                    break
+
+                count = 0
+                for result in sr.paginate(StackName=name):
+                    done = (1 for x in result['StackResourceSummaries']
+                            if 'COMPLETE' in x['ResourceStatus'])
+                    count += sum(done)
+                if count:
+                    progress.update(count - current_resources)
+                current_resources = count
             polling.wait(StackName=name)
-            # TODO cleanup if it fails!
+            progress.close()
 
         try:
             os.remove(template)
@@ -1072,7 +1093,6 @@ class Zappa(object):
                                                               LogicalResourceId='Api')
             return response['StackResourceDetail']['PhysicalResourceId']
         except:
-            raise
             logger.exception('Could not get API id')
             return None
 
