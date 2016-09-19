@@ -1008,11 +1008,9 @@ class Zappa(object):
         tags = [{'Key':'ZappaProject','Value':name}]
 
         update = False
-        waiter = 'stack_create_complete'
 
         try:
-            stack = self.cf_client.describe_stacks(StackName=name)['Stacks'][0]
-            waiter = 'stack_update_complete'
+            self.cf_client.describe_stacks(StackName=name)['Stacks'][0]
         except botocore.client.ClientError:
             update = True
 
@@ -1041,7 +1039,6 @@ class Zappa(object):
             current_resources = 0
             sr = self.cf_client.get_paginator('list_stack_resources')
             progress = tqdm(total=total_resources)
-            polling = self.cf_client.get_waiter(waiter)
             while True:
                 time.sleep(3)
                 result = self.cf_client.describe_stacks(StackName=name)
@@ -1059,7 +1056,6 @@ class Zappa(object):
                 if count:
                     progress.update(count - current_resources)
                 current_resources = count
-            polling.wait(StackName=name)
             progress.close()
 
         try:
