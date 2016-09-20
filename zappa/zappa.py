@@ -1007,14 +1007,14 @@ class Zappa(object):
 
         tags = [{'Key':'ZappaProject','Value':name}]
 
-        update = False
+        update = True
 
         try:
-            self.cf_client.describe_stacks(StackName=name)['Stacks'][0]
+            self.cf_client.describe_stacks(StackName=name)
         except botocore.client.ClientError:
-            update = True
+            update = False
 
-        if update:
+        if not update:
             self.cf_client.create_stack(StackName=name,
                                         Capabilities=capabilities,
                                         TemplateURL=url,
