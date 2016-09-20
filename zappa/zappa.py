@@ -267,7 +267,7 @@ class Zappa(object):
         self.cloudwatch = self.boto_session.client('cloudwatch')
         self.route53 = self.boto_session.client('route53')
         self.cf_client = self.boto_session.client('cloudformation')
-        self.cf_template = None
+        self.cf_template = troposphere.Template()
         self.cf_api_resources = []
         self.cf_parameters = {}
 
@@ -682,7 +682,7 @@ class Zappa(object):
         """
 
         restapi = troposphere.apigateway.RestApi('Api')
-        restapi.Name = api_name
+        restapi.Name = api_name or lambda_arn.split(':')[-1]
         restapi.Description = 'Created automatically by Zappa.'
         self.cf_template.add_resource(restapi)
 

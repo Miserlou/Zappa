@@ -1,5 +1,6 @@
 {
     "ttt888": {
+       "touch": false,
        "s3_bucket": "lmbda",
        "app_function": "tests.test_app.hello_world",
        "callbacks": {
