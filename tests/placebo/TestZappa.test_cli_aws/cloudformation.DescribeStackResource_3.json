@@ -1,0 +1,35 @@
+{
+    "status_code": 200, 
+    "data": {
+        "StackResourceDetail": {
+            "StackId": "arn:aws:cloudformation:us-east-1:123456789123:stack/zappa-ttt888/081b8ab0-7f76-11e6-b5f4-50a686e4bbe6", 
+            "ResourceStatus": "CREATE_COMPLETE", 
+            "ResourceType": "AWS::ApiGateway::RestApi", 
+            "LastUpdatedTimestamp": {
+                "hour": 21, 
+                "__class__": "datetime", 
+                "month": 9, 
+                "second": 6, 
+                "microsecond": 196000, 
+                "year": 2016, 
+                "day": 20, 
+                "minute": 6
+            }, 
+            "StackName": "zappa-ttt888", 
+            "PhysicalResourceId": "hekjfezvfl", 
+            "Metadata": "{}\n", 
+            "LogicalResourceId": "Api"
+        }, 
+        "ResponseMetadata": {
+            "RetryAttempts": 0, 
+            "HTTPStatusCode": 200, 
+            "RequestId": "3fba6fee-7f76-11e6-9c9d-1d2b104a5cbc", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "3fba6fee-7f76-11e6-9c9d-1d2b104a5cbc", 
+                "date": "Tue, 20 Sep 2016 21:07:33 GMT", 
+                "content-length": "848", 
+                "content-type": "text/xml"
+            }
+        }
+    }
+}

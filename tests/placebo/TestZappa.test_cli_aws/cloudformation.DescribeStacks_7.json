@@ -1,0 +1,85 @@
+{
+    "status_code": 200, 
+    "data": {
+        "Stacks": [
+            {
+                "StackId": "arn:aws:cloudformation:us-east-1:123456789123:stack/zappa-ttt888/081b8ab0-7f76-11e6-b5f4-50a686e4bbe6", 
+                "Description": "Automatically generated with Zappa", 
+                "Parameters": [
+                    {
+                        "ParameterValue": "#set($rawPostData = $input.path(\"$\"))\n{\n  \"body\" : \"$util.base64Encode($input.body)\",\n  \"headers\": {\n    #foreach($header in $input.params().header.keySet())\n    \"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end\n\n    #end\n  },\n  \"method\": \"$context.httpMethod\",\n  \"params\": {\n    #foreach($param in $input.params().path.keySet())\n    \"$param\": \"$util.escapeJavaScript($input.params().path.get($param))\" #if($foreach.hasNext),#end\n\n    #end\n  },\n  \"query\": {\n    #foreach($queryParam in $input.params().querystring.keySet())\n    \"$queryParam\": \"$util.escapeJavaScript($input.params().querystring.get($queryParam))\" #if($foreach.hasNext),#end\n\n    #end\n  }\n}", 
+                        "ParameterKey": "A"
+                    }, 
+                    {
+                        "ParameterValue": "{\n  \"body\" : \"$util.base64Encode($input.body)\",\n  \"headers\": {\n    #foreach($header in $input.params().header.keySet())\n    \"$header\": \"$util.escapeJavaScript($input.params().header.get($header))\" #if($foreach.hasNext),#end\n\n    #end\n  },\n  \"method\": \"$context.httpMethod\",\n  \"params\": {\n    #foreach($param in $input.params().path.keySet())\n    \"$param\": \"$util.escapeJavaScript($input.params().path.get($param))\" #if($foreach.hasNext),#end\n\n    #end\n  },\n  \"query\": {\n    #foreach($queryParam in $input.params().querystring.keySet())\n    \"$queryParam\": \"$util.escapeJavaScript($input.params().querystring.get($queryParam))\" #if($foreach.hasNext),#end\n\n    #end\n  }\n}", 
+                        "ParameterKey": "B"
+                    }, 
+                    {
+                        "ParameterValue": "integration.response.body.Content-Type", 
+                        "ParameterKey": "C"
+                    }, 
+                    {
+                        "ParameterValue": "integration.response.body.Location", 
+                        "ParameterKey": "D"
+                    }, 
+                    {
+                        "ParameterValue": "integration.response.body.Status", 
+                        "ParameterKey": "E"
+                    }, 
+                    {
+                        "ParameterValue": "integration.response.body.X-Frame-Options", 
+                        "ParameterKey": "F"
+                    }, 
+                    {
+                        "ParameterValue": "integration.response.body.Set-Cookie", 
+                        "ParameterKey": "G"
+                    }, 
+                    {
+                        "ParameterValue": "#set($inputRoot = $input.path('$'))\n$inputRoot.Content", 
+                        "ParameterKey": "H"
+                    }, 
+                    {
+                        "ParameterValue": "#set($_body = $util.parseJson($input.path('$.errorMessage'))['content'])\n$util.base64Decode($_body)", 
+                        "ParameterKey": "I"
+                    }, 
+                    {
+                        "ParameterValue": "integration.response.body.errorMessage", 
+                        "ParameterKey": "J"
+                    }
+                ], 
+                "Tags": [
+                    {
+                        "Value": "zappa-ttt888", 
+                        "Key": "ZappaProject"
+                    }
+                ], 
+                "CreationTime": {
+                    "hour": 21, 
+                    "__class__": "datetime", 
+                    "month": 9, 
+                    "second": 0, 
+                    "microsecond": 142000, 
+                    "year": 2016, 
+                    "day": 20, 
+                    "minute": 6
+                }, 
+                "StackName": "zappa-ttt888", 
+                "NotificationARNs": [], 
+                "StackStatus": "CREATE_IN_PROGRESS", 
+                "DisableRollback": false
+            }
+        ], 
+        "ResponseMetadata": {
+            "RetryAttempts": 0, 
+            "HTTPStatusCode": 200, 
+            "RequestId": "13b6205a-7f76-11e6-b951-6975199b9748", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "13b6205a-7f76-11e6-b951-6975199b9748", 
+                "vary": "Accept-Encoding", 
+                "content-length": "4248", 
+                "content-type": "text/xml", 
+                "date": "Tue, 20 Sep 2016 21:06:19 GMT"
+            }
+        }
+    }
+}

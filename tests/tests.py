@@ -25,6 +25,13 @@ def random_string(length):
 
 
 class TestZappa(unittest.TestCase):
+    def setUp(self):
+        self.sleep_patch = mock.patch('time.sleep', return_value=None)
+        self.sleep_patch.start()
+
+    def tearDown(self):
+        self.sleep_patch.stop()
+
     ##
     # Sanity Tests
     ##
