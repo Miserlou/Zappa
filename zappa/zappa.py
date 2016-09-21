@@ -1004,9 +1004,7 @@ class Zappa(object):
         self.upload_to_s3(template, working_bucket)
 
         url = 'https://s3.amazonaws.com/{0}/{1}'.format(working_bucket, template)
-
         tags = [{'Key':'ZappaProject','Value':name}]
-
         update = True
 
         try:
@@ -1029,7 +1027,6 @@ class Zappa(object):
                 print('Waiting for stack {0} to update...'.format(name))
             except botocore.client.ClientError as e:
                 if e.response['Error']['Message'] == 'No updates are to be performed.':
-                    print('No update needed')
                     wait = False
                 else:
                     raise
@@ -1038,7 +1035,7 @@ class Zappa(object):
             total_resources = len(self.cf_template.resources)
             current_resources = 0
             sr = self.cf_client.get_paginator('list_stack_resources')
-            progress = tqdm(total=total_resources)
+            progress = tqdm(total=total_resources, unit='part')
             while True:
                 time.sleep(3)
                 result = self.cf_client.describe_stacks(StackName=name)
@@ -1066,6 +1063,10 @@ class Zappa(object):
         self.remove_from_s3(template, working_bucket)
 
     def stack_outputs(self, name):
+        """
+        Given a name, describes CloudFront stacks and returns dict of the stack Outputs
+        , else returns an empty dict.
+        """
         try:
             stack = self.cf_client.describe_stacks(StackName=name)['Stacks'][0]
             return {x['OutputKey']: x['OutputValue'] for x in stack['Outputs']}
