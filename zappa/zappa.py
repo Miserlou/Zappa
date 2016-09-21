@@ -1035,7 +1035,7 @@ class Zappa(object):
             total_resources = len(self.cf_template.resources)
             current_resources = 0
             sr = self.cf_client.get_paginator('list_stack_resources')
-            progress = tqdm(total=total_resources, unit='part')
+            progress = tqdm(total=total_resources, unit='res')
             while True:
                 time.sleep(3)
                 result = self.cf_client.describe_stacks(StackName=name)
@@ -1051,7 +1051,10 @@ class Zappa(object):
                             if 'COMPLETE' in x['ResourceStatus'])
                     count += sum(done)
                 if count:
-                    progress.update(count - current_resources)
+                    # We can end up in a situation where we have more resources being created
+                    # than anticipated.
+                    if (count - current_resources) >= 0:
+                        progress.update(count - current_resources)
                 current_resources = count
             progress.close()
 
