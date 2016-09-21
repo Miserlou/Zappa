@@ -1280,7 +1280,7 @@ def handle(): # pragma: no cover
             cli.remove_uploaded_zip()
             cli.remove_local_zip()
 
-        click.echo("Oh no! An " + click.style("error occured", fg='red', bold=True) + "! :(")
+        click.echo("Oh no! An " + click.style("error occurred", fg='red', bold=True) + "! :(")
         click.echo("\n==============\n")
         import traceback
         traceback.print_exc()
