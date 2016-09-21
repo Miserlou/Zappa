@@ -54,7 +54,6 @@ class ZappaWSGIMiddleware(object):
         only passing cookies that are still valid to the WSGI app.
         """
         self.start_response = start_response
-        self.redirect_content = None # Make sure that nothing is cached from a previous request
 
         # Parse cookies from the WSGI environment
         parsed = parse_cookie(environ)
@@ -81,6 +80,8 @@ class ZappaWSGIMiddleware(object):
         # If we have a redirect, smash in our response content.
         if self.redirect_content:
             response = [self.redirect_content for item in response]
+
+        self.redirect_content = None # Make sure that nothing is cached from a previous request
 
         # Return the response as a WSGI-safe iterator
         return ClosingIterator(
@@ -133,14 +134,16 @@ class ZappaWSGIMiddleware(object):
 
         # If setting cookie on a 301/2,
         # return 200 and replace the content with a javascript redirector
-        redirect_statuses = ['301 Moved Permanently', '302 Found']
-        if status in redirect_statuses:
-            for key, value in new_headers:
-                if key != 'Location':
-                    continue
-                self.redirect_content = REDIRECT_HTML.replace('REDIRECT_ME', value)
-                status = '200 OK'
-                break
+        content_type_header_key = [k for k, v in enumerate(new_headers) if v[0] == 'Content-Type']
+        if len(content_type_header_key) > 0:
+            if "text/html" in new_headers[content_type_header_key[0]][1]:
+                if status != '200 OK':
+                    for key, value in new_headers:
+                        if key != 'Location':
+                            continue
+                        self.redirect_content = REDIRECT_HTML.replace('REDIRECT_ME', value)
+                        status = '200 OK'
+                        break
 
         return self.start_response(status, new_headers, exc_info)
 
