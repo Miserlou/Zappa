@@ -1,0 +1,17 @@
+{
+    "status_code": 200, 
+    "data": {
+        "ResponseMetadata": {
+            "RetryAttempts": 0, 
+            "HTTPStatusCode": 200, 
+            "RequestId": "0a4d37d0-7f76-11e6-b951-6975199b9748", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "0a4d37d0-7f76-11e6-b951-6975199b9748", 
+                "date": "Tue, 20 Sep 2016 21:06:03 GMT", 
+                "content-length": "315", 
+                "content-type": "text/xml"
+            }
+        }, 
+        "StackResourceSummaries": []
+    }
+}

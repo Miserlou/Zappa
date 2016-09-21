@@ -12,6 +12,8 @@ import tarfile
 import tempfile
 import time
 import zipfile
+import troposphere
+import troposphere.apigateway
 
 from distutils.dir_util import copy_tree
 
@@ -262,9 +264,25 @@ class Zappa(object):
         self.logs_client = self.boto_session.client('logs')
         self.iam_client = self.boto_session.client('iam')
         self.iam = self.boto_session.resource('iam')
-        self.s3 = self.boto_session.resource('s3')
         self.cloudwatch = self.boto_session.client('cloudwatch')
         self.route53 = self.boto_session.client('route53')
+        self.cf_client = self.boto_session.client('cloudformation')
+        self.cf_template = troposphere.Template()
+        self.cf_api_resources = []
+        self.cf_parameters = {}
+
+    def cache_param(self, value):
+        '''Returns a troposphere Ref to a value cached as a parameter.'''
+
+        if value not in self.cf_parameters:
+            keyname = chr(ord('A') + len(self.cf_parameters))
+            param = self.cf_template.add_parameter(troposphere.Parameter(
+                keyname, Type="String", Default=value
+            ))
+
+            self.cf_parameters[value] = param
+
+        return troposphere.Ref(self.cf_parameters[value])
 
     ##
     # Packaging
@@ -448,25 +466,21 @@ class Zappa(object):
         Returns True on success, false on failure.
 
         """
-        # If this bucket doesn't exist, make it.
-        # Will likely fail, but that's apparently the best way to check
-        # it exists, since boto3 doesn't expose a better check.
         try:
-
+            self.s3_client.head_bucket(Bucket=bucket_name)
+        except botocore.exceptions.ClientError:
             # This is really stupid S3 quirk. Technically, us-east-1 one has no S3,
             # it's actually "US Standard", or something.
             # More here: https://github.com/boto/boto3/issues/125
             if self.aws_region == 'us-east-1':
-                self.s3.create_bucket(
+                self.s3_client.create_bucket(
                     Bucket=bucket_name,
                 )
             else:
-                self.s3.create_bucket(
+                self.s3_client.create_bucket(
                     Bucket=bucket_name,
                     CreateBucketConfiguration={'LocationConstraint': self.aws_region},
                 )
-        except botocore.exceptions.ClientError:  # pragma: no cover
-            pass
 
         if not os.path.isfile(source_path) or os.stat(source_path).st_size == 0:
             print("Problem with source file {}".format(source_path))
@@ -475,7 +489,7 @@ class Zappa(object):
         dest_path = os.path.split(source_path)[1]
         try:
             source_size = os.stat(source_path).st_size
-            print("Uploading zip (" + str(self.human_size(source_size)) + ")...")
+            print("Uploading {0} ({1})...".format(dest_path, self.human_size(source_size)))
             progress = tqdm(total=float(os.path.getsize(source_path)), unit_scale=True, unit='B')
 
             # Attempt to upload to S3 using the S3 meta client with the progress bar.
@@ -483,7 +497,7 @@ class Zappa(object):
             # which cannot use the progress bar.
             # Related: https://github.com/boto/boto3/issues/611
             try:
-                self.s3.meta.client.upload_file(
+                self.s3_client.upload_file(
                     source_path, bucket_name, dest_path,
                     Callback=progress.update
                 )
@@ -507,10 +521,8 @@ class Zappa(object):
         Returns True on success, False on failure.
 
         """
-        bucket = self.s3.Bucket(bucket_name)
-
         try:
-            self.s3.meta.client.head_bucket(Bucket=bucket_name)
+            self.s3_client.head_bucket(Bucket=bucket_name)
         except botocore.exceptions.ClientError as e:  # pragma: no cover
             # If a client error is thrown, then check that it was a 404 error.
             # If it was a 404 error, then the bucket does not exist.
@@ -518,12 +530,12 @@ class Zappa(object):
             if error_code == 404:
                 return False
 
-        delete_keys = {'Objects': [{'Key': file_name}]}
-        response = bucket.delete_objects(Delete=delete_keys)
-        if response['ResponseMetadata']['HTTPStatusCode'] == 200:
+        try:
+            self.s3_client.delete_object(Bucket=bucket_name, Key=file_name)
             return True
-        else:  # pragma: no cover
+        except botocore.exceptions.ClientError:  # pragma: no cover
             return False
+
     ##
     # Lambda
     ##
@@ -666,93 +678,67 @@ class Zappa(object):
         """
         Create the API Gateway for this Zappa deployment.
 
-        Returns the new API's api_id.
+        Returns the new RestAPI CF resource.
         """
-        print("Creating API Gateway routes (this only happens once)..")
 
-        if not api_name:
-            api_name = str(int(time.time()))
+        restapi = troposphere.apigateway.RestApi('Api')
+        restapi.Name = api_name or lambda_arn.split(':')[-1]
+        restapi.Description = 'Created automatically by Zappa.'
+        self.cf_template.add_resource(restapi)
 
-        # Does an API Gateway with this name exist already?
-        apis = self.apigateway_client.get_rest_apis()['items']
-        if not len(filter(lambda a: a['name'] == api_name, apis)):
-            response = self.apigateway_client.create_rest_api(
-                name=api_name,
-                description=api_name + " Zappa",
-                cloneFrom=''
-            )
-
-        api_id = response['id']
+        root_id = troposphere.GetAtt(restapi, 'RootResourceId')
 
         ##
         # The Resources
         ##
 
-        response = self.apigateway_client.get_resources(restApiId=api_id)
-
-        # count how many put requests we'll be reporting for progress bar
-        progress_total = (
-            self.parameter_depth *
-            len(self.http_methods) *
-            (2 + len(self.integration_response_codes) + len(self.method_response_codes))
-        )
-        progress = tqdm(total=progress_total, unit=' endpoint')
-
-        # AWS seems to create this by default,
-        # but not sure if that'll be the case forever.
-        parent_id = None
-        for item in response['items']:
-            if item['path'] == '/':
-                root_id = item['id']
-        if not root_id:  # pragma: no cover
-            return False
-        self.create_and_setup_methods(api_id, root_id, lambda_arn, progress.update, api_key_required,
-                                      integration_content_type_aliases, authorization_type)
+        self.create_and_setup_methods(restapi, root_id, lambda_arn, api_key_required,
+                                      integration_content_type_aliases, authorization_type, 0)
 
         parent_id = root_id
         for i in range(1, self.parameter_depth):
+            resource = troposphere.apigateway.Resource('Resource{0}'.format(i))
+            self.cf_api_resources.append(resource.title)
+            resource.RestApiId = troposphere.Ref(restapi)
+            resource.ParentId = parent_id
+            resource.PathPart = "{parameter_" + str(i) + "}"
+            self.cf_template.add_resource(resource)
 
-            response = self.apigateway_client.create_resource(
-                restApiId=api_id,
-                parentId=parent_id,
-                pathPart="{parameter_" + str(i) + "}"
-            )
-            resource_id = response['id']
-            parent_id = resource_id
+            self.create_and_setup_methods(restapi, resource, lambda_arn, api_key_required,
+                                          integration_content_type_aliases, authorization_type, i)  # pragma: no cover
+            parent_id = troposphere.Ref(resource)
 
-            self.create_and_setup_methods(api_id, resource_id, lambda_arn, progress.update, api_key_required,
-                                          integration_content_type_aliases, authorization_type)  # pragma: no cover
-        return api_id
+        return restapi
 
-    def create_and_setup_methods(self, api_id, resource_id, lambda_arn, report_progress, api_key_required,
-                                 integration_content_type_aliases, authorization_type):
+    def create_and_setup_methods(self, restapi, resource, lambda_arn, api_key_required,
+                                 integration_content_type_aliases, authorization_type, depth):
         """
         Set up the methods, integration responses and method responses for a given API Gateway resource.
-
-        Return the given API's resource_id.
         """
-        for method in self.http_methods:
-            response = self.apigateway_client.put_method(
-                restApiId=api_id,
-                resourceId=resource_id,
-                httpMethod=method,
-                authorizationType=authorization_type,
-                apiKeyRequired=api_key_required
-            )
-            report_progress()
+        for method_name in self.http_methods:
+            method = troposphere.apigateway.Method(method_name + str(depth))
+            method.RestApiId = troposphere.Ref(restapi)
+            if type(resource) is troposphere.apigateway.Resource:
+                method.ResourceId = troposphere.Ref(resource)
+            else:
+                method.ResourceId = resource
+            method.HttpMethod = method_name.upper()
+            method.AuthorizationType = authorization_type
+            method.ApiKeyRequired = api_key_required
+            method.MethodResponses = []
+            self.cf_template.add_resource(method)
+            self.cf_api_resources.append(method.title)
 
-            post_template_mapping = POST_TEMPLATE_MAPPING
-            form_encoded_template_mapping = FORM_ENCODED_TEMPLATE_MAPPING
             content_mapping_templates = {
-                'application/json': post_template_mapping,
-                'application/x-www-form-urlencoded': post_template_mapping,
-                'multipart/form-data': form_encoded_template_mapping
+                'application/json': self.cache_param(POST_TEMPLATE_MAPPING),
+                'application/x-www-form-urlencoded': self.cache_param(POST_TEMPLATE_MAPPING),
+                'multipart/form-data': self.cache_param(FORM_ENCODED_TEMPLATE_MAPPING)
             }
             if integration_content_type_aliases:
                 for content_type in content_mapping_templates.keys():
                     aliases = integration_content_type_aliases.get(content_type, [])
                     for alias in aliases:
-                        content_mapping_templates[alias] = content_mapping_templates[content_type]
+                        content_mapping_templates[alias] = self.cache_param(content_mapping_templates[content_type])
 
             if not self.credentials_arn:
                 self.get_credentials_arn()
@@ -760,41 +746,34 @@ class Zappa(object):
 
             uri = 'arn:aws:apigateway:' + self.boto_session.region_name + ':lambda:path/2015-03-31/functions/' + lambda_arn + '/invocations'
 
-            self.apigateway_client.put_integration(
-                restApiId=api_id,
-                resourceId=resource_id,
-                httpMethod=method.upper(),
-                type='AWS',
-                integrationHttpMethod='POST',
-                uri=uri,
-                credentials=credentials,
-                requestParameters={},
-                requestTemplates=content_mapping_templates,
-                cacheNamespace='none',
-                passthroughBehavior='NEVER',
-                cacheKeyParameters=[],
-            )
-            report_progress()
+            integration = troposphere.apigateway.Integration()
+            integration.CacheKeyParameters = []
+            integration.CacheNamespace = 'none'
+            integration.Credentials = credentials
+            integration.IntegrationHttpMethod = 'POST'
+            integration.IntegrationResponses = []
+            integration.PassthroughBehavior = 'NEVER'
+            integration.RequestParameters = {}
+            integration.RequestTemplates = content_mapping_templates
+            integration.Type = 'AWS'
+            integration.Uri = uri
+            method.Integration = integration
 
             ##
             # Method Response
             ##
 
-            for response in self.method_response_codes:
-                status_code = str(response)
+            for response_code in self.method_response_codes:
+                status_code = str(response_code)
 
                 response_parameters = {"method.response.header." + header_type: False for header_type in self.method_header_types}
                 response_models = {content_type: 'Empty' for content_type in self.method_content_types}
 
-                self.apigateway_client.put_method_response(
-                    restApiId=api_id,
-                    resourceId=resource_id,
-                    httpMethod=method,
-                    statusCode=status_code,
-                    responseParameters=response_parameters,
-                    responseModels=response_models
-                )
-                report_progress()
+                response = troposphere.apigateway.MethodResponse()
+                response.ResponseModels = response_models
+                response.ResponseParameters = response_parameters
+                response.StatusCode = status_code
+                method.MethodResponses.append(response)
 
             ##
             # Integration Response
@@ -803,31 +782,27 @@ class Zappa(object):
             for response in self.integration_response_codes:
                 status_code = str(response)
 
-                response_parameters = {"method.response.header." + header_type: "integration.response.body." + header_type for header_type in self.method_header_types}
+                response_parameters = {
+                    "method.response.header." + header_type: self.cache_param("integration.response.body." + header_type)
+                    for header_type in self.method_header_types}
 
                 # Error code matching RegEx
                 # Thanks to @KevinHornschemeier and @jayway
                 # for the discussion on this.
                 if status_code == '200':
-                    response_templates = {content_type: RESPONSE_TEMPLATE for content_type in self.integration_content_types}
+                    response_templates = {content_type: self.cache_param(RESPONSE_TEMPLATE) for content_type in self.integration_content_types}
                 elif status_code in ['301', '302']:
                     response_templates = {content_type: REDIRECT_RESPONSE_TEMPLATE for content_type in self.integration_content_types}
-                    response_parameters["method.response.header.Location"] = "integration.response.body.errorMessage"
+                    response_parameters["method.response.header.Location"] = self.cache_param("integration.response.body.errorMessage")
                 else:
-                    response_templates = {content_type: ERROR_RESPONSE_TEMPLATE for content_type in self.integration_content_types}
+                    response_templates = {content_type: self.cache_param(ERROR_RESPONSE_TEMPLATE) for content_type in self.integration_content_types}
 
-                self.apigateway_client.put_integration_response(
-                    restApiId=api_id,
-                    resourceId=resource_id,
-                    httpMethod=method,
-                    statusCode=status_code,
-                    selectionPattern=self.selection_pattern(status_code),
-                    responseParameters=response_parameters,
-                    responseTemplates=response_templates
-                )
-                report_progress()
-
-        return resource_id
+                integration_response = troposphere.apigateway.IntegrationResponse()
+                integration_response.ResponseParameters = response_parameters
+                integration_response.ResponseTemplates = response_templates
+                integration_response.SelectionPattern = self.selection_pattern(status_code)
+                integration_response.StatusCode = status_code
+                integration.IntegrationResponses.append(integration_response)
 
     def deploy_api_gateway(self, api_id, stage_name, stage_description="", description="", cache_cluster_enabled=False, cache_cluster_size='0.5', variables=None,
                            cloudwatch_log_level='OFF', cloudwatch_data_trace=False, cloudwatch_metrics_enabled=False):
@@ -940,26 +915,25 @@ class Zappa(object):
                 continue
             yield api
 
-    def undeploy_api_gateway(self, project_name, domain_name=None):
+    def undeploy_api_gateway(self, lambda_name, domain_name=None):
         """
         Delete a deployed REST API Gateway.
         """
         print("Deleting API Gateway..")
-        for api in self.get_rest_apis(project_name):
 
-            if domain_name:
-                try:
-                    self.apigateway_client.delete_base_path_mapping(
-                        domainName=domain_name,
-                        basePath='(none)'
-                    )
-                except Exception:
-                    # We may not have actually set up the domain.
-                    pass
+        api_id = self.get_api_id(lambda_name)
 
-            self.apigateway_client.delete_rest_api(
-                restApiId=api['id']
-            )
+        if domain_name:
+            try:
+                self.apigateway_client.delete_base_path_mapping(
+                    domainName=domain_name,
+                    basePath='(none)'
+                )
+            except Exception:
+                # We may not have actually set up the domain.
+                pass
+
+        self.delete_stack(lambda_name, wait=True)
 
     def update_stage_config(self, project_name, stage_name, cloudwatch_log_level, cloudwatch_data_trace,
                             cloudwatch_metrics_enabled):
@@ -980,29 +954,143 @@ class Zappa(object):
                 ]
             )
 
-    def get_api_url(self, project_name, stage_name):
+    def delete_stack(self, name, wait=False):
         """
-        Given a project_name and stage_name, return a valid API URL.
+        Delete the CF stack managed by Zappa.
         """
-        response = self.apigateway_client.get_rest_apis(limit=500)
+        try:
+            stack = self.cf_client.describe_stacks(StackName=name)['Stacks'][0]
+        except:
+            print('No Zappa stack named {0}'.format(name))
+            return
 
-        for item in response['items']:
-            if item['name'] == project_name:
-                return "https://{}.execute-api.{}.amazonaws.com/{}".format(item['id'], self.boto_session.region_name, stage_name)
+        tags = {x['Key']:x['Value'] for x in stack['Tags']}
+        if tags.get('ZappaProject') == name:
+            self.cf_client.delete_stack(StackName=name)
+            if wait:
+                waiter = self.cf_client.get_waiter('stack_delete_complete')
+                print('Waiting for stack {0} to be deleted...'.format(name))
+                waiter.wait(StackName=name)
+        else:
+            print('ZappaProject tag not found on {0}, doing nothing'.format(name))
 
-        return None
-
-    def get_api_id(self, project_name):
+    def create_stack_template(self, lambda_arn, lambda_name, api_key_required,
+                              integration_content_type_aliases, auth_type):
         """
-        Given a project_name, return the API id.
+        Build the entire CF stack.
+        Just used for the API Gateway, but could be expanded in the future.
         """
-        response = self.apigateway_client.get_rest_apis(limit=500)
 
-        for item in response['items']:
-            if item['name'] == project_name:
-                return item['id']
+        # build a fresh template
+        self.cf_template = troposphere.Template()
+        self.cf_template.add_description('Automatically generated with Zappa')
+        self.cf_api_resources = []
+        self.cf_parameters = {}
 
-        return None
+        restapi = self.create_api_gateway_routes(lambda_arn, lambda_name, api_key_required,
+                                                 integration_content_type_aliases, auth_type)
+        return self.cf_template
+
+    def update_stack(self, name, working_bucket, wait=False):
+        """
+        Update or create the CF stack managed by Zappa.
+        """
+        capabilities = []
+
+        template = name + '-template-' + str(int(time.time())) + '.json'
+        with open(template, 'w') as out:
+            out.write(self.cf_template.to_json(indent=None, separators=(',',':')))
+
+        self.upload_to_s3(template, working_bucket)
+
+        url = 'https://s3.amazonaws.com/{0}/{1}'.format(working_bucket, template)
+
+        tags = [{'Key':'ZappaProject','Value':name}]
+
+        update = True
+
+        try:
+            self.cf_client.describe_stacks(StackName=name)
+        except botocore.client.ClientError:
+            update = False
+
+        if not update:
+            self.cf_client.create_stack(StackName=name,
+                                        Capabilities=capabilities,
+                                        TemplateURL=url,
+                                        Tags=tags)
+            print('Waiting for stack {0} to create (this can take a bit)...'.format(name))
+        else:
+            try:
+                self.cf_client.update_stack(StackName=name,
+                                            Capabilities=capabilities,
+                                            TemplateURL=url,
+                                            Tags=tags)
+                print('Waiting for stack {0} to update...'.format(name))
+            except botocore.client.ClientError as e:
+                if e.response['Error']['Message'] == 'No updates are to be performed.':
+                    print('No update needed')
+                    wait = False
+                else:
+                    raise
+
+        if wait:
+            total_resources = len(self.cf_template.resources)
+            current_resources = 0
+            sr = self.cf_client.get_paginator('list_stack_resources')
+            progress = tqdm(total=total_resources)
+            while True:
+                time.sleep(3)
+                result = self.cf_client.describe_stacks(StackName=name)
+                if not result['Stacks']:
+                    continue  # might need to wait a bit
+
+                if result['Stacks'][0]['StackStatus'] == 'CREATE_COMPLETE':
+                    break
+
+                count = 0
+                for result in sr.paginate(StackName=name):
+                    done = (1 for x in result['StackResourceSummaries']
+                            if 'COMPLETE' in x['ResourceStatus'])
+                    count += sum(done)
+                if count:
+                    progress.update(count - current_resources)
+                current_resources = count
+            progress.close()
+
+        try:
+            os.remove(template)
+        except OSError:
+            pass
+
+        self.remove_from_s3(template, working_bucket)
+
+    def stack_outputs(self, name):
+        try:
+            stack = self.cf_client.describe_stacks(StackName=name)['Stacks'][0]
+            return {x['OutputKey']: x['OutputValue'] for x in stack['Outputs']}
+        except botocore.client.ClientError:
+            return {}
+
+
+    def get_api_url(self, lambda_name, stage_name):
+        """
+        Given a lambda_name and stage_name, return a valid API URL.
+        """
+        api_id = self.get_api_id(lambda_name)
+        return "https://{}.execute-api.{}.amazonaws.com/{}".format(api_id, self.boto_session.region_name, stage_name)
+
+    def get_api_id(self, lambda_name):
+        """
+        Given a lambda_name, return the API id.
+        """
+        try:
+            response = self.cf_client.describe_stack_resource(StackName=lambda_name,
+                                                              LogicalResourceId='Api')
+            return response['StackResourceDetail']['PhysicalResourceId']
+        except:
+            logger.exception('Could not get API id')
+            return None
 
     def create_domain_name(self,
                            domain_name,

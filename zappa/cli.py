@@ -288,13 +288,15 @@ class ZappaCLI(object):
                 auth_type = "NONE"
 
             # Create and configure the API Gateway
-            api_id = self.zappa.create_api_gateway_routes(
-                self.lambda_arn,
-                self.lambda_name,
-                self.api_key_required,
-                self.integration_content_type_aliases,
-                auth_type,
-            )
+
+            template = self.zappa.create_stack_template(self.lambda_arn,
+                                                        self.lambda_name,
+                                                        self.api_key_required,
+                                                        self.integration_content_type_aliases,
+                                                        auth_type)
+
+            self.zappa.update_stack(self.lambda_name, self.s3_bucket_name, wait=True)
+            api_id = self.zappa.get_api_id(self.lambda_name)
 
             # Deploy the API!
             cache_cluster_enabled = self.stage_config.get('cache_cluster_enabled', False)
@@ -393,6 +395,18 @@ class ZappaCLI(object):
         # Finally, delete the local copy our zip package
         if self.stage_config.get('delete_local_zip', True):
             self.remove_local_zip()
+
+        if self.iam_authorization:
+            auth_type = "AWS_IAM"
+        else:
+            auth_type = "NONE"
+
+        template = self.zappa.create_stack_template(self.lambda_arn,
+                                                    self.lambda_name,
+                                                    self.api_key_required,
+                                                    self.integration_content_type_aliases,
+                                                    auth_type)
+        self.zappa.update_stack(self.lambda_name, self.s3_bucket_name, wait=True)
 
         if self.stage_config.get('domain', None):
             endpoint_url = self.stage_config.get('domain')

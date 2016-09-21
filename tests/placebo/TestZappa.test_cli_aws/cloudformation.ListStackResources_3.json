@@ -1,0 +1,129 @@
+{
+    "status_code": 200, 
+    "data": {
+        "ResponseMetadata": {
+            "RetryAttempts": 0, 
+            "HTTPStatusCode": 200, 
+            "RequestId": "0e1081a1-7f76-11e6-b951-6975199b9748", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "0e1081a1-7f76-11e6-b951-6975199b9748", 
+                "vary": "Accept-Encoding", 
+                "content-length": "2699", 
+                "content-type": "text/xml", 
+                "date": "Tue, 20 Sep 2016 21:06:09 GMT"
+            }
+        }, 
+        "StackResourceSummaries": [
+            {
+                "ResourceType": "AWS::ApiGateway::RestApi", 
+                "PhysicalResourceId": "hekjfezvfl", 
+                "LastUpdatedTimestamp": {
+                    "hour": 21, 
+                    "__class__": "datetime", 
+                    "month": 9, 
+                    "second": 6, 
+                    "microsecond": 196000, 
+                    "year": 2016, 
+                    "day": 20, 
+                    "minute": 6
+                }, 
+                "ResourceStatus": "CREATE_COMPLETE", 
+                "LogicalResourceId": "Api"
+            }, 
+            {
+                "ResourceStatus": "CREATE_IN_PROGRESS", 
+                "ResourceType": "AWS::ApiGateway::Method", 
+                "ResourceStatusReason": "Resource creation Initiated", 
+                "LastUpdatedTimestamp": {
+                    "hour": 21, 
+                    "__class__": "datetime", 
+                    "month": 9, 
+                    "second": 9, 
+                    "microsecond": 834000, 
+                    "year": 2016, 
+                    "day": 20, 
+                    "minute": 6
+                }, 
+                "PhysicalResourceId": "zappa-GET0-1TC7D2726JX2T", 
+                "LogicalResourceId": "GET0"
+            }, 
+            {
+                "ResourceType": "AWS::ApiGateway::Method", 
+                "LastUpdatedTimestamp": {
+                    "hour": 21, 
+                    "__class__": "datetime", 
+                    "month": 9, 
+                    "second": 9, 
+                    "microsecond": 697000, 
+                    "year": 2016, 
+                    "day": 20, 
+                    "minute": 6
+                }, 
+                "ResourceStatus": "CREATE_IN_PROGRESS", 
+                "LogicalResourceId": "OPTIONS0"
+            }, 
+            {
+                "ResourceType": "AWS::ApiGateway::Method", 
+                "LastUpdatedTimestamp": {
+                    "hour": 21, 
+                    "__class__": "datetime", 
+                    "month": 9, 
+                    "second": 9, 
+                    "microsecond": 748000, 
+                    "year": 2016, 
+                    "day": 20, 
+                    "minute": 6
+                }, 
+                "ResourceStatus": "CREATE_IN_PROGRESS", 
+                "LogicalResourceId": "PATCH0"
+            }, 
+            {
+                "ResourceStatus": "CREATE_IN_PROGRESS", 
+                "ResourceType": "AWS::ApiGateway::Method", 
+                "ResourceStatusReason": "Resource creation Initiated", 
+                "LastUpdatedTimestamp": {
+                    "hour": 21, 
+                    "__class__": "datetime", 
+                    "month": 9, 
+                    "second": 9, 
+                    "microsecond": 890000, 
+                    "year": 2016, 
+                    "day": 20, 
+                    "minute": 6
+                }, 
+                "PhysicalResourceId": "zappa-POST0-TKUBVZLX28A7", 
+                "LogicalResourceId": "POST0"
+            }, 
+            {
+                "ResourceType": "AWS::ApiGateway::Method", 
+                "LastUpdatedTimestamp": {
+                    "hour": 21, 
+                    "__class__": "datetime", 
+                    "month": 9, 
+                    "second": 9, 
+                    "microsecond": 661000, 
+                    "year": 2016, 
+                    "day": 20, 
+                    "minute": 6
+                }, 
+                "ResourceStatus": "CREATE_IN_PROGRESS", 
+                "LogicalResourceId": "PUT0"
+            }, 
+            {
+                "ResourceType": "AWS::ApiGateway::Resource", 
+                "LastUpdatedTimestamp": {
+                    "hour": 21, 
+                    "__class__": "datetime", 
+                    "month": 9, 
+                    "second": 9, 
+                    "microsecond": 329000, 
+                    "year": 2016, 
+                    "day": 20, 
+                    "minute": 6
+                }, 
+                "ResourceStatus": "CREATE_IN_PROGRESS", 
+                "LogicalResourceId": "Resource1"
+            }
+        ]
+    }
+}
