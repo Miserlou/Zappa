@@ -252,7 +252,13 @@ class ZappaCLI(object):
 
         # Make sure the necessary IAM execution roles are available
         if self.manage_roles:
-            self.zappa.create_iam_roles()
+            try:
+                self.zappa.create_iam_roles()
+            except botocore.client.ClientError:
+                click.echo(click.style("Failed", fg="red") + " to " + click.style("manage IAM roles", bold=True) + "!")
+                click.echo("You may " + click.style("lack the necessary AWS permissions", bold=True) + " to automatically manage a Zappa execution role.")
+                click.echo("To fix this, see here: " + click.style("https://github.com/Miserlou/Zappa#using-custom-aws-iam-roles-and-policie", bold=True))
+                return
 
         # Create the Lambda Zip
         self.create_package()
@@ -362,7 +368,13 @@ class ZappaCLI(object):
 
         # Make sure the necessary IAM execution roles are available
         if self.manage_roles:
-            self.zappa.create_iam_roles()
+            try:
+                self.zappa.create_iam_roles()
+            except botocore.client.ClientError:
+                click.echo(click.style("Failed", fg="red") + " to " + click.style("manage IAM roles", bold=True) + "!")
+                click.echo("You may " + click.style("lack the necessary AWS permissions", bold=True) + " to automatically manage a Zappa execution role.")
+                click.echo("To fix this, see here: " + click.style("https://github.com/Miserlou/Zappa#using-custom-aws-iam-roles-and-policie", bold=True))
+                return
 
         # Create the Lambda Zip,
         self.create_package()
