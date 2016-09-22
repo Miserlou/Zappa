@@ -390,6 +390,20 @@ class TestZappa(unittest.TestCase):
                 }
         lh.handler(event, None)
 
+        # Test raw_command event
+        event = {
+                    u'account': u'72333333333',
+                    u'region': u'us-east-1',
+                    u'detail': {},
+                    u'raw_command': u'print("check one two")',
+                    u'source': u'aws.events',
+                    u'version': u'0',
+                    u'time': u'2016-05-10T21:05:39Z',
+                    u'id': u'0d6a6db0-d5e7-4755-93a0-750a8bf49d55',
+                    u'resources': [u'arn:aws:events:us-east-1:72333333333:rule/tests.test_app.schedule_me']
+                }
+        lh.handler(event, None)
+
         # Test AWS S3 event
         event = {
                     u'account': u'72333333333',
