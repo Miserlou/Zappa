@@ -418,7 +418,7 @@ class ZappaCLI(object):
                                                     self.api_key_required,
                                                     self.integration_content_type_aliases,
                                                     auth_type)
-        self.zappa.update_stack(self.lambda_name, self.s3_bucket_name, wait=True)
+        self.zappa.update_stack(self.lambda_name, self.s3_bucket_name, wait=True, update_only=True)
 
         if self.stage_config.get('domain', None):
             endpoint_url = self.stage_config.get('domain')

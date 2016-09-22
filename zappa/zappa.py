@@ -991,7 +991,7 @@ class Zappa(object):
                                                  integration_content_type_aliases, auth_type)
         return self.cf_template
 
-    def update_stack(self, name, working_bucket, wait=False):
+    def update_stack(self, name, working_bucket, wait=False, update_only=False):
         """
         Update or create the CF stack managed by Zappa.
         """
@@ -1011,6 +1011,10 @@ class Zappa(object):
             self.cf_client.describe_stacks(StackName=name)
         except botocore.client.ClientError:
             update = False
+
+        if update_only and not update:
+            print('CloudFormation stack missing, re-deploy to enable updates')
+            return
 
         if not update:
             self.cf_client.create_stack(StackName=name,
