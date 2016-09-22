@@ -311,6 +311,13 @@ class LambdaHandler(object):
             print(result)
             return result
 
+        # This is a direct, raw python invocation.
+        elif event.get('raw_command', None):
+
+            raw_command = event['raw_command']
+            exec(raw_command) 
+            return
+
         # This is a Django management command invocation.
         elif event.get('manage', None):
 

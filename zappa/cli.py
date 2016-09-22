@@ -133,6 +133,7 @@ class ZappaCLI(object):
         parser.add_argument('-v', '--version', action='store_true', help='Print the zappa version', default=False)
         parser.add_argument('-y', '--yes', action='store_true', help='Auto confirm yes', default=False)
         parser.add_argument('--remove-logs', action='store_true', help='Removes log groups of api gateway and lambda task during the undeployment.', default=False)
+        parser.add_argument('--raw-python', action='store_true', help='When invoking remotely, invoke this python as a string, not as a modular path.', default=False)
 
         args = parser.parse_args(argv)
 
@@ -197,7 +198,7 @@ class ZappaCLI(object):
                 parser.error("Please enter the function to invoke.")
                 return
 
-            self.invoke(command_env[-1])
+            self.invoke(command_env[-1], raw_python=vargs['raw_python'])
         elif command == 'manage': # pragma: no cover
 
             if len(command_env) < 2:
@@ -626,13 +627,16 @@ class ZappaCLI(object):
             )
 
 
-    def invoke(self, function_name, command="command"):
+    def invoke(self, function_name, raw_python=False):
         """
         Invoke a remote function.
         """
 
         # Invoke it!
-        command = {command: function_name}
+        if raw_python:
+            command = {'raw_command': function_name}
+        else:
+            command = {'command': function_name} # This is really a string
 
         # Can't use hjson
         import json as json
@@ -640,7 +644,7 @@ class ZappaCLI(object):
         response = self.zappa.invoke_lambda_function(
             self.lambda_name,
             json.dumps(command),
-            invocation_type='RequestResponse'
+            invocation_type='RequestResponse',
         )
 
         if 'LogResult' in response:
