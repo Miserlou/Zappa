@@ -1,5 +1,10 @@
 # Zappa Changelog
 
+## 0.24.1
+
+* Add a helpful failure warning for users without permissions to automatically manage execution roles.
+* Fix potential div by zero error in new Tropo code.
+
 ## 0.24.0
 
 * Use Troposphere/CloudFormation to create API Gateway routes
