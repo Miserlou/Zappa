@@ -284,13 +284,25 @@ For instance, suppose you have a basic application in a file called "my_app.py",
 
 Any remote print statements made and the value the function returned will then be printed to your local console. **Nifty!**
 
+You can also invoke interpretable Python 2.7 strings directly by using `--raw`, like so:
+
+   $ zappa invoke production "print 1 + 2 + 3" --raw 
+
 #### Django Management Commands
 
 As a convenience, Zappa can also invoke remote Django 'manage.py' commands with the `manage` command. For instance, to perform the basic Django status check:
 
-    $ zappa manage production check
+    $ zappa manage production showmigrations admin
 
-Obviously, this only works for Django projects which have their settings properly defined. _(Please note that commands which take over 30 seconds to execute may time-out. See [this related issue](https://github.com/Miserlou/Zappa/issues/205#issuecomment-236391248) for a work-around.)_ 
+Obviously, this only works for Django projects which have their settings properly defined. 
+
+For commands which have their own arguments, you can also pass the command in as a string, like so:
+
+    # zappa manage production "shell --version"
+
+Commands which require direct user input, such as `createsuperuser`, should be [replaced by commands](http://stackoverflow.com/a/26091252) which use `invoke --raw`.
+
+_(Please note that commands which take over 30 seconds to execute may time-out. See [this related issue](https://github.com/Miserlou/Zappa/issues/205#issuecomment-236391248) for a work-around.)_ 
 
 #### Let's Encrypt SSL Domain Certification and Installation
 

@@ -1,5 +1,14 @@
 # Zappa Changelog
 
+## 0.25.0
+
+* Add ability to invoke raw python strings, like so:
+
+    `zappa invoke dev "print 1+2+3" --raw`
+
+* Fixes multi-argument `manage` commands.
+* Updated related documentation.
+
 ## 0.24.2
 
 * Fix a problem from trying to `update` old-style API routes using new Tropo code. Ensures `touch` works as intended again. Fix by @mathom.

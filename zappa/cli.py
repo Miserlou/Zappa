@@ -133,7 +133,7 @@ class ZappaCLI(object):
         parser.add_argument('-v', '--version', action='store_true', help='Print the zappa version', default=False)
         parser.add_argument('-y', '--yes', action='store_true', help='Auto confirm yes', default=False)
         parser.add_argument('--remove-logs', action='store_true', help='Removes log groups of api gateway and lambda task during the undeployment.', default=False)
-        parser.add_argument('--raw-python', action='store_true', help='When invoking remotely, invoke this python as a string, not as a modular path.', default=False)
+        parser.add_argument('--raw', action='store_true', help='When invoking remotely, invoke this python as a string, not as a modular path.', default=False)
 
         args = parser.parse_args(argv)
 
@@ -198,7 +198,7 @@ class ZappaCLI(object):
                 parser.error("Please enter the function to invoke.")
                 return
 
-            self.invoke(command_env[-1], raw_python=vargs['raw_python'])
+            self.invoke(command_env[-1], raw_python=vargs['raw'])
         elif command == 'manage': # pragma: no cover
 
             if len(command_env) < 2:
