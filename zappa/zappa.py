@@ -933,7 +933,14 @@ class Zappa(object):
                 # We may not have actually set up the domain.
                 pass
 
-        self.delete_stack(lambda_name, wait=True)
+        was_deleted = self.delete_stack(lambda_name, wait=True)
+
+        if not was_deleted:
+            # try erasing it with the older method
+            for api in self.get_rest_apis(lambda_name):
+                self.apigateway_client.delete_rest_api(
+                    restApiId=api['id']
+                )
 
     def update_stage_config(self, project_name, stage_name, cloudwatch_log_level, cloudwatch_data_trace,
                             cloudwatch_metrics_enabled):
@@ -962,7 +969,7 @@ class Zappa(object):
             stack = self.cf_client.describe_stacks(StackName=name)['Stacks'][0]
         except:
             print('No Zappa stack named {0}'.format(name))
-            return
+            return False
 
         tags = {x['Key']:x['Value'] for x in stack['Tags']}
         if tags.get('ZappaProject') == name:
@@ -971,8 +978,10 @@ class Zappa(object):
                 waiter = self.cf_client.get_waiter('stack_delete_complete')
                 print('Waiting for stack {0} to be deleted...'.format(name))
                 waiter.wait(StackName=name)
+            return True
         else:
             print('ZappaProject tag not found on {0}, doing nothing'.format(name))
+            return False
 
     def create_stack_template(self, lambda_arn, lambda_name, api_key_required,
                               integration_content_type_aliases, auth_type):
