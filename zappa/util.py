@@ -1,5 +1,7 @@
 import fnmatch
+import json
 import os
+import requests
 import shutil
 import stat
 
@@ -199,3 +201,20 @@ def get_event_source_status(event_source, lambda_arn, target_function, boto_sess
 
     event_source_obj, ctx, funk = get_event_source(event_source, lambda_arn, target_function, boto_session, dry=False)
     return event_source_obj.status(funk)
+
+def check_new_version_available(this_version):
+    """
+    Checks if a newer version of Zappa is available.
+
+    Returns True is updateable, else False.
+
+    """
+
+    pypi_url = 'https://pypi.python.org/pypi/Zappa/json'
+    resp = requests.get(pypi_url)
+    top_version = resp.json()['info']['version']
+
+    if this_version != top_version:
+        return True
+    else:
+        return False

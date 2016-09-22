@@ -415,6 +415,8 @@ class LambdaHandler(object):
                     hostname = 'https://' + environ['HTTP_HOST']
                     if location.startswith(hostname):
                         exception = location[len(hostname):]
+                    else:
+                        exception = location
 
                 # Calculate the total response time,
                 # and log it in the Common Log format.

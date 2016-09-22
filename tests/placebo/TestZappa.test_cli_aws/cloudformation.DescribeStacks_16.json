@@ -1,0 +1,15 @@
+{
+    "status_code": 400, 
+    "data": {
+            "Error": {"Code": "ValidationError",
+            "Message": "Stack with id zappa-ttt888 does not exist",
+            "Type": "Sender"},
+            "ResponseMetadata": {"HTTPHeaders": {"connection": "close",
+                "content-length": "298",
+                "content-type": "text/xml",
+                "date": "Tue, 20 Sep 2016 22:13:54 GMT",
+                "x-amzn-requestid": "853a18e4-7f7f-11e6-ab28-0d18db97cbd1"},
+                "HTTPStatusCode": 400,
+                "RequestId": "853a18e4-7f7f-11e6-ab28-0d18db97cbd1"}
+    }
+}

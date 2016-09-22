@@ -318,7 +318,6 @@ to change Zappa's behavior. Use these at your own risk!
         "api_key": "your_api_key_id" // optional, use an existing API key. The option "api_key_required" must be true to apply
         "assume_policy": "my_assume_policy.json", // optional, IAM assume policy JSON file
         "attach_policy": "my_attach_policy.json", // optional, IAM attach policy JSON file
-        "authorization_type": "AWS_IAM", // optional, use IAM to require request signing. Defaults to "NONE".
         "aws_region": "us-east-1", // AWS Region (default US East),
         "callbacks": { // Call custom functions during the local Zappa deployment/update process
             "settings": "my_app.settings_callback", // After loading the settings
@@ -354,6 +353,7 @@ to change Zappa's behavior. Use these at your own risk!
         "exception_handler": "your_module.report_exception", // function that will be invoked in case Zappa sees an unhandled exception raised from your code
         "exclude": ["*.gz", "*.rar"], // A list of regex patterns to exclude from the archive
         "http_methods": ["GET", "POST"], // HTTP Methods to route,
+        "iam_authorization": true, // optional, use IAM to require request signing. Default false.
         "integration_response_codes": [200, 301, 404, 500], // Integration response status codes to route
         "integration_content_type_aliases": { // For routing requests with non-standard mime types
             "application/json": [
@@ -424,7 +424,7 @@ You can use the `api_key_required` setting to generate and assign an API key to 
 
 #### Enabling Secure Endpoints on API Gateway (IAM Policy)
 
-You can enable IAM-based (v4 signing) authorization on an API by setting the `authorization_type` setting to `AWS_IAM`. Your API will then require signed requests and access can be controlled via [IAM policy](https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-iam-policy-examples.html). Unsigned requests will receive a 403 response, as will requesters who are not authorized to access the API.
+You can enable IAM-based (v4 signing) authorization on an API by setting the `iam_authorization` setting to `true`. Your API will then require signed requests and access can be controlled via [IAM policy](https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-iam-policy-examples.html). Unsigned requests will receive a 403 response, as will requesters who are not authorized to access the API.
 
 #### Deploying to a Domain With a Let's Encrypt Certificate (DNS Auth)
 
@@ -582,6 +582,8 @@ Ongoing discussion about the minimum policy requirements necessary for a Zappa d
 * [Zappa Slack Inviter](https://github.com/Miserlou/zappa-slack-inviter) - A tiny, server-less service for inviting new users to your Slack channel.
 * [Serverless Image Host](https://github.com/Miserlou/serverless-imagehost) - A thumbnailing service with Flask, Zappa and Pillow.
 * [Gigger](https://www.gigger.rocks/) - The live music industry's search engine
+* [Zappa BitTorrent Tracker](https://github.com/Miserlou/zappa-bittorrent-tracker) - An experimental server-less BitTorrent tracker. Work in progress.
+* [JankyGlance](https://github.com/Miserlou/JankyGlance) - A server-less Yahoo! Pipes replacement.
 * And many more!
 
 Are you using Zappa? Let us know and we'll list your site here!

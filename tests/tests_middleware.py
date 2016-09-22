@@ -162,7 +162,8 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
         def simple_app(environ, start_response):
             status = '301 Moved Permanently'
             response_headers = [('Location', url),
-                                ('Set-Cookie', 'foo=456')]
+                                ('Set-Cookie', 'foo=456'),
+                                ('Content-Type', 'text/html; charset blahblah')]
             start_response(status, response_headers)
             return [body]
 
@@ -176,13 +177,13 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
         self.assertEqual(self.status[0], '200 OK')
 
         # Assert there is only one zappa cookie
-        self.assertEqual(len(self.headers), 2)
+        self.assertEqual(len(self.headers), 3)
 
         self.assertEqual(self.headers[0][0], 'Location')
         self.assertEqual(self.headers[0][1], url)
 
-        self.assertEqual(self.headers[1][0], 'Set-Cookie')
-        self.assertTrue(self.headers[1][1].startswith('zappa='))
+        self.assertEqual(self.headers[2][0], 'Set-Cookie')
+        self.assertTrue(self.headers[2][1].startswith('zappa='))
 
         self.assertNotEqual(''.join(resp), body)
 
@@ -201,8 +202,8 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
         # Call with empty WSGI Environment
         resp = app(dict(), self._start_response)
 
-        #self.assertEqual(self.status[0], '302 Found')
-        self.assertEqual(self.status[0], '200 OK')
+        self.assertEqual(self.status[0], '302 Found')
+        #self.assertEqual(self.status[0], '200 OK')
         self.assertEqual(len(self.headers), 3)
 
         self.assertEqual(self.headers[1][0], 'Location')
@@ -211,7 +212,7 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
         self.assertEqual(self.headers[2][0], 'Set-Cookie')
         self.assertTrue(self.headers[2][1].startswith('zappa='))
 
-        self.assertNotEqual(''.join(resp), body)
+        self.assertEqual(''.join(resp), body)
 
     def test_wsgi_middleware_uglystring(self):
         ugly_string = unicode("˝ÓÔÒÚÆ☃ЗИЙКЛМФХЦЧШ차를 타고 온 펲시맨(╯°□°）╯︵ ┻━┻)"
