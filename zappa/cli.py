@@ -361,7 +361,7 @@ class ZappaCLI(object):
             last_updated_unix = time.mktime(last_updated.timetuple())
         except Exception as e:
             click.echo(click.style("Warning!", fg="red") + " Couldn't get function - have you deployed yet?")
-            return
+            sys.exit(0)
 
         if last_updated_unix <= updated_time:
             click.echo(click.style("Warning!", fg="red") + " You may have upgraded Zappa since deploying this application. You will need to " + click.style("redeploy", bold=True) + " for this deployment to work properly!")
@@ -374,7 +374,7 @@ class ZappaCLI(object):
                 click.echo(click.style("Failed", fg="red") + " to " + click.style("manage IAM roles", bold=True) + "!")
                 click.echo("You may " + click.style("lack the necessary AWS permissions", bold=True) + " to automatically manage a Zappa execution role.")
                 click.echo("To fix this, see here: " + click.style("https://github.com/Miserlou/Zappa#using-custom-aws-iam-roles-and-policie", bold=True))
-                return
+                sys.exit(0)
 
         # Create the Lambda Zip,
         self.create_package()
@@ -384,7 +384,7 @@ class ZappaCLI(object):
         success = self.zappa.upload_to_s3(self.zip_path, self.s3_bucket_name)
         if not success: # pragma: no cover
             print("Unable to upload to S3. Quitting.")
-            return
+            sys.exit(0)
 
         # Register the Lambda function with that zip as the source
         # You'll also need to define the path to your lambda_handler code.
