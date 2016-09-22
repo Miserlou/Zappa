@@ -1053,7 +1053,7 @@ class Zappa(object):
                 if count:
                     # We can end up in a situation where we have more resources being created
                     # than anticipated.
-                    if (count - current_resources) >= 0:
+                    if (count - current_resources) > 0:
                         progress.update(count - current_resources)
                 current_resources = count
             progress.close()
