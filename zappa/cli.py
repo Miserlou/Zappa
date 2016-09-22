@@ -146,7 +146,7 @@ class ZappaCLI(object):
         # Version requires no arguments
         if args.version: # pragma: no cover
             self.print_version()
-            sys.exit(0)
+            sys.exit(-1)
 
         # Parse the input
         command_env = vargs['command_env']
@@ -258,7 +258,7 @@ class ZappaCLI(object):
                 click.echo(click.style("Failed", fg="red") + " to " + click.style("manage IAM roles", bold=True) + "!")
                 click.echo("You may " + click.style("lack the necessary AWS permissions", bold=True) + " to automatically manage a Zappa execution role.")
                 click.echo("To fix this, see here: " + click.style("https://github.com/Miserlou/Zappa#using-custom-aws-iam-roles-and-policie", bold=True))
-                return
+                sys.exit(-1)
 
         # Create the Lambda Zip
         self.create_package()
@@ -269,7 +269,7 @@ class ZappaCLI(object):
                 self.zip_path, self.s3_bucket_name)
         if not success: # pragma: no cover
             print("Unable to upload to S3. Quitting.")
-            return
+            sys.exit(-1)
 
         # Register the Lambda function with that zip as the source
         # You'll also need to define the path to your lambda_handler code.
@@ -361,7 +361,7 @@ class ZappaCLI(object):
             last_updated_unix = time.mktime(last_updated.timetuple())
         except Exception as e:
             click.echo(click.style("Warning!", fg="red") + " Couldn't get function - have you deployed yet?")
-            sys.exit(0)
+            sys.exit(-1)
 
         if last_updated_unix <= updated_time:
             click.echo(click.style("Warning!", fg="red") + " You may have upgraded Zappa since deploying this application. You will need to " + click.style("redeploy", bold=True) + " for this deployment to work properly!")
@@ -374,7 +374,7 @@ class ZappaCLI(object):
                 click.echo(click.style("Failed", fg="red") + " to " + click.style("manage IAM roles", bold=True) + "!")
                 click.echo("You may " + click.style("lack the necessary AWS permissions", bold=True) + " to automatically manage a Zappa execution role.")
                 click.echo("To fix this, see here: " + click.style("https://github.com/Miserlou/Zappa#using-custom-aws-iam-roles-and-policie", bold=True))
-                sys.exit(0)
+                sys.exit(-1)
 
         # Create the Lambda Zip,
         self.create_package()
@@ -384,7 +384,7 @@ class ZappaCLI(object):
         success = self.zappa.upload_to_s3(self.zip_path, self.s3_bucket_name)
         if not success: # pragma: no cover
             print("Unable to upload to S3. Quitting.")
-            sys.exit(0)
+            sys.exit(-1)
 
         # Register the Lambda function with that zip as the source
         # You'll also need to define the path to your lambda_handler code.
@@ -580,7 +580,7 @@ class ZappaCLI(object):
                 function_response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name)
             except botocore.exceptions.ClientError as e: # pragma: no cover
                 print("Function does not exist, please deploy first. Ex: zappa deploy {}.".format(self.api_stage))
-                return
+                sys.exit(-1)
 
             print("Scheduling..")
             self.zappa.schedule_events(
@@ -611,6 +611,7 @@ class ZappaCLI(object):
         except botocore.exceptions.ClientError as e: # pragma: no cover
             print("Function does not exist, you should deploy first. Ex: zappa deploy {}. "
                   "Proceeding to unschedule CloudWatch based events.".format(self.api_stage))
+            sys.exit(-1)
 
         print("Unscheduling..")
         self.zappa.unschedule_events(
@@ -991,7 +992,7 @@ class ZappaCLI(object):
         # Ensure we're passed a valid settings file.
         if not os.path.isfile(settings_file):
             print("Please configure your zappa_settings file.")
-            sys.exit(1) # pragma: no cover
+            sys.exit(-1) # pragma: no cover
 
         # Load up file
         self.load_settings_file(settings_file)
@@ -999,7 +1000,7 @@ class ZappaCLI(object):
         # Make sure that this environment is our settings
         if self.api_stage not in self.zappa_settings.keys():
             print("Please define '{0!s}' in your Zappa settings.".format(self.api_stage))
-            sys.exit(1) # pragma: no cover
+            sys.exit(-1) # pragma: no cover
 
         # We need a working title for this project. Use one if supplied, else cwd dirname.
         if 'project_name' in self.stage_config: # pragma: no cover
@@ -1205,7 +1206,7 @@ class ZappaCLI(object):
             try:
                 os.remove(self.zip_path)
             except Exception as e: # pragma: no cover
-                pass
+                sys.exit(-1)
 
     def remove_uploaded_zip(self):
         """
@@ -1299,7 +1300,7 @@ def handle(): # pragma: no cover
         click.echo("\n==============\n")
         shamelessly_promote()
 
-        sys.exit(1)
+        sys.exit(-1)
 
 if __name__ == '__main__': # pragma: no cover
     handle()
