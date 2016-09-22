@@ -209,7 +209,13 @@ class ZappaCLI(object):
                 print("If this is a Django project, please define django_settings in your zappa_settings.")
                 return
 
-            self.invoke(command_env[-1], "manage")
+            command_tail = command_env[2:]
+            if len(command_tail) > 1:
+                command = " ".join(command_tail) # ex: zappa manage dev "shell --version"
+            else:
+                command = command_tail[0] # ex: zappa manage dev showmigrations admin
+
+            self.invoke(command, "manage")
 
         elif command == 'tail': # pragma: no cover
             self.tail()
