@@ -1,5 +1,9 @@
 # Zappa Changelog
 
+## 0.24.2
+
+* Fix a problem from trying to `update` old-style API routes using new Tropo code. Ensures `touch` works as intended again. Fix by @mathom.
+
 ## 0.24.1
 
 * Add a helpful failure warning for users without permissions to automatically manage execution roles.
