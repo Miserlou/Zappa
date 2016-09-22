@@ -583,6 +583,7 @@ Ongoing discussion about the minimum policy requirements necessary for a Zappa d
 * [Serverless Image Host](https://github.com/Miserlou/serverless-imagehost) - A thumbnailing service with Flask, Zappa and Pillow.
 * [Gigger](https://www.gigger.rocks/) - The live music industry's search engine
 * [Zappa BitTorrent Tracker](https://github.com/Miserlou/zappa-bittorrent-tracker) - An experimental server-less BitTorrent tracker. Work in progress.
+* [JankyGlance](https://github.com/Miserlou/JankyGlance) - A server-less Yahoo! Pipes replacement.
 * And many more!
 
 Are you using Zappa? Let us know and we'll list your site here!
