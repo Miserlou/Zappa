@@ -147,7 +147,7 @@ class ZappaCLI(object):
         # Version requires no arguments
         if args.version: # pragma: no cover
             self.print_version()
-            sys.exit(-1)
+            sys.exit(0)
 
         # Parse the input
         command_env = vargs['command_env']
