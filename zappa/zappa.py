@@ -1086,7 +1086,10 @@ class Zappa(object):
         Given a lambda_name and stage_name, return a valid API URL.
         """
         api_id = self.get_api_id(lambda_name)
-        return "https://{}.execute-api.{}.amazonaws.com/{}".format(api_id, self.boto_session.region_name, stage_name)
+        if api_id:
+            return "https://{}.execute-api.{}.amazonaws.com/{}".format(api_id, self.boto_session.region_name, stage_name)
+        else:
+            return None
 
     def get_api_id(self, lambda_name):
         """
@@ -1097,6 +1100,13 @@ class Zappa(object):
                                                               LogicalResourceId='Api')
             return response['StackResourceDetail']['PhysicalResourceId']
         except:
+            # try the old method (project was probably made on an older, non CF version)
+            response = self.apigateway_client.get_rest_apis(limit=500)
+
+            for item in response['items']:
+                if item['name'] == lambda_name:
+                    return item['id']
+
             logger.exception('Could not get API id')
             return None
 
