@@ -8,6 +8,8 @@
 
 * Fixes multi-argument `manage` commands.
 * Updated related documentation.
+* Fixes places where program was exiting with status 0 instead of -1. Thanks @mattc!
+* Adds old-to-new-style check on delete, thanks @mathom.
 
 ## 0.24.2
 
