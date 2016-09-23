@@ -132,7 +132,6 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
     }
 
     arn = event_source['arn']
-    events = event_source['events']
     _, _, svc, _ = arn.split(':', 3)
 
     event_source_func = event_source_map.get(svc, None)
@@ -148,7 +147,7 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
     ctx.session = boto_session
 
     funk = PseudoFunction()
-    funk.name = target_function
+    funk.name = lambda_arn
     
     # Kappa 0.6.0 requires this nasty hacking,
     # hopefully we can remove at least some of this soon.
@@ -173,11 +172,18 @@ def add_event_source(event_source, lambda_arn, target_function, boto_session, dr
     """
 
     event_source_obj, ctx, funk = get_event_source(event_source, lambda_arn, target_function, boto_session, dry=False)
+    # TODO: Detect changes in config and refine exists algorithm
     if not dry:
-        rule_response = event_source_obj.add(funk)
-        return rule_response
-    else:
-        return event_source_obj
+        if not event_source_obj.status(funk):
+            event_source_obj.add(funk)
+            if event_source_obj.status(funk):
+                return 'successful'
+            else:
+                return 'failed'
+        else:
+            return 'exists'
+
+    return 'dryrun'
 
 def remove_event_source(event_source, lambda_arn, target_function, boto_session, dry=False):
     """
