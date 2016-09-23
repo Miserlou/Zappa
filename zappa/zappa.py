@@ -1462,7 +1462,8 @@ class Zappa(object):
         rules = [r['Name'] for r in self.events_client.list_rules(NamePrefix=lambda_name)['Rules']]
         return [self.events_client.describe_rule(Name=r) for r in rules]
 
-    def unschedule_events(self, events, lambda_arn=None, lambda_name=None, excluded_source_services=[]):
+    def unschedule_events(self, events, lambda_arn=None, lambda_name=None, excluded_source_services=None):
+        excluded_source_services = excluded_source_services or []
         """
         Given a list of events, unschedule these CloudWatch Events.
 
