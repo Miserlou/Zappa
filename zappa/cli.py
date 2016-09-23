@@ -1204,7 +1204,8 @@ class ZappaCLI(object):
 
         if self.stage_config.get('delete_local_zip', True):
             try:
-                os.remove(self.zip_path)
+                if os.path.isfile(self.zip_path):
+                    os.remove(self.zip_path)
             except Exception as e: # pragma: no cover
                 sys.exit(-1)
 
