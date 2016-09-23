@@ -522,20 +522,21 @@ class ZappaCLI(object):
             if confirm != 'y':
                 return
 
-        if remove_logs:
-            self.zappa.remove_api_gateway_logs(self.lambda_name)
+        if self.use_apigateway:
+            if remove_logs:
+                self.zappa.remove_api_gateway_logs(self.lambda_name)
 
-        domain_name = self.stage_config.get('domain', None)
+            domain_name = self.stage_config.get('domain', None)
 
-        # Only remove the api key when not specified
-        if self.api_key_required and self.api_key is None:
-            api_id = self.zappa.get_api_id(self.lambda_name)
-            self.zappa.remove_api_key(api_id, self.api_stage)
+            # Only remove the api key when not specified
+            if self.api_key_required and self.api_key is None:
+                api_id = self.zappa.get_api_id(self.lambda_name)
+                self.zappa.remove_api_key(api_id, self.api_stage)
 
-        gateway_id = self.zappa.undeploy_api_gateway(
-            self.lambda_name,
-            domain_name=domain_name
-        )
+            gateway_id = self.zappa.undeploy_api_gateway(
+                self.lambda_name,
+                domain_name=domain_name
+            )
 
         self.unschedule()  # removes event triggers, including warm up event.
 
