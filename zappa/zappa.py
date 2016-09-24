@@ -179,7 +179,7 @@ LAMBDA_REGIONS = ['us-east-1', 'us-west-2', 'eu-west-1', 'eu-central-1', 'ap-nor
 
 ZIP_EXCLUDES = [
     '*.exe', '*.DS_Store', '*.Python', '*.git', '.git/*', '*.zip', '*.tar.gz',
-    '*.hg', '*.egg-info', 'botocore*', 'pip', 'docutils*', 'boto3*', 'setuputils*'
+    '*.hg', '*.egg-info', 'pip', 'docutils*', 'setuputils*'
 ]
 
 ##
