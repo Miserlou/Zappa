@@ -104,6 +104,7 @@ class ZappaCLI(object):
     manage_roles = True
     exception_handler = None
     environment_variables = None
+    authorizer = None
 
     stage_name_env_pattern = re.compile('^[a-zA-Z0-9_]+$')
 
@@ -1118,6 +1119,7 @@ class ZappaCLI(object):
             self.api_stage].get('lambda_description', "Zappa Deployment")
         self.environment_variables = self.zappa_settings[
             self.api_stage].get('environment_variables', {})
+        self.authorizer = self.stage_config.get('authorizer', {})
 
         self.zappa = Zappa( boto_session=session,
                             profile_name=self.profile_name,
@@ -1239,6 +1241,12 @@ class ZappaCLI(object):
                 if arn and function:
                     event_mapping[arn] = function
             settings_s = settings_s + "AWS_EVENT_MAPPING={0!s}\n".format(event_mapping)
+
+            # Authorizer config
+            authorizer_function = self.authorizer.get('function', None)
+            if authorizer_function:
+                settings_s += "AUTHORIZER_FUNCTION='{0!s}'\n".format(authorizer_function)
+
 
             # Copy our Django app into root of our package.
             # It doesn't work otherwise.

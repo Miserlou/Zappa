@@ -382,6 +382,12 @@ to change Zappa's behavior. Use these at your own risk!
         "exclude": ["*.gz", "*.rar"], // A list of regex patterns to exclude from the archive. To exclude boto3 and botocore (available in an older version on Lambda), add "boto3*" and "botocore*".
         "http_methods": ["GET", "POST"], // HTTP Methods to route,
         "iam_authorization": true, // optional, use IAM to require request signing. Default false.
+        "authorizer": {
+            "function": "your_module.your_auth_function", // http://docs.aws.amazon.com/apigateway/latest/developerguide/use-custom-authorizer.html, https://github.com/awslabs/aws-apigateway-lambda-authorizer-blueprints/blob/master/blueprints/python/api-gateway-authorizer-python.py
+            "result_ttl": 300, // NOT IMPLEMENTED
+            "token_source": "method.request.header.Authorization", // NOT IMPLEMENTED
+            "validation_expression": "xxx", // NOT IMPLEMENTED, optional
+        },
         "integration_response_codes": [200, 301, 404, 500], // Integration response status codes to route
         "integration_content_type_aliases": { // For routing requests with non-standard mime types
             "application/json": [
