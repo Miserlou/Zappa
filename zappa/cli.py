@@ -23,6 +23,7 @@ import logging
 import os
 import pkg_resources
 import random
+import re
 import requests
 import slugify
 import string
@@ -104,6 +105,8 @@ class ZappaCLI(object):
     exception_handler = None
     environment_variables = None
 
+    stage_name_env_pattern = re.compile('^[a-zA-Z0-9_]+$')
+
     @property
     def stage_config(self):
         """A shortcut property for settings of staging."""
@@ -178,7 +181,11 @@ class ZappaCLI(object):
                 self.app_function = vargs['app_function']
 
             # Load our settings
-            self.load_settings(vargs['settings_file'])
+            try:
+                self.load_settings(vargs['settings_file'])
+            except ValueError as e:
+                print("Error: {}".format(e.message))
+                sys.exit(-1)
             self.callback('settings')
 
         # Hand it off
@@ -441,7 +448,7 @@ class ZappaCLI(object):
             endpoint_url = 'https://' + endpoint_url
 
         deployed_string = "Your updated Zappa deployment is " + click.style("live", fg='green', bold=True) + "!: " + click.style("{}".format(endpoint_url), bold=True)
-        
+
         api_url = None
         if endpoint_url and 'amazonaws.com' not in endpoint_url:
             api_url = self.zappa.get_api_url(
@@ -759,6 +766,20 @@ class ZappaCLI(object):
         version = pkg_resources.require("zappa")[0].version
         print(version)
 
+    def check_stage_name(self, stage_name):
+        """
+        Make sure the stage name matches the AWS-allowed pattern
+
+        (calls to apigateway_client.create_deployment, will fail with error
+        message "ClientError: An error occurred (BadRequestException) when
+        calling the CreateDeployment operation: Stage name only allows
+        a-zA-Z0-9_" if the pattern does not match)
+        """
+        if self.stage_name_env_pattern.match(stage_name):
+            return True
+        raise ValueError("AWS requires stage name to match a-zA-Z0-9_")
+
+
     def init(self, settings_file="zappa_settings.json"):
         """
         Initialize a new Zappa project by creating a new zappa_settings.json in a guided process.
@@ -798,8 +819,14 @@ class ZappaCLI(object):
         click.echo("Let's get started!\n")
 
         # Create Env
-        click.echo("Your Zappa configuration can support multiple production environments, like '" + click.style("dev", bold=True)  + "', '" + click.style("staging", bold=True)  + "', and '" + click.style("production", bold=True)  + "'.")
-        env = raw_input("What do you want to call this environment (default 'dev'): ") or "dev"
+        while True:
+            click.echo("Your Zappa configuration can support multiple production environments, like '" + click.style("dev", bold=True)  + "', '" + click.style("staging", bold=True)  + "', and '" + click.style("production", bold=True)  + "'.")
+            env = raw_input("What do you want to call this environment (default 'dev'): ") or "dev"
+            try:
+                self.check_stage_name(env)
+                break
+            except ValueError:
+                click.echo(click.style("Environment names must match a-zA-Z0-9_", fg='red'))
 
         # Create Bucket
         click.echo("\nYour Zappa deployments will need to be uploaded to a " + click.style("private S3 bucket", bold=True)  + ".")
@@ -996,6 +1023,13 @@ class ZappaCLI(object):
 
         # Load up file
         self.load_settings_file(settings_file)
+
+        # Make sure that the environments are valid names:
+        for stage_name in self.zappa_settings.keys():
+            try:
+                self.check_stage_name(stage_name)
+            except ValueError:
+                raise ValueError("API stage names must match a-zA-Z0-9_ ; '{0!s}' does not.".format(stage_name))
 
         # Make sure that this environment is our settings
         if self.api_stage not in self.zappa_settings.keys():
