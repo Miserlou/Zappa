@@ -427,12 +427,13 @@ class ZappaCLI(object):
         else:
             auth_type = "NONE"
 
-        template = self.zappa.create_stack_template(self.lambda_arn,
-                                                    self.lambda_name,
-                                                    self.api_key_required,
-                                                    self.integration_content_type_aliases,
-                                                    auth_type)
-        self.zappa.update_stack(self.lambda_name, self.s3_bucket_name, wait=True, update_only=True)
+        if self.use_apigateway:
+            template = self.zappa.create_stack_template(self.lambda_arn,
+                                                        self.lambda_name,
+                                                        self.api_key_required,
+                                                        self.integration_content_type_aliases,
+                                                        auth_type)
+            self.zappa.update_stack(self.lambda_name, self.s3_bucket_name, wait=True, update_only=True)
 
         if self.stage_config.get('domain', None):
             endpoint_url = self.stage_config.get('domain')
@@ -454,22 +455,24 @@ class ZappaCLI(object):
         if endpoint_url and 'https://' not in endpoint_url:
             endpoint_url = 'https://' + endpoint_url
 
-        deployed_string = "Your updated Zappa deployment is " + click.style("live", fg='green', bold=True) + "!: " + click.style("{}".format(endpoint_url), bold=True)
+        deployed_string = "Your updated Zappa deployment is " + click.style("live", fg='green', bold=True) + "!"
+        if self.use_apigateway:
+            deployed_string = deployed_string + ": " + click.style("{}".format(endpoint_url), bold=True)
 
-        api_url = None
-        if endpoint_url and 'amazonaws.com' not in endpoint_url:
-            api_url = self.zappa.get_api_url(
-                self.lambda_name,
-                self.api_stage)
+            api_url = None
+            if endpoint_url and 'amazonaws.com' not in endpoint_url:
+                api_url = self.zappa.get_api_url(
+                    self.lambda_name,
+                    self.api_stage)
 
-            if endpoint_url != api_url:
-                deployed_string = deployed_string + " (" + api_url + ")"
+                if endpoint_url != api_url:
+                    deployed_string = deployed_string + " (" + api_url + ")"
 
-        if self.stage_config.get('touch', True):
-            if api_url:
-                requests.get(api_url)
-            elif endpoint_url: 
-                requests.get(endpoint_url)
+            if self.stage_config.get('touch', True):
+                if api_url:
+                    requests.get(api_url)
+                elif endpoint_url: 
+                    requests.get(endpoint_url)
 
         click.echo(deployed_string)
 
