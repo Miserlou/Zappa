@@ -195,6 +195,23 @@ And then:
 
 And now your function will execute every minute!
 
+If you need to pass arguments to the function, use the function_kwargs key. The dictionary will then be available within the lambda
+event argument as function_kwargs.
+
+```javascript
+{
+    "production": {
+       ...
+       "events": [{
+           "function": "your_module.your_function", // The function to execute
+           "function_kwargs": {"key": "val"},
+           "expression": "rate(1 minute)" // When to execute it (in cron or rate format)
+       }],
+       ...
+    }
+}
+```
+
 If you want to cancel these, you can simply use the `unschedule` command:
 
     $ zappa unschedule production
@@ -350,6 +367,11 @@ to change Zappa's behavior. Use these at your own risk!
         "events": [
             {   // Recurring events
                 "function": "your_module.your_recurring_function", // The function to execute
+                "expression": "rate(1 minute)" // When to execute it (in cron or rate format)
+            },
+            {   // Recurring event with arguments
+                "function": "your_module.your_recurring_function", // The function to execute
+                "function_kwargs": {"key": "val", "key2": "val2"},
                 "expression": "rate(1 minute)" // When to execute it (in cron or rate format)
             },
             {   // AWS Reactive events
