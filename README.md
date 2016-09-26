@@ -258,7 +258,7 @@ Similarly, for a [Simple Notification Service](https://aws.amazon.com/sns/) even
                "event_source": {
                     "arn":  "arn:aws:dynamodb:us-east-1:1234554:table/YourTable/stream/2016-05-11T00:00:00.000",
                     "starting_position": "TRIM_HORIZON", // Supported values: TRIM_HORIZON, LATEST
-                    "batch  size": 50, // Max: 1000
+                    "batch_size": 50, // Max: 1000
                     "enabled": true // Default is false
                }
            }
