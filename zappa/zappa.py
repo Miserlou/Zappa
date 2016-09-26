@@ -1058,6 +1058,11 @@ class Zappa(object):
                 if result['Stacks'][0]['StackStatus'] == 'CREATE_COMPLETE':
                     break
 
+                # Something has gone wrong.
+                # Is raising enough? Should we also remove the Lambda function?
+                if result['Stacks'][0]['StackStatus'] == 'ROLLBACK_IN_PROGRESS':
+                    raise EnvironmentError("Stack creation failed. Please check your CloudFormation console. You may also need to `undeploy`.")
+
                 count = 0
                 for result in sr.paginate(StackName=name):
                     done = (1 for x in result['StackResourceSummaries']
@@ -1107,7 +1112,7 @@ class Zappa(object):
         try:
             response = self.cf_client.describe_stack_resource(StackName=lambda_name,
                                                               LogicalResourceId='Api')
-            return response['StackResourceDetail']['PhysicalResourceId']
+            return response['StackResourceDetail'].get('PhysicalResourceId', None)
         except:
             # try the old method (project was probably made on an older, non CF version)
             response = self.apigateway_client.get_rest_apis(limit=500)
