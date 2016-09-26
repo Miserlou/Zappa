@@ -445,9 +445,9 @@ class LambdaHandler(object):
         except Exception as e:  # pragma: no cover
 
             # Print statements are visible in the logs either way
-            print(e)
+            print(e)`
             exc_info = sys.exc_info()
-            message = 'An uncaught exception happened while servicing this request.'
+            message = 'An uncaught exception happened while servicing this request. You can investigate this with the `zappa tail` command.'
 
             # If we didn't even build an app_module, just raise.
             if not settings.DJANGO_SETTINGS:
