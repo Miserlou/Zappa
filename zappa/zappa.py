@@ -3,7 +3,6 @@ import botocore
 import json
 import logging
 import os
-import datetime
 import random
 import requests
 import shutil
@@ -1366,7 +1365,6 @@ class Zappa(object):
                     t['Input'] = json.dumps({
                         'detail-type': u'Scheduled Event',
                         'source': u'aws.events',
-                        'time': datetime.datetime.now().isoformat(),
                         'resources': [rule_response['RuleArn']],
                         'function_kwargs': function_kwargs
                     })
