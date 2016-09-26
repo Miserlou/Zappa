@@ -300,7 +300,9 @@ class ZappaCLI(object):
         self.schedule()
 
         endpoint_url = ''
+        deployment_string = click.style("Deployment complete", fg="green", bold=True) + "!"
         if self.use_apigateway:
+            
 
             if self.iam_authorization:
                 auth_type = "AWS_IAM"
@@ -330,6 +332,7 @@ class ZappaCLI(object):
                                         cloudwatch_data_trace=self.zappa_settings[self.api_stage].get('cloudwatch_data_trace', False),
                                         cloudwatch_metrics_enabled=self.zappa_settings[self.api_stage].get('cloudwatch_metrics_enabled', False),
                                     )
+            deployment_string = deployment_string + ": {}".format(endpoint_url)
 
             # Create/link API key
             if self.api_key_required:
@@ -351,8 +354,7 @@ class ZappaCLI(object):
 
         self.callback('post')
 
-        click.echo(click.style("Deployment complete", fg="green", bold=True) + "!: {}".format(endpoint_url))
-
+        click.echo(deployment_string)
 
     def update(self):
         """
@@ -476,8 +478,6 @@ class ZappaCLI(object):
 
         click.echo(deployed_string)
 
-        return
-
     def rollback(self, revision):
         """
         Rollsback the currently deploy lambda code to a previous revision.
@@ -488,8 +488,6 @@ class ZappaCLI(object):
         self.zappa.rollback_lambda_function_version(
             self.lambda_name, versions_back=revision)
         print("Done!")
-
-        return
 
     def tail(self, keep_open=True):
         """
