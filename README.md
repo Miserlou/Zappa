@@ -265,23 +265,6 @@ Similarly, for a [Simple Notification Service](https://aws.amazon.com/sns/) even
        ]
 ```
 
-Please note that your Lambda execution role needs the following permissions on your stream:
-
-```javascript
-{
-  "Effect": "Allow",
-  "Action": [
-    "dynamodb:GetRecords",
-    "dynamodb:GetShardIterator",
-    "dynamodb:DescribeStream",
-    "dynamodb:ListStreams"
-  ],
-  "Resource": {
-    "Fn::Sub": "arn:aws:dynamodb:us-east-1:1234554:table/YourTable/stream/*"
-  }
-}
-```
-
 #### Undeploy
 
 If you need to remove the API Gateway and Lambda function that you have previously published, you can simply:
