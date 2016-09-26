@@ -539,7 +539,7 @@ class TestZappa(unittest.TestCase):
 
     def test_bad_json_catch(self):
         zappa_cli = ZappaCLI()
-        self.assertRaises(ValueError, zappa_cli.load_settings_file('tests/test_bad_settings.json'))
+        self.assertRaises(ValueError, zappa_cli.load_settings_file, 'tests/test_bad_settings.json')
 
     def test_bad_stage_name_catch(self):
         zappa_cli = ZappaCLI()
