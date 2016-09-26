@@ -1,0 +1,48 @@
+{
+    "ttt-888": {
+       "touch": false,
+       "s3_bucket": "lmbda",
+       "app_function": "tests.test_app.hello_world",
+       "callbacks": {
+           "settings": "test_settings.callback",
+           "post": "test_settings.callback",
+           "zip": "test_settings.callback"
+       },
+       "delete_local_zip": true,
+       "debug": true,
+       "parameter_depth": 2, 
+       "prebuild_script": "test_settings.prebuild_me",
+       "events": [
+           {
+               "function": "tests.test_app.schedule_me",
+               "expression": "rate(1 minute)"
+           },
+           {
+               "function": "test.test_app.method",
+               "event_source": {
+                   "arn": "arn:aws:sns:::1",
+                   "events": [
+                     "sns:Publish"
+                   ]
+               }
+           }
+       ]
+    },
+    "devor": {
+       "s3_bucket": "lmbda",
+       "app_function": "tests.test_app.hello_world",
+       "callbacks": {
+           "settings": "test_settings.callback",
+           "post": "test_settings.callback",
+           "zip": "test_settings.callback"
+       },
+       "delete_local_zip": true,
+       "debug": true,
+       "parameter_depth": 2, 
+       "prebuild_script": "test_settings.prebuild_me",
+       "events": [{
+          "function": "tests.test_app.schedule_me",
+          "expression": "rate(1 minute)"
+       }]
+    }
+}
