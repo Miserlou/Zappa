@@ -606,7 +606,7 @@ Ongoing discussion about the minimum policy requirements necessary for a Zappa d
 ## Sites Using Zappa
 
 * [Zappa.io](https://www.zappa.io) - A simple Zappa homepage
-* [Zappatista! - The Zappa Blog](https://blog.zappa.io) - The Zappa blog
+* [Zappatista!](https://blog.zappa.io) - The official Zappa blog!
 * [Mailchimp Signup Utility](https://github.com/sasha42/Mailchimp-utility) - A microservice for adding people to a mailing list via API.
 * [Zappa Slack Inviter](https://github.com/Miserlou/zappa-slack-inviter) - A tiny, server-less service for inviting new users to your Slack channel.
 * [Serverless Image Host](https://github.com/Miserlou/serverless-imagehost) - A thumbnailing service with Flask, Zappa and Pillow.

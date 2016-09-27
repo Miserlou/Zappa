@@ -1,5 +1,11 @@
 # Zappa Changelog
 
+## 0.26.0
+
+* Use simplified API Gateway configuration, via @koriaf.
+* Add better support for `use_apigateway` without any supplied app function. Reported by @mguidone.
+* Truncate illegally long event functions names. Reported by @mguidone.
+
 ## 0.25.1
 
 * Remove 'boto' from default excludes. #333, thanks Claude!
