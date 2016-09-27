@@ -964,7 +964,7 @@ class Zappa(object):
         """
         try:
             stack = self.cf_client.describe_stacks(StackName=name)['Stacks'][0]
-        except:
+        except: # pragma: no cover
             print('No Zappa stack named {0}'.format(name))
             return False
 
@@ -1116,16 +1116,20 @@ class Zappa(object):
             response = self.cf_client.describe_stack_resource(StackName=lambda_name,
                                                               LogicalResourceId='Api')
             return response['StackResourceDetail'].get('PhysicalResourceId', None)
-        except:
-            # try the old method (project was probably made on an older, non CF version)
-            response = self.apigateway_client.get_rest_apis(limit=500)
+        except: # pragma: no cover
+            try:
+                # Try the old method (project was probably made on an older, non CF version)
+                response = self.apigateway_client.get_rest_apis(limit=500)
 
-            for item in response['items']:
-                if item['name'] == lambda_name:
-                    return item['id']
+                for item in response['items']:
+                    if item['name'] == lambda_name:
+                        return item['id']
 
-            logger.exception('Could not get API id')
-            return None
+                logger.exception('Could not get API ID.')
+                return None
+            except: # pragma: no cover
+                # We don't even have an API deployed. That's okay!
+                return None
 
     def create_domain_name(self,
                            domain_name,

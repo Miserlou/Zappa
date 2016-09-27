@@ -424,12 +424,13 @@ class ZappaCLI(object):
         if self.stage_config.get('delete_local_zip', True):
             self.remove_local_zip()
 
-        if self.iam_authorization:
-            auth_type = "AWS_IAM"
-        else:
-            auth_type = "NONE"
-
         if self.use_apigateway:
+
+            if self.iam_authorization:
+                auth_type = "AWS_IAM"
+            else:
+                auth_type = "NONE"
+
             template = self.zappa.create_stack_template(self.lambda_arn,
                                                         self.lambda_name,
                                                         self.api_key_required,
@@ -437,20 +438,22 @@ class ZappaCLI(object):
                                                         auth_type)
             self.zappa.update_stack(self.lambda_name, self.s3_bucket_name, wait=True, update_only=True)
 
-        if self.stage_config.get('domain', None):
-            endpoint_url = self.stage_config.get('domain')
+            self.zappa.update_stage_config(
+                self.lambda_name,
+                self.api_stage,
+                self.zappa_settings[self.api_stage].get('cloudwatch_log_level', 'OFF'),
+                self.zappa_settings[self.api_stage].get('cloudwatch_data_trace', False),
+                self.zappa_settings[self.api_stage].get('cloudwatch_metrics_enabled', False)
+            )
+
+            if self.stage_config.get('domain', None):
+                endpoint_url = self.stage_config.get('domain')
+            else:
+                endpoint_url = self.zappa.get_api_url(self.lambda_name, self.api_stage)
         else:
-            endpoint_url = self.zappa.get_api_url(self.lambda_name, self.api_stage)
+            endpoint_url = None
 
         self.schedule()
-
-        self.zappa.update_stage_config(
-            self.lambda_name,
-            self.api_stage,
-            self.zappa_settings[self.api_stage].get('cloudwatch_log_level', 'OFF'),
-            self.zappa_settings[self.api_stage].get('cloudwatch_data_trace', False),
-            self.zappa_settings[self.api_stage].get('cloudwatch_metrics_enabled', False)
-        )
 
         self.callback('post')
 
