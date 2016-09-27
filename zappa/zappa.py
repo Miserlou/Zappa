@@ -695,18 +695,15 @@ class Zappa(object):
         self.create_and_setup_methods(restapi, root_id, lambda_arn, api_key_required,
                                       integration_content_type_aliases, authorization_type, 0)
 
-        parent_id = root_id
-        for i in range(1, self.parameter_depth):
-            resource = troposphere.apigateway.Resource('Resource{0}'.format(i))
-            self.cf_api_resources.append(resource.title)
-            resource.RestApiId = troposphere.Ref(restapi)
-            resource.ParentId = parent_id
-            resource.PathPart = "{parameter_" + str(i) + "}"
-            self.cf_template.add_resource(resource)
+        resource = troposphere.apigateway.Resource('ResourceAnyPathSlashed')
+        self.cf_api_resources.append(resource.title)
+        resource.RestApiId = troposphere.Ref(restapi)
+        resource.ParentId = root_id
+        resource.PathPart = "{url+}"
+        self.cf_template.add_resource(resource)
 
-            self.create_and_setup_methods(restapi, resource, lambda_arn, api_key_required,
-                                          integration_content_type_aliases, authorization_type, i)  # pragma: no cover
-            parent_id = troposphere.Ref(resource)
+        self.create_and_setup_methods(restapi, resource, lambda_arn, api_key_required,
+                                      integration_content_type_aliases, authorization_type, 1)  # pragma: no cover
 
         return restapi
 
@@ -752,8 +749,8 @@ class Zappa(object):
             integration.Credentials = credentials
             integration.IntegrationHttpMethod = 'POST'
             integration.IntegrationResponses = []
-            integration.PassthroughBehavior = 'NEVER'
-            integration.RequestParameters = {}
+            # integration.PassthroughBehavior = 'NEVER'
+            # integration.RequestParameters = {}
             integration.RequestTemplates = content_mapping_templates
             integration.Type = 'AWS'
             integration.Uri = uri

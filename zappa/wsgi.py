@@ -31,17 +31,22 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
             if canonical != header:
                 headers[canonical] = headers.pop(header)
 
-        path = "/"
-        for key in sorted(params.keys()):
-            path = path + params[key] + "/"
+        if 'url' in params:
+            # new style
+            path = '/' + params.get('url') + "/"
+        else:
+            # old style
+            path = "/"
+            for key in sorted(params.keys()):
+                path = path + params[key] + "/"
 
-        # This determines if we should return
-        # site.com/resource/ : site.com/resource
-        # site.com/resource : site.com/resource
-        # vs.
-        # site.com/resource/ : site.com/resource/
-        # site.com/resource : site.com/resource/
-        # If no params are present, keep the slash.
+            # This determines if we should return
+            # site.com/resource/ : site.com/resource
+            # site.com/resource : site.com/resource
+            # vs.
+            # site.com/resource/ : site.com/resource/
+            # site.com/resource : site.com/resource/
+            # If no params are present, keep the slash.
         if not trailing_slash and params.keys():
             path = path[:-1]
 
