@@ -791,6 +791,15 @@ USE_TZ = True
         zappa.human_size(1)
         zappa.human_size(9999999999999)
 
+    def test_event_name(self):
+        zappa = Zappa()
+        truncated = zappa.get_event_name("basldfkjalsdkfjalsdkfjaslkdfjalsdkfjadlsfkjasdlfkjasdlfkjasdflkjasdf-asdfasdfasdfasdfasdf", "this.is.my.dang.function.wassup.yeah.its.long")
+        self.assertTrue(len(truncated) <= 64)
+        truncated = zappa.get_event_name("basldfkjalsdkfjalsdkfjaslkdfjalsdkfjadlsfkjasdlfkjasdlfkjasdflkjasdf-asdfasdfasdfasdfasdf", "thisidoasdfaljksdfalskdjfalsdkfjasldkfjalsdkfjalsdkfjalsdfkjalasdfasdfasdfasdklfjasldkfjalsdkjfaslkdfjasldkfjasdflkjdasfskdj")
+        self.assertTrue(len(truncated) <= 64)
+        truncated = zappa.get_event_name("a", "b")
+        self.assertTrue(len(truncated) <= 64)
+
     def test_detect_dj(self):
         # Sanity
         settings_modules = detect_django_settings()

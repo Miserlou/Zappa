@@ -1430,7 +1430,21 @@ class Zappa(object):
 
     @staticmethod
     def get_event_name(lambda_name, name):
-        return '{}-{}'.format(lambda_name, name)
+        """
+        Returns an AWS-valid Lambda event name.
+
+        """
+        event_name = '{}-{}'.format(lambda_name, name)
+        if len(event_name) > 64:
+            if '.' in event_name: # leave the function name, but re-label to trim
+                name, function = event_name.split('.', 1)
+                function = "." + function
+                name_len = len(function)
+                name = name[:(64-len(function))]
+                event_name = name + function
+            else:
+                event_name = event_name[:64]
+        return event_name
 
     def delete_rule(self, rule_name):
         """
