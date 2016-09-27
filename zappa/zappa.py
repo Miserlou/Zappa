@@ -749,7 +749,7 @@ class Zappa(object):
             integration.Credentials = credentials
             integration.IntegrationHttpMethod = 'POST'
             integration.IntegrationResponses = []
-            # integration.PassthroughBehavior = 'NEVER'
+            integration.PassthroughBehavior = 'NEVER'
             # integration.RequestParameters = {}
             integration.RequestTemplates = content_mapping_templates
             integration.Type = 'AWS'
@@ -1057,7 +1057,13 @@ class Zappa(object):
 
                 # Something has gone wrong.
                 # Is raising enough? Should we also remove the Lambda function?
-                if result['Stacks'][0]['StackStatus'] == 'ROLLBACK_IN_PROGRESS':
+                if result['Stacks'][0]['StackStatus'] in [
+                                                            'DELETE_COMPLETE',
+                                                            'DELETE_IN_PROGRESS',
+                                                            'ROLLBACK_IN_PROGRESS',
+                                                            'UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS',
+                                                            'UPDATE_ROLLBACK_COMPLETE'
+                                                        ]:
                     raise EnvironmentError("Stack creation failed. Please check your CloudFormation console. You may also need to `undeploy`.")
 
                 count = 0
