@@ -345,14 +345,13 @@ class LambdaHandler(object):
 
             records = event.get('Records')
             result = None
-            for record in records:
-                whole_function = self.get_function_for_aws_event(record)
-                if whole_function:
-                    app_function = self.import_module_and_get_function(whole_function)
-                    result = self.run_function(app_function, event, context)
-                    logger.debug(result)
-                else:
-                    logger.error("Cannot find a function to process the triggered event.")
+            whole_function = self.get_function_for_aws_event(records[0])
+            if whole_function:
+                app_function = self.import_module_and_get_function(whole_function)
+                result = self.run_function(app_function, event, context)
+                logger.debug(result)
+            else:
+                logger.error("Cannot find a function to process the triggered event.")
             return result
 
         # Normal web app flow

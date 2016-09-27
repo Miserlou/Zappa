@@ -218,7 +218,7 @@ In your *zappa_settings.json* file, define your [event sources](http://docs.aws.
             "event_source": {
                   "arn":  "arn:aws:s3:::my-bucket",
                   "events": [
-                    "s3:ObjectCreated:*"
+                    "s3:ObjectCreated:*" // Supported event types: http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html#supported-notification-event-types
                   ]
                }
             }],
@@ -247,6 +247,22 @@ Similarly, for a [Simple Notification Service](https://aws.amazon.com/sns/) even
                 }
             }
         ]
+```
+
+[DynamoDB](http://docs.aws.amazon.com/lambda/latest/dg/with-ddb.html) and [Kinesis](http://docs.aws.amazon.com/lambda/latest/dg/with-kinesis.html) are slightly different as it is not event based but pulling from a stream:
+
+```javascript
+       "events": [
+           {
+               "function": "replication.replicate_records",
+               "event_source": {
+                    "arn":  "arn:aws:dynamodb:us-east-1:1234554:table/YourTable/stream/2016-05-11T00:00:00.000",
+                    "starting_position": "TRIM_HORIZON", // Supported values: TRIM_HORIZON, LATEST
+                    "batch_size": 50, // Max: 1000
+                    "enabled": true // Default is false
+               }
+           }
+       ]
 ```
 
 #### Undeploy
