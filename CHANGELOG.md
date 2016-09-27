@@ -1,5 +1,13 @@
 # Zappa Changelog
 
+## 0.25.1
+
+* Remove 'boto' from default excludes. #333, thanks Claude!
+* Don't allow invalid API Gateway characters in the config. Thanks @scoates!
+* Better respect for `use_apigateway` in `update` command.
+* Avoids hang with API Gateway limit reached.
+* Fix DynamoDB/Kinesis event sources, add docs. Big thanks Claude!
+
 ## 0.25.0
 
 * Add ability to invoke raw python strings, like so:
