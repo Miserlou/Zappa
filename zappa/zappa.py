@@ -1361,12 +1361,17 @@ class Zappa(object):
                 }
 
                 if function_kwargs:
-                    # We are overwriting the default CW event dict, so replace as much of it as we can and supply kwargs
+                    # We are overwriting the default CW event dict, so replace as much of it as we can and supply kwargs https://github.com/Miserlou/Zappa/issues/359
+                    arn, aws, service, region, account, resource = rule_response['RuleArn'].split(':', 5)
                     t['Input'] = json.dumps({
                         'detail-type': u'Scheduled Event',
                         'source': u'aws.events',
                         'resources': [rule_response['RuleArn']],
-                        'function_kwargs': function_kwargs
+                        'function_kwargs': function_kwargs,
+                        'account': account,
+                        'region': region,
+                        'detail': {},  # Cloudwatch Scheduled Events always have empty details
+                        'version': 0  # Always 0 http://docs.aws.amazon.com/AmazonCloudWatch/latest/events/CloudWatchEventsandEventPatterns.html
                     })
 
                 # Create the CloudWatch event ARN for this function.

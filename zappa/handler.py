@@ -289,6 +289,9 @@ class LambdaHandler(object):
         # This is the result of a keep alive, recertify
         # or scheduled event.
         if event.get('detail-type') == u'Scheduled Event':
+            if 'time' not in event:
+                # Replaces the time that CW would have put in for triggering this. https://github.com/Miserlou/Zappa/pull/360
+                event['time'] = datetime.datetime.now().isoformat()
 
             whole_function = event['resources'][0].split('/')[-1].split('-')[-1]
 
@@ -317,7 +320,7 @@ class LambdaHandler(object):
         elif event.get('raw_command', None):
 
             raw_command = event['raw_command']
-            exec(raw_command) 
+            exec(raw_command)
             return
 
         # This is a Django management command invocation.
