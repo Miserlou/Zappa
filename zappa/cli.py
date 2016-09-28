@@ -563,7 +563,10 @@ class ZappaCLI(object):
         setup up regular execution.
 
         """
-        events = self.stage_config.get('events')
+        events = self.stage_config.get('events', [])
+
+        for event in events:
+            self.collision_warning(event.get('function'))
 
         if events:
             if not isinstance(events, list): # pragma: no cover
@@ -573,6 +576,7 @@ class ZappaCLI(object):
         if self.zappa_settings[self.api_stage].get('keep_warm', True):
             if not events:
                 events = []
+
             keep_warm_rate = self.zappa_settings[self.api_stage].get('keep_warm_expression', "rate(4 minutes)")
             events.append({'name': 'zappa-keep-warm',
                            'function': 'handler.keep_warm_callback',
@@ -598,7 +602,7 @@ class ZappaCLI(object):
             try:
                 function_response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name)
             except botocore.exceptions.ClientError as e: # pragma: no cover
-                print("Function does not exist, please deploy first. Ex: zappa deploy {}.".format(self.api_stage))
+                click.echo(click.style("Function does not exist", fg=yellow) + ", please " + click.style("deploy", bold=True) + "first. Ex:" + click.style("zappa deploy {}.".format(self.api_stage), bold=True))
                 sys.exit(-1)
 
             print("Scheduling..")
@@ -1129,6 +1133,8 @@ class ZappaCLI(object):
                         setting_val = f.read()
                 setattr(self.zappa, setting, setting_val)
 
+        self.collision_warning(self.app_function)
+
         return self.zappa
 
     def load_settings_file(self, settings_file="zappa_settings.json"):
@@ -1301,6 +1307,22 @@ class ZappaCLI(object):
 
         # Execute it
         prebuild_function()
+
+
+    def collision_warning(self, item):
+        """
+        Given a string, print a warning if this could 
+        collide with a Zappa core package module.
+
+        Use for app functions and events.
+        """
+
+        namespace_collisions = [
+            "zappa.", "wsgi.", "middleware.", "handler.", "util.", "letsencrypt.", "cli."
+        ]
+        for namespace_collision in namespace_collisions:
+            if namespace_collision in item:
+                click.echo(click.style("Warning!", fg="yellow", bold=True) + " You may have a namespace collision with " + click.style(item, bold=True) + "! You may want to rename that file.")
 
 ####################################################################
 # Main
