@@ -304,19 +304,14 @@ class ZappaCLI(object):
         deployment_string = click.style("Deployment complete", fg="green", bold=True) + "!"
         if self.use_apigateway:
 
-
-            if self.iam_authorization:
-                auth_type = "AWS_IAM"
-            else:
-                auth_type = "NONE"
-
             # Create and configure the API Gateway
 
             template = self.zappa.create_stack_template(self.lambda_arn,
                                                         self.lambda_name,
                                                         self.api_key_required,
                                                         self.integration_content_type_aliases,
-                                                        auth_type)
+                                                        self.iam_authorization,
+                                                        self.authorizer)
 
             self.zappa.update_stack(self.lambda_name, self.s3_bucket_name, wait=True)
             api_id = self.zappa.get_api_id(self.lambda_name)
@@ -427,16 +422,12 @@ class ZappaCLI(object):
 
         if self.use_apigateway:
 
-            if self.iam_authorization:
-                auth_type = "AWS_IAM"
-            else:
-                auth_type = "NONE"
-
-            template = self.zappa.create_stack_template(self.lambda_arn,
+            self.zappa.create_stack_template(self.lambda_arn,
                                                         self.lambda_name,
                                                         self.api_key_required,
                                                         self.integration_content_type_aliases,
-                                                        auth_type)
+                                                        self.iam_authorization,
+                                                        self.authorizer)
             self.zappa.update_stack(self.lambda_name, self.s3_bucket_name, wait=True, update_only=True)
 
             self.zappa.update_stage_config(
@@ -1335,6 +1326,8 @@ class ZappaCLI(object):
         for namespace_collision in namespace_collisions:
             if namespace_collision in item:
                 click.echo(click.style("Warning!", fg="yellow", bold=True) + " You may have a namespace collision with " + click.style(item, bold=True) + "! You may want to rename that file.")
+
+
 
 ####################################################################
 # Main

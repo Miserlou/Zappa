@@ -383,10 +383,10 @@ to change Zappa's behavior. Use these at your own risk!
         "http_methods": ["GET", "POST"], // HTTP Methods to route,
         "iam_authorization": true, // optional, use IAM to require request signing. Default false.
         "authorizer": {
-            "function": "your_module.your_auth_function", // http://docs.aws.amazon.com/apigateway/latest/developerguide/use-custom-authorizer.html, https://github.com/awslabs/aws-apigateway-lambda-authorizer-blueprints/blob/master/blueprints/python/api-gateway-authorizer-python.py
-            "result_ttl": 300, // NOT IMPLEMENTED
-            "token_source": "method.request.header.Authorization", // NOT IMPLEMENTED
-            "validation_expression": "xxx", // NOT IMPLEMENTED, optional
+            "function": "your_module.your_auth_function", // Required. Function to run for token validation. See the following documentions for expected return values/blueprints: http://docs.aws.amazon.com/apigateway/latest/developerguide/use-custom-authorizer.html, https://github.com/awslabs/aws-apigateway-lambda-authorizer-blueprints/blob/master/blueprints/python/api-gateway-authorizer-python.py
+            "result_ttl": 300, // Required. The time-to-live (TTL) period, in seconds, that specifies how long API Gateway caches authorizer results. Currently, the maximum TTL value is 3600 seconds.
+            "token_source": "Authorization", // Required. The name of a custom authorization header containing the token that clients submit as part of their requests.
+            "validation_expression": "xxx", // Optional. A validation expression for the incoming token, specify a regular expression.
         },
         "integration_response_codes": [200, 301, 404, 500], // Integration response status codes to route
         "integration_content_type_aliases": { // For routing requests with non-standard mime types
