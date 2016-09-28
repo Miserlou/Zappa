@@ -565,13 +565,13 @@ class ZappaCLI(object):
         """
         events = self.stage_config.get('events', [])
 
-        for event in events:
-            self.collision_warning(event.get('function'))
-
         if events:
             if not isinstance(events, list): # pragma: no cover
                 print("Events must be supplied as a list.")
                 return
+
+        for event in events:
+            self.collision_warning(event.get('function'))
 
         if self.zappa_settings[self.api_stage].get('keep_warm', True):
             if not events:
