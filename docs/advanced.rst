@@ -167,4 +167,4 @@ Now in your application you can use:
 ::
 
     import os
-    db_string = os.environ('DB_CONNECTION_STRING')
+    db_string = os.environ.get('DB_CONNECTION_STRING')
