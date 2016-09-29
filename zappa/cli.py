@@ -302,7 +302,7 @@ class ZappaCLI(object):
         endpoint_url = ''
         deployment_string = click.style("Deployment complete", fg="green", bold=True) + "!"
         if self.use_apigateway:
-            
+
 
             if self.iam_authorization:
                 auth_type = "AWS_IAM"
@@ -476,7 +476,7 @@ class ZappaCLI(object):
             if self.stage_config.get('touch', True):
                 if api_url:
                     requests.get(api_url)
-                elif endpoint_url: 
+                elif endpoint_url:
                     requests.get(endpoint_url)
 
         click.echo(deployed_string)
@@ -1024,7 +1024,7 @@ class ZappaCLI(object):
                 click.echo("Visit the project page on GitHub to see the latest changes: " + click.style("https://github.com/Miserlou/Zappa", bold=True))
         except Exception as e: # pragma: no cover
             print(e)
-            return 
+            return
 
     def load_settings(self, settings_file="zappa_settings.json", session=None):
         """
@@ -1311,7 +1311,7 @@ class ZappaCLI(object):
 
     def collision_warning(self, item):
         """
-        Given a string, print a warning if this could 
+        Given a string, print a warning if this could
         collide with a Zappa core package module.
 
         Use for app functions and events.
