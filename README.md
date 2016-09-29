@@ -34,8 +34,10 @@
     - [Keeping The Server Warm](#keeping-the-server-warm)
     - [Serving Static Files / Binary Uploads](#serving-static-files--binary-uploads)
     - [Enabling CORS](#enabling-cors)
-    - [Enabling Secure Endpoints on API Gateway (API Key)](#enabling-secure-endpoints-on-api-gateway-api-key)
-    - [Enabling Secure Endpoints on API Gateway (IAM Policy)](#enabling-secure-endpoints-on-api-gateway-iam-policy)
+    - [Enabling Secure Endpoints on API Gateway](#enabling-secure-endpoints-on-api-gateway)
+        - [API Key](#api-key)
+        - [IAM Policy](#iam-policy)
+        - [Authorizer](#authorizer)
     - [Deploying to a Domain With a Let's Encrypt Certificate (DNS Auth)](#deploying-to-a-domain-with-a-lets-encrypt-certificate-dns-auth)
     - [Deploying to a Domain With a Let's Encrypt Certificate (HTTP Auth)](#deploying-to-a-domain-with-a-lets-encrypt-certificate-http-auth)
     - [Setting Environment Variables](#setting-environment-variables)
@@ -381,11 +383,11 @@ to change Zappa's behavior. Use these at your own risk!
         "exception_handler": "your_module.report_exception", // function that will be invoked in case Zappa sees an unhandled exception raised from your code
         "exclude": ["*.gz", "*.rar"], // A list of regex patterns to exclude from the archive. To exclude boto3 and botocore (available in an older version on Lambda), add "boto3*" and "botocore*".
         "http_methods": ["GET", "POST"], // HTTP Methods to route,
-        "iam_authorization": true, // optional, use IAM to require request signing. Default false.
+        "iam_authorization": true, // optional, use IAM to require request signing. Default false. Note that enabling this will override the authorizer configuration.
         "authorizer": {
-            "function": "your_module.your_auth_function", // Required. Function to run for token validation. See the following documentions for expected return values/blueprints: http://docs.aws.amazon.com/apigateway/latest/developerguide/use-custom-authorizer.html, https://github.com/awslabs/aws-apigateway-lambda-authorizer-blueprints/blob/master/blueprints/python/api-gateway-authorizer-python.py
-            "result_ttl": 300, // Required. The time-to-live (TTL) period, in seconds, that specifies how long API Gateway caches authorizer results. Currently, the maximum TTL value is 3600 seconds.
-            "token_source": "Authorization", // Required. The name of a custom authorization header containing the token that clients submit as part of their requests.
+            "function": "your_module.your_auth_function", // Required. Function to run for token validation. For more information about the function see below.
+            "result_ttl": 300, // Optional. Default 300. The time-to-live (TTL) period, in seconds, that specifies how long API Gateway caches authorizer results. Currently, the maximum TTL value is 3600 seconds.
+            "token_source": "Authorization", // Optional. Default 'Authorization'. The name of a custom authorization header containing the token that clients submit as part of their requests.
             "validation_expression": "xxx", // Optional. A validation expression for the incoming token, specify a regular expression.
         },
         "integration_response_codes": [200, 301, 404, 500], // Integration response status codes to route
@@ -452,13 +454,26 @@ To enable Cross-Origin Resource Sharing (CORS) for your application, follow the 
 
 You can also simply handle CORS directly in your application. If you do this, you'll need to add `Access-Control-Allow-Origin`, `Access-Control-Allow-Headers`, and `Access-Control-Allow-Methods` to the `method_header_types` key in your `zappa_settings.json`. See further [discussion here](https://github.com/Miserlou/Zappa/issues/41).
 
-#### Enabling Secure Endpoints on API Gateway (API Key)
+#### Enabling Secure Endpoints on API Gateway 
+
+##### API Key
 
 You can use the `api_key_required` setting to generate and assign an API key to all the routes of your API Gateway. After redeployment, you can then pass the provided key as a header called `x-api-key` to access the restricted endpoints. Without the `x-api-key` header, you will receive a 403. [More information on API keys in the API Gateway](http://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-api-keys.html)
 
-#### Enabling Secure Endpoints on API Gateway (IAM Policy)
+##### IAM Policy
 
-You can enable IAM-based (v4 signing) authorization on an API by setting the `iam_authorization` setting to `true`. Your API will then require signed requests and access can be controlled via [IAM policy](https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-iam-policy-examples.html). Unsigned requests will receive a 403 response, as will requesters who are not authorized to access the API.
+You can enable IAM-based (v4 signing) authorization on an API by setting the `iam_authorization` setting to `true`. Your API will then require signed requests and access can be controlled via [IAM policy](https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-iam-policy-examples.html). Unsigned requests will receive a 403 response, as will requesters who are not authorized to access the API. Enabling this will override the Authorizer configuration (see below).
+
+##### Authorizer
+**Note**: Authorizers only work correctly with APIs at the moment, more specificly only with requests of the Content-Type `application/json`.  
+
+If you deploy an API endpoint with Zappa, you can take advantage of [API Gateway Authorizers](http://docs.aws.amazon.com/apigateway/latest/developerguide/use-custom-authorizer.html) to implement a token-based authentication - all you need to do is to provide a function to create the required output, Zappa takes care of the rest. A good start for the function is the [awslabs blueprint example.](https://github.com/awslabs/aws-apigateway-lambda-authorizer-blueprints/blob/master/blueprints/python/api-gateway-authorizer-python.py)  
+Inside your app, the authenticated username will be available through the `REMOTE_USER` environment variable (e.g. in Flask `request.environ.get('REMOTE_USER')`)  
+If you are wondering for what you would use an Authorizer, here are some potential use cases:
+1. Call out to OAuth provider
+2. Decode a JWT token inline
+3. Lookup in a self-managed DB (for example DynamoDB)
+
 
 #### Deploying to a Domain With a Let's Encrypt Certificate (DNS Auth)
 
@@ -593,6 +608,10 @@ To manually define the permissions policy of your Zappa execution role, you must
 ```
 
 Ongoing discussion about the minimum policy requirements necessary for a Zappa deployment [can be found here](https://github.com/Miserlou/Zappa/issues/244).
+
+#### Using API Gateway Authorizer
+
+
 
 ## Zappa Guides
 

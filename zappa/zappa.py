@@ -716,8 +716,8 @@ class Zappa(object):
         if authorizer:
             authorizer_resource = self.create_authorizer(restapi,
                                                          invocations_uri,
-                                                         "method.request.header." + authorizer.get('token_header'),
-                                                         authorizer.get('result_ttl'),
+                                                         "method.request.header." + authorizer.get('token_header', 'Authorization'),
+                                                         authorizer.get('result_ttl', 300),
                                                          authorizer.get('validation_expression', None))
 
         self.create_and_setup_methods(restapi, root_id, api_key_required, invocations_uri,
