@@ -271,13 +271,22 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
     def test_wsgi_authorizer_handling(self):
         # With user
         event = {
-            u'method': u'GET',
+            u'httpMethod': u'GET',
+            u'queryStringParameters': None,
+            u'path': u'/v1/runs',
             u'params': {},
             u'body': {},
             u'headers': {
                 u'Content-Type': u'application/json'
             },
-            u'authorizer-principal-id': u'user1',
+            u'pathParameters': {
+                u'proxy': 'v1/runs'
+            },
+            u'requestContext': {
+                u'authorizer': {
+                    u'principalId': u'user1'
+                }
+            },
             u'query': {}
         }
 
@@ -285,15 +294,24 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
                                       trailing_slash=False)
         self.assertEqual(environ['REMOTE_USER'], u'user1')
 
-        # With empty user, should not include REMOTE_USER
+        # With empty authorizer, should not include REMOTE_USER
         event = {
-            u'method': u'GET',
+            u'httpMethod': u'GET',
+            u'queryStringParameters': None,
+            u'path': u'/v1/runs',
             u'params': {},
             u'body': {},
             u'headers': {
                 u'Content-Type': u'application/json'
             },
-            u'authorizer-principal-id': u'',
+            u'pathParameters': {
+                u'proxy': 'v1/runs'
+            },
+            u'requestContext': {
+                u'authorizer': {
+                    u'principalId': u''
+                }
+            },
             u'query': {}
         }
 
@@ -302,13 +320,43 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
         user = environ.get('REMOTE_USER', u'no_user')
         self.assertEqual(user, u'no_user')
 
-        # With missing user, should not include REMOTE_USER
+        # With missing authorizer, should not include REMOTE_USER
         event = {
-            u'method': u'GET',
+            u'httpMethod': u'GET',
+            u'queryStringParameters': None,
+            u'path': u'/v1/runs',
             u'params': {},
             u'body': {},
             u'headers': {
                 u'Content-Type': u'application/json'
+            },
+            u'pathParameters': {
+                u'proxy': 'v1/runs'
+            },
+            u'requestContext': {},
+            u'query': {}
+        }
+
+        environ = create_wsgi_request(event, script_name='http://zappa.com/',
+                                      trailing_slash=False)
+        user = environ.get('REMOTE_USER', u'no_user')
+        self.assertEqual(user, u'no_user')
+
+        # With empty authorizer, should not include REMOTE_USER
+        event = {
+            u'httpMethod': u'GET',
+            u'queryStringParameters': None,
+            u'path': u'/v1/runs',
+            u'params': {},
+            u'body': {},
+            u'headers': {
+                u'Content-Type': u'application/json'
+            },
+            u'pathParameters': {
+                u'proxy': 'v1/runs'
+            },
+            u'requestContext': {
+                u'authorizer': {}
             },
             u'query': {}
         }

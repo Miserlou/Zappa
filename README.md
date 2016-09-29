@@ -465,8 +465,6 @@ You can use the `api_key_required` setting to generate and assign an API key to 
 You can enable IAM-based (v4 signing) authorization on an API by setting the `iam_authorization` setting to `true`. Your API will then require signed requests and access can be controlled via [IAM policy](https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-iam-policy-examples.html). Unsigned requests will receive a 403 response, as will requesters who are not authorized to access the API. Enabling this will override the Authorizer configuration (see below).
 
 ##### Authorizer
-**Note**: Authorizers only work correctly with APIs at the moment, more specificly only with requests of the Content-Type `application/json`.  
-
 If you deploy an API endpoint with Zappa, you can take advantage of [API Gateway Authorizers](http://docs.aws.amazon.com/apigateway/latest/developerguide/use-custom-authorizer.html) to implement a token-based authentication - all you need to do is to provide a function to create the required output, Zappa takes care of the rest. A good start for the function is the [awslabs blueprint example.](https://github.com/awslabs/aws-apigateway-lambda-authorizer-blueprints/blob/master/blueprints/python/api-gateway-authorizer-python.py)  
 Inside your app, the authenticated username will be available through the `REMOTE_USER` environment variable (e.g. in Flask `request.environ.get('REMOTE_USER')`)  
 If you are wondering for what you would use an Authorizer, here are some potential use cases:
