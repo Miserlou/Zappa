@@ -491,7 +491,7 @@ zappa_settings.json:
 Now in your application you can use:
 ```python
 import os
-db_string = os.environ('DB_CONNECTION_STRING')
+db_string = os.environ.get('DB_CONNECTION_STRING')
 ```
 
 #### Setting Integration Content-Type Aliases
