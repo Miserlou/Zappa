@@ -13,9 +13,11 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
         create and return a valid WSGI request environ.
         """
 
-        method = event_info['method']
-        params = event_info['params']
-        query = event_info['query']
+        print("MAKING WSGI REQUEST!!!")
+
+        method = event_info['httpMethod']
+        params = event_info['pathParameters']
+        query = event_info['queryStringParameters']
         headers = event_info['headers']
 
         # Non-GET data is B64'd through the APIGW.
@@ -31,26 +33,28 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
             if canonical != header:
                 headers[canonical] = headers.pop(header)
 
-        if 'url' in params:
-            # new style
-            path = '/' + params.get('url') + "/"
-        else:
-            # old style
-            path = "/"
-            for key in sorted(params.keys()):
-                path = path + params[key] + "/"
+        path = event_info['path']
 
-            # This determines if we should return
-            # site.com/resource/ : site.com/resource
-            # site.com/resource : site.com/resource
-            # vs.
-            # site.com/resource/ : site.com/resource/
-            # site.com/resource : site.com/resource/
-            # If no params are present, keep the slash.
-        if not trailing_slash and params.keys():
-            path = path[:-1]
+        # if 'url' in params:
+        #     # new style
+        #     path = '/' + params.get('url') + "/"
+        # else:
+        #     # old style
+        #     path = "/"
+        #     for key in sorted(params.keys()):
+        #         path = path + params[key] + "/"
 
-        query_string = urlencode(query)
+        #     # This determines if we should return
+        #     # site.com/resource/ : site.com/resource
+        #     # site.com/resource : site.com/resource
+        #     # vs.
+        #     # site.com/resource/ : site.com/resource/
+        #     # site.com/resource : site.com/resource/
+        #     # If no params are present, keep the slash.
+        # if not trailing_slash and params.keys():
+        #     path = path[:-1]
+
+        query_string = query #$urlencode(query)
 
         x_forwarded_for = headers.get('X-Forwarded-For', '')
         if ',' in x_forwarded_for:
@@ -87,8 +91,8 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
                 # if 'multipart/form-data;' in headers['Content-Type']:
                 #
                 #     # Unfortunately, this only works for text data,
-                #     # not binary data. Yet. 
-                #     # See: 
+                #     # not binary data. Yet.
+                #     # See:
                 #     #   https://github.com/Miserlou/Zappa/issues/80
                 #     #   https://forums.aws.amazon.com/thread.jspa?threadID=231371&tstart=0
                 #     body = base64.b64decode(body)
@@ -106,6 +110,9 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
 
             if script_name in path_info:
                 environ['PATH_INFO'].replace(script_name, '')
+
+        print("ENVIRON!!!")
+        print environ
 
         return environ
 

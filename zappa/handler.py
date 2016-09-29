@@ -317,7 +317,7 @@ class LambdaHandler(object):
         elif event.get('raw_command', None):
 
             raw_command = event['raw_command']
-            exec(raw_command) 
+            exec(raw_command)
             return
 
         # This is a Django management command invocation.
@@ -360,13 +360,13 @@ class LambdaHandler(object):
             time_start = datetime.datetime.now()
 
             # This is a normal HTTP request
-            if event.get('method', None):
+            if event.get('httpMethod', None):
                 # If we just want to inspect this,
                 # return this event instead of processing the request
                 # https://your_api.aws-api.com/?event_echo=true
-                event_echo = getattr(settings, "EVENT_ECHO", True)
-                if event_echo and 'event_echo' in event['params'].values():
-                    return {'Content': str(event) + '\n' + str(context), 'Status': 200}
+                # event_echo = getattr(settings, "EVENT_ECHO", True)
+                # if event_echo and 'event_echo' in event['params'].values():
+                #     return {'Content': str(event) + '\n' + str(context), 'Status': 200}
 
                 if settings.DOMAIN:
                     # If we're on a domain, we operate normally
@@ -395,36 +395,39 @@ class LambdaHandler(object):
 
                 # This is the object we're going to return.
                 # Pack the WSGI response into our special dictionary.
-                zappa_returndict = dict(response.headers)
+                zappa_returndict = dict()
 
-                if 'Content' not in zappa_returndict and response.data:
-                    zappa_returndict['Content'] = response.data
+                if response.data:
+                    zappa_returndict['body'] = response.data
 
-                zappa_returndict['Status'] = response.status_code
+                zappa_returndict['statusCode'] = response.status_code
+                zappa_returndict['headers'] = {}
+                for key, value in response.headers:
+                    zappa_returndict['headers'][key] = value
 
                 # To ensure correct status codes, we need to
                 # pack the response as a deterministic B64 string and raise it
                 # as an error to match our APIGW regex.
                 # The DOCTYPE ensures that the page still renders in the browser.
                 exception = None
-                if response.status_code in ERROR_CODES:
-                    content = collections.OrderedDict()
-                    content['http_status'] = response.status_code
-                    content['content'] = base64.b64encode(response.data.encode('utf-8'))
-                    exception = json.dumps(content)
-                # Internal are changed to become relative redirects
-                # so they still work for apps on raw APIGW and on a domain.
-                elif 300 <= response.status_code < 400 and hasattr(response, 'Location'):
-                    # Location is by default relative on Flask. Location is by default
-                    # absolute on Werkzeug. We can set autocorrect_location_header on
-                    # the response to False, but it doesn't work. We have to manually
-                    # remove the host part.
-                    location = response.location
-                    hostname = 'https://' + environ['HTTP_HOST']
-                    if location.startswith(hostname):
-                        exception = location[len(hostname):]
-                    else:
-                        exception = location
+                # if response.status_code in ERROR_CODES:
+                #     content = collections.OrderedDict()
+                #     content['http_status'] = response.status_code
+                #     content['content'] = base64.b64encode(response.data.encode('utf-8'))
+                #     exception = json.dumps(content)
+                # # Internal are changed to become relative redirects
+                # # so they still work for apps on raw APIGW and on a domain.
+                # elif 300 <= response.status_code < 400 and hasattr(response, 'Location'):
+                #     # Location is by default relative on Flask. Location is by default
+                #     # absolute on Werkzeug. We can set autocorrect_location_header on
+                #     # the response to False, but it doesn't work. We have to manually
+                #     # remove the host part.
+                #     location = response.location
+                #     hostname = 'https://' + environ['HTTP_HOST']
+                #     if location.startswith(hostname):
+                #         exception = location[len(hostname):]
+                #     else:
+                #         exception = location
 
                 # Calculate the total response time,
                 # and log it in the Common Log format.
@@ -434,11 +437,13 @@ class LambdaHandler(object):
                 response.content = response.data
                 common_log(environ, response, response_time=response_time_ms)
 
-                # Finally, return the response to API Gateway.
-                if exception:  # pragma: no cover
-                    raise WSGIException(exception)
-                else:
-                    return zappa_returndict
+                # # Finally, return the response to API Gateway.
+                # if exception:  # pragma: no cover
+                #     raise WSGIException(exception)
+                # else:
+                #
+
+                return zappa_returndict
         except WSGIException as e:  # pragma: no cover
             raise e
         except Exception as e:  # pragma: no cover

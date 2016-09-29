@@ -200,13 +200,7 @@ class Zappa(object):
     ##
 
     http_methods = [
-        'DELETE',
-        'GET',
-        'HEAD',
-        'OPTIONS',
-        'PATCH',
-        'POST',
-        'PUT'
+        'ANY'
     ]
     parameter_depth = 8
     integration_response_codes = [200, 201, 301, 400, 401, 403, 404, 500]
@@ -699,7 +693,7 @@ class Zappa(object):
         self.cf_api_resources.append(resource.title)
         resource.RestApiId = troposphere.Ref(restapi)
         resource.ParentId = root_id
-        resource.PathPart = "{url+}"
+        resource.PathPart = "{proxy+}"
         self.cf_template.add_resource(resource)
 
         self.create_and_setup_methods(restapi, resource, lambda_arn, api_key_required,
@@ -726,16 +720,16 @@ class Zappa(object):
             self.cf_template.add_resource(method)
             self.cf_api_resources.append(method.title)
 
-            content_mapping_templates = {
-                'application/json': self.cache_param(POST_TEMPLATE_MAPPING),
-                'application/x-www-form-urlencoded': self.cache_param(POST_TEMPLATE_MAPPING),
-                'multipart/form-data': self.cache_param(FORM_ENCODED_TEMPLATE_MAPPING)
-            }
-            if integration_content_type_aliases:
-                for content_type in content_mapping_templates.keys():
-                    aliases = integration_content_type_aliases.get(content_type, [])
-                    for alias in aliases:
-                        content_mapping_templates[alias] = self.cache_param(content_mapping_templates[content_type])
+            # content_mapping_templates = {
+            #     'application/json': self.cache_param(POST_TEMPLATE_MAPPING),
+            #     'application/x-www-form-urlencoded': self.cache_param(POST_TEMPLATE_MAPPING),
+            #     'multipart/form-data': self.cache_param(FORM_ENCODED_TEMPLATE_MAPPING)
+            # }
+            # if integration_content_type_aliases:
+            #     for content_type in content_mapping_templates.keys():
+            #         aliases = integration_content_type_aliases.get(content_type, [])
+            #         for alias in aliases:
+            #             content_mapping_templates[alias] = self.cache_param(content_mapping_templates[content_type])
 
             if not self.credentials_arn:
                 self.get_credentials_arn()
@@ -751,8 +745,8 @@ class Zappa(object):
             integration.IntegrationResponses = []
             integration.PassthroughBehavior = 'NEVER'
             # integration.RequestParameters = {}
-            integration.RequestTemplates = content_mapping_templates
-            integration.Type = 'AWS'
+            # integration.RequestTemplates = content_mapping_templates
+            integration.Type = 'AWS_PROXY'
             integration.Uri = uri
             method.Integration = integration
 
@@ -760,46 +754,46 @@ class Zappa(object):
             # Method Response
             ##
 
-            for response_code in self.method_response_codes:
-                status_code = str(response_code)
+            # for response_code in self.method_response_codes:
+            #     status_code = str(response_code)
 
-                response_parameters = {"method.response.header." + header_type: False for header_type in self.method_header_types}
-                response_models = {content_type: 'Empty' for content_type in self.method_content_types}
+            #     response_parameters = {"method.response.header." + header_type: False for header_type in self.method_header_types}
+            #     response_models = {content_type: 'Empty' for content_type in self.method_content_types}
 
-                response = troposphere.apigateway.MethodResponse()
-                response.ResponseModels = response_models
-                response.ResponseParameters = response_parameters
-                response.StatusCode = status_code
-                method.MethodResponses.append(response)
+            #     response = troposphere.apigateway.MethodResponse()
+            #     response.ResponseModels = response_models
+            #     response.ResponseParameters = response_parameters
+            #     response.StatusCode = status_code
+            #     method.MethodResponses.append(response)
 
             ##
             # Integration Response
             ##
 
-            for response in self.integration_response_codes:
-                status_code = str(response)
+            # for response in self.integration_response_codes:
+            #     status_code = str(response)
 
-                response_parameters = {
-                    "method.response.header." + header_type: self.cache_param("integration.response.body." + header_type)
-                    for header_type in self.method_header_types}
+            #     response_parameters = {
+            #         "method.response.header." + header_type: self.cache_param("integration.response.body." + header_type)
+            #         for header_type in self.method_header_types}
 
-                # Error code matching RegEx
-                # Thanks to @KevinHornschemeier and @jayway
-                # for the discussion on this.
-                if status_code == '200':
-                    response_templates = {content_type: self.cache_param(RESPONSE_TEMPLATE) for content_type in self.integration_content_types}
-                elif status_code in ['301', '302']:
-                    response_templates = {content_type: REDIRECT_RESPONSE_TEMPLATE for content_type in self.integration_content_types}
-                    response_parameters["method.response.header.Location"] = self.cache_param("integration.response.body.errorMessage")
-                else:
-                    response_templates = {content_type: self.cache_param(ERROR_RESPONSE_TEMPLATE) for content_type in self.integration_content_types}
+            #     # Error code matching RegEx
+            #     # Thanks to @KevinHornschemeier and @jayway
+            #     # for the discussion on this.
+            #     if status_code == '200':
+            #         response_templates = {content_type: self.cache_param(RESPONSE_TEMPLATE) for content_type in self.integration_content_types}
+            #     elif status_code in ['301', '302']:
+            #         response_templates = {content_type: REDIRECT_RESPONSE_TEMPLATE for content_type in self.integration_content_types}
+            #         response_parameters["method.response.header.Location"] = self.cache_param("integration.response.body.errorMessage")
+            #     else:
+            #         response_templates = {content_type: self.cache_param(ERROR_RESPONSE_TEMPLATE) for content_type in self.integration_content_types}
 
-                integration_response = troposphere.apigateway.IntegrationResponse()
-                integration_response.ResponseParameters = response_parameters
-                integration_response.ResponseTemplates = response_templates
-                integration_response.SelectionPattern = self.selection_pattern(status_code)
-                integration_response.StatusCode = status_code
-                integration.IntegrationResponses.append(integration_response)
+            #     integration_response = troposphere.apigateway.IntegrationResponse()
+            #     integration_response.ResponseParameters = response_parameters
+            #     integration_response.ResponseTemplates = response_templates
+            #     integration_response.SelectionPattern = self.selection_pattern(status_code)
+            #     integration_response.StatusCode = status_code
+            #     integration.IntegrationResponses.append(integration_response)
 
     def deploy_api_gateway(self, api_id, stage_name, stage_description="", description="", cache_cluster_enabled=False, cache_cluster_size='0.5', variables=None,
                            cloudwatch_log_level='OFF', cloudwatch_data_trace=False, cloudwatch_metrics_enabled=False):
