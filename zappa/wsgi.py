@@ -13,19 +13,17 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
         create and return a valid WSGI request environ.
         """
 
-        print("MAKING WSGI REQUEST!!!")
-
         method = event_info['httpMethod']
         params = event_info['pathParameters']
         query = event_info['queryStringParameters']
         headers = event_info['headers']
 
         # Non-GET data is B64'd through the APIGW.
-        if method in ["POST", "PUT", "PATCH"]:
-            encoded_body = event_info['body']
-            body = base64.b64decode(encoded_body)
-        else:
-            body = event_info['body']
+        # if method in ["POST", "PUT", "PATCH"]:
+        #     encoded_body = event_info['body']
+        #     body = base64.b64decode(encoded_body)
+        # else:
+        body = event_info['body']
 
         # Make header names canonical, e.g. content-type => Content-Type
         for header in headers.keys():
@@ -85,18 +83,6 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
             if 'Content-Type' in headers:
                 environ['CONTENT_TYPE'] = headers['Content-Type']
 
-                # B64'ing everything now until this is resolved.
-                #
-                # # Multipart forms are Base64 encoded through API Gateway
-                # if 'multipart/form-data;' in headers['Content-Type']:
-                #
-                #     # Unfortunately, this only works for text data,
-                #     # not binary data. Yet.
-                #     # See:
-                #     #   https://github.com/Miserlou/Zappa/issues/80
-                #     #   https://forums.aws.amazon.com/thread.jspa?threadID=231371&tstart=0
-                #     body = base64.b64decode(body)
-
             environ['wsgi.input'] = StringIO(body)
             environ['CONTENT_LENGTH'] = str(len(body))
 
@@ -110,9 +96,6 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
 
             if script_name in path_info:
                 environ['PATH_INFO'].replace(script_name, '')
-
-        print("ENVIRON!!!")
-        print environ
 
         return environ
 

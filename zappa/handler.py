@@ -437,15 +437,7 @@ class LambdaHandler(object):
                 response.content = response.data
                 common_log(environ, response, response_time=response_time_ms)
 
-                # # Finally, return the response to API Gateway.
-                # if exception:  # pragma: no cover
-                #     raise WSGIException(exception)
-                # else:
-                #
-
                 return zappa_returndict
-        except WSGIException as e:  # pragma: no cover
-            raise e
         except Exception as e:  # pragma: no cover
 
             # Print statements are visible in the logs either way
@@ -462,14 +454,12 @@ class LambdaHandler(object):
 
             # Return this unspecified exception as a 500, using template that API Gateway expects.
             content = collections.OrderedDict()
-            content['http_status'] = 500
+            content['statusCode'] = 500
             body = {'message': message}
             if settings.DEBUG:  # only include traceback if debug is on.
                 body['traceback'] = traceback.format_exception(*exc_info)  # traceback as a list for readability.
-            content['content'] = base64.b64encode(json.dumps(body, sort_keys=True, indent=4).encode('utf-8'))
-            exception = json.dumps(content)
-            raise UncaughtWSGIException(exception, original=e), None, exc_info[2]  # Keep original traceback.
-
+            content['body'] = json.dumps(body, sort_keys=True, indent=4).encode('utf-8')
+            return content
 
 def lambda_handler(event, context):  # pragma: no cover
     return LambdaHandler.lambda_handler(event, context)
