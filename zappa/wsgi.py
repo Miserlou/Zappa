@@ -52,7 +52,7 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
         # if not trailing_slash and params.keys():
         #     path = path[:-1]
 
-        query_string = query #$urlencode(query)
+        query_string = urlencode(query)
 
         x_forwarded_for = headers.get('X-Forwarded-For', '')
         if ',' in x_forwarded_for:
