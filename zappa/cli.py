@@ -744,24 +744,25 @@ class ZappaCLI(object):
         tabular_print("Error Rate (24h)", error_rate)
 
         # URLs
-        api_url = self.zappa.get_api_url(
-            self.lambda_name,
-            self.api_stage)
+        if self.zappa_settings[self.api_stage].get('use_apigateway', True):
+            api_url = self.zappa.get_api_url(
+                self.lambda_name,
+                self.api_stage)
 
-        tabular_print("API Gateway URL", api_url)
+            tabular_print("API Gateway URL", api_url)
 
-        # Api Keys
-        api_id = self.zappa.get_api_id(self.lambda_name)
-        for api_key in self.zappa.get_api_keys(api_id, self.api_stage):
-            tabular_print("API Gateway x-api-key", api_key)
+            # Api Keys
+            api_id = self.zappa.get_api_id(self.lambda_name)
+            for api_key in self.zappa.get_api_keys(api_id, self.api_stage):
+                tabular_print("API Gateway x-api-key", api_key)
 
-        # There literally isn't a better way to do this.
-        # AWS provides no way to tie a APIGW domain name to its Lambda funciton.
-        domain_url = self.stage_config.get('domain', None)
-        if domain_url:
-            tabular_print("Domain URL", 'https://' + domain_url)
-        else:
-            tabular_print("Domain URL", "None Supplied")
+            # There literally isn't a better way to do this.
+            # AWS provides no way to tie a APIGW domain name to its Lambda funciton.
+            domain_url = self.stage_config.get('domain', None)
+            if domain_url:
+                tabular_print("Domain URL", 'https://' + domain_url)
+            else:
+                tabular_print("Domain URL", "None Supplied")
 
         # Scheduled Events
         event_rules = self.zappa.get_event_rules_for_lambda(lambda_name=self.lambda_name)
