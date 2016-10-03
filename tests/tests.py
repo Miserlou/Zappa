@@ -389,7 +389,7 @@ class TestZappa(unittest.TestCase):
                 u'resourceId': u'6cqjw9qu0b',
                 u'apiId': u'9itr2lba55',
                 u'resourcePath': u'/',
-                u'httpMethod': u'GET',
+                u'httpMethod': u'POST',
                 u'requestId': u'c17cb1bf-867c-11e6-b938-ed697406e3b5',
                 u'accountId': u'724336686645',
                 u'identity': {
@@ -408,7 +408,7 @@ class TestZappa(unittest.TestCase):
                 u'stage': u'devorr',
                 },
             u'queryStringParameters': None,
-            u'httpMethod': u'GET',
+            u'httpMethod': u'POST',
             u'pathParameters': None,
             u'headers': {u'Content-Type': u'multipart/form-data; boundary=---------------------------7695228484678176580630961', u'Via': u'1.1 38205a04d96d60185e88658d3185ccee.cloudfront.net (CloudFront)', u'Accept-Language': u'en-US,en;q=0.5', u'Accept-Encoding': u'gzip, deflate, br', u'CloudFront-Is-SmartTV-Viewer': u'false', u'CloudFront-Forwarded-Proto': u'https', u'X-Forwarded-For': u'71.231.27.57, 104.246.180.51', u'CloudFront-Viewer-Country': u'US', u'Accept': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', u'User-Agent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:45.0) Gecko/20100101 Firefox/45.0', u'Host': u'xo2z7zafjh.execute-api.us-east-1.amazonaws.com', u'X-Forwarded-Proto': u'https', u'Cookie': u'zappa=AQ4', u'CloudFront-Is-Tablet-Viewer': u'false', u'X-Forwarded-Port': u'443', u'Referer': u'https://xo8z7zafjh.execute-api.us-east-1.amazonaws.com/former/post', u'CloudFront-Is-Mobile-Viewer': u'false', u'X-Amz-Cf-Id': u'31zxcUcVyUxBOMk320yh5NOhihn5knqrlYQYpGGyOngKKwJb0J0BAQ==', u'CloudFront-Is-Desktop-Viewer': u'true'},
             u'stageVariables': None,
