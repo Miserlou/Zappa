@@ -11,7 +11,7 @@ from zappa.middleware import ZappaWSGIMiddleware
 
 
 class TestWSGIMockMiddleWare(unittest.TestCase):
-    """ 
+    """
     These tests can cheat and have access to the inner status and headers,
     through _start_response.
     """
@@ -173,8 +173,8 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
         # Call with empty WSGI Environment
         resp = app(dict(), self._start_response)
 
-        #self.assertEqual(self.status[0], '301 Moved Permanently')
-        self.assertEqual(self.status[0], '200 OK')
+        self.assertEqual(self.status[0], '301 Moved Permanently')
+        self.assertNotEqual(self.status[0], '200 OK')
 
         # Assert there is only one zappa cookie
         self.assertEqual(len(self.headers), 3)
@@ -184,8 +184,6 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
 
         self.assertEqual(self.headers[2][0], 'Set-Cookie')
         self.assertTrue(self.headers[2][1].startswith('zappa='))
-
-        self.assertNotEqual(''.join(resp), body)
 
         # Same as above but with 302f
         def simple_app(environ, start_response):

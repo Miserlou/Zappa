@@ -246,34 +246,87 @@ class TestZappa(unittest.TestCase):
 
     def test_wsgi_event(self):
 
+        ## This is a pre-proxy+ event
+        # event = {
+        #     "body": "",
+        #     "headers": {
+        #         "Via": "1.1 e604e934e9195aaf3e36195adbcb3e18.cloudfront.net (CloudFront)",
+        #         "Accept-Language": "en-US,en;q=0.5",
+        #         "Accept-Encoding": "gzip",
+        #         "CloudFront-Is-SmartTV-Viewer": "false",
+        #         "CloudFront-Forwarded-Proto": "https",
+        #         "X-Forwarded-For": "109.81.209.118, 216.137.58.43",
+        #         "CloudFront-Viewer-Country": "CZ",
+        #         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        #         "X-Forwarded-Proto": "https",
+        #         "X-Amz-Cf-Id": "LZeP_TZxBgkDt56slNUr_H9CHu1Us5cqhmRSswOh1_3dEGpks5uW-g==",
+        #         "CloudFront-Is-Tablet-Viewer": "false",
+        #         "X-Forwarded-Port": "443",
+        #         "CloudFront-Is-Mobile-Viewer": "false",
+        #         "CloudFront-Is-Desktop-Viewer": "true",
+        #         "Content-Type": "application/json"
+        #     },
+        #     "params": {
+        #         "parameter_1": "asdf1",
+        #         "parameter_2": "asdf2",
+        #     },
+        #     "method": "POST",
+        #     "query": {
+        #         "dead": "beef"
+        #     }
+        # }
+
         event = {
-            "body": "",
-            "headers": {
-                "Via": "1.1 e604e934e9195aaf3e36195adbcb3e18.cloudfront.net (CloudFront)",
-                "Accept-Language": "en-US,en;q=0.5",
-                "Accept-Encoding": "gzip",
-                "CloudFront-Is-SmartTV-Viewer": "false",
-                "CloudFront-Forwarded-Proto": "https",
-                "X-Forwarded-For": "109.81.209.118, 216.137.58.43",
-                "CloudFront-Viewer-Country": "CZ",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                "X-Forwarded-Proto": "https",
-                "X-Amz-Cf-Id": "LZeP_TZxBgkDt56slNUr_H9CHu1Us5cqhmRSswOh1_3dEGpks5uW-g==",
-                "CloudFront-Is-Tablet-Viewer": "false",
-                "X-Forwarded-Port": "443",
-                "CloudFront-Is-Mobile-Viewer": "false",
-                "CloudFront-Is-Desktop-Viewer": "true",
-                "Content-Type": "application/json"
-            },
-            "params": {
-                "parameter_1": "asdf1",
-                "parameter_2": "asdf2",
-            },
-            "method": "POST",
-            "query": {
-                "dead": "beef"
+            u'body': None,
+            u'resource': u'/',
+            u'requestContext': {
+                u'resourceId': u'6cqjw9qu0b',
+                u'apiId': u'9itr2lba55',
+                u'resourcePath': u'/',
+                u'httpMethod': u'GET',
+                u'requestId': u'c17cb1bf-867c-11e6-b938-ed697406e3b5',
+                u'accountId': u'724336686645',
+                u'identity': {
+                    u'apiKey': None,
+                    u'userArn': None,
+                    u'cognitoAuthenticationType': None,
+                    u'caller': None,
+                    u'userAgent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:48.0) Gecko/20100101 Firefox/48.0',
+                    u'user': None,
+                    u'cognitoIdentityPoolId': None,
+                    u'cognitoIdentityId': None,
+                    u'cognitoAuthenticationProvider': None,
+                    u'sourceIp': u'50.191.225.98',
+                    u'accountId': None,
+                    },
+                u'stage': u'devorr',
+                },
+            u'queryStringParameters': None,
+            u'httpMethod': u'GET',
+            u'pathParameters': None,
+            u'headers': {
+                u'Via': u'1.1 6801928d54163af944bf854db8d5520e.cloudfront.net (CloudFront)',
+                u'Accept-Language': u'en-US,en;q=0.5',
+                u'Accept-Encoding': u'gzip, deflate, br',
+                u'CloudFront-Is-SmartTV-Viewer': u'false',
+                u'CloudFront-Forwarded-Proto': u'https',
+                u'X-Forwarded-For': u'50.191.225.98, 204.246.168.101',
+                u'CloudFront-Viewer-Country': u'US',
+                u'Accept': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                u'Upgrade-Insecure-Requests': u'1',
+                u'Host': u'9itr2lba55.execute-api.us-east-1.amazonaws.com',
+                u'X-Forwarded-Proto': u'https',
+                u'X-Amz-Cf-Id': u'qgNdqKT0_3RMttu5KjUdnvHI3OKm1BWF8mGD2lX8_rVrJQhhp-MLDw==',
+                u'CloudFront-Is-Tablet-Viewer': u'false',
+                u'X-Forwarded-Port': u'443',
+                u'User-Agent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:48.0) Gecko/20100101 Firefox/48.0',
+                u'CloudFront-Is-Mobile-Viewer': u'false',
+                u'CloudFront-Is-Desktop-Viewer': u'true',
+                },
+            u'stageVariables': None,
+            u'path': u'/',
             }
-        }
+
         request = create_wsgi_request(event)
 
     def test_wsgi_path_info(self):
@@ -282,7 +335,7 @@ class TestZappa(unittest.TestCase):
             "body": {},
             "headers": {},
             "params": {},
-            "method": "GET",
+            "httpMethod": "GET",
             "query": {}
         }
 
@@ -300,7 +353,7 @@ class TestZappa(unittest.TestCase):
                 "parameter_1": "asdf1",
                 "parameter_2": "asdf2",
             },
-            "method": "GET",
+            "httpMethod": "GET",
             "query": {}
         }
 
@@ -321,7 +374,7 @@ class TestZappa(unittest.TestCase):
                 "parameter_1": "asdf1",
                 "parameter_2": "asdf2",
             },
-            "method": "GET",
+            "httpMethod": "GET",
             "query": {}
         }
         environ = create_wsgi_request(event, trailing_slash=False)
