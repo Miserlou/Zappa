@@ -265,6 +265,7 @@ class Zappa(object):
         self.cf_api_resources = []
         self.cf_parameters = {}
 
+
     def cache_param(self, value):
         '''Returns a troposphere Ref to a value cached as a parameter.'''
 
@@ -1136,6 +1137,7 @@ class Zappa(object):
         """
         Great the API GW domain.
         """
+
         agw_response = self.apigateway_client.create_domain_name(
             domainName=domain_name,
             certificateName=certificate_name,
@@ -1221,14 +1223,32 @@ class Zappa(object):
 
     def get_domain_name(self, domain_name):
         """
+        Scan our hosted zones for the record of a given name.
+
+        Returns the record entry, else None.
+
         """
         try:
-            response = self.apigateway_client.get_domain_name(
-                domainName=domain_name
-            )
-            return response
+
+            zones = self.route53.list_hosted_zones()
+            for zone in zones['HostedZones']:
+                records = self.route53.list_resource_record_sets(HostedZoneId=zone['Id'])
+                for record in records['ResourceRecordSets']:
+                    if record['Type'] == 'CNAME' and record['Name'] == domain_name:
+                        return record
+
         except Exception:
             return None
+
+        # We may be in a position where Route53 doesn't have a domain, but the API Gateway does.
+        # We need to delete this before we can create the new Route53.
+        try:
+            api_gateway_domain = self.apigateway_client.get_domain_name(domainName=domain_name)
+            self.apigateway_client.delete_domain_name(domainName='blog.zappa.io')
+        except Exception:
+            pass
+
+        return None
 
     ##
     # IAM
