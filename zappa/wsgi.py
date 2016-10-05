@@ -18,6 +18,11 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
         query = event_info['queryStringParameters']
         headers = event_info['headers']
 
+        # Extract remote user from context if Authorizer is enabled
+        remote_user = None
+        if event_info['requestContext'].get('authorizer'):
+            remote_user = event_info['requestContext']['authorizer'].get('principalId')
+
         # Non-GET data is B64'd through the APIGW.
         # if method in ["POST", "PUT", "PATCH"]:
         #     encoded_body = event_info['body']
@@ -99,6 +104,9 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
 
             if script_name in path_info:
                 environ['PATH_INFO'].replace(script_name, '')
+
+        if remote_user:
+            environ['REMOTE_USER'] = remote_user
 
         return environ
 
