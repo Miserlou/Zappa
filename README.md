@@ -88,7 +88,7 @@ Better still, with Zappa you only pay for the milliseconds of server time that y
 
 It's great for deploying serverless microservices with frameworks like Flask and Bottle, and for hosting larger web apps and CMSes with Django. Or, you can use any WSGI-compatible app you like! You **probably don't need to change your existing applications** to use it, and you're not locked into using it.
 
-And finally, Zappa is **super easy to use**. You can deploy your application with a single command out of the box.  
+And finally, Zappa is **super easy to use**. You can deploy your application with a single command out of the box.
 
 __Awesome!__
 
@@ -104,7 +104,7 @@ _Before you begin, make sure you have a valid AWS account and your [AWS credenti
 
     $ pip install zappa
 
-Please note that Zappa _**must**_ be installed into your project's [virtual environment](http://docs.python-guide.org/en/latest/dev/virtualenvs/). 
+Please note that Zappa _**must**_ be installed into your project's [virtual environment](http://docs.python-guide.org/en/latest/dev/virtualenvs/).
 
 _(If you use [pyenv](https://github.com/yyuu/pyenv) and love to manage virtualenvs with **pyenv-virtualenv**, you just have to call `pyenv local [your_venv_name]` and it's ready. [Conda](http://conda.pydata.org/docs/) users should comment [here](https://github.com/Miserlou/Zappa/pull/108).)_
 
@@ -304,7 +304,7 @@ Any remote print statements made and the value the function returned will then b
 
 You can also invoke interpretable Python 2.7 strings directly by using `--raw`, like so:
 
-    $ zappa invoke production "print 1 + 2 + 3" --raw 
+    $ zappa invoke production "print 1 + 2 + 3" --raw
 
 #### Django Management Commands
 
@@ -312,7 +312,7 @@ As a convenience, Zappa can also invoke remote Django 'manage.py' commands with 
 
     $ zappa manage production showmigrations admin
 
-Obviously, this only works for Django projects which have their settings properly defined. 
+Obviously, this only works for Django projects which have their settings properly defined.
 
 For commands which have their own arguments, you can also pass the command in as a string, like so:
 
@@ -320,7 +320,7 @@ For commands which have their own arguments, you can also pass the command in as
 
 Commands which require direct user input, such as `createsuperuser`, should be [replaced by commands](http://stackoverflow.com/a/26091252) which use `zappa <env> invoke --raw`.
 
-_(Please note that commands which take over 30 seconds to execute may time-out. See [this related issue](https://github.com/Miserlou/Zappa/issues/205#issuecomment-236391248) for a work-around.)_ 
+_(Please note that commands which take over 30 seconds to execute may time-out. See [this related issue](https://github.com/Miserlou/Zappa/issues/205#issuecomment-236391248) for a work-around.)_
 
 #### Let's Encrypt SSL Domain Certification and Installation
 
@@ -330,7 +330,7 @@ If your domain is located within an AWS Route 53 Hosted Zone and you've defined 
 
     $ zappa certify production
 
-And your domain will be verified, certified and registered! 
+And your domain will be verified, certified and registered!
 
 _(Please note that this can take around 45 minutes to take effect the first time your run the command, and around 60 seconds every time after that.)_
 
@@ -372,7 +372,7 @@ to change Zappa's behavior. Use these at your own risk!
             },
             {   // AWS Reactive events
                 "function": "your_module.your_reactive_function", // The function to execute
-                "event_source": { 
+                "event_source": {
                     "arn":  "arn:aws:s3:::my-bucket", // The ARN of this event source
                     "events": [
                         "s3:ObjectCreated:*" // The specific event to execute in response to.
@@ -395,7 +395,7 @@ to change Zappa's behavior. Use these at your own risk!
             "application/json": [
                 "application/vnd.webhooks+json"
             ]
-        }, 
+        },
         "keep_warm": true, // Create CloudWatch events to keep the server warm.
         "keep_warm_expression": "rate(4 minutes)", // How often to execute the keep-warm, in cron and rate format. Default 4 minutes.
         "lambda_description": "Your Description", // However you want to describe your project for the AWS console. Default "Zappa Deployment".
@@ -405,7 +405,7 @@ to change Zappa's behavior. Use these at your own risk!
         "log_level": "DEBUG", // Set the Zappa log level. Default INFO, can be one of CRITICAL, ERROR, WARNING, INFO and DEBUG.
         "manage_roles": true, // Have Zappa automatically create and define IAM execution roles and policies. Default true. If false, you must define your own IAM Role and role_name setting.
         "memory_size": 512, // Lambda function memory in MB
-        "method_header_types": [ // Which headers to include in the API response. Defaults: 
+        "method_header_types": [ // Which headers to include in the API response. Defaults:
             "Content-Type",
             "Location",
             "Status",
@@ -454,7 +454,7 @@ To enable Cross-Origin Resource Sharing (CORS) for your application, follow the 
 
 You can also simply handle CORS directly in your application. If you do this, you'll need to add `Access-Control-Allow-Origin`, `Access-Control-Allow-Headers`, and `Access-Control-Allow-Methods` to the `method_header_types` key in your `zappa_settings.json`. See further [discussion here](https://github.com/Miserlou/Zappa/issues/41).
 
-#### Enabling Secure Endpoints on API Gateway 
+#### Enabling Secure Endpoints on API Gateway
 
 ##### API Key
 
@@ -465,8 +465,8 @@ You can use the `api_key_required` setting to generate and assign an API key to 
 You can enable IAM-based (v4 signing) authorization on an API by setting the `iam_authorization` setting to `true`. Your API will then require signed requests and access can be controlled via [IAM policy](https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-iam-policy-examples.html). Unsigned requests will receive a 403 response, as will requesters who are not authorized to access the API. Enabling this will override the Authorizer configuration (see below).
 
 ##### Authorizer
-If you deploy an API endpoint with Zappa, you can take advantage of [API Gateway Authorizers](http://docs.aws.amazon.com/apigateway/latest/developerguide/use-custom-authorizer.html) to implement a token-based authentication - all you need to do is to provide a function to create the required output, Zappa takes care of the rest. A good start for the function is the [awslabs blueprint example.](https://github.com/awslabs/aws-apigateway-lambda-authorizer-blueprints/blob/master/blueprints/python/api-gateway-authorizer-python.py)  
-Inside your app, the authenticated username will be available through the `REMOTE_USER` environment variable (e.g. in Flask `request.environ.get('REMOTE_USER')`)  
+If you deploy an API endpoint with Zappa, you can take advantage of [API Gateway Authorizers](http://docs.aws.amazon.com/apigateway/latest/developerguide/use-custom-authorizer.html) to implement a token-based authentication - all you need to do is to provide a function to create the required output, Zappa takes care of the rest. A good start for the function is the [awslabs blueprint example.](https://github.com/awslabs/aws-apigateway-lambda-authorizer-blueprints/blob/master/blueprints/python/api-gateway-authorizer-python.py)
+Inside your app, the authenticated username will be available through the `REMOTE_USER` environment variable (e.g. in Flask `request.environ.get('REMOTE_USER')`)
 If you are wondering for what you would use an Authorizer, here are some potential use cases:
 1. Call out to OAuth provider
 2. Decode a JWT token inline
@@ -589,7 +589,7 @@ By default, AWS Lambda will attempt to retry an event based (non-API Gateway, e.
 
 #### Using Custom AWS IAM Roles and Policies
 
-By default, the Zappa client will create and manage the necessary IAM policies and roles to deploy and execute Zappa applications. However, if you're using Zappa in a corporate environment or as part of a continuous integration, you may instead want to manually manage your policies instead. 
+By default, the Zappa client will create and manage the necessary IAM policies and roles to deploy and execute Zappa applications. However, if you're using Zappa in a corporate environment or as part of a continuous integration, you may instead want to manually manage your policies instead.
 
 To manually define the permissions policy of your Zappa execution role, you must define the following in your *zappa_settings.json*:
 
@@ -642,7 +642,7 @@ Are you using Zappa? Let us know and we'll list your site here!
 * [zappa-cms](http://github.com/Miserlou/zappa-cms) - A tiny server-less CMS for busy hackers. Work in progress.
 * [flask-ask](https://github.com/johnwheeler/flask-ask) - A framework for building Amazon Alexa applications. Uses Zappa for deployments.
 * [zappa-file-widget](https://github.com/anush0247/zappa-file-widget) - A Django plugin for supporting binary file uploads in Django on Zappa.
-* [zops](https://github.com/bjinwright/zops) - Utilities for teams and continuous integrations using Zappa. 
+* [zops](https://github.com/bjinwright/zops) - Utilities for teams and continuous integrations using Zappa.
 
 ## Hacks
 
@@ -655,7 +655,7 @@ Zappa goes quite far beyond what Lambda and API Gateway were ever intended to ha
 
 ## Contributing
 
-This project is still young, so there is still plenty to be done. Contributions are more than welcome! 
+This project is still young, so there is still plenty to be done. Contributions are more than welcome!
 
 Please file tickets for discussion before submitting patches, and submit your patches to the "dev" branch if possible. If dev falls behind master, feel free to rebase.
 
@@ -670,7 +670,7 @@ To use the git HEAD, you *can't* use `pip install -e `. Instead, you should clon
 ## Support / Development / Training / Consulting
 
 Do you need help with..
- 
+
   * Porting existing Flask and Django applications to Zappa?
   * Building new applications and services that scale infinitely?
   * Reducing your operations and hosting costs?
