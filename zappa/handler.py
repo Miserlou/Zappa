@@ -354,6 +354,17 @@ class LambdaHandler(object):
                 logger.error("Cannot find a function to process the triggered event.")
             return result
 
+        # This is an API Gateway authorizer event
+        elif event.get('type') == u'TOKEN':
+            whole_function = self.settings.AUTHORIZER_FUNCTION
+            if whole_function:
+                app_function = self.import_module_and_get_function(whole_function)
+                policy = self.run_function(app_function, event, context)
+                return policy
+            else:
+                logger.error("Cannot find a function to process the authorization request.")
+                raise Exception('Unauthorized')
+
         # Normal web app flow
         try:
             # Timing

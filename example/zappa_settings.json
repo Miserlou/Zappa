@@ -38,6 +38,9 @@
         "function": "mymodule.myfunc",
         "expression": "rate(5 minutes)"
         }],
+      "authorizer": {
+        "function": "authmodule.lambda_handler"
+      },
       "aws_region": "us-west-2",
       "s3_bucket": "zappa-test-bucket",
       "app_function": "app.app",

@@ -104,6 +104,7 @@ class ZappaCLI(object):
     manage_roles = True
     exception_handler = None
     environment_variables = None
+    authorizer = None
 
     stage_name_env_pattern = re.compile('^[a-zA-Z0-9_]+$')
 
@@ -304,19 +305,14 @@ class ZappaCLI(object):
         deployment_string = click.style("Deployment complete", fg="green", bold=True) + "!"
         if self.use_apigateway:
 
-
-            if self.iam_authorization:
-                auth_type = "AWS_IAM"
-            else:
-                auth_type = "NONE"
-
             # Create and configure the API Gateway
 
             template = self.zappa.create_stack_template(self.lambda_arn,
                                                         self.lambda_name,
                                                         self.api_key_required,
                                                         self.integration_content_type_aliases,
-                                                        auth_type)
+                                                        self.iam_authorization,
+                                                        self.authorizer)
 
             self.zappa.update_stack(self.lambda_name, self.s3_bucket_name, wait=True)
             api_id = self.zappa.get_api_id(self.lambda_name)
@@ -427,16 +423,12 @@ class ZappaCLI(object):
 
         if self.use_apigateway:
 
-            if self.iam_authorization:
-                auth_type = "AWS_IAM"
-            else:
-                auth_type = "NONE"
-
-            template = self.zappa.create_stack_template(self.lambda_arn,
+            self.zappa.create_stack_template(self.lambda_arn,
                                                         self.lambda_name,
                                                         self.api_key_required,
                                                         self.integration_content_type_aliases,
-                                                        auth_type)
+                                                        self.iam_authorization,
+                                                        self.authorizer)
             self.zappa.update_stack(self.lambda_name, self.s3_bucket_name, wait=True, update_only=True)
 
             self.zappa.update_stage_config(
@@ -1134,6 +1126,7 @@ class ZappaCLI(object):
             self.api_stage].get('lambda_description', "Zappa Deployment")
         self.environment_variables = self.zappa_settings[
             self.api_stage].get('environment_variables', {})
+        self.authorizer = self.stage_config.get('authorizer', {})
 
         self.zappa = Zappa( boto_session=session,
                             profile_name=self.profile_name,
@@ -1256,6 +1249,12 @@ class ZappaCLI(object):
                     event_mapping[arn] = function
             settings_s = settings_s + "AWS_EVENT_MAPPING={0!s}\n".format(event_mapping)
 
+            # Authorizer config
+            authorizer_function = self.authorizer.get('function', None)
+            if authorizer_function:
+                settings_s += "AUTHORIZER_FUNCTION='{0!s}'\n".format(authorizer_function)
+
+
             # Copy our Django app into root of our package.
             # It doesn't work otherwise.
             if self.django_settings:
@@ -1343,6 +1342,8 @@ class ZappaCLI(object):
         for namespace_collision in namespace_collisions:
             if namespace_collision in item:
                 click.echo(click.style("Warning!", fg="yellow", bold=True) + " You may have a namespace collision with " + click.style(item, bold=True) + "! You may want to rename that file.")
+
+
 
 ####################################################################
 # Main

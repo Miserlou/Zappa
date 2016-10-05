@@ -669,7 +669,7 @@ class Zappa(object):
     ##
 
     def create_api_gateway_routes(self, lambda_arn, api_name=None, api_key_required=False,
-                                  integration_content_type_aliases=None, authorization_type='NONE'):
+                                  integration_content_type_aliases=None, authorization_type='NONE', authorizer=None):
         """
         Create the API Gateway for this Zappa deployment.
 
@@ -682,13 +682,21 @@ class Zappa(object):
         self.cf_template.add_resource(restapi)
 
         root_id = troposphere.GetAtt(restapi, 'RootResourceId')
+        invocations_uri = 'arn:aws:apigateway:' + self.boto_session.region_name + ':lambda:path/2015-03-31/functions/' + lambda_arn + '/invocations'
 
         ##
         # The Resources
         ##
+        authorizer_resource = None
+        if authorizer:
+            authorizer_resource = self.create_authorizer(restapi,
+                                                         invocations_uri,
+                                                         "method.request.header." + authorizer.get('token_header', 'Authorization'),
+                                                         authorizer.get('result_ttl', 300),
+                                                         authorizer.get('validation_expression', None))
 
-        self.create_and_setup_methods(restapi, root_id, lambda_arn, api_key_required,
-                                      integration_content_type_aliases, authorization_type, 0)
+        self.create_and_setup_methods(restapi, root_id, api_key_required, invocations_uri,
+                                      integration_content_type_aliases, authorization_type, authorizer_resource, 0)
 
         resource = troposphere.apigateway.Resource('ResourceAnyPathSlashed')
         self.cf_api_resources.append(resource.title)
@@ -697,13 +705,36 @@ class Zappa(object):
         resource.PathPart = "{proxy+}"
         self.cf_template.add_resource(resource)
 
-        self.create_and_setup_methods(restapi, resource, lambda_arn, api_key_required,
-                                      integration_content_type_aliases, authorization_type, 1)  # pragma: no cover
+        self.create_and_setup_methods(restapi, resource, api_key_required, invocations_uri,
+                                      integration_content_type_aliases, authorization_type, authorizer_resource, 1)  # pragma: no cover
 
         return restapi
 
-    def create_and_setup_methods(self, restapi, resource, lambda_arn, api_key_required,
-                                 integration_content_type_aliases, authorization_type, depth):
+    def create_authorizer(self, restapi, uri, identity_source, authorizer_result_ttl, identity_validation_expression):
+        """
+        Create Authorizer for API gateway
+        """
+        if not self.credentials_arn:
+            self.get_credentials_arn()
+
+        authorizer_resource = troposphere.apigateway.Authorizer("Authorizer")
+        authorizer_resource.RestApiId = troposphere.Ref(restapi)
+        authorizer_resource.Name = "ZappaAuthorizer"
+        authorizer_resource.Type = 'TOKEN'
+        authorizer_resource.AuthorizerResultTtlInSeconds = authorizer_result_ttl
+        authorizer_resource.AuthorizerUri = uri
+        authorizer_resource.IdentitySource = identity_source
+        authorizer_resource.AuthorizerCredentials = self.credentials_arn
+        if identity_validation_expression:
+            authorizer_resource.IdentityValidationExpression = identity_validation_expression
+
+        self.cf_api_resources.append(authorizer_resource.title)
+        self.cf_template.add_resource(authorizer_resource)
+
+        return authorizer_resource
+
+    def create_and_setup_methods(self, restapi, resource, api_key_required, uri,
+                                 integration_content_type_aliases, authorization_type, authorizer_resource, depth):
         """
         Set up the methods, integration responses and method responses for a given API Gateway resource.
         """
@@ -716,6 +747,8 @@ class Zappa(object):
                 method.ResourceId = resource
             method.HttpMethod = method_name.upper()
             method.AuthorizationType = authorization_type
+            if authorizer_resource:
+                method.AuthorizerId = troposphere.Ref(authorizer_resource)
             method.ApiKeyRequired = api_key_required
             method.MethodResponses = []
             self.cf_template.add_resource(method)
@@ -735,8 +768,6 @@ class Zappa(object):
             if not self.credentials_arn:
                 self.get_credentials_arn()
             credentials = self.credentials_arn  # This must be a Role ARN
-
-            uri = 'arn:aws:apigateway:' + self.boto_session.region_name + ':lambda:path/2015-03-31/functions/' + lambda_arn + '/invocations'
 
             integration = troposphere.apigateway.Integration()
             integration.CacheKeyParameters = []
@@ -975,12 +1006,22 @@ class Zappa(object):
             print('ZappaProject tag not found on {0}, doing nothing'.format(name))
             return False
 
-    def create_stack_template(self, lambda_arn, lambda_name, api_key_required,
-                              integration_content_type_aliases, auth_type):
+    def create_stack_template(self, lambda_arn, lambda_name, api_key_required, integration_content_type_aliases,
+                              iam_authorization, authorizer):
         """
         Build the entire CF stack.
         Just used for the API Gateway, but could be expanded in the future.
         """
+
+        auth_type = "NONE"
+        if iam_authorization and authorizer:
+            logger.warn("Both IAM Authorization and Authorizer are specified, this is not possible. Setting Auth method to IAM Authorization")
+            authorizer = None
+            auth_type = "AWS_IAM"
+        elif iam_authorization:
+            auth_type = "AWS_IAM"
+        elif authorizer:
+            auth_type = "CUSTOM"
 
         # build a fresh template
         self.cf_template = troposphere.Template()
@@ -989,7 +1030,7 @@ class Zappa(object):
         self.cf_parameters = {}
 
         restapi = self.create_api_gateway_routes(lambda_arn, lambda_name, api_key_required,
-                                                 integration_content_type_aliases, auth_type)
+                                                 integration_content_type_aliases, auth_type, authorizer)
         return self.cf_template
 
     def update_stack(self, name, working_bucket, wait=False, update_only=False):
@@ -1047,7 +1088,7 @@ class Zappa(object):
                 if not result['Stacks']:
                     continue  # might need to wait a bit
 
-                if result['Stacks'][0]['StackStatus'] == 'CREATE_COMPLETE':
+                if result['Stacks'][0]['StackStatus'] in ['CREATE_COMPLETE', 'UPDATE_COMPLETE']:
                     break
 
                 # Something has gone wrong.

@@ -268,6 +268,104 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
         zappa_cookie = self.headers[0][1]
         self.assertTrue(zappa_cookie.startswith('zappa='))
 
+    def test_wsgi_authorizer_handling(self):
+        # With user
+        event = {
+            u'httpMethod': u'GET',
+            u'queryStringParameters': None,
+            u'path': u'/v1/runs',
+            u'params': {},
+            u'body': {},
+            u'headers': {
+                u'Content-Type': u'application/json'
+            },
+            u'pathParameters': {
+                u'proxy': 'v1/runs'
+            },
+            u'requestContext': {
+                u'authorizer': {
+                    u'principalId': u'user1'
+                }
+            },
+            u'query': {}
+        }
+
+        environ = create_wsgi_request(event, script_name='http://zappa.com/',
+                                      trailing_slash=False)
+        self.assertEqual(environ['REMOTE_USER'], u'user1')
+
+        # With empty authorizer, should not include REMOTE_USER
+        event = {
+            u'httpMethod': u'GET',
+            u'queryStringParameters': None,
+            u'path': u'/v1/runs',
+            u'params': {},
+            u'body': {},
+            u'headers': {
+                u'Content-Type': u'application/json'
+            },
+            u'pathParameters': {
+                u'proxy': 'v1/runs'
+            },
+            u'requestContext': {
+                u'authorizer': {
+                    u'principalId': u''
+                }
+            },
+            u'query': {}
+        }
+
+        environ = create_wsgi_request(event, script_name='http://zappa.com/',
+                                      trailing_slash=False)
+        user = environ.get('REMOTE_USER', u'no_user')
+        self.assertEqual(user, u'no_user')
+
+        # With missing authorizer, should not include REMOTE_USER
+        event = {
+            u'httpMethod': u'GET',
+            u'queryStringParameters': None,
+            u'path': u'/v1/runs',
+            u'params': {},
+            u'body': {},
+            u'headers': {
+                u'Content-Type': u'application/json'
+            },
+            u'pathParameters': {
+                u'proxy': 'v1/runs'
+            },
+            u'requestContext': {},
+            u'query': {}
+        }
+
+        environ = create_wsgi_request(event, script_name='http://zappa.com/',
+                                      trailing_slash=False)
+        user = environ.get('REMOTE_USER', u'no_user')
+        self.assertEqual(user, u'no_user')
+
+        # With empty authorizer, should not include REMOTE_USER
+        event = {
+            u'httpMethod': u'GET',
+            u'queryStringParameters': None,
+            u'path': u'/v1/runs',
+            u'params': {},
+            u'body': {},
+            u'headers': {
+                u'Content-Type': u'application/json'
+            },
+            u'pathParameters': {
+                u'proxy': 'v1/runs'
+            },
+            u'requestContext': {
+                u'authorizer': {}
+            },
+            u'query': {}
+        }
+
+        environ = create_wsgi_request(event, script_name='http://zappa.com/',
+                                      trailing_slash=False)
+        user = environ.get('REMOTE_USER', u'no_user')
+        self.assertEqual(user, u'no_user')
+
 class TestWSGIMiddleWare(unittest.TestCase):
     """ These tests call the app as it is called in a handler, and can only
         access the returned status, body, and headers.
