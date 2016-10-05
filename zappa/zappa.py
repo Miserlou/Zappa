@@ -1088,7 +1088,7 @@ class Zappa(object):
                 if not result['Stacks']:
                     continue  # might need to wait a bit
 
-                if result['Stacks'][0]['StackStatus'] == 'CREATE_COMPLETE':
+                if result['Stacks'][0]['StackStatus'] in ['CREATE_COMPLETE', 'UPDATE_COMPLETE']:
                     break
 
                 # Something has gone wrong.

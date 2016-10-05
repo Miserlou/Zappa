@@ -388,7 +388,7 @@ to change Zappa's behavior. Use these at your own risk!
             "function": "your_module.your_auth_function", // Required. Function to run for token validation. For more information about the function see below.
             "result_ttl": 300, // Optional. Default 300. The time-to-live (TTL) period, in seconds, that specifies how long API Gateway caches authorizer results. Currently, the maximum TTL value is 3600 seconds.
             "token_source": "Authorization", // Optional. Default 'Authorization'. The name of a custom authorization header containing the token that clients submit as part of their requests.
-            "validation_expression": "xxx", // Optional. A validation expression for the incoming token, specify a regular expression.
+            "validation_expression": "^Baerer \\w+$", // Optional. A validation expression for the incoming token, specify a regular expression.
         },
         "integration_response_codes": [200, 301, 404, 500], // Integration response status codes to route
         "integration_content_type_aliases": { // For routing requests with non-standard mime types
