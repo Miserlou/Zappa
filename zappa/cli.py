@@ -1356,7 +1356,7 @@ def shamelessly_promote():
 
     click.echo("Need " + click.style("help", fg='green', bold=True) + "? Found a " + click.style("bug", fg='green', bold=True) + "? Let us " + click.style("know", fg='green', bold=True) + "! :D")
     click.echo("File bug reports on " + click.style("GitHub", bold=True) + " here: " + click.style("https://github.com/Miserlou/Zappa", fg='cyan', bold=True))
-    click.echo("And join our " + click.style("Slack", bold=True) + " channel here: " + click.style("http://bit.do/zappa", fg='cyan', bold=True))
+    click.echo("And join our " + click.style("Slack", bold=True) + " channel here: " + click.style("https://slack.zappa.io", fg='cyan', bold=True))
     click.echo("Love!,")
     click.echo(" ~ Team " + click.style("Zappa", bold=True) + "!")
 
