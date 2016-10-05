@@ -137,6 +137,7 @@ class ZappaCLI(object):
         parser.add_argument('-y', '--yes', action='store_true', help='Auto confirm yes', default=False)
         parser.add_argument('--remove-logs', action='store_true', help='Removes log groups of api gateway and lambda task during the undeployment.', default=False)
         parser.add_argument('--raw', action='store_true', help='When invoking remotely, invoke this python as a string, not as a modular path.', default=False)
+        parser.add_argument('--no-cleanup', action='store_true', help="Don't remove certificate files from /tmp during certify. Dangerous.", default=False)
 
         args = parser.parse_args(argv)
 
@@ -238,7 +239,7 @@ class ZappaCLI(object):
         elif command == 'init': # pragma: no cover
             self.init()
         elif command == 'certify': # pragma: no cover
-            self.certify()
+            self.certify(no_cleanup=vargs['no_cleanup'])
 
     ##
     # The Commands
@@ -944,10 +945,17 @@ class ZappaCLI(object):
 
         return
 
-    def certify(self):
+    def certify(self, no_cleanup=False):
         """
         Register or update a domain certificate for this env.
         """
+
+        # Give warning on --no-cleanup
+        if no_cleanup:
+            clean_up = False
+            click.echo(click.style("Warning!", fg="yellow", bold=True) + " You are calling certify with " + click.style("--no-cleanup", bold=True) + ". Your certificate files will remain in the system temporary directory after this command exectutes!")
+        else:
+            clean_up = True
 
         # Make sure this isn't already deployed.
         deployed_versions = self.zappa.get_lambda_function_versions(self.lambda_name)
@@ -982,9 +990,17 @@ class ZappaCLI(object):
                 self.zappa,
                 self.lambda_name,
                 self.api_stage,
-                domain
+                domain,
+                clean_up
             )
-        cleanup()
+
+        # Deliberately undocumented feature (for now, at least.)
+        # We are giving the user the ability to shoot themselves in the foot.
+        # _This is probably not a good idea._
+        # However, I am sick and tired of hitting the Let's Encrypt cert
+        # limit while testing.
+        if clean_up:
+            cleanup()
 
         if cert_success:
             click.echo("Certificate " + click.style("updated", fg="green", bold=True) + "!")
