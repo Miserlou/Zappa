@@ -1,6 +1,6 @@
 base58==0.2.3
 boto3==1.4.0
-botocore==1.4.59
+botocore==1.4.60
 docutils==0.12
 futures==3.0.5
 hjson==2.0.2
