@@ -15,4 +15,4 @@ tqdm==4.8.4
 troposphere==1.8.1
 Werkzeug==0.11.11
 wheel==0.29.0
-wsgi-request-logger==0.4.5
+wsgi-request-logger==0.4.6
