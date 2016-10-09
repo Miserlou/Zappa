@@ -12,7 +12,7 @@ python-slugify==1.2.1
 requests>=2.10.0
 six==1.10.0
 tqdm==4.8.4
-troposphere==1.8.1
+troposphere==1.8.2
 Werkzeug==0.11.11
 wheel==0.29.0
 wsgi-request-logger==0.4.6
