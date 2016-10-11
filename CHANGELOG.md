@@ -1,5 +1,18 @@
 # Zappa Changelog
 
+## 0.27.0
+
+* Remove many hacks using new API Gateway features.
+    * Closes #303, #363, #361
+    * See the [blog post](https://blog.zappa.io/posts/unhacking-zappa-with-new-apigateway-features) for more details!
+* Bump dependancies - make sure you reinstall your requirements!
+* Improved stack update handling.
+
+### 0.26.1 (Never Published)
+
+* Warn on namespace collisions.
+* Bump lambda-packages version.
+
 ## 0.26.0
 
 * Use simplified API Gateway configuration, via @koriaf.
