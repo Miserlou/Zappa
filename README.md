@@ -267,6 +267,8 @@ Similarly, for a [Simple Notification Service](https://aws.amazon.com/sns/) even
        ]
 ```
 
+You can find more [example event sources here](http://docs.aws.amazon.com/lambda/latest/dg/eventsources.html).
+
 #### Undeploy
 
 If you need to remove the API Gateway and Lambda function that you have previously published, you can simply:
