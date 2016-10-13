@@ -595,7 +595,7 @@ class ZappaCLI(object):
             try:
                 function_response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name)
             except botocore.exceptions.ClientError as e: # pragma: no cover
-                click.echo(click.style("Function does not exist", fg=yellow) + ", please " + click.style("deploy", bold=True) + "first. Ex:" + click.style("zappa deploy {}.".format(self.api_stage), bold=True))
+                click.echo(click.style("Function does not exist", fg="yellow") + ", please " + click.style("deploy", bold=True) + "first. Ex:" + click.style("zappa deploy {}.".format(self.api_stage), bold=True))
                 sys.exit(-1)
 
             print("Scheduling..")
