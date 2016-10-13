@@ -92,7 +92,10 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
                 environ['CONTENT_TYPE'] = headers['Content-Type']
 
             environ['wsgi.input'] = StringIO(body)
-            environ['CONTENT_LENGTH'] = str(len(body))
+            if body:
+                environ['CONTENT_LENGTH'] = str(len(body))
+            else:
+                environ['CONTENT_LENGTH'] = '0'
 
         for header in headers:
             wsgi_name = "HTTP_" + header.upper().replace('-', '_')
