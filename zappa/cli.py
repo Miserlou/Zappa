@@ -792,6 +792,21 @@ class ZappaCLI(object):
             return True
         raise ValueError("AWS requires stage name to match a-zA-Z0-9_")
 
+    def check_environment(self, environment):
+        """
+        Make sure the environment contains only strings
+
+        (since putenv needs a string)
+        """
+
+        non_strings = []
+        for k,v in environment.iteritems():
+            if not isinstance(v, basestring):
+                non_strings.append(k)
+        if non_strings:
+            raise ValueError("The following environment variables are not strings: {}".format(", ".join(non_strings)))
+        else:
+            return True
 
     def init(self, settings_file="zappa_settings.json"):
         """
@@ -1126,6 +1141,7 @@ class ZappaCLI(object):
             self.api_stage].get('lambda_description', "Zappa Deployment")
         self.environment_variables = self.zappa_settings[
             self.api_stage].get('environment_variables', {})
+        self.check_environment(self.environment_variables)
         self.authorizer = self.stage_config.get('authorizer', {})
 
         self.zappa = Zappa( boto_session=session,
