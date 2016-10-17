@@ -1,5 +1,12 @@
 # Zappa Changelog
 
+## 0.27.1
+
+* Bump lambda-packages
+* Fix new Django unicode problems (#397)
+* Ensure env vars are strings via @scoates
+* Fix #382
+
 ## 0.27.0
 
 * Remove many hacks using new API Gateway features.
