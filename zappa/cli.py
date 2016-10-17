@@ -139,6 +139,7 @@ class ZappaCLI(object):
         parser.add_argument('--remove-logs', action='store_true', help='Removes log groups of api gateway and lambda task during the undeployment.', default=False)
         parser.add_argument('--raw', action='store_true', help='When invoking remotely, invoke this python as a string, not as a modular path.', default=False)
         parser.add_argument('--no-cleanup', action='store_true', help="Don't remove certificate files from /tmp during certify. Dangerous.", default=False)
+        parser.add_argument('--all', action='store_true', help="Execute this command for all of our defined Zappa environments.", default=False)
 
         args = parser.parse_args(argv)
 
@@ -162,28 +163,49 @@ class ZappaCLI(object):
             print("The command '{}' is not recognized. {}".format(command, help_message))
             return
 
+        # Make sure there isn't a new version available
+        self.check_for_update()
+
+        # We don't have any settings yet, so make those first!
+        if command == 'init':
+            self.init()
+            return
+
         # Settings-based interactions will fail
         # before a project has been initialized.
-        if command != 'init':
 
-             # Load and Validate Settings File
-            self.load_settings_file(vargs['settings_file'])
+         # Load and Validate Settings File
+        self.load_settings_file(vargs['settings_file'])
 
+        # Should we execute this for all environments, or just one?
+        all_environments = vargs['all']
+        environments = []
+
+        if all_environments: # All envs!
+            environments = self.zappa_settings.keys()
+        else: # Just one env.
             if len(command_env) < 2: # pragma: no cover
                 # If there's only one environment defined in the settings,
                 # use that as the default.
                 if len(self.zappa_settings.keys()) is 1:
-                    self.api_stage = self.zappa_settings.keys()[0]
+                    environments.append(self.zappa_settings.keys()[0])
                 else:
                     parser.error("Please supply an environment to interact with.")
                     return
             else:
-                self.api_stage = command_env[1]
+                environments.append(command_env[1])
 
+        for environment in environments:
+            self.api_stage = environment
+
+            if command not in ['status', 'manage']:
+                click.echo("Calling " + click.style(command, fg="green", bold=True) + " for environment " + click.style(self.api_stage, bold=True) + ".." )
+
+            # Explicity define the app function.
             if vargs['app_function'] is not None:
                 self.app_function = vargs['app_function']
 
-            # Load our settings
+            # Load our settings, based on api_stage.
             try:
                 self.load_settings(vargs['settings_file'])
             except ValueError as e:
@@ -191,56 +213,54 @@ class ZappaCLI(object):
                 sys.exit(-1)
             self.callback('settings')
 
-        # Hand it off
-        if command == 'deploy': # pragma: no cover
-            self.deploy()
-        elif command == 'update': # pragma: no cover
-            self.update()
-        elif command == 'rollback': # pragma: no cover
-            if vargs['num_rollback'] < 1: # pragma: no cover
-                parser.error("Please enter the number of iterations to rollback.")
-                return
-            self.rollback(vargs['num_rollback'])
-        elif command == 'invoke': # pragma: no cover
+            # Hand it off
+            if command == 'deploy': # pragma: no cover
+                self.deploy()
+            elif command == 'update': # pragma: no cover
+                self.update()
+            elif command == 'rollback': # pragma: no cover
+                if vargs['num_rollback'] < 1: # pragma: no cover
+                    parser.error("Please enter the number of iterations to rollback.")
+                    return
+                self.rollback(vargs['num_rollback'])
+            elif command == 'invoke': # pragma: no cover
 
-            if len(command_env) < 2:
-                parser.error("Please enter the function to invoke.")
-                return
+                if len(command_env) < 2:
+                    parser.error("Please enter the function to invoke.")
+                    return
 
-            self.invoke(command_env[-1], raw_python=vargs['raw'])
-        elif command == 'manage': # pragma: no cover
+                self.invoke(command_env[-1], raw_python=vargs['raw'])
+            elif command == 'manage': # pragma: no cover
 
-            if len(command_env) < 2:
-                parser.error("Please enter the management command to invoke.")
-                return
+                if len(command_env) < 2:
+                    parser.error("Please enter the management command to invoke.")
+                    return
 
-            if not self.django_settings:
-                print("This command is for Django projects only!")
-                print("If this is a Django project, please define django_settings in your zappa_settings.")
-                return
+                if not self.django_settings:
+                    print("This command is for Django projects only!")
+                    print("If this is a Django project, please define django_settings in your zappa_settings.")
+                    return
 
-            command_tail = command_env[2:]
-            if len(command_tail) > 1:
-                command = " ".join(command_tail) # ex: zappa manage dev "shell --version"
-            else:
-                command = command_tail[0] # ex: zappa manage dev showmigrations admin
+                command_tail = command_env[2:]
+                if len(command_tail) > 1:
+                    command = " ".join(command_tail) # ex: zappa manage dev "shell --version"
+                else:
+                    command = command_tail[0] # ex: zappa manage dev showmigrations admin
 
-            self.invoke(command, "manage")
+                self.invoke(command, "manage")
 
-        elif command == 'tail': # pragma: no cover
-            self.tail()
-        elif command == 'undeploy': # pragma: no cover
-            self.undeploy(noconfirm=vargs['yes'], remove_logs=vargs['remove_logs'])
-        elif command == 'schedule': # pragma: no cover
-            self.schedule()
-        elif command == 'unschedule': # pragma: no cover
-            self.unschedule()
-        elif command == 'status': # pragma: no cover
-            self.status()
-        elif command == 'init': # pragma: no cover
-            self.init()
-        elif command == 'certify': # pragma: no cover
-            self.certify(no_cleanup=vargs['no_cleanup'])
+            elif command == 'tail': # pragma: no cover
+                self.tail()
+            elif command == 'undeploy': # pragma: no cover
+                self.undeploy(noconfirm=vargs['yes'], remove_logs=vargs['remove_logs'])
+            elif command == 'schedule': # pragma: no cover
+                self.schedule()
+            elif command == 'unschedule': # pragma: no cover
+                self.unschedule()
+            elif command == 'status': # pragma: no cover
+                self.status()
+            elif command == 'certify': # pragma: no cover
+                self.certify(no_cleanup=vargs['no_cleanup'])
 
     ##
     # The Commands
@@ -262,9 +282,6 @@ class ZappaCLI(object):
         if len(deployed_versions) > 0:
             click.echo("This application is " + click.style("already deployed", fg="red") + " - did you mean to call " + click.style("update", bold=True) + "?")
             return
-
-        # Make sure there isn't a new version available
-        self.check_for_update()
 
         # Make sure the necessary IAM execution roles are available
         if self.manage_roles:
@@ -351,9 +368,6 @@ class ZappaCLI(object):
         # Execute the prebuild script
         if self.prebuild_script:
             self.execute_prebuild_script()
-
-        # Make sure there isn't a new version available
-        self.check_for_update()
 
         # Temporary version check
         try:
