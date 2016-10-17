@@ -28,7 +28,11 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
         #     encoded_body = event_info['body']
         #     body = base64.b64decode(encoded_body)
         # else:
+
         body = event_info['body']
+        # Will this generate unicode errors?
+        # Early experiments indicate no, but this still looks unsafe to me.
+        body = str(body)
 
         # Make header names canonical, e.g. content-type => Content-Type
         for header in headers.keys():
@@ -126,8 +130,13 @@ def common_log(environ, response, response_time=None):
 
     if response_time:
         formatter = ApacheFormatter(with_response_time=True)
-        log_entry = formatter(response.status_code, environ,
-                              len(response.content), rt_us=response_time)
+        try:
+            log_entry = formatter(response.status_code, environ,
+                                  len(response.content), rt_us=response_time)
+        except TypeError:
+            # Upstream introduced a very annoying breaking change on the rt_ms/rt_us kwarg.
+            log_entry = formatter(response.status_code, environ,
+                                  len(response.content), rt_ms=response_time)
     else:
         formatter = ApacheFormatter(with_response_time=False)
         log_entry = formatter(response.status_code, environ,
