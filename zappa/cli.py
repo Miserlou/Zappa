@@ -167,14 +167,13 @@ class ZappaCLI(object):
         self.check_for_update()
 
         # We don't have any settings yet, so make those first!
+        # (Settings-based interactions will fail
+        # before a project has been initialized.)
         if command == 'init':
             self.init()
             return
 
-        # Settings-based interactions will fail
-        # before a project has been initialized.
-
-         # Load and Validate Settings File
+        # Load and Validate Settings File
         self.load_settings_file(vargs['settings_file'])
 
         # Should we execute this for all environments, or just one?
