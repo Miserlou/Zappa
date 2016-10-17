@@ -971,32 +971,70 @@ class ZappaCLI(object):
         account_key_location = self.stage_config.get('lets_encrypt_key')
         domain = self.stage_config.get('domain')
 
-        if not account_key_location:
-            click.echo("Can't certify a domain without " + click.style("lets_encrypt_key", fg="red", bold=True) + " configured!")
-            return
+        cert_location = self.stage_config.get('certificate', None)
+        cert_key_location = self.stage_config.get('certificate_key', None)
+        cert_chain_location = self.stage_config.get('certificate_chain', None)
+
         if not domain:
             click.echo("Can't certify a domain without " + click.style("domain", fg="red", bold=True) + " configured!")
             return
 
-        if 's3://' in account_key_location:
-            bucket = account_key_location.split('s3://')[1].split('/')[0]
-            key_name = account_key_location.split('s3://')[1].split('/')[1]
-            self.zappa.s3_client.download_file(bucket, key_name, '/tmp/account.key')
+        if not cert_location:
+            if not account_key_location:
+                click.echo("Can't certify a domain without " + click.style("lets_encrypt_key", fg="red", bold=True) + " configured!")
+                return
+
+            if 's3://' in account_key_location:
+                bucket = account_key_location.split('s3://')[1].split('/')[0]
+                key_name = account_key_location.split('s3://')[1].split('/')[1]
+                self.zappa.s3_client.download_file(bucket, key_name, '/tmp/account.key')
+            else:
+                from shutil import copyfile
+                copyfile(account_key_location, '/tmp/account.key')
         else:
-            from shutil import copyfile
-            copyfile(account_key_location, '/tmp/account.key')
+            # Read the supplied certificates.
+            with open(cert_location) as f:
+                certificate_body = f.read()
+
+            with open(cert_key_location) as f:
+                certificate_private_key = f.read()
+
+            with open(cert_chain_location) as f:
+                certificate_chain = f.read()
+
 
         click.echo("Certifying domain " + click.style(domain, fg="green", bold=True) + "..")
 
         # Get cert and update domain.
-        from letsencrypt import get_cert_and_update_domain, cleanup
-        cert_success = get_cert_and_update_domain(
-                self.zappa,
-                self.lambda_name,
-                self.api_stage,
-                domain,
-                clean_up
-            )
+        if not cert_location:
+            from letsencrypt import get_cert_and_update_domain, cleanup
+            cert_success = get_cert_and_update_domain(
+                    self.zappa,
+                    self.lambda_name,
+                    self.api_stage,
+                    domain,
+                    clean_up
+                )
+        else:
+            if not self.zappa.get_domain_name(domain):
+                self.zappa.create_domain_name(
+                    domain,
+                    domain + "-Zappa-Cert",
+                    certificate_body,
+                    certificate_private_key,
+                    certificate_chain,
+                    self.lambda_name,
+                    self.api_stage
+                )
+                print("Created a new domain name. Please note that it can take up to 40 minutes for this domain to be created and propagated through AWS, but it requires no further work on your part.")
+            else:
+                self.zappa.update_domain_name(
+                    domain,
+                    domain + "-Zappa-Cert",
+                    certificate_body,
+                    certificate_private_key,
+                    certificate_chain
+                )
 
         # Deliberately undocumented feature (for now, at least.)
         # We are giving the user the ability to shoot themselves in the foot.

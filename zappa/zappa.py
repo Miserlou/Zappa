@@ -947,12 +947,16 @@ class Zappa(object):
         api_id = self.get_api_id(lambda_name)
 
         if domain_name:
+
+            # XXX - Remove Route53 smartly here?
+            # XXX - This doesn't raise, but doesn't work either.
+
             try:
                 self.apigateway_client.delete_base_path_mapping(
                     domainName=domain_name,
                     basePath='(none)'
                 )
-            except Exception:
+            except Exception as e:
                 # We may not have actually set up the domain.
                 pass
 
@@ -1242,7 +1246,7 @@ class Zappa(object):
         # Patch operations described here: https://tools.ietf.org/html/rfc6902#section-4
         # and here: http://boto3.readthedocs.io/en/latest/reference/services/apigateway.html#APIGateway.Client.update_domain_name
 
-        new_cert_name = 'LEZappa' + str(time.time())
+        new_cert_name = 'Zappa' + str(time.time())
         self.iam.create_server_certificate(
             ServerCertificateName=new_cert_name,
             CertificateBody=certificate_body,
@@ -1700,6 +1704,27 @@ class Zappa(object):
         )
 
         return resp
+
+    def remove_dns_challenge_txt(self, zone_id, domain):
+        """
+        Remove DNS challenge TXT.
+        """
+        print("Deleting DNS challenge..")
+        resp = self.route53.change_resource_record_sets(
+            HostedZoneId=zone_id,
+            ChangeBatch={
+                'Changes': [{
+                    'Action': 'DELETE',
+                    'ResourceRecordSet': {
+                        'Name': '_acme-challenge.{0}'.format(domain),
+                        'Type': 'TXT',
+                    }
+                }]
+            }
+        )
+
+        return resp
+
 
     ##
     # Utility
