@@ -315,20 +315,10 @@ class ZappaCLI(object):
                                                         self.authorizer)
 
             self.zappa.update_stack(self.lambda_name, self.s3_bucket_name, wait=True)
-            api_id = self.zappa.get_api_id(self.lambda_name)
 
             # Deploy the API!
-            cache_cluster_enabled = self.stage_config.get('cache_cluster_enabled', False)
-            cache_cluster_size = str(self.stage_config.get('cache_cluster_size', .5))
-            endpoint_url = self.zappa.deploy_api_gateway(
-                                        api_id=api_id,
-                                        stage_name=self.api_stage,
-                                        cache_cluster_enabled=cache_cluster_enabled,
-                                        cache_cluster_size=cache_cluster_size,
-                                        cloudwatch_log_level=self.zappa_settings[self.api_stage].get('cloudwatch_log_level', 'OFF'),
-                                        cloudwatch_data_trace=self.zappa_settings[self.api_stage].get('cloudwatch_data_trace', False),
-                                        cloudwatch_metrics_enabled=self.zappa_settings[self.api_stage].get('cloudwatch_metrics_enabled', False),
-                                    )
+            api_id = self.zappa.get_api_id(self.lambda_name)
+            endpoint_url = self.deploy_api_gateway(api_id)
             deployment_string = deployment_string + ": {}".format(endpoint_url)
 
             # Create/link API key
@@ -424,25 +414,19 @@ class ZappaCLI(object):
         if self.use_apigateway:
 
             self.zappa.create_stack_template(self.lambda_arn,
-                                                        self.lambda_name,
-                                                        self.api_key_required,
-                                                        self.integration_content_type_aliases,
-                                                        self.iam_authorization,
-                                                        self.authorizer)
+                                             self.lambda_name,
+                                             self.api_key_required,
+                                             self.integration_content_type_aliases,
+                                             self.iam_authorization,
+                                             self.authorizer)
             self.zappa.update_stack(self.lambda_name, self.s3_bucket_name, wait=True, update_only=True)
 
-            self.zappa.update_stage_config(
-                self.lambda_name,
-                self.api_stage,
-                self.zappa_settings[self.api_stage].get('cloudwatch_log_level', 'OFF'),
-                self.zappa_settings[self.api_stage].get('cloudwatch_data_trace', False),
-                self.zappa_settings[self.api_stage].get('cloudwatch_metrics_enabled', False)
-            )
+            api_id = self.zappa.get_api_id(self.lambda_name)
+            endpoint_url = self.deploy_api_gateway(api_id)
 
             if self.stage_config.get('domain', None):
                 endpoint_url = self.stage_config.get('domain')
-            else:
-                endpoint_url = self.zappa.get_api_url(self.lambda_name, self.api_stage)
+
         else:
             endpoint_url = None
 
@@ -792,6 +776,21 @@ class ZappaCLI(object):
             return True
         raise ValueError("AWS requires stage name to match a-zA-Z0-9_")
 
+    def check_environment(self, environment):
+        """
+        Make sure the environment contains only strings
+
+        (since putenv needs a string)
+        """
+
+        non_strings = []
+        for k,v in environment.iteritems():
+            if not isinstance(v, basestring):
+                non_strings.append(k)
+        if non_strings:
+            raise ValueError("The following environment variables are not strings: {}".format(", ".join(non_strings)))
+        else:
+            return True
 
     def init(self, settings_file="zappa_settings.json"):
         """
@@ -1126,6 +1125,7 @@ class ZappaCLI(object):
             self.api_stage].get('lambda_description', "Zappa Deployment")
         self.environment_variables = self.zappa_settings[
             self.api_stage].get('environment_variables', {})
+        self.check_environment(self.environment_variables)
         self.authorizer = self.stage_config.get('authorizer', {})
 
         self.zappa = Zappa( boto_session=session,
@@ -1343,6 +1343,19 @@ class ZappaCLI(object):
             if namespace_collision in item:
                 click.echo(click.style("Warning!", fg="yellow", bold=True) + " You may have a namespace collision with " + click.style(item, bold=True) + "! You may want to rename that file.")
 
+    def deploy_api_gateway(self, api_id):
+        cache_cluster_enabled = self.stage_config.get('cache_cluster_enabled', False)
+        cache_cluster_size = str(self.stage_config.get('cache_cluster_size', .5))
+        endpoint_url = self.zappa.deploy_api_gateway(
+            api_id=api_id,
+            stage_name=self.api_stage,
+            cache_cluster_enabled=cache_cluster_enabled,
+            cache_cluster_size=cache_cluster_size,
+            cloudwatch_log_level=self.zappa_settings[self.api_stage].get('cloudwatch_log_level', 'OFF'),
+            cloudwatch_data_trace=self.zappa_settings[self.api_stage].get('cloudwatch_data_trace', False),
+            cloudwatch_metrics_enabled=self.zappa_settings[self.api_stage].get('cloudwatch_metrics_enabled', False),
+        )
+        return endpoint_url
 
 
 ####################################################################
