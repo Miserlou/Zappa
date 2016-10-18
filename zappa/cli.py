@@ -31,6 +31,7 @@ import sys
 import tempfile
 import time
 import zipfile
+from click.exceptions import ClickException
 from dateutil import parser
 from datetime import datetime,timedelta
 from zappa import Zappa, logger
@@ -190,76 +191,84 @@ class ZappaCLI(object):
                     environments.append(self.zappa_settings.keys()[0])
                 else:
                     parser.error("Please supply an environment to interact with.")
-                    return
+                    sys.exit(1)
             else:
                 environments.append(command_env[1])
 
         for environment in environments:
-            self.api_stage = environment
-
-            if command not in ['status', 'manage']:
-                click.echo("Calling " + click.style(command, fg="green", bold=True) + " for environment " + click.style(self.api_stage, bold=True) + ".." )
-
-            # Explicity define the app function.
-            if vargs['app_function'] is not None:
-                self.app_function = vargs['app_function']
-
-            # Load our settings, based on api_stage.
             try:
-                self.load_settings(vargs['settings_file'])
-            except ValueError as e:
-                print("Error: {}".format(e.message))
-                sys.exit(-1)
-            self.callback('settings')
+                self._dispatch_command(command, environment, vargs)
+            except ClickException as e:
+                # Discussion on exit codes: https://github.com/Miserlou/Zappa/issues/407
+                e.show()
+                sys.exit(e.exit_code)
 
-            # Hand it off
-            if command == 'deploy': # pragma: no cover
-                self.deploy()
-            elif command == 'update': # pragma: no cover
-                self.update()
-            elif command == 'rollback': # pragma: no cover
-                if vargs['num_rollback'] < 1: # pragma: no cover
-                    parser.error("Please enter the number of iterations to rollback.")
-                    return
-                self.rollback(vargs['num_rollback'])
-            elif command == 'invoke': # pragma: no cover
+    def _dispatch_command(self, command, environment, vargs):
+        self.api_stage = environment
 
-                if len(command_env) < 2:
-                    parser.error("Please enter the function to invoke.")
-                    return
+        if command not in ['status', 'manage']:
+            click.echo("Calling " + click.style(command, fg="green", bold=True) + " for environment " + click.style(self.api_stage, bold=True) + ".." )
 
-                self.invoke(command_env[-1], raw_python=vargs['raw'])
-            elif command == 'manage': # pragma: no cover
+        # Explicity define the app function.
+        if vargs['app_function'] is not None:
+            self.app_function = vargs['app_function']
 
-                if len(command_env) < 2:
-                    parser.error("Please enter the management command to invoke.")
-                    return
+        # Load our settings, based on api_stage.
+        try:
+            self.load_settings(vargs['settings_file'])
+        except ValueError as e:
+            print("Error: {}".format(e.message))
+            sys.exit(-1)
+        self.callback('settings')
 
-                if not self.django_settings:
-                    print("This command is for Django projects only!")
-                    print("If this is a Django project, please define django_settings in your zappa_settings.")
-                    return
+        # Hand it off
+        if command == 'deploy': # pragma: no cover
+            self.deploy()
+        elif command == 'update': # pragma: no cover
+            self.update()
+        elif command == 'rollback': # pragma: no cover
+            if vargs['num_rollback'] < 1: # pragma: no cover
+                parser.error("Please enter the number of iterations to rollback.")
+                return
+            self.rollback(vargs['num_rollback'])
+        elif command == 'invoke': # pragma: no cover
 
-                command_tail = command_env[2:]
-                if len(command_tail) > 1:
-                    command = " ".join(command_tail) # ex: zappa manage dev "shell --version"
-                else:
-                    command = command_tail[0] # ex: zappa manage dev showmigrations admin
+            if len(command_env) < 2:
+                parser.error("Please enter the function to invoke.")
+                return
 
-                self.invoke(command, "manage")
+            self.invoke(command_env[-1], raw_python=vargs['raw'])
+        elif command == 'manage': # pragma: no cover
 
-            elif command == 'tail': # pragma: no cover
-                self.tail()
-            elif command == 'undeploy': # pragma: no cover
-                self.undeploy(noconfirm=vargs['yes'], remove_logs=vargs['remove_logs'])
-            elif command == 'schedule': # pragma: no cover
-                self.schedule()
-            elif command == 'unschedule': # pragma: no cover
-                self.unschedule()
-            elif command == 'status': # pragma: no cover
-                self.status()
-            elif command == 'certify': # pragma: no cover
-                self.certify(no_cleanup=vargs['no_cleanup'])
+            if len(command_env) < 2:
+                parser.error("Please enter the management command to invoke.")
+                return
+
+            if not self.django_settings:
+                print("This command is for Django projects only!")
+                print("If this is a Django project, please define django_settings in your zappa_settings.")
+                return
+
+            command_tail = command_env[2:]
+            if len(command_tail) > 1:
+                command = " ".join(command_tail) # ex: zappa manage dev "shell --version"
+            else:
+                command = command_tail[0] # ex: zappa manage dev showmigrations admin
+
+            self.invoke(command, "manage")
+
+        elif command == 'tail': # pragma: no cover
+            self.tail()
+        elif command == 'undeploy': # pragma: no cover
+            self.undeploy(noconfirm=vargs['yes'], remove_logs=vargs['remove_logs'])
+        elif command == 'schedule': # pragma: no cover
+            self.schedule()
+        elif command == 'unschedule': # pragma: no cover
+            self.unschedule()
+        elif command == 'status': # pragma: no cover
+            self.status()
+        elif command == 'certify': # pragma: no cover
+            self.certify(no_cleanup=vargs['no_cleanup'])
 
     ##
     # The Commands
@@ -622,9 +631,8 @@ class ZappaCLI(object):
             function_response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name)
             function_arn = function_response['Configuration']['FunctionArn']
         except botocore.exceptions.ClientError as e: # pragma: no cover
-            print("Function does not exist, you should deploy first. Ex: zappa deploy {}. "
+            raise ClickException("Function does not exist, you should deploy first. Ex: zappa deploy {}. "
                   "Proceeding to unschedule CloudWatch based events.".format(self.api_stage))
-            sys.exit(-1)
 
         print("Unscheduling..")
         self.zappa.unschedule_events(
@@ -675,11 +683,11 @@ class ZappaCLI(object):
 
         # Lambda Env Details
         lambda_versions = self.zappa.get_lambda_function_versions(self.lambda_name)
+
         if not lambda_versions:
-            click.echo(click.style("\tNo Lambda detected - have you deployed yet?", fg='red'))
-            return False
-        else:
-            tabular_print("Lambda Versions", len(lambda_versions))
+            raise ClickException(click.style("No Lambda detected - have you deployed yet?", fg='red'))
+
+        tabular_print("Lambda Versions", len(lambda_versions))
         function_response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name)
         conf = function_response['Configuration']
         tabular_print("Lambda Name", self.lambda_name)
@@ -816,19 +824,17 @@ class ZappaCLI(object):
 
         # Ensure that we don't already have a zappa_settings file.
         if os.path.isfile(settings_file):
-            click.echo("This project is " + click.style("already initialized", fg="red", bold=True) + "!")
-            sys.exit() # pragma: no cover
+            raise ClickException("This project is " + click.style("already initialized", fg="red", bold=True) + "!")
 
         # Ensure P2 until Lambda supports it.
         if sys.version_info >= (3,0): # pragma: no cover
-            print("Zappa curently only works with Python 2, until AWS Lambda adds Python 3 support.")
-            sys.exit() # pragma: no cover
+            raise ClickException("Zappa curently only works with Python 2, until AWS Lambda adds Python 3 support.")
 
         # Ensure inside virtualenv.
         if not ( hasattr(sys, 'prefix') or hasattr(sys, 'real_prefix') or hasattr(sys, 'base_prefix') ): # pragma: no cover
-            print("Zappa must be run inside of a virtual environment!")
-            print("Learn more about virtual environments here: http://docs.python-guide.org/en/latest/dev/virtualenvs/")
-            sys.exit()
+            raise ClickException(
+                "Zappa must be run inside of a virtual environment!\n"
+                "Learn more about virtual environments here: http://docs.python-guide.org/en/latest/dev/virtualenvs/")
 
         # Explain system.
         click.echo(click.style(u"""\n███████╗ █████╗ ██████╗ ██████╗  █████╗
@@ -1096,8 +1102,7 @@ class ZappaCLI(object):
 
         # Ensure we're passed a valid settings file.
         if not os.path.isfile(settings_file):
-            print("Please configure your zappa_settings file.")
-            sys.exit(-1) # pragma: no cover
+            raise ClickException("Please configure your zappa_settings file.")
 
         # Load up file
         self.load_settings_file(settings_file)
@@ -1111,8 +1116,7 @@ class ZappaCLI(object):
 
         # Make sure that this environment is our settings
         if self.api_stage not in self.zappa_settings.keys():
-            print("Please define '{0!s}' in your Zappa settings.".format(self.api_stage))
-            sys.exit(-1) # pragma: no cover
+            raise ClickException("Please define '{0!s}' in your Zappa settings.".format(self.api_stage))
 
         # We need a working title for this project. Use one if supplied, else cwd dirname.
         if 'project_name' in self.stage_config: # pragma: no cover

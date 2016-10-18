@@ -741,6 +741,15 @@ class TestZappa(unittest.TestCase):
         argv = '-s test_settings.json derp ttt888'.split()
         zappa_cli.handle(argv)
 
+    def test_cli_error_exit_code(self):
+        # Discussion: https://github.com/Miserlou/Zappa/issues/407
+        zappa_cli = ZappaCLI()
+        # Sanity
+        argv = '-s test_settings.json status devor'.split()
+        with self.assertRaises(SystemExit) as system_exit:
+            zappa_cli.handle(argv)
+        self.assertEqual(system_exit.exception.code, 1)
+
     def test_bad_json_catch(self):
         zappa_cli = ZappaCLI()
         self.assertRaises(ValueError, zappa_cli.load_settings_file, 'tests/test_bad_settings.json')
