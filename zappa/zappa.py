@@ -689,8 +689,11 @@ class Zappa(object):
         ##
         authorizer_resource = None
         if authorizer:
+            authorizer_lambda_arn = authorizer.get('arn', lambda_arn)
+            lambda_uri = 'arn:aws:apigateway:' + self.boto_session.region_name + ':lambda:path/2015-03-31/functions/' + authorizer_lambda_arn + '/invocations'
+
             authorizer_resource = self.create_authorizer(restapi,
-                                                         invocations_uri,
+                                                         lambda_uri,
                                                          "method.request.header." + authorizer.get('token_header', 'Authorization'),
                                                          authorizer.get('result_ttl', 300),
                                                          authorizer.get('validation_expression', None))

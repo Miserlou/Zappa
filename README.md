@@ -387,7 +387,8 @@ to change Zappa's behavior. Use these at your own risk!
         "http_methods": ["GET", "POST"], // HTTP Methods to route,
         "iam_authorization": true, // optional, use IAM to require request signing. Default false. Note that enabling this will override the authorizer configuration.
         "authorizer": {
-            "function": "your_module.your_auth_function", // Required. Function to run for token validation. For more information about the function see below.
+            "function": "your_module.your_auth_function", // Local function to run for token validation. For more information about the function see below.
+            "arn": "arn:aws:lambda:<region>:<account_id>:function:<function_name>", // Existing Lambda function to run for token validation.
             "result_ttl": 300, // Optional. Default 300. The time-to-live (TTL) period, in seconds, that specifies how long API Gateway caches authorizer results. Currently, the maximum TTL value is 3600 seconds.
             "token_source": "Authorization", // Optional. Default 'Authorization'. The name of a custom authorization header containing the token that clients submit as part of their requests.
             "validation_expression": "^Bearer \\w+$", // Optional. A validation expression for the incoming token, specify a regular expression.
@@ -468,11 +469,14 @@ You can enable IAM-based (v4 signing) authorization on an API by setting the `ia
 
 ##### Authorizer
 If you deploy an API endpoint with Zappa, you can take advantage of [API Gateway Authorizers](http://docs.aws.amazon.com/apigateway/latest/developerguide/use-custom-authorizer.html) to implement a token-based authentication - all you need to do is to provide a function to create the required output, Zappa takes care of the rest. A good start for the function is the [awslabs blueprint example.](https://github.com/awslabs/aws-apigateway-lambda-authorizer-blueprints/blob/master/blueprints/python/api-gateway-authorizer-python.py)
-Inside your app, the authenticated username will be available through the `REMOTE_USER` environment variable (e.g. in Flask `request.environ.get('REMOTE_USER')`)
+
 If you are wondering for what you would use an Authorizer, here are some potential use cases:
+
 1. Call out to OAuth provider
 2. Decode a JWT token inline
 3. Lookup in a self-managed DB (for example DynamoDB)
+
+Zappa can be configured to cal a function inside your code to do the authorization, or to call some other existing lambda function (which lets you share the authorizer between multiple lambdas). You control the behaviour by specifying either the `arn` or `function_name` values in the `authorizer` settings block.
 
 
 #### Deploying to a Domain With a Let's Encrypt Certificate (DNS Auth)
