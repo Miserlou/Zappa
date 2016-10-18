@@ -79,11 +79,15 @@ class ZappaCLI(object):
 
     """
 
+    # CLI
+    vargs = None
+
     # Zappa settings
     zappa = None
     zappa_settings = None
     load_credentials = True
 
+    # Specific settings
     api_stage = None
     app_function = None
     aws_region = None
@@ -144,8 +148,8 @@ class ZappaCLI(object):
 
         args = parser.parse_args(argv)
 
-        vargs = vars(args)
-        vargs_nosettings = vargs.copy()
+        self.vargs = vars(args)
+        vargs_nosettings = self.vargs.copy()
         vargs_nosettings.pop('settings_file')
         if not any(vargs_nosettings.values()): # pragma: no cover
             parser.error(help_message)
@@ -157,7 +161,7 @@ class ZappaCLI(object):
             sys.exit(0)
 
         # Parse the input
-        command_env = vargs['command_env']
+        command_env = self.vargs['command_env']
         command = command_env[0]
 
         if command not in CLI_COMMANDS:
@@ -175,10 +179,10 @@ class ZappaCLI(object):
             return
 
         # Load and Validate Settings File
-        self.load_settings_file(vargs['settings_file'])
+        self.load_settings_file(self.vargs['settings_file'])
 
         # Should we execute this for all environments, or just one?
-        all_environments = vargs['all']
+        all_environments = self.vargs['all']
         environments = []
 
         if all_environments: # All envs!
@@ -197,25 +201,30 @@ class ZappaCLI(object):
 
         for environment in environments:
             try:
-                self._dispatch_command(command, environment, vargs)
+                self.dispatch_command(command, environment)
             except ClickException as e:
                 # Discussion on exit codes: https://github.com/Miserlou/Zappa/issues/407
                 e.show()
                 sys.exit(e.exit_code)
 
-    def _dispatch_command(self, command, environment, vargs):
+    def dispatch_command(self, command, environment):
+        """
+        Given a command to execute and environment,
+        execute that command.
+        """
+
         self.api_stage = environment
 
         if command not in ['status', 'manage']:
             click.echo("Calling " + click.style(command, fg="green", bold=True) + " for environment " + click.style(self.api_stage, bold=True) + ".." )
 
         # Explicity define the app function.
-        if vargs['app_function'] is not None:
-            self.app_function = vargs['app_function']
+        if self.vargs['app_function'] is not None:
+            self.app_function = self.vargs['app_function']
 
         # Load our settings, based on api_stage.
         try:
-            self.load_settings(vargs['settings_file'])
+            self.load_settings(self.vargs['settings_file'])
         except ValueError as e:
             print("Error: {}".format(e.message))
             sys.exit(-1)
@@ -227,17 +236,17 @@ class ZappaCLI(object):
         elif command == 'update': # pragma: no cover
             self.update()
         elif command == 'rollback': # pragma: no cover
-            if vargs['num_rollback'] < 1: # pragma: no cover
+            if self.vargs['num_rollback'] < 1: # pragma: no cover
                 parser.error("Please enter the number of iterations to rollback.")
                 return
-            self.rollback(vargs['num_rollback'])
+            self.rollback(self.vargs['num_rollback'])
         elif command == 'invoke': # pragma: no cover
 
             if len(command_env) < 2:
                 parser.error("Please enter the function to invoke.")
                 return
 
-            self.invoke(command_env[-1], raw_python=vargs['raw'])
+            self.invoke(command_env[-1], raw_python=self.vargs['raw'])
         elif command == 'manage': # pragma: no cover
 
             if len(command_env) < 2:
@@ -260,7 +269,7 @@ class ZappaCLI(object):
         elif command == 'tail': # pragma: no cover
             self.tail()
         elif command == 'undeploy': # pragma: no cover
-            self.undeploy(noconfirm=vargs['yes'], remove_logs=vargs['remove_logs'])
+            self.undeploy(noconfirm=self.vargs['yes'], remove_logs=self.vargs['remove_logs'])
         elif command == 'schedule': # pragma: no cover
             self.schedule()
         elif command == 'unschedule': # pragma: no cover
@@ -268,7 +277,7 @@ class ZappaCLI(object):
         elif command == 'status': # pragma: no cover
             self.status()
         elif command == 'certify': # pragma: no cover
-            self.certify(no_cleanup=vargs['no_cleanup'])
+            self.certify(no_cleanup=self.vargs['no_cleanup'])
 
     ##
     # The Commands
