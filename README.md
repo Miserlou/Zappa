@@ -476,7 +476,7 @@ If you are wondering for what you would use an Authorizer, here are some potenti
 2. Decode a JWT token inline
 3. Lookup in a self-managed DB (for example DynamoDB)
 
-Zappa can be configured to cal a function inside your code to do the authorization, or to call some other existing lambda function (which lets you share the authorizer between multiple lambdas). You control the behaviour by specifying either the `arn` or `function_name` values in the `authorizer` settings block.
+Zappa can be configured to call a function inside your code to do the authorization, or to call some other existing lambda function (which lets you share the authorizer between multiple lambdas). You control the behaviour by specifying either the `arn` or `function_name` values in the `authorizer` settings block.
 
 
 #### Deploying to a Domain With a Let's Encrypt Certificate (DNS Auth)

@@ -992,6 +992,11 @@ class ZappaCLI(object):
                 from shutil import copyfile
                 copyfile(account_key_location, '/tmp/account.key')
         else:
+
+            if not cert_location or not cert_key_location or not cert_chain_location:
+                click.echo("Can't certify a domain without " + click.style("certificate, certificate_key and certificate_chain", fg="red", bold=True) + " configured!")
+                return
+
             # Read the supplied certificates.
             with open(cert_location) as f:
                 certificate_body = f.read()
