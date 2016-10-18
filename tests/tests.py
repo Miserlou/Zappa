@@ -229,6 +229,15 @@ class TestZappa(unittest.TestCase):
         with self.assertRaises(KeyError):
             parsable_template["Resources"]["Authorizer"]["Properties"]["IdentityValidationExpression"]
 
+        # Authorizer with arn
+        authorizer = {
+            "arn": "arn:aws:lambda:us-east-1:123456789012:function:my-function",
+        }
+        z.create_stack_template(lambda_arn, 'helloworld', False, {}, False, authorizer)
+        parsable_template = json.loads(z.cf_template.to_json())
+        self.assertEqual('arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:123456789012:function:my-function/invocations', parsable_template["Resources"]["Authorizer"]["Properties"]["AuthorizerUri"])
+
+
     @placebo_session
     def test_get_api_url(self, session):
         z = Zappa(session)
