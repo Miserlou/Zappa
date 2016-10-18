@@ -595,7 +595,7 @@ By default, AWS Lambda will attempt to retry an event based (non-API Gateway, e.
 
 #### Using Custom AWS IAM Roles and Policies
 
-By default, the Zappa client will create and manage the necessary IAM policies and roles to deploy and execute Zappa applications. However, if you're using Zappa in a corporate environment or as part of a continuous integration, you may instead want to manually manage your policies instead.
+By default, the Zappa client will create and manage the necessary IAM policies and roles to execute Zappa applications. However, if you're using Zappa in a corporate environment or as part of a continuous integration, you may instead want to manually manage your remote execution policies instead. (You can specify which _local_ profile to use for deploying your Zappa application by defining the `profile_name` setting, which will corresepond to a profile in your AWS credentials file.)
 
 To manually define the permissions policy of your Zappa execution role, you must define the following in your *zappa_settings.json*:
 
