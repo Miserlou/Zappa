@@ -979,8 +979,7 @@ class ZappaCLI(object):
         # Make sure this isn't already deployed.
         deployed_versions = self.zappa.get_lambda_function_versions(self.lambda_name)
         if len(deployed_versions) == 0:
-            click.echo("This application " + click.style("isn't deployed yet", fg="red") + " - did you mean to call " + click.style("deploy", bold=True) + "?")
-            return
+            raise ClickException("This application " + click.style("isn't deployed yet", fg="red") + " - did you mean to call " + click.style("deploy", bold=True) + "?")
 
         # Get install account_key to /tmp/account_key.pem
         account_key_location = self.stage_config.get('lets_encrypt_key')
@@ -996,8 +995,7 @@ class ZappaCLI(object):
 
         if not cert_location:
             if not account_key_location:
-                click.echo("Can't certify a domain without " + click.style("lets_encrypt_key", fg="red", bold=True) + " configured!")
-                return
+                raise ClickException("Can't certify a domain without " + click.style("lets_encrypt_key", fg="red", bold=True) + " configured!")
 
             if 's3://' in account_key_location:
                 bucket = account_key_location.split('s3://')[1].split('/')[0]
@@ -1009,8 +1007,7 @@ class ZappaCLI(object):
         else:
 
             if not cert_location or not cert_key_location or not cert_chain_location:
-                click.echo("Can't certify a domain without " + click.style("certificate, certificate_key and certificate_chain", fg="red", bold=True) + " configured!")
-                return
+                raise ClickException("Can't certify a domain without " + click.style("certificate, certificate_key and certificate_chain", fg="red", bold=True) + " configured!")
 
             # Read the supplied certificates.
             with open(cert_location) as f:
