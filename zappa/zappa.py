@@ -142,6 +142,13 @@ ATTACH_POLICY = """{
         {
             "Effect": "Allow",
             "Action": [
+                "kinesis:*"
+            ],
+            "Resource": "arn:aws:kinesis:*:*:*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
                 "sns:*"
             ],
             "Resource": "arn:aws:sns:*:*:*"
