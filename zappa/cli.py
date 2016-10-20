@@ -15,6 +15,7 @@ import argparse
 import base64
 import botocore
 import click
+import collections
 import hjson as json
 import inspect
 import imp
@@ -145,6 +146,7 @@ class ZappaCLI(object):
         parser.add_argument('--raw', action='store_true', help='When invoking remotely, invoke this python as a string, not as a modular path.', default=False)
         parser.add_argument('--no-cleanup', action='store_true', help="Don't remove certificate files from /tmp during certify. Dangerous.", default=False)
         parser.add_argument('--all', action='store_true', help="Execute this command for all of our defined Zappa environments.", default=False)
+        parser.add_argument('--json', action='store_true', help='Returns zappa status in json format', default=False)  # https://github.com/Miserlou/Zappa/issues/407
 
         args = parser.parse_args(argv)
 
@@ -275,7 +277,7 @@ class ZappaCLI(object):
         elif command == 'unschedule': # pragma: no cover
             self.unschedule()
         elif command == 'status': # pragma: no cover
-            self.status()
+            self.status(return_json=self.vargs['json'])
         elif command == 'certify': # pragma: no cover
             self.certify(no_cleanup=self.vargs['no_cleanup'])
 
@@ -676,12 +678,10 @@ class ZappaCLI(object):
         else:
             print(response)
 
-    def status(self):
+    def status(self, return_json=False):
         """
         Describe the status of the current deployment.
         """
-
-        click.echo("Status for " + click.style(self.lambda_name, bold=True) + ": ")
 
         def tabular_print(title, value):
             """
@@ -696,23 +696,24 @@ class ZappaCLI(object):
         if not lambda_versions:
             raise ClickException(click.style("No Lambda detected - have you deployed yet?", fg='red'))
 
-        tabular_print("Lambda Versions", len(lambda_versions))
+        status_dict = collections.OrderedDict()
+        status_dict["Lambda Versions"] = len(lambda_versions)
         function_response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name)
         conf = function_response['Configuration']
-        tabular_print("Lambda Name", self.lambda_name)
-        tabular_print("Lambda ARN", conf['FunctionArn'])
-        tabular_print("Lambda Role ARN", conf['Role'])
-        tabular_print("Lambda Handler", conf['Handler'])
-        tabular_print("Lambda Code Size", conf['CodeSize'])
-        tabular_print("Lambda Version", conf['Version'])
-        tabular_print("Lambda Last Modified", conf['LastModified'])
-        tabular_print("Lambda Memory Size", conf['MemorySize'])
-        tabular_print("Lambda Timeout", conf['Timeout'])
-        tabular_print("Lambda Runtime", conf['Runtime'])
+        status_dict["Lambda Name"] = self.lambda_name
+        status_dict["Lambda ARN"] = conf['FunctionArn']
+        status_dict["Lambda Role ARN"] = conf['Role']
+        status_dict["Lambda Handler"] = conf['Handler']
+        status_dict["Lambda Code Size"] = conf['CodeSize']
+        status_dict["Lambda Version"] = conf['Version']
+        status_dict["Lambda Last Modified"] = conf['LastModified']
+        status_dict["Lambda Memory Size"] = conf['MemorySize']
+        status_dict["Lambda Timeout"] = conf['Timeout']
+        status_dict["Lambda Runtime"] = conf['Runtime']
         if 'VpcConfig' in conf.keys():
-            tabular_print("Lambda VPC ID", conf.get('VpcConfig', {}).get('VpcId', 'Not assigned'))
+            status_dict["Lambda VPC ID"] = conf.get('VpcConfig', {}).get('VpcId', 'Not assigned')
         else:
-            tabular_print("Lambda VPC ID", None)
+            status_dict["Lambda VPC ID"] = None
 
         # Calculated statistics
         try:
@@ -746,9 +747,9 @@ class ZappaCLI(object):
             error_rate = "{0:.2f}%".format(function_errors / function_invocations * 100)
         except:
             error_rate = "Error calculating"
-        tabular_print("Invocations (24h)", int(function_invocations))
-        tabular_print("Errors (24h)", int(function_errors))
-        tabular_print("Error Rate (24h)", error_rate)
+        status_dict["Invocations (24h)"] = int(function_invocations)
+        status_dict["Errors (24h)"] = int(function_errors)
+        status_dict["Error Rate (24h)"] = error_rate
 
         # URLs
         if self.zappa_settings[self.api_stage].get('use_apigateway', True):
@@ -756,31 +757,39 @@ class ZappaCLI(object):
                 self.lambda_name,
                 self.api_stage)
 
-            tabular_print("API Gateway URL", api_url)
+            status_dict["API Gateway URL"] = api_url
 
             # Api Keys
             api_id = self.zappa.get_api_id(self.lambda_name)
             for api_key in self.zappa.get_api_keys(api_id, self.api_stage):
-                tabular_print("API Gateway x-api-key", api_key)
+                status_dict["API Gateway x-api-key"] = api_key
 
             # There literally isn't a better way to do this.
             # AWS provides no way to tie a APIGW domain name to its Lambda funciton.
             domain_url = self.stage_config.get('domain', None)
             if domain_url:
-                tabular_print("Domain URL", 'https://' + domain_url)
+                status_dict["Domain URL"] = 'https://' + domain_url
             else:
-                tabular_print("Domain URL", "None Supplied")
+                status_dict["Domain URL"] = "None Supplied"
 
         # Scheduled Events
         event_rules = self.zappa.get_event_rules_for_lambda(lambda_name=self.lambda_name)
-        tabular_print("Num. Event Rules", len(event_rules))
+        status_dict["Num. Event Rules"] = len(event_rules)
         for rule in event_rules:
             rule_name = rule['Name']
-            print('')
-            tabular_print("Event Rule Name", rule_name)
-            tabular_print("Event Rule Schedule", rule.get(u'ScheduleExpression', None))
-            tabular_print("Event Rule State", rule.get(u'State', None).title())
-            tabular_print("Event Rule ARN", rule.get(u'Arn', None))
+            status_dict["Event Rule Name"] = rule_name
+            status_dict["Event Rule Schedule"] = rule.get(u'ScheduleExpression', None)
+            status_dict["Event Rule State"] = rule.get(u'State', None).title()
+            status_dict["Event Rule ARN"] = rule.get(u'Arn', None)
+
+        if return_json:
+            # Putting the status in machine readable format
+            # https://github.com/Miserlou/Zappa/issues/407
+            print(json.dumpsJSON(status_dict))
+        else:
+            click.echo("Status for " + click.style(self.lambda_name, bold=True) + ": ")
+            for k, v in status_dict.items():
+                tabular_print(k, v)
 
         # TODO: S3/SQS/etc. type events?
 
