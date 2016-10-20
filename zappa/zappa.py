@@ -234,6 +234,7 @@ class Zappa(object):
     def __init__(self, boto_session=None, profile_name=None, aws_region=None, load_credentials=True):
         # Set aws_region to None to use the system's region instead
         if aws_region is None:
+            # https://github.com/Miserlou/Zappa/issues/413
             self.aws_region = boto3.Session().region_name
             logger.debug("Set region from boto: %s", self.aws_region)
         else:
