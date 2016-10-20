@@ -146,7 +146,7 @@ class ZappaCLI(object):
         parser.add_argument('--raw', action='store_true', help='When invoking remotely, invoke this python as a string, not as a modular path.', default=False)
         parser.add_argument('--no-cleanup', action='store_true', help="Don't remove certificate files from /tmp during certify. Dangerous.", default=False)
         parser.add_argument('--all', action='store_true', help="Execute this command for all of our defined Zappa environments.", default=False)
-        parser.add_argument('--json', action='store_true', help='Returns zappa status in json format', default=False)  # https://github.com/Miserlou/Zappa/issues/407
+        parser.add_argument('--json', action='store_true', help='Returns status in JSON format', default=False)  # https://github.com/Miserlou/Zappa/issues/407
 
         args = parser.parse_args(argv)
 
@@ -171,7 +171,8 @@ class ZappaCLI(object):
             return
 
         # Make sure there isn't a new version available
-        self.check_for_update()
+        if not self.vargs['json']:
+            self.check_for_update()
 
         # We don't have any settings yet, so make those first!
         # (Settings-based interactions will fail
