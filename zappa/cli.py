@@ -82,6 +82,8 @@ class ZappaCLI(object):
 
     # CLI
     vargs = None
+    command = None
+    command_env = None
 
     # Zappa settings
     zappa = None
@@ -163,8 +165,8 @@ class ZappaCLI(object):
             sys.exit(0)
 
         # Parse the input
-        command_env = self.vargs['command_env']
-        command = command_env[0]
+        self.command_env = self.vargs['command_env']
+        self.command = command_env[0]
 
         if command not in CLI_COMMANDS:
             print("The command '{}' is not recognized. {}".format(command, help_message))
@@ -177,7 +179,7 @@ class ZappaCLI(object):
         # We don't have any settings yet, so make those first!
         # (Settings-based interactions will fail
         # before a project has been initialized.)
-        if command == 'init':
+        if self.command == 'init':
             self.init()
             return
 
@@ -191,7 +193,7 @@ class ZappaCLI(object):
         if all_environments: # All envs!
             environments = self.zappa_settings.keys()
         else: # Just one env.
-            if len(command_env) < 2: # pragma: no cover
+            if len(self.command_env) < 2: # pragma: no cover
                 # If there's only one environment defined in the settings,
                 # use that as the default.
                 if len(self.zappa_settings.keys()) is 1:
@@ -200,11 +202,11 @@ class ZappaCLI(object):
                     parser.error("Please supply an environment to interact with.")
                     sys.exit(1)
             else:
-                environments.append(command_env[1])
+                environments.append(self.command_env[1])
 
         for environment in environments:
             try:
-                self.dispatch_command(command, environment)
+                self.dispatch_command(self.command, environment)
             except ClickException as e:
                 # Discussion on exit codes: https://github.com/Miserlou/Zappa/issues/407
                 e.show()
@@ -245,14 +247,14 @@ class ZappaCLI(object):
             self.rollback(self.vargs['num_rollback'])
         elif command == 'invoke': # pragma: no cover
 
-            if len(command_env) < 2:
+            if len(self.command_env) < 2:
                 parser.error("Please enter the function to invoke.")
                 return
 
-            self.invoke(command_env[-1], raw_python=self.vargs['raw'])
+            self.invoke(self.command_env[-1], raw_python=self.vargs['raw'])
         elif command == 'manage': # pragma: no cover
 
-            if len(command_env) < 2:
+            if len(self.command_env) < 2:
                 parser.error("Please enter the management command to invoke.")
                 return
 
@@ -261,7 +263,7 @@ class ZappaCLI(object):
                 print("If this is a Django project, please define django_settings in your zappa_settings.")
                 return
 
-            command_tail = command_env[2:]
+            command_tail = self.command_env[2:]
             if len(command_tail) > 1:
                 command = " ".join(command_tail) # ex: zappa manage dev "shell --version"
             else:
