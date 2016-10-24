@@ -168,7 +168,7 @@ class ZappaCLI(object):
         self.command_env = self.vargs['command_env']
         self.command = self.command_env[0]
 
-        if command not in CLI_COMMANDS:
+        if self.command not in CLI_COMMANDS:
             print("The command '{}' is not recognized. {}".format(command, help_message))
             return
 
