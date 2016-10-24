@@ -1233,7 +1233,7 @@ class ZappaCLI(object):
                                 ignore_warnings=self.ignore_warnings
                                 )
         except Warning as warn:
-            click.echo(click.style("Warning!", fg="yellow", bold=True) + warn)
+            click.echo(click.style("Warning!", fg="yellow", bold=True) + warn.message)
             if self.ignore_warnings is False:
                 self._exit_with_warning()
 
@@ -1289,7 +1289,7 @@ class ZappaCLI(object):
                     exclude=self.stage_config.get('exclude', [])
                 )
         except Warning as warn:
-            click.echo(click.style("Warning!", fg="yellow", bold=True) + warn)
+            click.echo(click.style("Warning!", fg="yellow", bold=True) + warn.message)
             if self.ignore_warnings is False:
                 self._exit_with_warning()
 
