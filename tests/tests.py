@@ -90,7 +90,7 @@ class TestZappa(unittest.TestCase):
     def test_upload_remove_s3(self, session):
         bucket_name = 'test_zappa_upload_s3'
         z = Zappa(session)
-        zip_path = z.create_lambda_zip(minify=False)
+        zip_path = z.create_lambda_zip()
         res = z.upload_to_s3(zip_path, bucket_name)
         os.remove(zip_path)
         self.assertTrue(res)
