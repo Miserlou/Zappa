@@ -132,49 +132,69 @@ class ZappaCLI(object):
         Parses command, load settings and dispatches accordingly.
 
         """
-        help_message = "Please supply a command to execute. Can be one of: {}".format(', '.join(x for x in sorted(CLI_COMMANDS)))
+        parser = argparse.ArgumentParser(description='Zappa - Deploy Python applications to AWS Lambda and API Gateway.\n', version=pkg_resources.require("zappa")[0].version)
+        subparsers = parser.add_subparsers(title="Zappa Commands", help="Choose a valid zappa command", dest='command')
 
-        parser = argparse.ArgumentParser(description='Zappa - Deploy Python applications to AWS Lambda and API Gateway.\n')
-        parser.add_argument('command_env', metavar='U', type=str, nargs='*', help=help_message)
-        parser.add_argument('-n', '--num-rollback', type=int, default=0,
-                            help='The number of versions to rollback.')
-        parser.add_argument('-s', '--settings_file', type=str, default='zappa_settings.json',
-                            help='The path to a zappa settings file.')
-        parser.add_argument('-a', '--app_function', type=str, default=None,
-                            help='The WSGI application function.')
-        parser.add_argument('-v', '--version', action='store_true', help='Print the zappa version', default=False)
-        parser.add_argument('-y', '--yes', action='store_true', help='Auto confirm yes', default=False)
-        parser.add_argument('--remove-logs', action='store_true', help='Removes log groups of api gateway and lambda task during the undeployment.', default=False)
-        parser.add_argument('--raw', action='store_true', help='When invoking remotely, invoke this python as a string, not as a modular path.', default=False)
-        parser.add_argument('--no-cleanup', action='store_true', help="Don't remove certificate files from /tmp during certify. Dangerous.", default=False)
-        parser.add_argument('--all', action='store_true', help="Execute this command for all of our defined Zappa environments.", default=False)
-        parser.add_argument('--json', action='store_true', help='Returns status in JSON format', default=False)  # https://github.com/Miserlou/Zappa/issues/407
+        # Parent Parser
+        # Functionality shared by all commands
+        parent_parser = argparse.ArgumentParser(add_help=False)
+        parent_parser.add_argument('environment', type=str, help='Deployment environment', default=None, nargs='?')
+        parent_parser.add_argument('-s', '--settings_file', type=str, default='zappa_settings.json', help='The path to a zappa settings file.')
+        parent_parser.add_argument('-a', '--app_function', type=str, default=None, help='The WSGI application function.')
+        parent_parser.add_argument('-y', '--yes', action='store_true', help='Auto confirm yes', default=False)
+        parent_parser.add_argument('--all', action='store_true', help="Execute this command for all of the defined Zappa environments.", default=False)
+
+        # Certify command
+        certify_parser = subparsers.add_parser('ceritfy', help="Use Let's Encrypt to setup SSL to the domain specified in your config", parents=[parent_parser])
+        certify_parser.add_argument('--no-cleanup', action='store_true', help="Don't remove certificate files from /tmp during certify. Dangerous.", default=False)
+
+        # Deploy command
+        deploy_parser = subparsers.add_parser('deploy', help="Deploy your Zappa application.", parents=[parent_parser])
+
+        # Init command
+        init_parser = subparsers.add_parser('init', help="Initialize a zappa_settings.json file.", parents=[parent_parser])
+
+        # Invoke command
+        invoke_parser = subparsers.add_parser('invoke', help="Invoke functions directly on your Zappa deployment", parents=[parent_parser])
+        invoke_parser.add_argument('--raw', action='store_true', help='When invoking remotely, invoke this python as a string, not as a modular path.', default=False)
+
+        # Manage command
+        manage_parser = subparsers.add_parser('manage', help="Remotely execute Django's manage command.", parents=[parent_parser])
+
+        # Rollback command
+        rollback_parser = subparsers.add_parser('rollback', help="Rollback n versions of your application", parents=[parent_parser])
+        rollback_parser.add_argument('-n', '--num-rollback', type=int, default=0, help='The number of versions to rollback.')
+
+        # Schedule command
+        schedule_parser = subparsers.add_parser('schedule', help="Schedule CloudWatch Events to execute functions within your Zappa application.", parents=[parent_parser])
+
+        # Status command
+        status_parser = subparsers.add_parser('status', help="Get the status of your Zappa deployment", parents=[parent_parser])
+        status_parser.add_argument('--json', action='store_true', help='Returns status in JSON format', default=False)  # https://github.com/Miserlou/Zappa/issues/407
+
+        # Tail command
+        tail_parser = subparsers.add_parser('tail', help='Tail the CloudWatch logs of a deployed Zappa application', parents=[parent_parser])
+
+        # Undeploy command
+        undeploy_parser = subparsers.add_parser('undeploy', help="Undeploy a Zappa application", parents=[parent_parser])
+        undeploy_parser.add_argument('--remove-logs', action='store_true', help='Removes log groups of api gateway and lambda task during the undeployment.', default=False)
+
+        # Unschedule command
+        unschedule_parser = subparsers.add_parser('unschedule', help="Unschedule CloudWatch Events created during \'zappa schedule\'", parents=[parent_parser])
+
+        # Update command
+        update_parser = subparsers.add_parser('update', help="Update the deployed Zappa application.", parents=[parent_parser])
 
         args = parser.parse_args(argv)
 
         self.vargs = vars(args)
-        vargs_nosettings = self.vargs.copy()
-        vargs_nosettings.pop('settings_file')
-        if not any(vargs_nosettings.values()): # pragma: no cover
-            parser.error(help_message)
-            return
-
-        # Version requires no arguments
-        if args.version: # pragma: no cover
-            self.print_version()
-            sys.exit(0)
-
-        # Parse the input
-        self.command_env = self.vargs['command_env']
-        self.command = self.command_env[0]
-
-        if self.command not in CLI_COMMANDS:
-            print("The command '{}' is not recognized. {}".format(self.command, help_message))
-            return
 
         # Make sure there isn't a new version available
-        if not self.vargs['json']:
-            self.check_for_update()
+        self.check_for_update()
+
+        self.command = self.vargs['command']
+        self.command_env = self.vargs['environment']
+
 
         # We don't have any settings yet, so make those first!
         # (Settings-based interactions will fail
@@ -193,16 +213,16 @@ class ZappaCLI(object):
         if all_environments: # All envs!
             environments = self.zappa_settings.keys()
         else: # Just one env.
-            if len(self.command_env) < 2: # pragma: no cover
+            if self.command_env is None: # pragma: no cover
                 # If there's only one environment defined in the settings,
                 # use that as the default.
                 if len(self.zappa_settings.keys()) is 1:
                     environments.append(self.zappa_settings.keys()[0])
                 else:
-                    parser.error("Please supply an environment to interact with.")
+                    parser.error("There is more than 1 environment in the settings file. Please supply an environment to interact with.")
                     sys.exit(1)
             else:
-                environments.append(self.command_env[1])
+                environments.append(self.command_env)
 
         for environment in environments:
             try:
