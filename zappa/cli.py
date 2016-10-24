@@ -302,18 +302,18 @@ class ZappaCLI(object):
         # Make sure this isn't already deployed.
         deployed_versions = self.zappa.get_lambda_function_versions(self.lambda_name)
         if len(deployed_versions) > 0:
-            click.echo("This application is " + click.style("already deployed", fg="red") + " - did you mean to call " + click.style("update", bold=True) + "?")
-            return
+            raise ClickException("This application is " + click.style("already deployed", fg="red") + " - did you mean to call " + click.style("update", bold=True) + "?")
 
         # Make sure the necessary IAM execution roles are available
         if self.manage_roles:
             try:
                 self.zappa.create_iam_roles()
             except botocore.client.ClientError:
-                click.echo(click.style("Failed", fg="red") + " to " + click.style("manage IAM roles", bold=True) + "!")
-                click.echo("You may " + click.style("lack the necessary AWS permissions", bold=True) + " to automatically manage a Zappa execution role.")
-                click.echo("To fix this, see here: " + click.style("https://github.com/Miserlou/Zappa#using-custom-aws-iam-roles-and-policie", bold=True))
-                sys.exit(-1)
+                raise ClickException(
+                    click.style("Failed", fg="red") + " to " + click.style("manage IAM roles", bold=True) + "!\n" +
+                    "You may " + click.style("lack the necessary AWS permissions", bold=True) + " to automatically manage a Zappa execution role.\n" +
+                    "To fix this, see here: " + click.style("https://github.com/Miserlou/Zappa#using-custom-aws-iam-roles-and-policie", bold=True) + '\n'
+                )
 
         # Create the Lambda Zip
         self.create_package()
@@ -323,8 +323,7 @@ class ZappaCLI(object):
         success = self.zappa.upload_to_s3(
                 self.zip_path, self.s3_bucket_name)
         if not success: # pragma: no cover
-            print("Unable to upload to S3. Quitting.")
-            sys.exit(-1)
+            raise ClickException("Unable to upload to S3. Quitting.")
 
         # Register the Lambda function with that zip as the source
         # You'll also need to define the path to your lambda_handler code.
@@ -991,8 +990,7 @@ class ZappaCLI(object):
         # Make sure this isn't already deployed.
         deployed_versions = self.zappa.get_lambda_function_versions(self.lambda_name)
         if len(deployed_versions) == 0:
-            click.echo("This application " + click.style("isn't deployed yet", fg="red") + " - did you mean to call " + click.style("deploy", bold=True) + "?")
-            return
+            raise ClickException("This application " + click.style("isn't deployed yet", fg="red") + " - did you mean to call " + click.style("deploy", bold=True) + "?")
 
         # Get install account_key to /tmp/account_key.pem
         account_key_location = self.stage_config.get('lets_encrypt_key')
@@ -1008,8 +1006,7 @@ class ZappaCLI(object):
 
         if not cert_location:
             if not account_key_location:
-                click.echo("Can't certify a domain without " + click.style("lets_encrypt_key", fg="red", bold=True) + " configured!")
-                return
+                raise ClickException("Can't certify a domain without " + click.style("lets_encrypt_key", fg="red", bold=True) + " configured!")
 
             if 's3://' in account_key_location:
                 bucket = account_key_location.split('s3://')[1].split('/')[0]
@@ -1021,8 +1018,7 @@ class ZappaCLI(object):
         else:
 
             if not cert_location or not cert_key_location or not cert_chain_location:
-                click.echo("Can't certify a domain without " + click.style("certificate, certificate_key and certificate_chain", fg="red", bold=True) + " configured!")
-                return
+                raise ClickException("Can't certify a domain without " + click.style("certificate, certificate_key and certificate_chain", fg="red", bold=True) + " configured!")
 
             # Read the supplied certificates.
             with open(cert_location) as f:
