@@ -126,7 +126,8 @@ class ZappaCLI(object):
             settings[u'delete_local_zip'] = settings.get(u'delete_zip')
         return settings
 
-    def _exit_with_warning(self):
+    @staticmethod
+    def _exit_with_warning():
         # https://github.com/Miserlou/Zappa/issues/423
         click.echo(click.style("Warning! ", fg="red") + "Zappa has exited due to a warning. You can ignore "
                                                        "warnings by passing the " + click.style(
