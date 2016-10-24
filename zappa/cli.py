@@ -84,6 +84,7 @@ class ZappaCLI(object):
     vargs = None
     command = None
     command_env = None
+    ignore_warnings = False
 
     # Zappa settings
     zappa = None
@@ -125,6 +126,14 @@ class ZappaCLI(object):
             settings[u'delete_local_zip'] = settings.get(u'delete_zip')
         return settings
 
+    def _exit_with_warning(self):
+        # https://github.com/Miserlou/Zappa/issues/423
+        click.echo(click.style("Warning! ", fg="red") + "Zappa has exited due to a warning. You can ignore "
+                                                       "warnings by passing the " + click.style(
+            "--ignore-warnings", bold=True) + " argument. "
+                                              "Please read and understand all warnings before ignoring.")
+        sys.exit(-1)
+
     def handle(self, argv=None):
         """
         Main function.
@@ -149,6 +158,8 @@ class ZappaCLI(object):
         parser.add_argument('--no-cleanup', action='store_true', help="Don't remove certificate files from /tmp during certify. Dangerous.", default=False)
         parser.add_argument('--all', action='store_true', help="Execute this command for all of our defined Zappa environments.", default=False)
         parser.add_argument('--json', action='store_true', help='Returns status in JSON format', default=False)  # https://github.com/Miserlou/Zappa/issues/407
+        parser.add_argument('--ignore-warnings', action='store_true', help='Does not exit when warnings are raised',
+                            default=False)  # https://github.com/Miserlou/Zappa/issues/423
 
         args = parser.parse_args(argv)
 
@@ -171,6 +182,9 @@ class ZappaCLI(object):
         if self.command not in CLI_COMMANDS:
             print("The command '{}' is not recognized. {}".format(self.command, help_message))
             return
+
+        if self.vargs['ignore_warnings']:
+            self.ignore_warnings = True
 
         # Make sure there isn't a new version available
         if not self.vargs['json']:
@@ -403,6 +417,8 @@ class ZappaCLI(object):
 
         if last_updated_unix <= updated_time:
             click.echo(click.style("Warning!", fg="red") + " You may have upgraded Zappa since deploying this application. You will need to " + click.style("redeploy", bold=True) + " for this deployment to work properly!")
+            if self.ignore_warnings is False:
+                self._exit_with_warning()
 
         # Make sure the necessary IAM execution roles are available
         if self.manage_roles:
@@ -984,6 +1000,8 @@ class ZappaCLI(object):
         if no_cleanup:
             clean_up = False
             click.echo(click.style("Warning!", fg="yellow", bold=True) + " You are calling certify with " + click.style("--no-cleanup", bold=True) + ". Your certificate files will remain in the system temporary directory after this command exectutes!")
+            if self.ignore_warnings is False:
+                self._exit_with_warning()
         else:
             clean_up = True
 
@@ -1148,6 +1166,8 @@ class ZappaCLI(object):
 
         if len(self.project_name) > 15: # pragma: no cover
             click.echo(click.style("Warning", fg="red", bold=True) + "! Your " + click.style("project_name", bold=True) + " may be too long to deploy! Please make it <16 characters.")
+            if self.ignore_warnings is False:
+                self._exit_with_warning()
 
         # The name of the actual AWS Lambda function, ex, 'helloworld-dev'
         # Django's slugify doesn't replace _, but this does.
@@ -1205,11 +1225,17 @@ class ZappaCLI(object):
         self.check_environment(self.environment_variables)
         self.authorizer = self.stage_config.get('authorizer', {})
 
-        self.zappa = Zappa( boto_session=session,
-                            profile_name=self.profile_name,
-                            aws_region=self.aws_region,
-                            load_credentials=self.load_credentials
-                            )
+        try:
+            self.zappa = Zappa( boto_session=session,
+                                profile_name=self.profile_name,
+                                aws_region=self.aws_region,
+                                load_credentials=self.load_credentials,
+                                ignore_warnings=self.ignore_warnings
+                                )
+        except Warning as warn:
+            click.echo(click.style("Warning!", fg="yellow", bold=True) + warn)
+            if self.ignore_warnings is False:
+                self._exit_with_warning()
 
         for setting in CUSTOM_SETTINGS:
             if setting in self.stage_config:
@@ -1224,6 +1250,8 @@ class ZappaCLI(object):
             self.collision_warning(self.app_function)
             if self.app_function[-3:] == '.py':
                 click.echo(click.style("Warning!", fg="yellow", bold=True) + " Your app_function is pointing to a " + click.style("file and not a function", bold=True) + "! It should probably be something like 'my_file.app', not 'my_file.py'!")
+                if self.ignore_warnings is False:
+                    self._exit_with_warning()
 
         return self.zappa
 
@@ -1253,12 +1281,18 @@ class ZappaCLI(object):
         handler_file = os.sep.join(current_file.split(os.sep)[0:]) + os.sep + 'handler.py'
 
         # Create the zip file
-        self.zip_path = self.zappa.create_lambda_zip(
-                self.lambda_name,
-                handler_file=handler_file,
-                use_precompiled_packages=self.stage_config.get('use_precompiled_packages', True),
-                exclude=self.stage_config.get('exclude', [])
-            )
+        try:
+            self.zip_path = self.zappa.create_lambda_zip(
+                    self.lambda_name,
+                    handler_file=handler_file,
+                    use_precompiled_packages=self.stage_config.get('use_precompiled_packages', True),
+                    exclude=self.stage_config.get('exclude', [])
+                )
+        except Warning as warn:
+            click.echo(click.style("Warning!", fg="yellow", bold=True) + warn)
+            if self.ignore_warnings is False:
+                self._exit_with_warning()
+
 
         # Throw custom setings into the zip file
         with zipfile.ZipFile(self.zip_path, 'a') as lambda_zip:
@@ -1419,6 +1453,8 @@ class ZappaCLI(object):
         for namespace_collision in namespace_collisions:
             if namespace_collision in item:
                 click.echo(click.style("Warning!", fg="yellow", bold=True) + " You may have a namespace collision with " + click.style(item, bold=True) + "! You may want to rename that file.")
+                if self.ignore_warnings is False:
+                    self._exit_with_warning()
 
     def deploy_api_gateway(self, api_id):
         cache_cluster_enabled = self.stage_config.get('cache_cluster_enabled', False)

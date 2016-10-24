@@ -75,7 +75,7 @@ class TestZappa(unittest.TestCase):
         creds = {
             'AWS_ACCESS_KEY_ID': 'AK123',
             'AWS_SECRET_ACCESS_KEY': 'JKL456',
-            'AWS_DEFAULT_REGION': 'us-west-1'
+            'AWS_DEFAULT_REGION': 'us-east-2'
         }
         with mock.patch.dict('os.environ', creds):
             z.aws_region = None
@@ -84,7 +84,7 @@ class TestZappa(unittest.TestCase):
 
         self.assertEqual(loaded_creds.access_key, 'AK123')
         self.assertEqual(loaded_creds.secret_key, 'JKL456')
-        self.assertEqual(z.boto_session.region_name, 'us-west-1')
+        self.assertEqual(z.boto_session.region_name, 'us-east-2')
 
     @placebo_session
     def test_upload_remove_s3(self, session):
@@ -775,6 +775,7 @@ class TestZappa(unittest.TestCase):
     @placebo_session
     def test_cli_aws(self, session):
         zappa_cli = ZappaCLI()
+        zappa_cli.ignore_warnings = True
         zappa_cli.api_stage = 'ttt888'
         zappa_cli.api_key_required = True
         zappa_cli.authorization_type = 'NONE'
@@ -1040,6 +1041,23 @@ USE_TZ = True
         add_event_source(event_source, 'lambda:lambda:lambda:lambda', 'test_settings.callback', session, dry=True)
         remove_event_source(event_source, 'lambda:lambda:lambda:lambda', 'test_settings.callback', session, dry=True)
         # get_event_source_status(event_source, 'lambda:lambda:lambda:lambda', 'test_settings.callback', session, dry=True)
+
+    @placebo_session
+    def test_warnings_are_ignored(self, session):
+        zappa = Zappa(boto_session=session)
+        zappa.aws_region = 'us-west-1'
+        self.assertRaises(Warning, zappa.load_credentials)
+
+        zappa.ignore_warnings = True
+        zappa.load_credentials(boto_session=session)
+
+        zappa_cli = ZappaCLI()
+        zappa_cli.api_stage = 'ttt888'
+        with self.assertRaises(SystemExit):
+            zappa_cli.load_settings('tests/test_bad_project_name.json')
+
+        zappa_cli.ignore_warnings = True
+        zappa_cli.load_settings('tests/test_bad_project_name.json')
 
     def test_shameless(self):
         shamelessly_promote()
