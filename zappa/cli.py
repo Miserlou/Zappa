@@ -269,7 +269,7 @@ class ZappaCLI(object):
             else:
                 command = command_tail[0] # ex: zappa manage dev showmigrations admin
 
-            self.invoke(command, "manage")
+            self.invoke(command, command="manage")
 
         elif command == 'tail': # pragma: no cover
             self.tail()
@@ -655,16 +655,17 @@ class ZappaCLI(object):
             )
 
 
-    def invoke(self, function_name, raw_python=False):
+    def invoke(self, function_name, raw_python=False, command=None):
         """
         Invoke a remote function.
         """
 
         # Invoke it!
+        key = command if command is not None else 'command'
         if raw_python:
             command = {'raw_command': function_name}
         else:
-            command = {'command': function_name} # This is really a string
+            command = {key: function_name} # This is really a string
 
         # Can't use hjson
         import json as json
