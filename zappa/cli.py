@@ -22,7 +22,6 @@ import imp
 import importlib
 import logging
 import os
-import pkg_resources
 import random
 import re
 import requests
