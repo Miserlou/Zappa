@@ -276,7 +276,7 @@ class Zappa(object):
 
         self.ignore_warnings = ignore_warnings
 
-    def _warning(self, msg):
+    def warning(self, msg):
         # https://github.com/Miserlou/Zappa/issues/423
         if self.ignore_warnings is False:
             raise Warning(msg)
@@ -357,7 +357,7 @@ class Zappa(object):
         # Ideally this should be avoided automatically,
         # but this serves as an okay stop-gap measure.
         if split_venv[-1] == split_cwd[-1]:  # pragma: no cover
-            self._warning(
+            self.warning(
                 "Warning! Your project and virtualenv have the same name! You may want "
                 "to re-create your venv with a new name, or explicitly define a "
                 "'project_name', as this may cause errors."
@@ -462,7 +462,7 @@ class Zappa(object):
         # Warn if this is too large for Lambda.
         file_stats = os.stat(zip_path)
         if file_stats.st_size > 52428800:  # pragma: no cover
-            self._warning("Warning: Application zip package is likely to be too large for AWS Lambda.")
+            self.warning("Warning: Application zip package is likely to be too large for AWS Lambda.")
 
         return zip_fname
 
@@ -1788,10 +1788,10 @@ class Zappa(object):
         self.aws_region = self.boto_session.region_name
 
         if self.boto_session.region_name not in LAMBDA_REGIONS:
-            self._warning("Warning! AWS Lambda may not be available in this AWS Region!")
+            self.warning("Warning! AWS Lambda may not be available in this AWS Region!")
 
         if self.boto_session.region_name not in API_GATEWAY_REGIONS:
-            self._warning("Warning! AWS API Gateway may not be available in this AWS Region!")
+            self.warning("Warning! AWS API Gateway may not be available in this AWS Region!")
 
     @staticmethod
     def selection_pattern(status_code):
