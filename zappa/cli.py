@@ -54,21 +54,6 @@ CUSTOM_SETTINGS = [
     'touch',
 ]
 
-CLI_COMMANDS = [
-    'certify',
-    'deploy',
-    'init',
-    'invoke',
-    'manage',
-    'rollback',
-    'schedule',
-    'status',
-    'tail',
-    'undeploy',
-    'unschedule',
-    'update'
-]
-
 ##
 # Main Input Processing
 ##
@@ -133,24 +118,27 @@ class ZappaCLI(object):
 
         """
         parser = argparse.ArgumentParser(description='Zappa - Deploy Python applications to AWS Lambda and API Gateway.\n', version=pkg_resources.require("zappa")[0].version, prog="zappa")
+        parser.add_argument('-s', '--settings_file', type=str, default='zappa_settings.json',
+                                   help='The path to a zappa settings file.')
+        parser.add_argument('-a', '--app_function', type=str, default=None,
+                                   help='The WSGI application function.')
+
         subparsers = parser.add_subparsers(title="Zappa Commands", help="Choose a valid zappa command", dest='command')
 
         # Parent Parser
         # Functionality shared by all commands
         parent_parser = argparse.ArgumentParser(add_help=False)
         parent_parser.add_argument('environment', type=str, help='Deployment environment', default=None, nargs='?')
-        parent_parser.add_argument('-s', '--settings_file', type=str, default='zappa_settings.json', help='The path to a zappa settings file.')
-        parent_parser.add_argument('-a', '--app_function', type=str, default=None, help='The WSGI application function.')
         parent_parser.add_argument('-y', '--yes', action='store_true', help='Auto confirm yes', default=False)
         parent_parser.add_argument('--all', action='store_true', help="Execute this command for all of the defined Zappa environments.", default=False)
 
         # Certify command
-        certify_help = "Use Let's Encrypt to setup SSL to the domain specified in your config"
+        certify_help = "Use Let's Encrypt to setup SSL to the domain specified in the config"
         certify_parser = subparsers.add_parser('certify', description=certify_help, help=certify_help, parents=[parent_parser])
         certify_parser.add_argument('--no-cleanup', action='store_true', help="Don't remove certificate files from /tmp during certify. Dangerous.", default=False)
 
         # Deploy command
-        deploy_help = "Deploy your Zappa application."
+        deploy_help = "Deploy the Zappa application."
         deploy_parser = subparsers.add_parser('deploy', description=deploy_help, help=deploy_help, parents=[parent_parser])
 
         # Init command
@@ -158,7 +146,7 @@ class ZappaCLI(object):
         init_parser = subparsers.add_parser('init', help=init_help, description=init_help, parents=[parent_parser])
 
         # Invoke command
-        invoke_help = "Invoke functions directly on your Zappa deployment"
+        invoke_help = "Invoke functions directly on the Zappa deployment"
         invoke_parser = subparsers.add_parser('invoke', help=invoke_help, description=invoke_help, parents=[parent_parser])
         invoke_parser.add_argument('--raw', action='store_true', help='When invoking remotely, invoke this python as a string, not as a modular path.', default=False)
 
@@ -167,16 +155,16 @@ class ZappaCLI(object):
         manage_parser = subparsers.add_parser('manage', help=manage_help, description=manage_help, parents=[parent_parser])
 
         # Rollback command
-        rollback_help = "Rollback n versions of your application"
+        rollback_help = "Rollback n versions of the application"
         rollback_parser = subparsers.add_parser('rollback', help=rollback_help, description=rollback_help, parents=[parent_parser])
         rollback_parser.add_argument('-n', '--num-rollback', type=int, default=0, help='The number of versions to rollback.')
 
         # Schedule command
-        schedule_help = "Schedule CloudWatch Events to execute functions within your Zappa application."
+        schedule_help = "Schedule CloudWatch Events to execute functions within the Zappa application."
         schedule_parser = subparsers.add_parser('schedule', help=schedule_help, description=schedule_help, parents=[parent_parser])
 
         # Status command
-        status_help = "Get the status of your Zappa deployment"
+        status_help = "Get the status of the Zappa deployment"
         status_parser = subparsers.add_parser('status', help=status_help, description=status_help, parents=[parent_parser])
         status_parser.add_argument('--json', action='store_true', help='Returns status in JSON format', default=False)  # https://github.com/Miserlou/Zappa/issues/407
 
