@@ -1686,10 +1686,10 @@ class Zappa(object):
 
         """
         all_zones = self.route53.list_hosted_zones()
-        return self._get_best_match_zone(all_zones, domain)
+        return self.get_best_match_zone(all_zones, domain)
 
     @staticmethod
-    def _get_best_match_zone(all_zones, domain):
+    def get_best_match_zone(all_zones, domain):
         """Return zone id which name is closer matched with domain name."""
         zones = {zone['Name'][:-1]: zone['Id'] for zone in all_zones['HostedZones'] if zone['Name'][:-1] in domain}
         if zones:
@@ -1705,7 +1705,7 @@ class Zappa(object):
         print("Setting DNS challenge..")
         resp = self.route53.change_resource_record_sets(
             HostedZoneId=zone_id,
-            ChangeBatch=self._get_dns_challenge_change_batch('UPSERT', domain, txt_challenge)
+            ChangeBatch=self.get_dns_challenge_change_batch('UPSERT', domain, txt_challenge)
         )
 
         return resp
@@ -1717,13 +1717,13 @@ class Zappa(object):
         print("Deleting DNS challenge..")
         resp = self.route53.change_resource_record_sets(
             HostedZoneId=zone_id,
-            ChangeBatch=self._get_dns_challenge_change_batch('DELETE', domain, txt_challenge)
+            ChangeBatch=self.get_dns_challenge_change_batch('DELETE', domain, txt_challenge)
         )
 
         return resp
 
     @staticmethod
-    def _get_dns_challenge_change_batch(action, domain, txt_challenge):
+    def get_dns_challenge_change_batch(action, domain, txt_challenge):
         """
         Given action, domain and challege, return a change batch to use with
         route53 call.

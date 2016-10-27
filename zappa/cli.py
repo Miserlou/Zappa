@@ -660,12 +660,15 @@ class ZappaCLI(object):
         Invoke a remote function.
         """
 
-        # Invoke it!
+        # There are three likely scenarios for 'command' here:
+        #   command, which is a modular function path
+        #   raw_command, which is a string of python to execute directly
+        #   manage, which is a Django-specific management command invocation
         key = command if command is not None else 'command'
         if raw_python:
             command = {'raw_command': function_name}
         else:
-            command = {key: function_name} # This is really a string
+            command = {key: function_name}
 
         # Can't use hjson
         import json as json

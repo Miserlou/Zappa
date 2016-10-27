@@ -834,7 +834,7 @@ class TestZappa(unittest.TestCase):
 
     def test_domain_name_match(self):
         # Simple sanity check
-        zone = Zappa._get_best_match_zone(all_zones={ 'HostedZones': [
+        zone = Zappa.get_best_match_zone(all_zones={ 'HostedZones': [
             {
                 'Name': 'example.com.au.',
                 'Id': 'zone-correct'
@@ -844,7 +844,7 @@ class TestZappa(unittest.TestCase):
         assert zone == 'zone-correct'
 
         # No match test
-        zone = Zappa._get_best_match_zone(all_zones={'HostedZones': [
+        zone = Zappa.get_best_match_zone(all_zones={'HostedZones': [
             {
                 'Name': 'example.com.au.',
                 'Id': 'zone-incorrect'
@@ -854,7 +854,7 @@ class TestZappa(unittest.TestCase):
         assert zone is None
 
         # More involved, better match should win.
-        zone = Zappa._get_best_match_zone(all_zones={'HostedZones': [
+        zone = Zappa.get_best_match_zone(all_zones={'HostedZones': [
             {
                 'Name': 'example.com.au.',
                 'Id': 'zone-incorrect'
