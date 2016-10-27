@@ -5,7 +5,7 @@ from setuptools import setup
 # Set external files
 try:
     from pypandoc import convert
-    README = convert('README.md', 'rst')     
+    README = convert('README.md', 'rst')
 except ImportError:
     README = open(os.path.join(os.path.dirname(__file__), 'README.md')).read()
 
@@ -17,14 +17,14 @@ with open(os.path.join(os.path.dirname(__file__), 'test_requirements.txt')) as f
 
 setup(
     name='zappa',
-    version='0.27.1',
+    version='0.28.0',
     packages=['zappa'],
     install_requires=required,
     tests_require=test_required,
     test_suite='nose.collector',
     include_package_data=True,
     license='MIT License',
-    description='Serverless WSGI With AWS Lambda + API Gateway',
+    description='Server-less Python Web Services for AWS Lambda and API Gateway',
     long_description=README,
     url='https://github.com/Miserlou/Zappa',
     author='Rich Jones',
