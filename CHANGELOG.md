@@ -1,5 +1,8 @@
 # Zappa Changelog
 
+## Next
+* Get AWS region from profile if not set in zappa_settings.json
+
 ## 0.27.1
 
 * Bump lambda-packages

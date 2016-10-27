@@ -1166,7 +1166,7 @@ class ZappaCLI(object):
         self.exception_handler = self.zappa_settings[
             self.api_stage].get('exception_handler', None)
         self.aws_region = self.zappa_settings[
-            self.api_stage].get('aws_region', 'us-east-1')
+            self.api_stage].get('aws_region', None)
         self.debug = self.zappa_settings[
             self.api_stage].get('debug', True)
         self.prebuild_script = self.zappa_settings[

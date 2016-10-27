@@ -231,7 +231,6 @@ class Zappa(object):
     role_name = "ZappaLambdaExecution"
     assume_policy = ASSUME_POLICY
     attach_policy = ATTACH_POLICY
-    aws_region = 'us-east-1'
     cloudwatch_log_levels = ['OFF', 'ERROR', 'INFO']
 
     ##
@@ -241,8 +240,14 @@ class Zappa(object):
     boto_session = None
     credentials_arn = None
 
-    def __init__(self, boto_session=None, profile_name=None, aws_region=aws_region, load_credentials=True):
-        self.aws_region = aws_region
+    def __init__(self, boto_session=None, profile_name=None, aws_region=None, load_credentials=True):
+        # Set aws_region to None to use the system's region instead
+        if aws_region is None:
+            # https://github.com/Miserlou/Zappa/issues/413
+            self.aws_region = boto3.Session().region_name
+            logger.debug("Set region from boto: %s", self.aws_region)
+        else:
+            self.aws_region = aws_region
 
         # Some common invokations, such as DB migrations,
         # can take longer than the default.
@@ -1757,11 +1762,6 @@ class Zappa(object):
         """
         # Automatically load credentials from config or environment
         if not boto_session:
-
-            # Set aws_region to None to use the system's region instead
-            if self.aws_region is None:
-                self.aws_region = boto3.Session().region_name
-                logger.debug("Set region from boto: %s", self.aws_region)
 
             # If provided, use the supplied profile name.
             if profile_name:
