@@ -1700,43 +1700,47 @@ class Zappa(object):
         print("Setting DNS challenge..")
         resp = self.route53.change_resource_record_sets(
             HostedZoneId=zone_id,
-            ChangeBatch={
-                'Changes': [{
-                    'Action': 'UPSERT',
-                    'ResourceRecordSet': {
-                        'Name': '_acme-challenge.{0}'.format(domain),
-                        'Type': 'TXT',
-                        'TTL': 60,
-                        'ResourceRecords': [{
-                            'Value': '"{0}"'.format(txt_challenge)
-                        }]
-                    }
-                }]
-            }
+            ChangeBatch=self._get_dns_challenge_change_batch('UPSERT', domain, txt_challenge)
         )
 
         return resp
 
-    def remove_dns_challenge_txt(self, zone_id, domain):
+    def remove_dns_challenge_txt(self, zone_id, domain, txt_challenge):
         """
         Remove DNS challenge TXT.
         """
         print("Deleting DNS challenge..")
         resp = self.route53.change_resource_record_sets(
             HostedZoneId=zone_id,
-            ChangeBatch={
-                'Changes': [{
-                    'Action': 'DELETE',
-                    'ResourceRecordSet': {
-                        'Name': '_acme-challenge.{0}'.format(domain),
-                        'Type': 'TXT',
-                    }
-                }]
-            }
+            ChangeBatch=self._get_dns_challenge_change_batch('DELETE', domain, txt_challenge)
         )
 
         return resp
 
+    @staticmethod
+    def _get_dns_challenge_change_batch(action, domain, txt_challenge):
+        """
+        Given action, domain and challege, return a change batch to use with
+        route53 call.
+
+        :param action: DELETE | UPSERT
+        :param domain: domain name
+        :param txt_challenge: challenge
+        :return: change set for a given action, domain and TXT challenge.
+        """
+        return {
+            'Changes': [{
+                'Action': action,
+                'ResourceRecordSet': {
+                    'Name': '_acme-challenge.{0}'.format(domain),
+                    'Type': 'TXT',
+                    'TTL': 60,
+                    'ResourceRecords': [{
+                        'Value': '"{0}"'.format(txt_challenge)
+                    }]
+                }
+            }]
+        }
 
     ##
     # Utility
