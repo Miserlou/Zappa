@@ -1,0 +1,34 @@
+{
+    "status_code": 200, 
+    "data": {
+        "Code": {
+            "RepositoryType": "S3", 
+            "Location": "https://prod-04-2014-tasks.s3.amazonaws.com/snapshots/724336686645/baby-flask-devor-0ba7b1e0-d5f7-4c97-8505-0c87bc14acfd?x-amz-security-token=FQoDYXdzEEwaDIv4tcF%2F2xSicOq1SiK3A7fgryt%2BF1cKCoNU1pX0xyK3jEDV81HGpXAHhAYMD4R7XbnWN%2BeUfjieAaGkgoPbKkr2RZmA2iXjsazEdyq7sZIpZAo5VkhYSoSy1PBm0Apc6txwmnLB18n5WV5Ulyq90tdm0SplVgmaww%2FxHt9KgWMfRkl8uz7Zw5JfLz%2FPadYT7e4ZkJmKEL4upYSgBxnXXDgU3A1IafXfACcOd5GJ1JrOVR%2BYO4Kqud%2F6Q3BWhDYcLAFwO7xUZlaI2hzWRYxlVQk1wbNvIq7ZX98GAZzxnZFGhqoSs0xMo4wZ1kAPtwfBt%2BsquluiCQt9EntWPZmyfUvBktE0JKbaEl%2Fly01iL34mLB52wdCXYeCSid6xEHGrRiBgbUnuHGqMmXls5%2FS7PF0wbWZKsibdXylMrup%2F1sEqYS5r33yaS8em9kBcjHhbbkiBN2oYiCHB4B4xCe01hAiGUkx8DI0OZGCNn8ljyutKvBX1dlpU3LbxM%2F17CD9VVdXBq7Vp8SkNTckK284o%2Fa4a1PUyCCyYCq7SJVvJ72mWjmzNx0NYDGvlUPi4IUhQxm88874Pi6SFt7Ql8eir1FJPe3fXwagorZGzvQU%3D&AWSAccessKeyId=ASIAIPXCFPJ7VAQMZYGQ&Expires=1470945074&Signature=4c9u5HvYw6eVtgbuyT5teEB07gk%3D"
+        }, 
+        "Configuration": {
+            "Version": "$LATEST", 
+            "CodeSha256": "U8ckfxet4WSu22aYpYd2GrVG2E3HX4ifSoWCe8nr4ig=", 
+            "FunctionName": "baby-flask-devor", 
+            "MemorySize": 512, 
+            "CodeSize": 2882611, 
+            "FunctionArn": "arn:aws:lambda:us-east-1:724336686645:function:baby-flask-devor", 
+            "Handler": "handler.lambda_handler", 
+            "Role": "arn:aws:iam::724336686645:role/ZappaLambdaExecution", 
+            "Timeout": 30, 
+            "LastModified": "2016-08-11T19:05:11.100+0000", 
+            "Runtime": "python2.7", 
+            "Description": "Zappa Deployment"
+        }, 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "RequestId": "909b374b-5ffb-11e6-a630-0daa311dcaa5", 
+            "HTTPHeaders": {
+                "date": "Thu, 11 Aug 2016 19:41:14 GMT", 
+                "x-amzn-requestid": "909b374b-5ffb-11e6-a630-0daa311dcaa5", 
+                "content-length": "1472", 
+                "content-type": "application/json", 
+                "connection": "keep-alive"
+            }
+        }
+    }
+}

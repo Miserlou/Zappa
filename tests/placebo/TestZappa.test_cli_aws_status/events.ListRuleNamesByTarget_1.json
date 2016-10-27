@@ -1,0 +1,18 @@
+{
+    "status_code": 200, 
+    "data": {
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "RequestId": "925b84b7-5ffb-11e6-9780-4b9d2dcb5a98", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "925b84b7-5ffb-11e6-9780-4b9d2dcb5a98", 
+                "date": "Thu, 11 Aug 2016 19:41:17 GMT", 
+                "content-length": "30", 
+                "content-type": "application/x-amz-json-1.1"
+            }
+        }, 
+        "RuleNames": [
+            "app.event_me"
+        ]
+    }
+}

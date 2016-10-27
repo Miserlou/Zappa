@@ -1,0 +1,57 @@
+{
+    "status_code": 200, 
+    "data": {
+        "logStreams": [
+            {
+                "firstEventTimestamp": 1472095939120, 
+                "lastEventTimestamp": 1472095939120, 
+                "creationTime": 1472095937253, 
+                "uploadSequenceToken": "49564431587761396782395039936735939781482269179597839650", 
+                "logStreamName": "2016/08/25/[$LATEST]5b770117f3054648a526f9ea34aa950f", 
+                "lastIngestionTime": 1472095954272, 
+                "arn": "arn:aws:logs:us-east-1:724336686645:log-group:/aws/lambda/zappa-ttt888:log-stream:2016/08/25/[$LATEST]5b770117f3054648a526f9ea34aa950f", 
+                "storedBytes": 0
+            }, 
+            {
+                "firstEventTimestamp": 1472095819556, 
+                "lastEventTimestamp": 1472095876909, 
+                "creationTime": 1472095817710, 
+                "uploadSequenceToken": "49561406310035646461334886483372352431653111873568533778", 
+                "logStreamName": "2016/08/25/[$LATEST]927fa33f345348748e693430dd9975ff", 
+                "lastIngestionTime": 1472095891991, 
+                "arn": "arn:aws:logs:us-east-1:724336686645:log-group:/aws/lambda/zappa-ttt888:log-stream:2016/08/25/[$LATEST]927fa33f345348748e693430dd9975ff", 
+                "storedBytes": 0
+            }, 
+            {
+                "firstEventTimestamp": 1464895458307, 
+                "lastEventTimestamp": 1464895458308, 
+                "creationTime": 1464895458318, 
+                "uploadSequenceToken": "49547819337008687716864754247034213471967449977953728562", 
+                "logStreamName": "2016/06/02/[$LATEST]f03059c510ca4976987d6a56b799e4ab", 
+                "lastIngestionTime": 1464895473352, 
+                "arn": "arn:aws:logs:us-east-1:724336686645:log-group:/aws/lambda/zappa-ttt888:log-stream:2016/06/02/[$LATEST]f03059c510ca4976987d6a56b799e4ab", 
+                "storedBytes": 246
+            }, 
+            {
+                "firstEventTimestamp": 1464895458119, 
+                "lastEventTimestamp": 1464895458156, 
+                "creationTime": 1464895457790, 
+                "uploadSequenceToken": "49557759006499770114619173424197784266225544958614456930", 
+                "logStreamName": "2016/06/02/[$LATEST]a51710ea77034373868eeb2ca461c8f4", 
+                "lastIngestionTime": 1464895473222, 
+                "arn": "arn:aws:logs:us-east-1:724336686645:log-group:/aws/lambda/zappa-ttt888:log-stream:2016/06/02/[$LATEST]a51710ea77034373868eeb2ca461c8f4", 
+                "storedBytes": 447
+            }
+        ], 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "RequestId": "9f38a9c8-6a74-11e6-b4b1-bdca786ad91f", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "9f38a9c8-6a74-11e6-b4b1-bdca786ad91f", 
+                "date": "Thu, 25 Aug 2016 03:33:00 GMT", 
+                "content-length": "1808", 
+                "content-type": "application/x-amz-json-1.1"
+            }
+        }
+    }
+}

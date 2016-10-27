@@ -1,0 +1,20 @@
+{
+    "status_code": 200, 
+    "data": {
+        "Bucket": "lmbda", 
+        "UploadId": "A3T4vXHQEd9dw1uK8y1S2E6qArCsvZaXFXXtbMOVND8uqtMKqqnkqf9e_lrLlcyLIZi7lr_HY5ClRFopCO.4Ig--", 
+        "Key": "zappa-ttt888-1472095738.zip", 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "HostId": "1sYhVpDz0fFArHH3ypjaroVzsgy8BR9R5vPA7s/cc7sEqKrXBwsDidNoirib0x1eLX+myjUh4/8=", 
+            "RequestId": "16D622C42C6154BE", 
+            "HTTPHeaders": {
+                "x-amz-id-2": "1sYhVpDz0fFArHH3ypjaroVzsgy8BR9R5vPA7s/cc7sEqKrXBwsDidNoirib0x1eLX+myjUh4/8=", 
+                "date": "Thu, 25 Aug 2016 03:29:08 GMT", 
+                "transfer-encoding": "chunked", 
+                "x-amz-request-id": "16D622C42C6154BE", 
+                "server": "AmazonS3"
+            }
+        }
+    }
+}

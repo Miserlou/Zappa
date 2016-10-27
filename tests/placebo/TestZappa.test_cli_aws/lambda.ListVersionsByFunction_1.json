@@ -6,48 +6,6 @@
             "RequestId": "b0bc99a5-28f4-11e6-973f-fd5204f1d818"
         }, 
         "Versions": [
-            {
-                "Version": "$LATEST", 
-                "CodeSha256": "O+UgQQT1ppytR9/n9r3ULukBw473iimxxyoQUUzNiuQ=", 
-                "FunctionName": "zappa-ttt666", 
-                "MemorySize": 512, 
-                "CodeSize": 53489678, 
-                "FunctionArn": "arn:aws:lambda:us-east-1:724336686645:function:zappa-ttt666:$LATEST", 
-                "Handler": "handler.lambda_handler", 
-                "Role": "arn:aws:iam::724336686645:role/ZappaLambdaExecution", 
-                "Timeout": 30, 
-                "LastModified": "2016-06-02T19:03:19.892+0000", 
-                "Runtime": "python2.7", 
-                "Description": "Zappa Deployment"
-            }, 
-            {
-                "Version": "1", 
-                "CodeSha256": "cWF57Szks5dHvRXo5yI6Ob0OPhD8TFF8IsmuTeM3vko=", 
-                "FunctionName": "zappa-ttt666", 
-                "MemorySize": 512, 
-                "CodeSize": 53011393, 
-                "FunctionArn": "arn:aws:lambda:us-east-1:724336686645:function:zappa-ttt666:1", 
-                "Handler": "handler.lambda_handler", 
-                "Role": "arn:aws:iam::724336686645:role/ZappaLambdaExecution", 
-                "Timeout": 30, 
-                "LastModified": "2016-06-02T19:00:43.958+0000", 
-                "Runtime": "python2.7", 
-                "Description": "Zappa Deployment"
-            }, 
-            {
-                "Version": "2", 
-                "CodeSha256": "O+UgQQT1ppytR9/n9r3ULukBw473iimxxyoQUUzNiuQ=", 
-                "FunctionName": "zappa-ttt666", 
-                "MemorySize": 512, 
-                "CodeSize": 53489678, 
-                "FunctionArn": "arn:aws:lambda:us-east-1:724336686645:function:zappa-ttt666:2", 
-                "Handler": "handler.lambda_handler", 
-                "Role": "arn:aws:iam::724336686645:role/ZappaLambdaExecution", 
-                "Timeout": 30, 
-                "LastModified": "2016-06-02T19:03:19.892+0000", 
-                "Runtime": "python2.7", 
-                "Description": "Zappa Deployment"
-            }
         ]
     }
 }

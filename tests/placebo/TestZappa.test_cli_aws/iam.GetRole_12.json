@@ -1,0 +1,32 @@
+{
+    "status_code": 200, 
+    "data": {
+        "Role": {
+            "AssumeRolePolicyDocument": "%7B%22Version%22%3A%222012-10-17%22%2C%22Statement%22%3A%5B%7B%22Sid%22%3A%22%22%2C%22Effect%22%3A%22Allow%22%2C%22Principal%22%3A%7B%22Service%22%3A%5B%22events.amazonaws.com%22%2C%22apigateway.amazonaws.com%22%2C%22lambda.amazonaws.com%22%5D%7D%2C%22Action%22%3A%22sts%3AAssumeRole%22%7D%5D%7D", 
+            "RoleId": "AROAJP6JO7RI37FHZGQ6A", 
+            "CreateDate": {
+                "hour": 15, 
+                "__class__": "datetime", 
+                "month": 1, 
+                "second": 29, 
+                "microsecond": 0, 
+                "year": 2016, 
+                "day": 25, 
+                "minute": 33
+            }, 
+            "RoleName": "ZappaLambdaExecution", 
+            "Path": "/", 
+            "Arn": "arn:aws:iam::724336686645:role/ZappaLambdaExecution"
+        }, 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "RequestId": "482825c1-6a74-11e6-90df-c50dd5221118", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "482825c1-6a74-11e6-90df-c50dd5221118", 
+                "date": "Thu, 25 Aug 2016 03:30:33 GMT", 
+                "content-length": "844", 
+                "content-type": "text/xml"
+            }
+        }
+    }
+}

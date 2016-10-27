@@ -1,0 +1,22 @@
+{
+    "status_code": 400, 
+    "data": {
+        "ResponseMetadata": {
+            "RetryAttempts": 0, 
+            "HTTPStatusCode": 400, 
+            "RequestId": "30e82eed-7f76-11e6-9295-3308821d25df", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "30e82eed-7f76-11e6-9295-3308821d25df", 
+                "date": "Tue, 20 Sep 2016 21:07:07 GMT", 
+                "content-length": "288", 
+                "content-type": "text/xml", 
+                "connection": "close"
+            }
+        }, 
+        "Error": {
+            "Message": "No updates are to be performed.", 
+            "Code": "ValidationError", 
+            "Type": "Sender"
+        }
+    }
+}

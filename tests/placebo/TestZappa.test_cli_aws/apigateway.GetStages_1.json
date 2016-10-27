@@ -1,0 +1,59 @@
+{
+    "status_code": 200, 
+    "data": {
+        "item": [
+            {
+                "stageName": "ttt888", 
+                "cacheClusterSize": "0.5", 
+                "variables": {}, 
+                "cacheClusterEnabled": false, 
+                "cacheClusterStatus": "NOT_AVAILABLE", 
+                "deploymentId": "43p5hj", 
+                "lastUpdatedDate": {
+                    "hour": 20, 
+                    "__class__": "datetime", 
+                    "month": 8, 
+                    "second": 28, 
+                    "microsecond": 0, 
+                    "year": 2016, 
+                    "day": 24, 
+                    "minute": 31
+                }, 
+                "createdDate": {
+                    "hour": 20, 
+                    "__class__": "datetime", 
+                    "month": 8, 
+                    "second": 29, 
+                    "microsecond": 0, 
+                    "year": 2016, 
+                    "day": 24, 
+                    "minute": 30
+                }, 
+                "methodSettings": {
+                    "*/*": {
+                        "cacheTtlInSeconds": 300, 
+                        "loggingLevel": "OFF", 
+                        "dataTraceEnabled": false, 
+                        "metricsEnabled": false, 
+                        "unauthorizedCacheControlHeaderStrategy": "SUCCEED_WITH_RESPONSE_HEADER", 
+                        "throttlingRateLimit": 1000.0, 
+                        "cacheDataEncrypted": false, 
+                        "cachingEnabled": false, 
+                        "throttlingBurstLimit": 2000, 
+                        "requireAuthorizationForCacheControl": true
+                    }
+                }
+            }
+        ], 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "RequestId": "a23bfe5b-6a74-11e6-831b-43c278515a41", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "a23bfe5b-6a74-11e6-831b-43c278515a41", 
+                "date": "Thu, 25 Aug 2016 03:33:05 GMT", 
+                "content-length": "559", 
+                "content-type": "application/json"
+            }
+        }
+    }
+}

@@ -1,0 +1,22 @@
+{
+    "status_code": 200, 
+    "data": {
+        "ETag": "\"4cff7333c284cf98d32e9c234078a260-5\"", 
+        "Bucket": "lmbda", 
+        "Location": "https://lmbda.s3.amazonaws.com/zappa-ttt888-1472095738.zip", 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "HostId": "1rYmoqWiCpm9xab8SHg7A0bHqRmOC2C0uTWEA0kMJlnRjYp5P8sJsABafj/56NcV6NKxkq/qKyA=", 
+            "RequestId": "C174B5610428C046", 
+            "HTTPHeaders": {
+                "x-amz-id-2": "1rYmoqWiCpm9xab8SHg7A0bHqRmOC2C0uTWEA0kMJlnRjYp5P8sJsABafj/56NcV6NKxkq/qKyA=", 
+                "server": "AmazonS3", 
+                "transfer-encoding": "chunked", 
+                "x-amz-request-id": "C174B5610428C046", 
+                "date": "Thu, 25 Aug 2016 03:29:39 GMT", 
+                "content-type": "application/xml"
+            }
+        }, 
+        "Key": "zappa-ttt888-1472095738.zip"
+    }
+}

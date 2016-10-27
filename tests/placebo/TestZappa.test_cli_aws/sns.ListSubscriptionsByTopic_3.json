@@ -1,0 +1,25 @@
+{
+    "status_code": 200, 
+    "data": {
+        "ResponseMetadata": {
+            "RetryAttempts": 0, 
+            "HTTPStatusCode": 200, 
+            "RequestId": "4b297fb0-32e1-5466-8b32-2feb82122ee6", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "4b297fb0-32e1-5466-8b32-2feb82122ee6", 
+                "date": "Tue, 20 Sep 2016 21:48:34 GMT", 
+                "content-length": "720", 
+                "content-type": "text/xml"
+            }
+        }, 
+        "Subscriptions": [
+            {
+                "Owner": "123456789123", 
+                "Endpoint": "arn:aws:lambda:us-east-1:123456789123:function:zappa-ttt888", 
+                "Protocol": "lambda", 
+                "TopicArn": "arn:aws:sns:::1", 
+                "SubscriptionArn": "arn:aws:sns:::1:1833de9b-d325-4610-bc69-139311499f5d"
+            }
+        ]
+    }
+}

@@ -1,0 +1,16 @@
+{
+    "status_code": 200, 
+    "data": {
+        "RuleArn": "arn:aws:events:us-east-1:724336686645:rule/zappa-ttt888-tests.test_app.schedule_me", 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "RequestId": "a0ab9a29-6a74-11e6-a237-bb13171f213e", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "a0ab9a29-6a74-11e6-a237-bb13171f213e", 
+                "date": "Thu, 25 Aug 2016 03:33:02 GMT", 
+                "content-length": "96", 
+                "content-type": "application/x-amz-json-1.1"
+            }
+        }
+    }
+}

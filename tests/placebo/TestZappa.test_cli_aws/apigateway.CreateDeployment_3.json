@@ -1,0 +1,26 @@
+{
+    "status_code": 201, 
+    "data": {
+        "id": "43p5hj", 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 201, 
+            "RequestId": "44700020-6a74-11e6-9e18-d13c6ce86685", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "44700020-6a74-11e6-9e18-d13c6ce86685", 
+                "date": "Thu, 25 Aug 2016 03:30:29 GMT", 
+                "content-length": "41", 
+                "content-type": "application/json"
+            }
+        }, 
+        "createdDate": {
+            "hour": 20, 
+            "__class__": "datetime", 
+            "month": 8, 
+            "second": 29, 
+            "microsecond": 0, 
+            "year": 2016, 
+            "day": 24, 
+            "minute": 30
+        }
+    }
+}

@@ -1,3 +1,6 @@
+*~
+*.zip
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -64,3 +67,10 @@ target/
 
 # Apple OS X specific files are put into the .DS_Store file
 .DS_Store
+
+# Vim stuff:
+*.swp
+*.swo
+*~
+tests/zappa_settings.json
+tests/example_template_outputs

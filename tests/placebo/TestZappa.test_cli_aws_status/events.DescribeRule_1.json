@@ -1,0 +1,21 @@
+{
+    "status_code": 200, 
+    "data": {
+        "ScheduleExpression": "rate(1 minute)", 
+        "Name": "app.event_me", 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "RequestId": "926cea0c-5ffb-11e6-9780-4b9d2dcb5a98", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "926cea0c-5ffb-11e6-9780-4b9d2dcb5a98", 
+                "date": "Thu, 11 Aug 2016 19:41:17 GMT", 
+                "content-length": "236", 
+                "content-type": "application/x-amz-json-1.1"
+            }
+        }, 
+        "RoleArn": "arn:aws:iam::724336686645:role/ZappaLambdaExecution", 
+        "State": "ENABLED", 
+        "Arn": "arn:aws:events:us-east-1:724336686645:rule/app.event_me", 
+        "Description": "app.event_me"
+    }
+}

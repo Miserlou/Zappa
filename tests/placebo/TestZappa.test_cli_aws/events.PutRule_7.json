@@ -1,0 +1,16 @@
+{
+    "status_code": 200, 
+    "data": {
+        "RuleArn": "arn:aws:events:us-east-1:724336686645:rule/zappa-ttt888-zappa-keep-warm-handler.keep_warm_callback", 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "RequestId": "2bbf0bba-6a74-11e6-945c-0b1ddee71d5d", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "2bbf0bba-6a74-11e6-945c-0b1ddee71d5d", 
+                "date": "Thu, 25 Aug 2016 03:29:46 GMT", 
+                "content-length": "112", 
+                "content-type": "application/x-amz-json-1.1"
+            }
+        }
+    }
+}
