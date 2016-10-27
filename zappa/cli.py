@@ -132,7 +132,8 @@ class ZappaCLI(object):
         Parses command, load settings and dispatches accordingly.
 
         """
-        help_message = "Please supply a command to execute. Can be one of: {}".format(', '.join(x for x in sorted(CLI_COMMANDS)))
+        help_message = ("Please supply a command to execute. " +
+                       "Can be one of: {}".format(', '.join(x for x in sorted(CLI_COMMANDS))))
 
         parser = argparse.ArgumentParser(description='Zappa - Deploy Python applications to AWS Lambda and API Gateway.\n')
         parser.add_argument('command_env', metavar='U', type=str, nargs='*', help=help_message)
@@ -144,11 +145,18 @@ class ZappaCLI(object):
                             help='The WSGI application function.')
         parser.add_argument('-v', '--version', action='store_true', help='Print the zappa version', default=False)
         parser.add_argument('-y', '--yes', action='store_true', help='Auto confirm yes', default=False)
-        parser.add_argument('--remove-logs', action='store_true', help='Removes log groups of api gateway and lambda task during the undeployment.', default=False)
-        parser.add_argument('--raw', action='store_true', help='When invoking remotely, invoke this python as a string, not as a modular path.', default=False)
-        parser.add_argument('--no-cleanup', action='store_true', help="Don't remove certificate files from /tmp during certify. Dangerous.", default=False)
-        parser.add_argument('--all', action='store_true', help="Execute this command for all of our defined Zappa environments.", default=False)
-        parser.add_argument('--json', action='store_true', help='Returns status in JSON format', default=False)  # https://github.com/Miserlou/Zappa/issues/407
+        parser.add_argument('--remove-logs', action='store_true',
+                            help='Removes log groups of api gateway and lambda task during the undeployment.',
+                            default=False)
+        parser.add_argument('--raw', action='store_true',
+                            help='When invoking remotely, invoke this python as a string, not as a modular path.',
+                            default=False)
+        parser.add_argument('--no-cleanup', action='store_true',
+                            help="Don't remove certificate files from /tmp during certify. Dangerous.", default=False)
+        parser.add_argument('--all', action='store_true',
+                            help="Execute this command for all of our defined Zappa environments.", default=False)
+        parser.add_argument('--json', action='store_true', help='Returns status in JSON format',
+                            default=False)  # https://github.com/Miserlou/Zappa/issues/407
 
         args = parser.parse_args(argv)
 
@@ -221,7 +229,8 @@ class ZappaCLI(object):
         self.api_stage = environment
 
         if command not in ['status', 'manage']:
-            click.echo("Calling " + click.style(command, fg="green", bold=True) + " for environment " + click.style(self.api_stage, bold=True) + ".." )
+            click.echo("Calling " + click.style(command, fg="green", bold=True) + " for environment " +
+                       click.style(self.api_stage, bold=True) + ".." )
 
         # Explicity define the app function.
         if self.vargs['app_function'] is not None:
@@ -302,7 +311,8 @@ class ZappaCLI(object):
         # Make sure this isn't already deployed.
         deployed_versions = self.zappa.get_lambda_function_versions(self.lambda_name)
         if len(deployed_versions) > 0:
-            raise ClickException("This application is " + click.style("already deployed", fg="red") + " - did you mean to call " + click.style("update", bold=True) + "?")
+            raise ClickException("This application is " + click.style("already deployed", fg="red") +
+                                 " - did you mean to call " + click.style("update", bold=True) + "?")
 
         # Make sure the necessary IAM execution roles are available
         if self.manage_roles:
@@ -311,9 +321,11 @@ class ZappaCLI(object):
             except botocore.client.ClientError:
                 raise ClickException(
                     click.style("Failed", fg="red") + " to " + click.style("manage IAM roles", bold=True) + "!\n" +
-                    "You may " + click.style("lack the necessary AWS permissions", bold=True) + " to automatically manage a Zappa execution role.\n" +
-                    "To fix this, see here: " + click.style("https://github.com/Miserlou/Zappa#using-custom-aws-iam-roles-and-policie", bold=True) + '\n'
-                )
+                    "You may " + click.style("lack the necessary AWS permissions", bold=True) +
+                    " to automatically manage a Zappa execution role.\n" +
+                    "To fix this, see here: " +
+                    click.style("https://github.com/Miserlou/Zappa#using-custom-aws-iam-roles-and-policie", bold=True)
+                    + '\n')
 
         # Create the Lambda Zip
         self.create_package()
@@ -402,7 +414,9 @@ class ZappaCLI(object):
             sys.exit(-1)
 
         if last_updated_unix <= updated_time:
-            click.echo(click.style("Warning!", fg="red") + " You may have upgraded Zappa since deploying this application. You will need to " + click.style("redeploy", bold=True) + " for this deployment to work properly!")
+            click.echo(click.style("Warning!", fg="red") +
+                       " You may have upgraded Zappa since deploying this application. You will need to " +
+                       click.style("redeploy", bold=True) + " for this deployment to work properly!")
 
         # Make sure the necessary IAM execution roles are available
         if self.manage_roles:
@@ -410,8 +424,11 @@ class ZappaCLI(object):
                 self.zappa.create_iam_roles()
             except botocore.client.ClientError:
                 click.echo(click.style("Failed", fg="red") + " to " + click.style("manage IAM roles", bold=True) + "!")
-                click.echo("You may " + click.style("lack the necessary AWS permissions", bold=True) + " to automatically manage a Zappa execution role.")
-                click.echo("To fix this, see here: " + click.style("https://github.com/Miserlou/Zappa#using-custom-aws-iam-roles-and-policies", bold=True))
+                click.echo("You may " + click.style("lack the necessary AWS permissions", bold=True) +
+                           " to automatically manage a Zappa execution role.")
+                click.echo("To fix this, see here: " +
+                           click.style("https://github.com/Miserlou/Zappa#using-custom-aws-iam-roles-and-policies",
+                                       bold=True))
                 sys.exit(-1)
 
         # Create the Lambda Zip,
@@ -603,7 +620,8 @@ class ZappaCLI(object):
             timeout = conf['Timeout']
 
             if timeout < 60:
-                click.echo(click.style("Unable to schedule certificate autorenewer!", fg="red", bold=True) + " Please redeploy with a " + click.style("timeout_seconds", bold=True) + " greater than 60!")
+                click.echo(click.style("Unable to schedule certificate autorenewer!", fg="red", bold=True) +
+                           " Please redeploy with a " + click.style("timeout_seconds", bold=True) + " greater than 60!")
             else:
                 events.append({'name': 'zappa-le-certify',
                                'function': 'handler.certify_callback',
@@ -614,7 +632,9 @@ class ZappaCLI(object):
             try:
                 function_response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name)
             except botocore.exceptions.ClientError as e: # pragma: no cover
-                click.echo(click.style("Function does not exist", fg="yellow") + ", please " + click.style("deploy", bold=True) + "first. Ex:" + click.style("zappa deploy {}.".format(self.api_stage), bold=True))
+                click.echo(click.style("Function does not exist", fg="yellow") + ", please " +
+                           click.style("deploy", bold=True) + "first. Ex:" +
+                           click.style("zappa deploy {}.".format(self.api_stage), bold=True))
                 sys.exit(-1)
 
             print("Scheduling..")
@@ -869,13 +889,16 @@ class ZappaCLI(object):
 ╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝     ╚═╝  ╚═╝\n""", fg='green', bold=True))
 
         click.echo(click.style("Welcome to ", bold=True) + click.style("Zappa", fg='green', bold=True) + click.style("!\n", bold=True))
-        click.echo(click.style("Zappa", bold=True) + " is a system for running server-less Python web applications on AWS Lambda and AWS API Gateway.")
+        click.echo(click.style("Zappa", bold=True) + " is a system for running server-less Python web applications"
+                                                     " on AWS Lambda and AWS API Gateway.")
         click.echo("This `init` command will help you create and configure your new Zappa deployment.")
         click.echo("Let's get started!\n")
 
         # Create Env
         while True:
-            click.echo("Your Zappa configuration can support multiple production environments, like '" + click.style("dev", bold=True)  + "', '" + click.style("staging", bold=True)  + "', and '" + click.style("production", bold=True)  + "'.")
+            click.echo("Your Zappa configuration can support multiple production environments, like '" +
+                       click.style("dev", bold=True)  + "', '" + click.style("staging", bold=True)  + "', and '" +
+                       click.style("production", bold=True)  + "'.")
             env = raw_input("What do you want to call this environment (default 'dev'): ") or "dev"
             try:
                 self.check_stage_name(env)
@@ -966,14 +989,17 @@ class ZappaCLI(object):
         with open("zappa_settings.json", "w") as zappa_settings_file:
             zappa_settings_file.write(zappa_settings_json)
 
-        click.echo("\n" + click.style("Done", bold=True) + "! Now you can " + click.style("deploy", bold=True)  + " your Zappa application by executing:\n")
+        click.echo("\n" + click.style("Done", bold=True) + "! Now you can " + click.style("deploy", bold=True)  +
+                   " your Zappa application by executing:\n")
         click.echo(click.style("\t$ zappa deploy %s" % env, bold=True))
 
         click.echo("\nAfter that, you can " + click.style("update", bold=True) + " your application code with:\n")
         click.echo(click.style("\t$ zappa update %s" % env, bold=True))
 
-        click.echo("\nTo learn more, check out our project page on " + click.style("GitHub", bold=True) + " here: " + click.style("https://github.com/Miserlou/Zappa", fg="cyan", bold=True))
-        click.echo("and stop by our " + click.style("Slack", bold=True) + " channel here: " + click.style("http://bit.do/zappa", fg="cyan", bold=True))
+        click.echo("\nTo learn more, check out our project page on " + click.style("GitHub", bold=True) +
+                   " here: " + click.style("https://github.com/Miserlou/Zappa", fg="cyan", bold=True))
+        click.echo("and stop by our " + click.style("Slack", bold=True) + " channel here: " +
+                   click.style("http://bit.do/zappa", fg="cyan", bold=True))
         click.echo("\nEnjoy!,")
         click.echo(" ~ Team " + click.style("Zappa", bold=True) + "!")
 
@@ -987,14 +1013,17 @@ class ZappaCLI(object):
         # Give warning on --no-cleanup
         if no_cleanup:
             clean_up = False
-            click.echo(click.style("Warning!", fg="yellow", bold=True) + " You are calling certify with " + click.style("--no-cleanup", bold=True) + ". Your certificate files will remain in the system temporary directory after this command exectutes!")
+            click.echo(click.style("Warning!", fg="yellow", bold=True) + " You are calling certify with " +
+                       click.style("--no-cleanup", bold=True) +
+                       ". Your certificate files will remain in the system temporary directory after this command exectutes!")
         else:
             clean_up = True
 
         # Make sure this isn't already deployed.
         deployed_versions = self.zappa.get_lambda_function_versions(self.lambda_name)
         if len(deployed_versions) == 0:
-            raise ClickException("This application " + click.style("isn't deployed yet", fg="red") + " - did you mean to call " + click.style("deploy", bold=True) + "?")
+            raise ClickException("This application " + click.style("isn't deployed yet", fg="red") +
+                                 " - did you mean to call " + click.style("deploy", bold=True) + "?")
 
         # Get install account_key to /tmp/account_key.pem
         account_key_location = self.stage_config.get('lets_encrypt_key')
@@ -1022,7 +1051,8 @@ class ZappaCLI(object):
         else:
 
             if not cert_location or not cert_key_location or not cert_chain_location:
-                raise ClickException("Can't certify a domain without " + click.style("certificate, certificate_key and certificate_chain", fg="red", bold=True) + " configured!")
+                raise ClickException("Can't certify a domain without " +
+                                     click.style("certificate, certificate_key and certificate_chain", fg="red", bold=True) + " configured!")
 
             # Read the supplied certificates.
             with open(cert_location) as f:
@@ -1058,7 +1088,8 @@ class ZappaCLI(object):
                     self.lambda_name,
                     self.api_stage
                 )
-                print("Created a new domain name. Please note that it can take up to 40 minutes for this domain to be created and propagated through AWS, but it requires no further work on your part.")
+                print("Created a new domain name. Please note that it can take up to 40 minutes for this domain to be "
+                      "created and propagated through AWS, but it requires no further work on your part.")
             else:
                 self.zappa.update_domain_name(
                     domain,
@@ -1110,9 +1141,11 @@ class ZappaCLI(object):
             version = pkg_resources.require("zappa")[0].version
             updateable = check_new_version_available(version)
             if updateable:
-                click.echo(click.style("Important!", fg="yellow", bold=True) + " A new version of " + click.style("Zappa", bold=True) + " is available!")
+                click.echo(click.style("Important!", fg="yellow", bold=True) +
+                           " A new version of " + click.style("Zappa", bold=True) + " is available!")
                 click.echo("Upgrade with: " + click.style("pip install zappa --upgrade", bold=True))
-                click.echo("Visit the project page on GitHub to see the latest changes: " + click.style("https://github.com/Miserlou/Zappa", bold=True))
+                click.echo("Visit the project page on GitHub to see the latest changes: " +
+                           click.style("https://github.com/Miserlou/Zappa", bold=True))
         except Exception as e: # pragma: no cover
             print(e)
             return
@@ -1151,7 +1184,8 @@ class ZappaCLI(object):
             self.project_name = slugify.slugify(os.getcwd().split(os.sep)[-1])[:15]
 
         if len(self.project_name) > 15: # pragma: no cover
-            click.echo(click.style("Warning", fg="red", bold=True) + "! Your " + click.style("project_name", bold=True) + " may be too long to deploy! Please make it <16 characters.")
+            click.echo(click.style("Warning", fg="red", bold=True) + "! Your " + click.style("project_name", bold=True) +
+                       " may be too long to deploy! Please make it <16 characters.")
 
         # The name of the actual AWS Lambda function, ex, 'helloworld-dev'
         # Django's slugify doesn't replace _, but this does.
@@ -1227,7 +1261,9 @@ class ZappaCLI(object):
         if self.app_function:
             self.collision_warning(self.app_function)
             if self.app_function[-3:] == '.py':
-                click.echo(click.style("Warning!", fg="yellow", bold=True) + " Your app_function is pointing to a " + click.style("file and not a function", bold=True) + "! It should probably be something like 'my_file.app', not 'my_file.py'!")
+                click.echo(click.style("Warning!", fg="yellow", bold=True) +
+                           " Your app_function is pointing to a " + click.style("file and not a function", bold=True) +
+                           "! It should probably be something like 'my_file.app', not 'my_file.py'!")
 
         return self.zappa
 
@@ -1422,7 +1458,9 @@ class ZappaCLI(object):
         ]
         for namespace_collision in namespace_collisions:
             if namespace_collision in item:
-                click.echo(click.style("Warning!", fg="yellow", bold=True) + " You may have a namespace collision with " + click.style(item, bold=True) + "! You may want to rename that file.")
+                click.echo(click.style("Warning!", fg="yellow", bold=True) +
+                           " You may have a namespace collision with " + click.style(item, bold=True) +
+                           "! You may want to rename that file.")
 
     def deploy_api_gateway(self, api_id):
         cache_cluster_enabled = self.stage_config.get('cache_cluster_enabled', False)
@@ -1448,9 +1486,13 @@ def shamelessly_promote():
     Shamelessly promote our little community.
     """
 
-    click.echo("Need " + click.style("help", fg='green', bold=True) + "? Found a " + click.style("bug", fg='green', bold=True) + "? Let us " + click.style("know", fg='green', bold=True) + "! :D")
-    click.echo("File bug reports on " + click.style("GitHub", bold=True) + " here: " + click.style("https://github.com/Miserlou/Zappa", fg='cyan', bold=True))
-    click.echo("And join our " + click.style("Slack", bold=True) + " channel here: " + click.style("https://slack.zappa.io", fg='cyan', bold=True))
+    click.echo("Need " + click.style("help", fg='green', bold=True) +
+               "? Found a " + click.style("bug", fg='green', bold=True) +
+               "? Let us " + click.style("know", fg='green', bold=True) + "! :D")
+    click.echo("File bug reports on " + click.style("GitHub", bold=True) + " here: "
+               + click.style("https://github.com/Miserlou/Zappa", fg='cyan', bold=True))
+    click.echo("And join our " + click.style("Slack", bold=True) + " channel here: "
+               + click.style("https://slack.zappa.io", fg='cyan', bold=True))
     click.echo("Love!,")
     click.echo(" ~ Team " + click.style("Zappa", bold=True) + "!")
 
