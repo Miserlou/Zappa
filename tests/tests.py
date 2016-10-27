@@ -27,12 +27,20 @@ def random_string(length):
 class TestZappa(unittest.TestCase):
     def setUp(self):
         self.sleep_patch = mock.patch('time.sleep', return_value=None)
+        # Tests expect us-east-1.
+        # If the user has set a different region in env variables, we set it aside for now and use us-east-1
+        self.users_current_region_name = os.environ.get('AWS_DEFAULT_REGION', None)
+        os.environ['AWS_DEFAULT_REGION'] = 'us-east-1'
         if not os.environ.get('PLACEBO_MODE') == 'record':
             self.sleep_patch.start()
 
     def tearDown(self):
         if not os.environ.get('PLACEBO_MODE') == 'record':
             self.sleep_patch.stop()
+        del os.environ['AWS_DEFAULT_REGION']
+        if self.users_current_region_name is not None:
+            # Give the user their AWS region back, we're done testing with us-east-1.
+            os.environ['AWS_DEFAULT_REGION'] = self.users_current_region_name
 
     ##
     # Sanity Tests
@@ -159,16 +167,84 @@ class TestZappa(unittest.TestCase):
         arn, updated = z.create_iam_roles()
         self.assertEqual(arn, "arn:aws:iam::123:role/{}".format(z.role_name))
 
-    @placebo_session
-    def test_create_api_gateway_routes(self, session):
-        z = Zappa(session)
+    def test_create_api_gateway_routes_with_different_auth_methods(self):
+        z = Zappa()
         z.parameter_depth = 1
         z.integration_response_codes = [200]
         z.method_response_codes = [200]
         z.http_methods = ['GET']
         z.credentials_arn = 'arn:aws:iam::12345:role/ZappaLambdaExecution'
         lambda_arn = 'arn:aws:lambda:us-east-1:12345:function:helloworld'
-        z.create_api_gateway_routes(lambda_arn)
+
+        # No auth at all
+        z.create_stack_template(lambda_arn, 'helloworld', False, {}, False, None)
+        parsable_template = json.loads(z.cf_template.to_json())
+        self.assertEqual("NONE", parsable_template["Resources"]["GET0"]["Properties"]["AuthorizationType"])
+        self.assertEqual("NONE", parsable_template["Resources"]["GET1"]["Properties"]["AuthorizationType"])
+        self.assertEqual(False, parsable_template["Resources"]["GET0"]["Properties"]["ApiKeyRequired"])
+        self.assertEqual(False, parsable_template["Resources"]["GET1"]["Properties"]["ApiKeyRequired"])
+
+        # IAM auth
+        z.create_stack_template(lambda_arn, 'helloworld', False, {}, True, None)
+        parsable_template = json.loads(z.cf_template.to_json())
+        self.assertEqual("AWS_IAM", parsable_template["Resources"]["GET0"]["Properties"]["AuthorizationType"])
+        self.assertEqual("AWS_IAM", parsable_template["Resources"]["GET1"]["Properties"]["AuthorizationType"])
+        self.assertEqual(False, parsable_template["Resources"]["GET0"]["Properties"]["ApiKeyRequired"])
+        self.assertEqual(False, parsable_template["Resources"]["GET1"]["Properties"]["ApiKeyRequired"])
+
+        # API Key auth
+        z.create_stack_template(lambda_arn, 'helloworld', True, {}, True, None)
+        parsable_template = json.loads(z.cf_template.to_json())
+        self.assertEqual("AWS_IAM", parsable_template["Resources"]["GET0"]["Properties"]["AuthorizationType"])
+        self.assertEqual("AWS_IAM", parsable_template["Resources"]["GET1"]["Properties"]["AuthorizationType"])
+        self.assertEqual(True, parsable_template["Resources"]["GET0"]["Properties"]["ApiKeyRequired"])
+        self.assertEqual(True, parsable_template["Resources"]["GET1"]["Properties"]["ApiKeyRequired"])
+
+        # Authorizer and IAM
+        authorizer = {
+            "function": "runapi.authorization.gateway_authorizer.evaluate_token",
+            "result_ttl": 300,
+            "token_header": "Authorization",
+            "validation_expression": "xxx"
+        }
+        z.create_stack_template(lambda_arn, 'helloworld', False, {}, True, authorizer)
+        parsable_template = json.loads(z.cf_template.to_json())
+        self.assertEqual("AWS_IAM", parsable_template["Resources"]["GET0"]["Properties"]["AuthorizationType"])
+        self.assertEqual("AWS_IAM", parsable_template["Resources"]["GET1"]["Properties"]["AuthorizationType"])
+        with self.assertRaises(KeyError):
+            parsable_template["Resources"]["Authorizer"]
+
+        # Authorizer with validation expression
+        invocations_uri = 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/' + lambda_arn + '/invocations'
+        z.create_stack_template(lambda_arn, 'helloworld', False, {}, False, authorizer)
+        parsable_template = json.loads(z.cf_template.to_json())
+        self.assertEqual("CUSTOM", parsable_template["Resources"]["GET0"]["Properties"]["AuthorizationType"])
+        self.assertEqual("CUSTOM", parsable_template["Resources"]["GET1"]["Properties"]["AuthorizationType"])
+        self.assertEqual("TOKEN", parsable_template["Resources"]["Authorizer"]["Properties"]["Type"])
+        self.assertEqual("ZappaAuthorizer", parsable_template["Resources"]["Authorizer"]["Properties"]["Name"])
+        self.assertEqual(300, parsable_template["Resources"]["Authorizer"]["Properties"]["AuthorizerResultTtlInSeconds"])
+        self.assertEqual(invocations_uri, parsable_template["Resources"]["Authorizer"]["Properties"]["AuthorizerUri"])
+        self.assertEqual(z.credentials_arn, parsable_template["Resources"]["Authorizer"]["Properties"]["AuthorizerCredentials"])
+        self.assertEqual("xxx", parsable_template["Resources"]["Authorizer"]["Properties"]["IdentityValidationExpression"])
+
+        # Authorizer without validation expression
+        authorizer.pop('validation_expression', None)
+        z.create_stack_template(lambda_arn, 'helloworld', False, {}, False, authorizer)
+        parsable_template = json.loads(z.cf_template.to_json())
+        self.assertEqual("CUSTOM", parsable_template["Resources"]["GET0"]["Properties"]["AuthorizationType"])
+        self.assertEqual("CUSTOM", parsable_template["Resources"]["GET1"]["Properties"]["AuthorizationType"])
+        self.assertEqual("TOKEN", parsable_template["Resources"]["Authorizer"]["Properties"]["Type"])
+        with self.assertRaises(KeyError):
+            parsable_template["Resources"]["Authorizer"]["Properties"]["IdentityValidationExpression"]
+
+        # Authorizer with arn
+        authorizer = {
+            "arn": "arn:aws:lambda:us-east-1:123456789012:function:my-function",
+        }
+        z.create_stack_template(lambda_arn, 'helloworld', False, {}, False, authorizer)
+        parsable_template = json.loads(z.cf_template.to_json())
+        self.assertEqual('arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:123456789012:function:my-function/invocations', parsable_template["Resources"]["Authorizer"]["Properties"]["AuthorizerUri"])
+
 
     @placebo_session
     def test_get_api_url(self, session):
@@ -246,84 +322,133 @@ class TestZappa(unittest.TestCase):
 
     def test_wsgi_event(self):
 
+        ## This is a pre-proxy+ event
+        # event = {
+        #     "body": "",
+        #     "headers": {
+        #         "Via": "1.1 e604e934e9195aaf3e36195adbcb3e18.cloudfront.net (CloudFront)",
+        #         "Accept-Language": "en-US,en;q=0.5",
+        #         "Accept-Encoding": "gzip",
+        #         "CloudFront-Is-SmartTV-Viewer": "false",
+        #         "CloudFront-Forwarded-Proto": "https",
+        #         "X-Forwarded-For": "109.81.209.118, 216.137.58.43",
+        #         "CloudFront-Viewer-Country": "CZ",
+        #         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        #         "X-Forwarded-Proto": "https",
+        #         "X-Amz-Cf-Id": "LZeP_TZxBgkDt56slNUr_H9CHu1Us5cqhmRSswOh1_3dEGpks5uW-g==",
+        #         "CloudFront-Is-Tablet-Viewer": "false",
+        #         "X-Forwarded-Port": "443",
+        #         "CloudFront-Is-Mobile-Viewer": "false",
+        #         "CloudFront-Is-Desktop-Viewer": "true",
+        #         "Content-Type": "application/json"
+        #     },
+        #     "params": {
+        #         "parameter_1": "asdf1",
+        #         "parameter_2": "asdf2",
+        #     },
+        #     "method": "POST",
+        #     "query": {
+        #         "dead": "beef"
+        #     }
+        # }
+
         event = {
-            "body": "",
-            "headers": {
-                "Via": "1.1 e604e934e9195aaf3e36195adbcb3e18.cloudfront.net (CloudFront)",
-                "Accept-Language": "en-US,en;q=0.5",
-                "Accept-Encoding": "gzip",
-                "CloudFront-Is-SmartTV-Viewer": "false",
-                "CloudFront-Forwarded-Proto": "https",
-                "X-Forwarded-For": "109.81.209.118, 216.137.58.43",
-                "CloudFront-Viewer-Country": "CZ",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                "X-Forwarded-Proto": "https",
-                "X-Amz-Cf-Id": "LZeP_TZxBgkDt56slNUr_H9CHu1Us5cqhmRSswOh1_3dEGpks5uW-g==",
-                "CloudFront-Is-Tablet-Viewer": "false",
-                "X-Forwarded-Port": "443",
-                "CloudFront-Is-Mobile-Viewer": "false",
-                "CloudFront-Is-Desktop-Viewer": "true",
-                "Content-Type": "application/json"
-            },
-            "params": {
-                "parameter_1": "asdf1",
-                "parameter_2": "asdf2",
-            },
-            "method": "POST",
-            "query": {
-                "dead": "beef"
+            u'body': None,
+            u'resource': u'/',
+            u'requestContext': {
+                u'resourceId': u'6cqjw9qu0b',
+                u'apiId': u'9itr2lba55',
+                u'resourcePath': u'/',
+                u'httpMethod': u'GET',
+                u'requestId': u'c17cb1bf-867c-11e6-b938-ed697406e3b5',
+                u'accountId': u'724336686645',
+                u'identity': {
+                    u'apiKey': None,
+                    u'userArn': None,
+                    u'cognitoAuthenticationType': None,
+                    u'caller': None,
+                    u'userAgent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:48.0) Gecko/20100101 Firefox/48.0',
+                    u'user': None,
+                    u'cognitoIdentityPoolId': None,
+                    u'cognitoIdentityId': None,
+                    u'cognitoAuthenticationProvider': None,
+                    u'sourceIp': u'50.191.225.98',
+                    u'accountId': None,
+                    },
+                u'stage': u'devorr',
+                },
+            u'queryStringParameters': None,
+            u'httpMethod': u'GET',
+            u'pathParameters': None,
+            u'headers': {
+                u'Via': u'1.1 6801928d54163af944bf854db8d5520e.cloudfront.net (CloudFront)',
+                u'Accept-Language': u'en-US,en;q=0.5',
+                u'Accept-Encoding': u'gzip, deflate, br',
+                u'CloudFront-Is-SmartTV-Viewer': u'false',
+                u'CloudFront-Forwarded-Proto': u'https',
+                u'X-Forwarded-For': u'50.191.225.98, 204.246.168.101',
+                u'CloudFront-Viewer-Country': u'US',
+                u'Accept': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                u'Upgrade-Insecure-Requests': u'1',
+                u'Host': u'9itr2lba55.execute-api.us-east-1.amazonaws.com',
+                u'X-Forwarded-Proto': u'https',
+                u'X-Amz-Cf-Id': u'qgNdqKT0_3RMttu5KjUdnvHI3OKm1BWF8mGD2lX8_rVrJQhhp-MLDw==',
+                u'CloudFront-Is-Tablet-Viewer': u'false',
+                u'X-Forwarded-Port': u'443',
+                u'User-Agent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:48.0) Gecko/20100101 Firefox/48.0',
+                u'CloudFront-Is-Mobile-Viewer': u'false',
+                u'CloudFront-Is-Desktop-Viewer': u'true',
+                },
+            u'stageVariables': None,
+            u'path': u'/',
             }
-        }
+
         request = create_wsgi_request(event)
 
-    def test_wsgi_path_info(self):
-        # Test no parameters (site.com/)
-        event = {
-            "body": {},
-            "headers": {},
-            "params": {},
-            "method": "GET",
-            "query": {}
-        }
+    # def test_wsgi_path_info(self):
+    #     # Test no parameters (site.com/)
+    #     event = {
+    #         "body": {},
+    #         "headers": {},
+    #         "pathParameters": {},
+    #         "path": u'/',
+    #         "httpMethod": "GET",
+    #         "queryStringParameters": {}
+    #     }
 
-        request = create_wsgi_request(event, trailing_slash=True)
-        self.assertEqual("/", request['PATH_INFO'])
+    #     request = create_wsgi_request(event, trailing_slash=True)
+    #     self.assertEqual("/", request['PATH_INFO'])
 
-        request = create_wsgi_request(event, trailing_slash=False)
-        self.assertEqual("/", request['PATH_INFO'])
+    #     request = create_wsgi_request(event, trailing_slash=False)
+    #     self.assertEqual("/", request['PATH_INFO'])
 
-        # Test parameters (site.com/asdf1/asdf2 or site.com/asdf1/asdf2/)
-        event = {
-            "body": {},
-            "headers": {},
-            "params": {
-                "parameter_1": "asdf1",
-                "parameter_2": "asdf2",
-            },
-            "method": "GET",
-            "query": {}
-        }
+    #     # Test parameters (site.com/asdf1/asdf2 or site.com/asdf1/asdf2/)
+    #     event_asdf2 = {u'body': None, u'resource': u'/{proxy+}', u'requestContext': {u'resourceId': u'dg451y', u'apiId': u'79gqbxq31c', u'resourcePath': u'/{proxy+}', u'httpMethod': u'GET', u'requestId': u'766df67f-8991-11e6-b2c4-d120fedb94e5', u'accountId': u'724336686645', u'identity': {u'apiKey': None, u'userArn': None, u'cognitoAuthenticationType': None, u'caller': None, u'userAgent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:49.0) Gecko/20100101 Firefox/49.0', u'user': None, u'cognitoIdentityPoolId': None, u'cognitoIdentityId': None, u'cognitoAuthenticationProvider': None, u'sourceIp': u'96.90.37.59', u'accountId': None}, u'stage': u'devorr'}, u'queryStringParameters': None, u'httpMethod': u'GET', u'pathParameters': {u'proxy': u'asdf1/asdf2'}, u'headers': {u'Via': u'1.1 b2aeb492548a8a2d4036401355f928dd.cloudfront.net (CloudFront)', u'Accept-Language': u'en-US,en;q=0.5', u'Accept-Encoding': u'gzip, deflate, br', u'X-Forwarded-Port': u'443', u'X-Forwarded-For': u'96.90.37.59, 54.240.144.50', u'CloudFront-Viewer-Country': u'US', u'Accept': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', u'Upgrade-Insecure-Requests': u'1', u'Host': u'79gqbxq31c.execute-api.us-east-1.amazonaws.com', u'X-Forwarded-Proto': u'https', u'X-Amz-Cf-Id': u'BBFP-RhGDrQGOzoCqjnfB2I_YzWt_dac9S5vBcSAEaoM4NfYhAQy7Q==', u'User-Agent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:49.0) Gecko/20100101 Firefox/49.0', u'CloudFront-Forwarded-Proto': u'https'}, u'stageVariables': None, u'path': u'/asdf1/asdf2'}
+    #     event_asdf2_slash = {u'body': None, u'resource': u'/{proxy+}', u'requestContext': {u'resourceId': u'dg451y', u'apiId': u'79gqbxq31c', u'resourcePath': u'/{proxy+}', u'httpMethod': u'GET', u'requestId': u'd6fda925-8991-11e6-8bd8-b5ec6db19d57', u'accountId': u'724336686645', u'identity': {u'apiKey': None, u'userArn': None, u'cognitoAuthenticationType': None, u'caller': None, u'userAgent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:49.0) Gecko/20100101 Firefox/49.0', u'user': None, u'cognitoIdentityPoolId': None, u'cognitoIdentityId': None, u'cognitoAuthenticationProvider': None, u'sourceIp': u'96.90.37.59', u'accountId': None}, u'stage': u'devorr'}, u'queryStringParameters': None, u'httpMethod': u'GET', u'pathParameters': {u'proxy': u'asdf1/asdf2'}, u'headers': {u'Via': u'1.1 c70173a50d0076c99b5e680eb32d40bb.cloudfront.net (CloudFront)', u'Accept-Language': u'en-US,en;q=0.5', u'Accept-Encoding': u'gzip, deflate, br', u'X-Forwarded-Port': u'443', u'X-Forwarded-For': u'96.90.37.59, 54.240.144.53', u'CloudFront-Viewer-Country': u'US', u'Accept': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', u'Upgrade-Insecure-Requests': u'1', u'Host': u'79gqbxq31c.execute-api.us-east-1.amazonaws.com', u'X-Forwarded-Proto': u'https', u'Cookie': u'zappa=AQ4', u'X-Amz-Cf-Id': u'aU_i-iuT3llVUfXv2zv6uU-m77Oga7ANhd5ZYrCoqXBy4K7I2x3FZQ==', u'User-Agent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:49.0) Gecko/20100101 Firefox/49.0', u'CloudFront-Forwarded-Proto': u'https'}, u'stageVariables': None, u'path': u'/asdf1/asdf2/'}
 
-        request = create_wsgi_request(event, trailing_slash=True)
-        self.assertEqual("/asdf1/asdf2/", request['PATH_INFO'])
+    #     request = create_wsgi_request(event, trailing_slash=True)
+    #     self.assertEqual("/asdf1/asdf2/", request['PATH_INFO'])
 
-        request = create_wsgi_request(event, trailing_slash=False)
-        self.assertEqual("/asdf1/asdf2", request['PATH_INFO'])
+    #     request = create_wsgi_request(event, trailing_slash=False)
+    #     self.assertEqual("/asdf1/asdf2", request['PATH_INFO'])
 
-        request = create_wsgi_request(event, trailing_slash=False, script_name='asdf1')
-        self.assertEqual("/asdf1/asdf2", request['PATH_INFO'])
+    #     request = create_wsgi_request(event, trailing_slash=False, script_name='asdf1')
+    #     self.assertEqual("/asdf1/asdf2", request['PATH_INFO'])
 
     def test_wsgi_logging(self):
-        event = {
-            "body": {},
-            "headers": {},
-            "params": {
-                "parameter_1": "asdf1",
-                "parameter_2": "asdf2",
-            },
-            "method": "GET",
-            "query": {}
-        }
+        # event = {
+        #     "body": {},
+        #     "headers": {},
+        #     "params": {
+        #         "parameter_1": "asdf1",
+        #         "parameter_2": "asdf2",
+        #     },
+        #     "httpMethod": "GET",
+        #     "query": {}
+        # }
+
+        event = {u'body': None, u'resource': u'/{proxy+}', u'requestContext': {u'resourceId': u'dg451y', u'apiId': u'79gqbxq31c', u'resourcePath': u'/{proxy+}', u'httpMethod': u'GET', u'requestId': u'766df67f-8991-11e6-b2c4-d120fedb94e5', u'accountId': u'724336686645', u'identity': {u'apiKey': None, u'userArn': None, u'cognitoAuthenticationType': None, u'caller': None, u'userAgent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:49.0) Gecko/20100101 Firefox/49.0', u'user': None, u'cognitoIdentityPoolId': None, u'cognitoIdentityId': None, u'cognitoAuthenticationProvider': None, u'sourceIp': u'96.90.37.59', u'accountId': None}, u'stage': u'devorr'}, u'queryStringParameters': None, u'httpMethod': u'GET', u'pathParameters': {u'proxy': u'asdf1/asdf2'}, u'headers': {u'Via': u'1.1 b2aeb492548a8a2d4036401355f928dd.cloudfront.net (CloudFront)', u'Accept-Language': u'en-US,en;q=0.5', u'Accept-Encoding': u'gzip, deflate, br', u'X-Forwarded-Port': u'443', u'X-Forwarded-For': u'96.90.37.59, 54.240.144.50', u'CloudFront-Viewer-Country': u'US', u'Accept': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', u'Upgrade-Insecure-Requests': u'1', u'Host': u'79gqbxq31c.execute-api.us-east-1.amazonaws.com', u'X-Forwarded-Proto': u'https', u'X-Amz-Cf-Id': u'BBFP-RhGDrQGOzoCqjnfB2I_YzWt_dac9S5vBcSAEaoM4NfYhAQy7Q==', u'User-Agent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:49.0) Gecko/20100101 Firefox/49.0', u'CloudFront-Forwarded-Proto': u'https'}, u'stageVariables': None, u'path': u'/asdf1/asdf2'}
+
         environ = create_wsgi_request(event, trailing_slash=False)
         response_tuple = collections.namedtuple('Response', ['status_code', 'content'])
         response = response_tuple(200, 'hello')
@@ -331,7 +456,80 @@ class TestZappa(unittest.TestCase):
         le = common_log(environ, response, response_time=False)
 
     def test_wsgi_multipart(self):
-        event = {u'body': u'LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS03Njk1MjI4NDg0Njc4MTc2NTgwNjMwOTYxDQpDb250ZW50LURpc3Bvc2l0aW9uOiBmb3JtLWRhdGE7IG5hbWU9Im15c3RyaW5nIg0KDQpkZGQNCi0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tNzY5NTIyODQ4NDY3ODE3NjU4MDYzMDk2MS0tDQo=', u'headers': {u'Content-Type': u'multipart/form-data; boundary=---------------------------7695228484678176580630961', u'Via': u'1.1 38205a04d96d60185e88658d3185ccee.cloudfront.net (CloudFront)', u'Accept-Language': u'en-US,en;q=0.5', u'Accept-Encoding': u'gzip, deflate, br', u'CloudFront-Is-SmartTV-Viewer': u'false', u'CloudFront-Forwarded-Proto': u'https', u'X-Forwarded-For': u'71.231.27.57, 104.246.180.51', u'CloudFront-Viewer-Country': u'US', u'Accept': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', u'User-Agent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:45.0) Gecko/20100101 Firefox/45.0', u'Host': u'xo2z7zafjh.execute-api.us-east-1.amazonaws.com', u'X-Forwarded-Proto': u'https', u'Cookie': u'zappa=AQ4', u'CloudFront-Is-Tablet-Viewer': u'false', u'X-Forwarded-Port': u'443', u'Referer': u'https://xo8z7zafjh.execute-api.us-east-1.amazonaws.com/former/post', u'CloudFront-Is-Mobile-Viewer': u'false', u'X-Amz-Cf-Id': u'31zxcUcVyUxBOMk320yh5NOhihn5knqrlYQYpGGyOngKKwJb0J0BAQ==', u'CloudFront-Is-Desktop-Viewer': u'true'}, u'params': {u'parameter_1': u'post'}, u'method': u'POST', u'query': {}}
+        #event = {u'body': u'LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS03Njk1MjI4NDg0Njc4MTc2NTgwNjMwOTYxDQpDb250ZW50LURpc3Bvc2l0aW9uOiBmb3JtLWRhdGE7IG5hbWU9Im15c3RyaW5nIg0KDQpkZGQNCi0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tNzY5NTIyODQ4NDY3ODE3NjU4MDYzMDk2MS0tDQo=', u'headers': {u'Content-Type': u'multipart/form-data; boundary=---------------------------7695228484678176580630961', u'Via': u'1.1 38205a04d96d60185e88658d3185ccee.cloudfront.net (CloudFront)', u'Accept-Language': u'en-US,en;q=0.5', u'Accept-Encoding': u'gzip, deflate, br', u'CloudFront-Is-SmartTV-Viewer': u'false', u'CloudFront-Forwarded-Proto': u'https', u'X-Forwarded-For': u'71.231.27.57, 104.246.180.51', u'CloudFront-Viewer-Country': u'US', u'Accept': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', u'User-Agent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:45.0) Gecko/20100101 Firefox/45.0', u'Host': u'xo2z7zafjh.execute-api.us-east-1.amazonaws.com', u'X-Forwarded-Proto': u'https', u'Cookie': u'zappa=AQ4', u'CloudFront-Is-Tablet-Viewer': u'false', u'X-Forwarded-Port': u'443', u'Referer': u'https://xo8z7zafjh.execute-api.us-east-1.amazonaws.com/former/post', u'CloudFront-Is-Mobile-Viewer': u'false', u'X-Amz-Cf-Id': u'31zxcUcVyUxBOMk320yh5NOhihn5knqrlYQYpGGyOngKKwJb0J0BAQ==', u'CloudFront-Is-Desktop-Viewer': u'true'}, u'params': {u'parameter_1': u'post'}, u'method': u'POST', u'query': {}}
+
+        event = {
+            u'body': u'LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS03Njk1MjI4NDg0Njc4MTc2NTgwNjMwOTYxDQpDb250ZW50LURpc3Bvc2l0aW9uOiBmb3JtLWRhdGE7IG5hbWU9Im15c3RyaW5nIg0KDQpkZGQNCi0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tNzY5NTIyODQ4NDY3ODE3NjU4MDYzMDk2MS0tDQo=',
+            u'resource': u'/',
+            u'requestContext': {
+                u'resourceId': u'6cqjw9qu0b',
+                u'apiId': u'9itr2lba55',
+                u'resourcePath': u'/',
+                u'httpMethod': u'POST',
+                u'requestId': u'c17cb1bf-867c-11e6-b938-ed697406e3b5',
+                u'accountId': u'724336686645',
+                u'identity': {
+                    u'apiKey': None,
+                    u'userArn': None,
+                    u'cognitoAuthenticationType': None,
+                    u'caller': None,
+                    u'userAgent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:48.0) Gecko/20100101 Firefox/48.0',
+                    u'user': None,
+                    u'cognitoIdentityPoolId': None,
+                    u'cognitoIdentityId': None,
+                    u'cognitoAuthenticationProvider': None,
+                    u'sourceIp': u'50.191.225.98',
+                    u'accountId': None,
+                    },
+                u'stage': u'devorr',
+                },
+            u'queryStringParameters': None,
+            u'httpMethod': u'POST',
+            u'pathParameters': None,
+            u'headers': {u'Content-Type': u'multipart/form-data; boundary=---------------------------7695228484678176580630961', u'Via': u'1.1 38205a04d96d60185e88658d3185ccee.cloudfront.net (CloudFront)', u'Accept-Language': u'en-US,en;q=0.5', u'Accept-Encoding': u'gzip, deflate, br', u'CloudFront-Is-SmartTV-Viewer': u'false', u'CloudFront-Forwarded-Proto': u'https', u'X-Forwarded-For': u'71.231.27.57, 104.246.180.51', u'CloudFront-Viewer-Country': u'US', u'Accept': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', u'User-Agent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:45.0) Gecko/20100101 Firefox/45.0', u'Host': u'xo2z7zafjh.execute-api.us-east-1.amazonaws.com', u'X-Forwarded-Proto': u'https', u'Cookie': u'zappa=AQ4', u'CloudFront-Is-Tablet-Viewer': u'false', u'X-Forwarded-Port': u'443', u'Referer': u'https://xo8z7zafjh.execute-api.us-east-1.amazonaws.com/former/post', u'CloudFront-Is-Mobile-Viewer': u'false', u'X-Amz-Cf-Id': u'31zxcUcVyUxBOMk320yh5NOhihn5knqrlYQYpGGyOngKKwJb0J0BAQ==', u'CloudFront-Is-Desktop-Viewer': u'true'},
+            u'stageVariables': None,
+            u'path': u'/',
+            }
+
+        environ = create_wsgi_request(event, trailing_slash=False)
+        response_tuple = collections.namedtuple('Response', ['status_code', 'content'])
+        response = response_tuple(200, 'hello')
+
+
+    def test_wsgi_without_body(self):
+        event = {
+            u'body': None,
+            u'resource': u'/',
+            u'requestContext': {
+                u'resourceId': u'6cqjw9qu0b',
+                u'apiId': u'9itr2lba55',
+                u'resourcePath': u'/',
+                u'httpMethod': u'POST',
+                u'requestId': u'c17cb1bf-867c-11e6-b938-ed697406e3b5',
+                u'accountId': u'724336686645',
+                u'identity': {
+                    u'apiKey': None,
+                    u'userArn': None,
+                    u'cognitoAuthenticationType': None,
+                    u'caller': None,
+                    u'userAgent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:48.0) Gecko/20100101 Firefox/48.0',
+                    u'user': None,
+                    u'cognitoIdentityPoolId': None,
+                    u'cognitoIdentityId': None,
+                    u'cognitoAuthenticationProvider': None,
+                    u'sourceIp': u'50.191.225.98',
+                    u'accountId': None,
+                    },
+                u'stage': u'devorr',
+                },
+            u'queryStringParameters': None,
+            u'httpMethod': u'POST',
+            u'pathParameters': None,
+            u'headers': {u'Via': u'1.1 38205a04d96d60185e88658d3185ccee.cloudfront.net (CloudFront)', u'Accept-Language': u'en-US,en;q=0.5', u'Accept-Encoding': u'gzip, deflate, br', u'CloudFront-Is-SmartTV-Viewer': u'false', u'CloudFront-Forwarded-Proto': u'https', u'X-Forwarded-For': u'71.231.27.57, 104.246.180.51', u'CloudFront-Viewer-Country': u'US', u'Accept': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', u'User-Agent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:45.0) Gecko/20100101 Firefox/45.0', u'Host': u'xo2z7zafjh.execute-api.us-east-1.amazonaws.com', u'X-Forwarded-Proto': u'https', u'Cookie': u'zappa=AQ4', u'CloudFront-Is-Tablet-Viewer': u'false', u'X-Forwarded-Port': u'443', u'Referer': u'https://xo8z7zafjh.execute-api.us-east-1.amazonaws.com/former/post', u'CloudFront-Is-Mobile-Viewer': u'false', u'X-Amz-Cf-Id': u'31zxcUcVyUxBOMk320yh5NOhihn5knqrlYQYpGGyOngKKwJb0J0BAQ==', u'CloudFront-Is-Desktop-Viewer': u'true'},
+            u'stageVariables': None,
+            u'path': u'/',
+            }
+
         environ = create_wsgi_request(event, trailing_slash=False)
         response_tuple = collections.namedtuple('Response', ['status_code', 'content'])
         response = response_tuple(200, 'hello')
@@ -382,6 +580,20 @@ class TestZappa(unittest.TestCase):
                     u'region': u'us-east-1',
                     u'detail': {},
                     u'command': u'test_settings.command',
+                    u'source': u'aws.events',
+                    u'version': u'0',
+                    u'time': u'2016-05-10T21:05:39Z',
+                    u'id': u'0d6a6db0-d5e7-4755-93a0-750a8bf49d55',
+                    u'resources': [u'arn:aws:events:us-east-1:72333333333:rule/tests.test_app.schedule_me']
+                }
+        lh.handler(event, None)
+
+        # Test raw_command event
+        event = {
+                    u'account': u'72333333333',
+                    u'region': u'us-east-1',
+                    u'detail': {},
+                    u'raw_command': u'print("check one two")',
                     u'source': u'aws.events',
                     u'version': u'0',
                     u'time': u'2016-05-10T21:05:39Z',
@@ -478,6 +690,15 @@ class TestZappa(unittest.TestCase):
         }
         self.assertEqual("AWS KINESIS EVENT", lh.handler(event, None))
 
+        # Test Authorizer event
+        event = {u'authorizationToken': u'hubtoken1', u'methodArn': u'arn:aws:execute-api:us-west-2:1234:xxxxx/dev/GET/v1/endpoint/param', u'type': u'TOKEN'}
+        self.assertEqual("AUTHORIZER_EVENT", lh.handler(event, None))
+
+        # Ensure Zappa does return 401 if no function was defined.
+        lh.settings.AUTHORIZER_FUNCTION = None
+        with self.assertRaisesRegexp(Exception, 'Unauthorized'):
+            lh.handler(event, None)
+
         # Unhandled event
         event = {
             u'Records': [
@@ -537,6 +758,15 @@ class TestZappa(unittest.TestCase):
         argv = '-s test_settings.json derp ttt888'.split()
         zappa_cli.handle(argv)
 
+    def test_cli_error_exit_code(self):
+        # Discussion: https://github.com/Miserlou/Zappa/issues/407
+        zappa_cli = ZappaCLI()
+        # Sanity
+        argv = '-s test_settings.json status devor'.split()
+        with self.assertRaises(SystemExit) as system_exit:
+            zappa_cli.handle(argv)
+        self.assertEqual(system_exit.exception.code, 1)
+
     def test_bad_json_catch(self):
         zappa_cli = ZappaCLI()
         self.assertRaises(ValueError, zappa_cli.load_settings_file, 'tests/test_bad_settings.json')
@@ -544,6 +774,11 @@ class TestZappa(unittest.TestCase):
     def test_bad_stage_name_catch(self):
         zappa_cli = ZappaCLI()
         self.assertRaises(ValueError, zappa_cli.load_settings, 'tests/test_bad_stage_name_settings.json')
+
+    def test_bad_environment_vars_catch(self):
+        zappa_cli = ZappaCLI()
+        zappa_cli.api_stage = 'ttt888'
+        self.assertRaises(ValueError, zappa_cli.load_settings, 'tests/test_bad_environment_vars.json')
 
     @placebo_session
     def test_cli_aws(self, session):
@@ -599,7 +834,7 @@ class TestZappa(unittest.TestCase):
 
     def test_domain_name_match(self):
         # Simple sanity check
-        zone = Zappa._get_best_match_zone(all_zones={ 'HostedZones': [
+        zone = Zappa.get_best_match_zone(all_zones={ 'HostedZones': [
             {
                 'Name': 'example.com.au.',
                 'Id': 'zone-correct'
@@ -609,7 +844,7 @@ class TestZappa(unittest.TestCase):
         assert zone == 'zone-correct'
 
         # No match test
-        zone = Zappa._get_best_match_zone(all_zones={'HostedZones': [
+        zone = Zappa.get_best_match_zone(all_zones={'HostedZones': [
             {
                 'Name': 'example.com.au.',
                 'Id': 'zone-incorrect'
@@ -619,7 +854,7 @@ class TestZappa(unittest.TestCase):
         assert zone is None
 
         # More involved, better match should win.
-        zone = Zappa._get_best_match_zone(all_zones={'HostedZones': [
+        zone = Zappa.get_best_match_zone(all_zones={'HostedZones': [
             {
                 'Name': 'example.com.au.',
                 'Id': 'zone-incorrect'
@@ -776,6 +1011,15 @@ USE_TZ = True
         zappa = Zappa()
         zappa.human_size(1)
         zappa.human_size(9999999999999)
+
+    def test_event_name(self):
+        zappa = Zappa()
+        truncated = zappa.get_event_name("basldfkjalsdkfjalsdkfjaslkdfjalsdkfjadlsfkjasdlfkjasdlfkjasdflkjasdf-asdfasdfasdfasdfasdf", "this.is.my.dang.function.wassup.yeah.its.long")
+        self.assertTrue(len(truncated) <= 64)
+        truncated = zappa.get_event_name("basldfkjalsdkfjalsdkfjaslkdfjalsdkfjadlsfkjasdlfkjasdlfkjasdflkjasdf-asdfasdfasdfasdfasdf", "thisidoasdfaljksdfalskdjfalsdkfjasldkfjalsdkfjalsdkfjalsdfkjalasdfasdfasdfasdklfjasldkfjalsdkjfaslkdfjasldkfjasdflkjdasfskdj")
+        self.assertTrue(len(truncated) <= 64)
+        truncated = zappa.get_event_name("a", "b")
+        self.assertTrue(len(truncated) <= 64)
 
     def test_detect_dj(self):
         # Sanity

@@ -40,7 +40,7 @@ LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())
 
 
-def get_cert_and_update_domain(zappa_instance, lambda_name, api_stage, domain):
+def get_cert_and_update_domain(zappa_instance, lambda_name, api_stage, domain, clean_up=True):
     """
     Main cert installer path.
     """
@@ -84,8 +84,8 @@ def get_cert_and_update_domain(zappa_instance, lambda_name, api_stage, domain):
         print(e)
         return False
 
-    # Always clean-up.
-    cleanup()
+    if clean_up:
+        cleanup()
     return True
 
 
@@ -269,6 +269,9 @@ def get_cert(zappa_instance, log=LOGGER, CA=DEFAULT_CA):
 
         # wait for challenge to be verified
         verify_challenge(challenge['uri'])
+
+        # Challenge verified, clean up R53
+        zappa_instance.remove_dns_challenge_txt(zone_id, domain, digest)
 
     # Sign
     result = sign_certificate()

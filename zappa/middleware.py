@@ -134,16 +134,16 @@ class ZappaWSGIMiddleware(object):
 
         # If setting cookie on a 301/2,
         # return 200 and replace the content with a javascript redirector
-        content_type_header_key = [k for k, v in enumerate(new_headers) if v[0] == 'Content-Type']
-        if len(content_type_header_key) > 0:
-            if "text/html" in new_headers[content_type_header_key[0]][1]:
-                if status != '200 OK':
-                    for key, value in new_headers:
-                        if key != 'Location':
-                            continue
-                        self.redirect_content = REDIRECT_HTML.replace('REDIRECT_ME', value)
-                        status = '200 OK'
-                        break
+        # content_type_header_key = [k for k, v in enumerate(new_headers) if v[0] == 'Content-Type']
+        # if len(content_type_header_key) > 0:
+        #     if "text/html" in new_headers[content_type_header_key[0]][1]:
+        #         if status != '200 OK':
+        #             for key, value in new_headers:
+        #                 if key != 'Location':
+        #                     continue
+        #                 self.redirect_content = REDIRECT_HTML.replace('REDIRECT_ME', value)
+        #                 status = '200 OK'
+        #                 break
 
         return self.start_response(status, new_headers, exc_info)
 

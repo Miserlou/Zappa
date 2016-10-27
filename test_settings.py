@@ -25,6 +25,8 @@ AWS_EVENT_MAPPING = {
 
 ENVIRONMENT_VARIABLES={'testenv': 'envtest'}
 
+AUTHORIZER_FUNCTION='test_settings.authorizer_event'
+
 
 def prebuild_me():
     print("This is a prebuild script!")
@@ -49,6 +51,8 @@ def aws_dynamodb_event(event, content):
 def aws_kinesis_event(event, content):
     return "AWS KINESIS EVENT"
 
+def authorizer_event(event, content):
+    return "AUTHORIZER_EVENT"
 
 def command():
     print("command")
