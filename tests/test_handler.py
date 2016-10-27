@@ -37,5 +37,5 @@ class TestZappa(unittest.TestCase):
         try:
             LambdaHandler.run_function(unsupported, 'e', 'c')
             self.fail('Exception expected')
-        except RuntimeError, e:
+        except RuntimeError as e:
             pass

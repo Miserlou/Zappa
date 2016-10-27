@@ -411,7 +411,7 @@ class ZappaCLI(object):
             except botocore.client.ClientError:
                 click.echo(click.style("Failed", fg="red") + " to " + click.style("manage IAM roles", bold=True) + "!")
                 click.echo("You may " + click.style("lack the necessary AWS permissions", bold=True) + " to automatically manage a Zappa execution role.")
-                click.echo("To fix this, see here: " + click.style("https://github.com/Miserlou/Zappa#using-custom-aws-iam-roles-and-policie", bold=True))
+                click.echo("To fix this, see here: " + click.style("https://github.com/Miserlou/Zappa#using-custom-aws-iam-roles-and-policies", bold=True))
                 sys.exit(-1)
 
         # Create the Lambda Zip,
@@ -890,13 +890,13 @@ class ZappaCLI(object):
         try: # pragma: no cover
             import django
             has_django = True
-        except ImportError, e:
+        except ImportError as e:
             has_django = False
 
         try: # pragma: no cover
             import flask
             has_flask = True
-        except ImportError, e:
+        except ImportError as e:
             has_flask = False
 
         print('')
