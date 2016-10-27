@@ -80,7 +80,7 @@ and now you're server-less! _Wow!_
 
 > What do you mean "serverless"?
 
-Okay, so there still is a server - but it only has a _40 millisecond_ life cycle! Serverless in this case means **"without any permanent infrastucture."**
+Okay, so there still is a server - but it only has a _40 millisecond_ life cycle! Serverless in this case means **"without any permanent infrastructure."**
 
 With a traditional HTTP server, the server is online 24/7, processing requests one by one as they come in. If the queue of incoming requests grows too large, some requests will time out. With Zappa, **each request is given its own virtual HTTP "server"** by Amazon API Gateway. AWS handles the horizontal scaling automatically, so no requests ever time out. Each request then calls your application from a memory cache in AWS Lambda and returns the response via Python's WSGI interface. After your app returns, the "server" dies.
 
@@ -209,7 +209,7 @@ See the [example](example/) for more details.
 
 Similarly, you can have your functions execute in response to events that happen in the AWS ecosystem, such as S3 uploads, DynamoDB entries, Kinesis streams, and SNS messages.
 
-In your *zappa_settings.json* file, define your [event sources](http://docs.aws.amazon.com/lambda/latest/dg/invoking-lambda-function.html) and the function you wish to execute. For instance, this will execute `your_module.your_function` in response to new objects in your `my-bucket` S3 bucket. Note that `your_function` must accept `event` and `context` paramaters.
+In your *zappa_settings.json* file, define your [event sources](http://docs.aws.amazon.com/lambda/latest/dg/invoking-lambda-function.html) and the function you wish to execute. For instance, this will execute `your_module.your_function` in response to new objects in your `my-bucket` S3 bucket. Note that `your_function` must accept `event` and `context` parameters.
 
 ```javascript
 {
@@ -354,7 +354,7 @@ to change Zappa's behavior. Use these at your own risk!
         "callbacks": { // Call custom functions during the local Zappa deployment/update process
             "settings": "my_app.settings_callback", // After loading the settings
             "zip": "my_app.zip_callback", // After creating the package
-            "post": "my_app.post_callback", // After command has excuted
+            "post": "my_app.post_callback", // After command has executed
         },
         "cache_cluster_enabled": false, // Use APIGW cache cluster (default False)
         "cache_cluster_size": 0.5, // APIGW Cache Cluster size (default 0.5)
@@ -441,7 +441,7 @@ to change Zappa's behavior. Use these at your own risk!
 
 #### Keeping The Server Warm
 
-Zappa will automatically set up a regularly occuring execution of your application in order to keep the Lambda function warm. This can be disabled via the 'keep_warm' setting.
+Zappa will automatically set up a regularly occurring execution of your application in order to keep the Lambda function warm. This can be disabled via the 'keep_warm' setting.
 
 #### Serving Static Files / Binary Uploads
 
@@ -476,7 +476,7 @@ If you are wondering for what you would use an Authorizer, here are some potenti
 2. Decode a JWT token inline
 3. Lookup in a self-managed DB (for example DynamoDB)
 
-Zappa can be configured to call a function inside your code to do the authorization, or to call some other existing lambda function (which lets you share the authorizer between multiple lambdas). You control the behaviour by specifying either the `arn` or `function_name` values in the `authorizer` settings block.
+Zappa can be configured to call a function inside your code to do the authorization, or to call some other existing lambda function (which lets you share the authorizer between multiple lambdas). You control the behavior by specifying either the `arn` or `function_name` values in the `authorizer` settings block.
 
 
 #### Deploying to a Domain With a Let's Encrypt Certificate (DNS Auth)
@@ -595,7 +595,7 @@ By default, AWS Lambda will attempt to retry an event based (non-API Gateway, e.
 
 #### Using Custom AWS IAM Roles and Policies
 
-By default, the Zappa client will create and manage the necessary IAM policies and roles to execute Zappa applications. However, if you're using Zappa in a corporate environment or as part of a continuous integration, you may instead want to manually manage your remote execution policies instead. (You can specify which _local_ profile to use for deploying your Zappa application by defining the `profile_name` setting, which will corresepond to a profile in your AWS credentials file.)
+By default, the Zappa client will create and manage the necessary IAM policies and roles to execute Zappa applications. However, if you're using Zappa in a corporate environment or as part of a continuous integration, you may instead want to manually manage your remote execution policies instead. (You can specify which _local_ profile to use for deploying your Zappa application by defining the `profile_name` setting, which will correspond to a profile in your AWS credentials file.)
 
 To manually define the permissions policy of your Zappa execution role, you must define the following in your *zappa_settings.json*:
 
@@ -644,7 +644,7 @@ Are you using Zappa? Let us know and we'll list your site here!
 
 ## Related Projects
 
-* [lambda-packages](http://github.com/Miserlou/lambda-packages) - Precompiled C-extention packages for AWS Lambda. Used automatically by Zappa.
+* [lambda-packages](http://github.com/Miserlou/lambda-packages) - Precompiled C-extension packages for AWS Lambda. Used automatically by Zappa.
 * [zappa-cms](http://github.com/Miserlou/zappa-cms) - A tiny server-less CMS for busy hackers. Work in progress.
 * [flask-ask](https://github.com/johnwheeler/flask-ask) - A framework for building Amazon Alexa applications. Uses Zappa for deployments.
 * [zappa-file-widget](https://github.com/anush0247/zappa-file-widget) - A Django plugin for supporting binary file uploads in Django on Zappa.
@@ -689,4 +689,3 @@ Good news! We're currently available for remote and on-site consulting for small
 <p align="center">
   <a href="https://gun.io"><img src="http://i.imgur.com/M7wJipR.png" alt="Made by Gun.io"/></a>
 </p>
-
