@@ -865,7 +865,6 @@ class Zappa(object):
         )
         print('Created a new x-api-key: {}'.format(response['id']))
 
-
     def remove_api_key(self, api_id, stage_name):
         """
         Remove a generated API key for api_id and stage_name
