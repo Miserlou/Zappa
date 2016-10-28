@@ -1423,6 +1423,7 @@ class Zappa(object):
         self.unschedule_events(lambda_name=lambda_name, lambda_arn=lambda_arn, events=events, excluded_source_services=pull_services)
         for event in events:
             function = event['function']
+            function_kwargs = event.get('function_kwargs', None)
             expression = event.get('expression', None)
             event_source = event.get('event_source', None)
             name = self.get_scheduled_event_name(event, function, lambda_name)
@@ -1450,15 +1451,29 @@ class Zappa(object):
                 # Specific permissions are necessary for any trigger to work.
                 self.create_event_permission(lambda_name, 'events.amazonaws.com', rule_response['RuleArn'])
 
+                t = {
+                    'Id': 'Id' + ''.join(random.choice(string.digits) for _ in range(12)),
+                    'Arn': lambda_arn,
+                }
+
+                if function_kwargs:
+                    # We are overwriting the default CW event dict, so replace as much of it as we can and supply kwargs https://github.com/Miserlou/Zappa/issues/359
+                    arn, aws, service, region, account, resource = rule_response['RuleArn'].split(':', 5)
+                    t['Input'] = json.dumps({
+                        'detail-type': u'Scheduled Event',
+                        'source': u'aws.events',
+                        'resources': [rule_response['RuleArn']],
+                        'function_kwargs': function_kwargs,
+                        'account': account,
+                        'region': region,
+                        'detail': {},  # Cloudwatch Scheduled Events always have empty details
+                        'version': 0  # Always 0 http://docs.aws.amazon.com/AmazonCloudWatch/latest/events/CloudWatchEventsandEventPatterns.html
+                    })
+
                 # Create the CloudWatch event ARN for this function.
                 target_response = self.events_client.put_targets(
                     Rule=name,
-                    Targets=[
-                        {
-                            'Id': 'Id' + ''.join(random.choice(string.digits) for _ in range(12)),
-                            'Arn': lambda_arn,
-                        }
-                    ]
+                    Targets=[t]
                 )
 
                 if target_response['ResponseMetadata']['HTTPStatusCode'] == 200:
