@@ -814,13 +814,23 @@ class TestZappa(unittest.TestCase):
         # Test directly
         zappa_cli = ZappaCLI()
         # Via http://stackoverflow.com/questions/2617057/how-to-supply-stdin-files-and-environment-variable-inputs-to-python-unit-tests
-        inputs = ['dev', 'lmbda', 'test_settings', '']
-        input_generator = (i for i in inputs)
-        with mock.patch('__builtin__.raw_input', lambda prompt: next(input_generator)):
-            zappa_cli.init()
+        inputs = ['dev', 'lmbda', 'test_settings', 'y', '']
 
-        if os.path.isfile('zappa_settings.json'):
-            os.remove('zappa_settings.json')
+        def test_for(inputs):
+            input_generator = (i for i in inputs)
+            with mock.patch('__builtin__.raw_input', lambda prompt: next(input_generator)):
+                zappa_cli.init()
+
+            if os.path.isfile('zappa_settings.json'):
+                os.remove('zappa_settings.json')
+
+        test_for(inputs)
+        test_for(['dev', 'lmbda', 'test_settings', 'n', ''])
+        test_for(['dev', 'lmbda', 'test_settings', '', ''])
+        test_for(['dev', 'lmbda', 'test_settings', 'p', ''])
+        test_for(['dev', 'lmbda', 'test_settings', 'y', ''])
+        test_for(['dev', 'lmbda', 'test_settings', 'p', 'n'])
+
 
         # Test via handle()
         input_generator = (i for i in inputs)
