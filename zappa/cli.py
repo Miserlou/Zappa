@@ -35,7 +35,7 @@ import zipfile
 from click.exceptions import ClickException
 from dateutil import parser
 from datetime import datetime,timedelta
-from zappa import Zappa, logger
+from zappa import Zappa, logger, API_GATEWAY_REGIONS
 from util import check_new_version_available, detect_django_settings, detect_flask_apps
 
 CUSTOM_SETTINGS = [
@@ -172,16 +172,16 @@ class ZappaCLI(object):
             print("The command '{}' is not recognized. {}".format(self.command, help_message))
             return
 
-        # Make sure there isn't a new version available
-        if not self.vargs['json']:
-            self.check_for_update()
-
         # We don't have any settings yet, so make those first!
         # (Settings-based interactions will fail
         # before a project has been initialized.)
         if self.command == 'init':
             self.init()
             return
+
+        # Make sure there isn't a new version available
+        if not self.vargs['json']:
+            self.check_for_update()
 
         # Load and Validate Settings File
         self.load_settings_file(self.vargs['settings_file'])
@@ -939,17 +939,59 @@ class ZappaCLI(object):
 
         # TODO: Create VPC?
         # Memory size? Time limit?
+        # Domain? LE keys? Region?
+        # 'Advanced Settings' mode?
 
-        # Confirm
-        zappa_settings = {
-            env: {
-                's3_bucket': bucket,
-            }
-        }
-        if has_django:
-            zappa_settings[env]['django_settings'] = django_settings
+        # Globalize
+        click.echo("\nYou can optionally deploy to " + click.style("all available regions", bold=True)  + " in order to provide fast global service.")
+        click.echo("If you are using Zappa for the first time, you probably don't want to do this!")
+        global_deployment = False
+        while True:
+            global_type = raw_input("Would you like to deploy this application to " + click.style("globally", bold=True)  + "? (default 'n') [y/n/(p)rimary]: ")
+            if not global_type:
+                break
+            if global_type.lower() in ["y", "yes", "p", "primary"]:
+                global_deployment = True
+                break
+            if global_type.lower() in ["n", "no"]:
+                global_deployment = False
+                break
+
+        if global_deployment:
+            regions = API_GATEWAY_REGIONS
+            if global_type.lower() in ["p", "primary"]:
+                envs = [{env + '_' + region.replace('-', '_'): { 'aws_region': region}} for region in regions if '-1' in region]
+            else:
+                envs = [{env + '_' + region.replace('-', '_'): { 'aws_region': region}} for region in regions]
         else:
-            zappa_settings[env]['app_function'] = app_function
+            region = None # assume system default
+            envs = [{env: {}}]
+
+        zappa_settings = {}
+        for each_env in envs:
+
+            # Honestly, this could be cleaner.
+            env_name = each_env.keys()[0]
+            env_dict = each_env[env_name]
+
+            env_bucket = bucket
+            if global_deployment:
+                env_bucket = bucket.replace('-', '_') + '_' + env_name
+
+            env_zappa_settings = {
+                env_name: {
+                    's3_bucket': env_bucket,
+                }
+            }
+            if env_dict.has_key('aws_region'):
+                env_zappa_settings[env_name]['aws_region'] = env_dict.get('aws_region')
+
+            zappa_settings.update(env_zappa_settings)
+
+            if has_django:
+                zappa_settings[env_name]['django_settings'] = django_settings
+            else:
+                zappa_settings[env_name]['app_function'] = app_function
 
         import json as json # hjson is fine for loading, not fine for writing.
         zappa_settings_json = json.dumps(zappa_settings, sort_keys=True, indent=4)
@@ -957,7 +999,7 @@ class ZappaCLI(object):
         click.echo("\nOkay, here's your " + click.style("zappa_settings.js", bold=True) + ":\n")
         click.echo(click.style(zappa_settings_json, fg="yellow", bold=False))
 
-        confirm = raw_input("\nDoes this look " + click.style("okay", bold=True, fg="green")  + "? (default y) [y/n]: ") or 'yes'
+        confirm = raw_input("\nDoes this look " + click.style("okay", bold=True, fg="green")  + "? (default 'y') [y/n]: ") or 'yes'
         if confirm[0] not in ['y', 'Y', 'yes', 'YES']:
             click.echo("" + click.style("Sorry", bold=True, fg='red') + " to hear that! Please init again.")
             return
@@ -966,11 +1008,19 @@ class ZappaCLI(object):
         with open("zappa_settings.json", "w") as zappa_settings_file:
             zappa_settings_file.write(zappa_settings_json)
 
-        click.echo("\n" + click.style("Done", bold=True) + "! Now you can " + click.style("deploy", bold=True)  + " your Zappa application by executing:\n")
-        click.echo(click.style("\t$ zappa deploy %s" % env, bold=True))
+        if global_deployment:
+            click.echo("\n" + click.style("Done", bold=True) + "! You can also " + click.style("deploy all", bold=True)  + " by executing:\n")
+            click.echo(click.style("\t$ zappa deploy --all", bold=True))
 
-        click.echo("\nAfter that, you can " + click.style("update", bold=True) + " your application code with:\n")
-        click.echo(click.style("\t$ zappa update %s" % env, bold=True))
+            click.echo("\nAfter that, you can " + click.style("update", bold=True) + " your application code with:\n")
+            click.echo(click.style("\t$ zappa update --all", bold=True))
+
+        else:
+            click.echo("\n" + click.style("Done", bold=True) + "! Now you can " + click.style("deploy", bold=True)  + " your Zappa application by executing:\n")
+            click.echo(click.style("\t$ zappa deploy %s" % env, bold=True))
+
+            click.echo("\nAfter that, you can " + click.style("update", bold=True) + " your application code with:\n")
+            click.echo(click.style("\t$ zappa update %s" % env, bold=True))
 
         click.echo("\nTo learn more, check out our project page on " + click.style("GitHub", bold=True) + " here: " + click.style("https://github.com/Miserlou/Zappa", fg="cyan", bold=True))
         click.echo("and stop by our " + click.style("Slack", bold=True) + " channel here: " + click.style("http://bit.do/zappa", fg="cyan", bold=True))
@@ -1020,7 +1070,6 @@ class ZappaCLI(object):
                 from shutil import copyfile
                 copyfile(account_key_location, '/tmp/account.key')
         else:
-
             if not cert_location or not cert_key_location or not cert_chain_location:
                 raise ClickException("Can't certify a domain without " + click.style("certificate, certificate_key and certificate_chain", fg="red", bold=True) + " configured!")
 
@@ -1302,8 +1351,12 @@ class ZappaCLI(object):
                 )
 
             # Local envs
+            env_dict = {}
+            if self.aws_region:
+                env_dict['AWS_REGION'] = self.aws_region
+            env_dict.update(dict(self.environment_variables))
             settings_s = settings_s + "ENVIRONMENT_VARIABLES={0}\n".format(
-                    dict(self.environment_variables)
+                    env_dict
                 )
 
             # We can be environment-aware
