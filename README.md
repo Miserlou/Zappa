@@ -46,7 +46,7 @@
     - [Setting Integration Content-Type Aliases](#setting-integration-content-type-aliases)
     - [Catching Unhandled Exceptions](#catching-unhandled-exceptions)
     - [Using Custom AWS IAM Roles and Policies](#using-custom-aws-iam-roles-and-policies)
-    - [Globally Avaiable Server-less Architectures](#globally-avaiable-server-less-architectures)
+    - [Globally Available Server-less Architectures](#globally-available-server-less-architectures)
 - [Zappa Guides](#zappa-guides)
 - [Zappa in the Press](#zappa-in-the-press)
 - [Sites Using Zappa](#sites-using-zappa)
@@ -614,7 +614,7 @@ To manually define the permissions policy of your Zappa execution role, you must
 
 Ongoing discussion about the minimum policy requirements necessary for a Zappa deployment [can be found here](https://github.com/Miserlou/Zappa/issues/244).
 
-#### Globally Avaiable Server-less Architectures
+#### Globally Available Server-less Architectures
 
 
 <p align="center">
