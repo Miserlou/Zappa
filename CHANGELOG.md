@@ -1,5 +1,9 @@
 # Zappa Changelog
 
+## 0.28.1
+* Add "global" mode to init. Expect a blog post soon!
+* Small refactors and dependancy upgrades.
+
 ## 0.28.0
 * `--json` for machine readable status output
 * `--all` for global deployment prep
