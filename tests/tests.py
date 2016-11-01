@@ -405,6 +405,7 @@ class TestZappa(unittest.TestCase):
 
         request = create_wsgi_request(event)
 
+
     # def test_wsgi_path_info(self):
     #     # Test no parameters (site.com/)
     #     event = {
@@ -434,6 +435,20 @@ class TestZappa(unittest.TestCase):
 
     #     request = create_wsgi_request(event, trailing_slash=False, script_name='asdf1')
     #     self.assertEqual("/asdf1/asdf2", request['PATH_INFO'])
+
+    def test_wsgi_path_info_unquoted(self):
+        event = {
+                "body": {},
+                "headers": {},
+                "pathParameters": {},
+                "path": '/path%3A1', # encoded /path:1
+                "httpMethod": "GET",
+                "queryStringParameters": {},
+                "requestContext": {}
+            }
+        request = create_wsgi_request(event, trailing_slash=True)
+        self.assertEqual("/path:1", request['PATH_INFO'])
+
 
     def test_wsgi_logging(self):
         # event = {
