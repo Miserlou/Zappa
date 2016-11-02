@@ -15,11 +15,13 @@ with open(os.path.join(os.path.dirname(__file__), 'requirements.txt')) as f:
 with open(os.path.join(os.path.dirname(__file__), 'test_requirements.txt')) as f:
     test_required = f.read().splitlines()
 
-execfile('zappa/version.py')
+version = {}
+with open("rets/version.py") as fp:
+    exec(fp.read(), version)
 
 setup(
     name='zappa',
-    version=__version__,
+    version=version['__version__'],
     packages=['zappa'],
     install_requires=required,
     tests_require=test_required,
