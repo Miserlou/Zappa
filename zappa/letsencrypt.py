@@ -271,7 +271,7 @@ def get_cert(zappa_instance, log=LOGGER, CA=DEFAULT_CA):
         verify_challenge(challenge['uri'])
 
         # Challenge verified, clean up R53
-        zappa_instance.remove_dns_challenge_txt(zone_id, domain)
+        zappa_instance.remove_dns_challenge_txt(zone_id, domain, digest)
 
     # Sign
     result = sign_certificate()

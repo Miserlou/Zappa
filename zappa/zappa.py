@@ -182,9 +182,11 @@ ERROR_RESPONSE_TEMPLATE = """#set($_body = $util.parseJson($input.path('$.errorM
 REDIRECT_RESPONSE_TEMPLATE = ""
 
 # Latest list: https://docs.aws.amazon.com/general/latest/gr/rande.html#apigateway_region
-API_GATEWAY_REGIONS = ['us-east-1', 'us-east-2', 'us-west-2', 'eu-central-1', 'eu-west-1', 'ap-northeast-1', 'ap-northeast-2', 'ap-southeast-1', 'ap-southeast-2']
+API_GATEWAY_REGIONS = ['us-east-1', 'us-east-2', 'us-west-2', 'eu-central-1', 'eu-west-1', 'ap-northeast-1',
+                       'ap-northeast-2', 'ap-southeast-1', 'ap-southeast-2']
 # Latest list: https://docs.aws.amazon.com/general/latest/gr/rande.html#lambda_region
-LAMBDA_REGIONS = ['us-east-1', 'us-east-2', 'us-west-2', 'eu-central-1', 'eu-west-1', 'ap-northeast-1', 'ap-northeast-2', 'ap-southeast-1', 'ap-southeast-2']
+LAMBDA_REGIONS = ['us-east-1', 'us-east-2', 'us-west-2', 'eu-central-1', 'eu-west-1', 'ap-northeast-1',
+                  'ap-northeast-2', 'ap-southeast-1', 'ap-southeast-2']
 
 ZIP_EXCLUDES = [
     '*.exe', '*.DS_Store', '*.Python', '*.git', '.git/*', '*.zip', '*.tar.gz',
@@ -231,7 +233,6 @@ class Zappa(object):
     role_name = "ZappaLambdaExecution"
     assume_policy = ASSUME_POLICY
     attach_policy = ATTACH_POLICY
-    aws_region = 'us-east-1'
     cloudwatch_log_levels = ['OFF', 'ERROR', 'INFO']
 
     ##
@@ -241,8 +242,14 @@ class Zappa(object):
     boto_session = None
     credentials_arn = None
 
-    def __init__(self, boto_session=None, profile_name=None, aws_region=aws_region, load_credentials=True):
-        self.aws_region = aws_region
+    def __init__(self, boto_session=None, profile_name=None, aws_region=None, load_credentials=True):
+        # Set aws_region to None to use the system's region instead
+        if aws_region is None:
+            # https://github.com/Miserlou/Zappa/issues/413
+            self.aws_region = boto3.Session().region_name
+            logger.debug("Set region from boto: %s", self.aws_region)
+        else:
+            self.aws_region = aws_region
 
         # Some common invokations, such as DB migrations,
         # can take longer than the default.
@@ -421,6 +428,11 @@ class Zappa(object):
 
             for filename in files:
 
+                # Skip .pyc files for Django migrations
+                # https://github.com/Miserlou/Zappa/issues/436
+                if filename[-4:] == '.pyc' and root[-10:] == 'migrations':
+                    continue
+
                 # If there is a .pyc file in this package,
                 # we can skip the python source code as we'll just
                 # use the compiled bytecode anyway..
@@ -442,7 +454,9 @@ class Zappa(object):
             if '__init__.py' not in files:
                 tmp_init = os.path.join(temp_project_path, '__init__.py')
                 open(tmp_init, 'a').close()
-                zipf.write(tmp_init, os.path.join(root.replace(temp_project_path, ''), os.path.join(root.replace(temp_project_path, ''), '__init__.py')))
+                zipf.write(tmp_init,
+                           os.path.join(root.replace(temp_project_path, ''),
+                                        os.path.join(root.replace(temp_project_path, ''), '__init__.py')))
 
         # And, we're done!
         zipf.close()
@@ -544,7 +558,8 @@ class Zappa(object):
     # Lambda
     ##
 
-    def create_lambda_function(self, bucket, s3_key, function_name, handler, description="Zappa Deployment", timeout=30, memory_size=512, publish=True, vpc_config=None):
+    def create_lambda_function(self, bucket, s3_key, function_name, handler, description="Zappa Deployment",
+                               timeout=30, memory_size=512, publish=True, vpc_config=None):
         """
         Given a bucket and key of a valid Lambda-zip, a function name and a handler, register that Lambda function.
         """
@@ -586,7 +601,8 @@ class Zappa(object):
 
         return response['FunctionArn']
 
-    def update_lambda_configuration(self, lambda_arn, function_name, handler, description="Zappa Deployment", timeout=30, memory_size=512, publish=True, vpc_config=None):
+    def update_lambda_configuration(self, lambda_arn, function_name, handler, description="Zappa Deployment",
+                                    timeout=30, memory_size=512, publish=True, vpc_config=None):
         """
         Given an existing function ARN, update the configuration variables.
         """
@@ -610,7 +626,8 @@ class Zappa(object):
 
         return response['FunctionArn']
 
-    def invoke_lambda_function(self, function_name, payload, invocation_type='Event', log_type='Tail', client_context=None, qualifier=None):
+    def invoke_lambda_function(self, function_name, payload, invocation_type='Event', log_type='Tail',
+                               client_context=None, qualifier=None):
         """
         Directly invoke a named Lambda function with a payload.
         Returns the response.
@@ -839,8 +856,9 @@ class Zappa(object):
             #     integration_response.StatusCode = status_code
             #     integration.IntegrationResponses.append(integration_response)
 
-    def deploy_api_gateway(self, api_id, stage_name, stage_description="", description="", cache_cluster_enabled=False, cache_cluster_size='0.5', variables=None,
-                           cloudwatch_log_level='OFF', cloudwatch_data_trace=False, cloudwatch_metrics_enabled=False):
+    def deploy_api_gateway(self, api_id, stage_name, stage_description="", description="", cache_cluster_enabled=False,
+                           cache_cluster_size='0.5', variables=None, cloudwatch_log_level='OFF',
+                           cloudwatch_data_trace=False, cloudwatch_metrics_enabled=False):
         """
         Deploy the API Gateway!
 
@@ -1031,7 +1049,8 @@ class Zappa(object):
 
         auth_type = "NONE"
         if iam_authorization and authorizer:
-            logger.warn("Both IAM Authorization and Authorizer are specified, this is not possible. Setting Auth method to IAM Authorization")
+            logger.warn("Both IAM Authorization and Authorizer are specified, this is not possible. "
+                        "Setting Auth method to IAM Authorization")
             authorizer = None
             auth_type = "AWS_IAM"
         elif iam_authorization:
@@ -1116,7 +1135,9 @@ class Zappa(object):
                                                             'UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS',
                                                             'UPDATE_ROLLBACK_COMPLETE'
                                                         ]:
-                    raise EnvironmentError("Stack creation failed. Please check your CloudFormation console. You may also need to `undeploy`.")
+                    raise EnvironmentError("Stack creation failed. "
+                                           "Please check your CloudFormation console. "
+                                           "You may also need to `undeploy`.")
 
                 count = 0
                 for result in sr.paginate(StackName=name):
@@ -1222,7 +1243,9 @@ class Zappa(object):
         # and policy: https://spin.atomicobject.com/2016/04/28/route-53-hosted-zone-managment/
         # pure_zone_id = zone_id.split('/hostedzone/')[1]
 
-        # XXX: ClientError: An error occurred (InvalidChangeBatch) when calling the ChangeResourceRecordSets operation: Tried to create an alias that targets d1awfeji80d0k2.cloudfront.net., type A in zone Z1XWOQP59BYF6Z, but the alias target name does not lie within the target zone
+        # XXX: ClientError: An error occurred (InvalidChangeBatch) when calling the ChangeResourceRecordSets operation:
+        # Tried to create an alias that targets d1awfeji80d0k2.cloudfront.net., type A in zone Z1XWOQP59BYF6Z,
+        # but the alias target name does not lie within the target zone
         response = self.route53.change_resource_record_sets(
             HostedZoneId=zone_id,
             ChangeBatch={
@@ -1415,7 +1438,8 @@ class Zappa(object):
         # if default:
         #     lambda_arn = lambda_arn + ":$LATEST"
 
-        self.unschedule_events(lambda_name=lambda_name, lambda_arn=lambda_arn, events=events, excluded_source_services=pull_services)
+        self.unschedule_events(lambda_name=lambda_name, lambda_arn=lambda_arn, events=events,
+                               excluded_source_services=pull_services)
         for event in events:
             function = event['function']
             expression = event.get('expression', None)
@@ -1681,10 +1705,10 @@ class Zappa(object):
 
         """
         all_zones = self.route53.list_hosted_zones()
-        return self._get_best_match_zone(all_zones, domain)
+        return self.get_best_match_zone(all_zones, domain)
 
     @staticmethod
-    def _get_best_match_zone(all_zones, domain):
+    def get_best_match_zone(all_zones, domain):
         """Return zone id which name is closer matched with domain name."""
         zones = {zone['Name'][:-1]: zone['Id'] for zone in all_zones['HostedZones'] if zone['Name'][:-1] in domain}
         if zones:
@@ -1700,43 +1724,47 @@ class Zappa(object):
         print("Setting DNS challenge..")
         resp = self.route53.change_resource_record_sets(
             HostedZoneId=zone_id,
-            ChangeBatch={
-                'Changes': [{
-                    'Action': 'UPSERT',
-                    'ResourceRecordSet': {
-                        'Name': '_acme-challenge.{0}'.format(domain),
-                        'Type': 'TXT',
-                        'TTL': 60,
-                        'ResourceRecords': [{
-                            'Value': '"{0}"'.format(txt_challenge)
-                        }]
-                    }
-                }]
-            }
+            ChangeBatch=self.get_dns_challenge_change_batch('UPSERT', domain, txt_challenge)
         )
 
         return resp
 
-    def remove_dns_challenge_txt(self, zone_id, domain):
+    def remove_dns_challenge_txt(self, zone_id, domain, txt_challenge):
         """
         Remove DNS challenge TXT.
         """
         print("Deleting DNS challenge..")
         resp = self.route53.change_resource_record_sets(
             HostedZoneId=zone_id,
-            ChangeBatch={
-                'Changes': [{
-                    'Action': 'DELETE',
-                    'ResourceRecordSet': {
-                        'Name': '_acme-challenge.{0}'.format(domain),
-                        'Type': 'TXT',
-                    }
-                }]
-            }
+            ChangeBatch=self.get_dns_challenge_change_batch('DELETE', domain, txt_challenge)
         )
 
         return resp
 
+    @staticmethod
+    def get_dns_challenge_change_batch(action, domain, txt_challenge):
+        """
+        Given action, domain and challege, return a change batch to use with
+        route53 call.
+
+        :param action: DELETE | UPSERT
+        :param domain: domain name
+        :param txt_challenge: challenge
+        :return: change set for a given action, domain and TXT challenge.
+        """
+        return {
+            'Changes': [{
+                'Action': action,
+                'ResourceRecordSet': {
+                    'Name': '_acme-challenge.{0}'.format(domain),
+                    'Type': 'TXT',
+                    'TTL': 60,
+                    'ResourceRecords': [{
+                        'Value': '"{0}"'.format(txt_challenge)
+                    }]
+                }
+            }]
+        }
 
     ##
     # Utility
@@ -1753,11 +1781,6 @@ class Zappa(object):
         """
         # Automatically load credentials from config or environment
         if not boto_session:
-
-            # Set aws_region to None to use the system's region instead
-            if self.aws_region is None:
-                self.aws_region = boto3.Session().region_name
-                logger.debug("Set region from boto: %s", self.aws_region)
 
             # If provided, use the supplied profile name.
             if profile_name:

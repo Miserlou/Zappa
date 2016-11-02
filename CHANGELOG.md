@@ -1,5 +1,19 @@
 # Zappa Changelog
 
+## 0.28.1
+* Add "global" mode to init. Expect a blog post soon!
+* Small refactors and dependancy upgrades.
+
+## 0.28.0
+* `--json` for machine readable status output
+* `--all` for global deployment prep
+* Better exit code handling
+* Get AWS region from profile if not set in zappa_settings.json
+* Fix broken Django management command invocation
+* Add Kinesis permission
+* Add capability to specify authoriser arn
+* Various refactors and small fixes
+
 ## 0.27.1
 
 * Bump lambda-packages

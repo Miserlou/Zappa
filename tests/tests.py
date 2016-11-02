@@ -27,12 +27,20 @@ def random_string(length):
 class TestZappa(unittest.TestCase):
     def setUp(self):
         self.sleep_patch = mock.patch('time.sleep', return_value=None)
+        # Tests expect us-east-1.
+        # If the user has set a different region in env variables, we set it aside for now and use us-east-1
+        self.users_current_region_name = os.environ.get('AWS_DEFAULT_REGION', None)
+        os.environ['AWS_DEFAULT_REGION'] = 'us-east-1'
         if not os.environ.get('PLACEBO_MODE') == 'record':
             self.sleep_patch.start()
 
     def tearDown(self):
         if not os.environ.get('PLACEBO_MODE') == 'record':
             self.sleep_patch.stop()
+        del os.environ['AWS_DEFAULT_REGION']
+        if self.users_current_region_name is not None:
+            # Give the user their AWS region back, we're done testing with us-east-1.
+            os.environ['AWS_DEFAULT_REGION'] = self.users_current_region_name
 
     ##
     # Sanity Tests
@@ -397,6 +405,7 @@ class TestZappa(unittest.TestCase):
 
         request = create_wsgi_request(event)
 
+
     # def test_wsgi_path_info(self):
     #     # Test no parameters (site.com/)
     #     event = {
@@ -426,6 +435,20 @@ class TestZappa(unittest.TestCase):
 
     #     request = create_wsgi_request(event, trailing_slash=False, script_name='asdf1')
     #     self.assertEqual("/asdf1/asdf2", request['PATH_INFO'])
+
+    def test_wsgi_path_info_unquoted(self):
+        event = {
+                "body": {},
+                "headers": {},
+                "pathParameters": {},
+                "path": '/path%3A1', # encoded /path:1
+                "httpMethod": "GET",
+                "queryStringParameters": {},
+                "requestContext": {}
+            }
+        request = create_wsgi_request(event, trailing_slash=True)
+        self.assertEqual("/path:1", request['PATH_INFO'])
+
 
     def test_wsgi_logging(self):
         # event = {
@@ -806,13 +829,23 @@ class TestZappa(unittest.TestCase):
         # Test directly
         zappa_cli = ZappaCLI()
         # Via http://stackoverflow.com/questions/2617057/how-to-supply-stdin-files-and-environment-variable-inputs-to-python-unit-tests
-        inputs = ['dev', 'lmbda', 'test_settings', '']
-        input_generator = (i for i in inputs)
-        with mock.patch('__builtin__.raw_input', lambda prompt: next(input_generator)):
-            zappa_cli.init()
+        inputs = ['dev', 'lmbda', 'test_settings', 'y', '']
 
-        if os.path.isfile('zappa_settings.json'):
-            os.remove('zappa_settings.json')
+        def test_for(inputs):
+            input_generator = (i for i in inputs)
+            with mock.patch('__builtin__.raw_input', lambda prompt: next(input_generator)):
+                zappa_cli.init()
+
+            if os.path.isfile('zappa_settings.json'):
+                os.remove('zappa_settings.json')
+
+        test_for(inputs)
+        test_for(['dev', 'lmbda', 'test_settings', 'n', ''])
+        test_for(['dev', 'lmbda', 'test_settings', '', ''])
+        test_for(['dev', 'lmbda', 'test_settings', 'p', ''])
+        test_for(['dev', 'lmbda', 'test_settings', 'y', ''])
+        test_for(['dev', 'lmbda', 'test_settings', 'p', 'n'])
+
 
         # Test via handle()
         input_generator = (i for i in inputs)
@@ -826,7 +859,7 @@ class TestZappa(unittest.TestCase):
 
     def test_domain_name_match(self):
         # Simple sanity check
-        zone = Zappa._get_best_match_zone(all_zones={ 'HostedZones': [
+        zone = Zappa.get_best_match_zone(all_zones={ 'HostedZones': [
             {
                 'Name': 'example.com.au.',
                 'Id': 'zone-correct'
@@ -836,7 +869,7 @@ class TestZappa(unittest.TestCase):
         assert zone == 'zone-correct'
 
         # No match test
-        zone = Zappa._get_best_match_zone(all_zones={'HostedZones': [
+        zone = Zappa.get_best_match_zone(all_zones={'HostedZones': [
             {
                 'Name': 'example.com.au.',
                 'Id': 'zone-incorrect'
@@ -846,7 +879,7 @@ class TestZappa(unittest.TestCase):
         assert zone is None
 
         # More involved, better match should win.
-        zone = Zappa._get_best_match_zone(all_zones={'HostedZones': [
+        zone = Zappa.get_best_match_zone(all_zones={'HostedZones': [
             {
                 'Name': 'example.com.au.',
                 'Id': 'zone-incorrect'

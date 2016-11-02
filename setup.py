@@ -5,7 +5,7 @@ from setuptools import setup
 # Set external files
 try:
     from pypandoc import convert
-    README = convert('README.md', 'rst')     
+    README = convert('README.md', 'rst')
 except ImportError:
     README = open(os.path.join(os.path.dirname(__file__), 'README.md')).read()
 
@@ -26,7 +26,7 @@ setup(
     test_suite='nose.collector',
     include_package_data=True,
     license='MIT License',
-    description='Serverless WSGI With AWS Lambda + API Gateway',
+    description='Server-less Python Web Services for AWS Lambda and API Gateway',
     long_description=README,
     url='https://github.com/Miserlou/Zappa',
     author='Rich Jones',

@@ -137,7 +137,7 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
     event_source_func = event_source_map.get(svc, None)
     if not event_source_func:
         raise ValueError('Unknown event source: {0}'.format(arn))
-    
+
     def autoreturn(self, function_name):
         return function_name
 
@@ -148,7 +148,7 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
 
     funk = PseudoFunction()
     funk.name = lambda_arn
-    
+
     # Kappa 0.6.0 requires this nasty hacking,
     # hopefully we can remove at least some of this soon.
     if svc == 's3':
@@ -191,7 +191,7 @@ def remove_event_source(event_source, lambda_arn, target_function, boto_session,
     """
 
     event_source_obj, ctx, funk = get_event_source(event_source, lambda_arn, target_function, boto_session, dry=False)
-    
+
     # This is slightly dirty, but necessary for using Kappa this way.
     funk.arn = lambda_arn
     if not dry:
@@ -217,7 +217,7 @@ def check_new_version_available(this_version):
     """
 
     pypi_url = 'https://pypi.python.org/pypi/Zappa/json'
-    resp = requests.get(pypi_url)
+    resp = requests.get(pypi_url, timeout=1.5)
     top_version = resp.json()['info']['version']
 
     if this_version != top_version:
