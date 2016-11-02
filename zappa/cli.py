@@ -410,7 +410,8 @@ class ZappaCLI(object):
             last_updated = parser.parse(conf['LastModified'])
             last_updated_unix = time.mktime(last_updated.timetuple())
         except Exception as e:
-            click.echo(click.style("Warning!", fg="red") + " Couldn't get function - have you deployed yet?")
+            click.echo(click.style("Warning!", fg="red") + " Couldn't get function " + self.lambda_name +
+                       " in " + self.zappa.aws_region + " - have you deployed yet?")
             sys.exit(-1)
 
         if last_updated_unix <= updated_time:
@@ -720,7 +721,8 @@ class ZappaCLI(object):
         lambda_versions = self.zappa.get_lambda_function_versions(self.lambda_name)
 
         if not lambda_versions:
-            raise ClickException(click.style("No Lambda detected - have you deployed yet?", fg='red'))
+            raise ClickException(click.style("No Lambda %s detected in %s - have you deployed yet?" %
+                                             (self.lambda_name, self.zappa.aws_region), fg='red'))
 
         status_dict = collections.OrderedDict()
         status_dict["Lambda Versions"] = len(lambda_versions)
