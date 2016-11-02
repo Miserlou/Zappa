@@ -1324,7 +1324,7 @@ class Zappa(object):
         # We need to delete this before we can create the new Route53.
         try:
             api_gateway_domain = self.apigateway_client.get_domain_name(domainName=domain_name)
-            self.apigateway_client.delete_domain_name(domainName='blog.zappa.io')
+            self.apigateway_client.delete_domain_name(domainName=domain_name)
         except Exception:
             pass
 
