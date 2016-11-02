@@ -428,6 +428,11 @@ class Zappa(object):
 
             for filename in files:
 
+                # Skip .pyc files for Django migrations
+                # https://github.com/Miserlou/Zappa/issues/436
+                if filename[-4:] == '.pyc' and root[-10:] == 'migrations':
+                    continue
+
                 # If there is a .pyc file in this package,
                 # we can skip the python source code as we'll just
                 # use the compiled bytecode anyway..
