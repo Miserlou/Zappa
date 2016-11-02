@@ -16,7 +16,7 @@ with open(os.path.join(os.path.dirname(__file__), 'test_requirements.txt')) as f
     test_required = f.read().splitlines()
 
 version = {}
-with open("rets/version.py") as fp:
+with open("zappa/version.py") as fp:
     exec(fp.read(), version)
 
 setup(
