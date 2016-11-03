@@ -1238,6 +1238,29 @@ class Zappa(object):
             stage=stage
         )
 
+        is_apex = self.route53.get_hosted_zone(Id=zone_id)['HostedZone']['Name'][:-1] == domain_name
+        if is_apex:
+            record_set = {
+                'Name': domain_name,
+                'Type': 'A',
+                'AliasTarget': {
+                    'HostedZoneId': 'Z2FDTNDATAQYW2',
+                    'DNSName': dns_name,
+                    'EvaluateTargetHealth': False
+                }            
+            }
+        else:
+            record_set = {
+                'Name': domain_name,
+                'Type': 'CNAME',
+                'ResourceRecords': [
+                    {
+                        'Value': dns_name
+                    }
+                ],
+                'TTL': 60
+            } 
+
         # Related: https://github.com/boto/boto3/issues/157
         # and: http://docs.aws.amazon.com/Route53/latest/APIReference/CreateAliasRRSAPI.html
         # and policy: https://spin.atomicobject.com/2016/04/28/route-53-hosted-zone-managment/
@@ -1252,16 +1275,7 @@ class Zappa(object):
                 'Changes': [
                     {
                         'Action': 'UPSERT',
-                        'ResourceRecordSet': {
-                            'Name': domain_name,
-                            'Type': 'CNAME',
-                            'ResourceRecords': [
-                                {
-                                    'Value': dns_name
-                                }
-                            ],
-                            'TTL': 60
-                        }
+                        'ResourceRecordSet': record_set
                     }
                 ]
             }
@@ -1314,7 +1328,7 @@ class Zappa(object):
             for zone in zones['HostedZones']:
                 records = self.route53.list_resource_record_sets(HostedZoneId=zone['Id'])
                 for record in records['ResourceRecordSets']:
-                    if record['Type'] == 'CNAME' and record['Name'] == domain_name:
+                    if record['Type'] in ('CNAME', 'A') and record['Name'] == domain_name:
                         return record
 
         except Exception:
