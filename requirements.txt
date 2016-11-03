@@ -1,5 +1,5 @@
 base58==0.2.4
-botocore==1.4.69
+botocore==1.4.70
 boto3==1.4.1
 docutils==0.12
 futures==3.0.5
