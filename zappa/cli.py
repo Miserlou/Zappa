@@ -1429,7 +1429,7 @@ class ZappaCLI(object):
             # It doesn't work otherwise.
             if self.django_settings:
                 base = __file__.rsplit(os.sep, 1)[0]
-                django_py = ''.join(os.path.join([base, os.sep, 'ext', os.sep, 'django_zappa.py']))
+                django_py = ''.join(os.path.join(base, 'ext', 'django_zappa.py'))
                 lambda_zip.write(django_py, 'django_zappa_app.py')
 
             # Lambda requires a specific chmod
