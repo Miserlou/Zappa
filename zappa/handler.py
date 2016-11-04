@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-import base64
 import datetime
 import importlib
 import logging
@@ -120,7 +119,7 @@ class LambdaHandler(object):
 
                 try:  # Support both for tests
                     from zappa.ext.django import get_django_wsgi
-                except ImportError as e:  # pragma: no cover
+                except ImportError:  # pragma: no cover
                     from django_zappa_app import get_django_wsgi
 
                 # Get the Django WSGI app from our extension
@@ -205,7 +204,7 @@ class LambdaHandler(object):
             if not exception_processed:
                 # Only re-raise exception if handler directed so. Allows handler to control if lambda has to retry
                 # an event execution in case of failure.
-                raise ex
+                raise
 
     @classmethod
     def _process_exception(cls, exception_handler, event, context, exception):
@@ -420,7 +419,7 @@ class LambdaHandler(object):
                 # pack the response as a deterministic B64 string and raise it
                 # as an error to match our APIGW regex.
                 # The DOCTYPE ensures that the page still renders in the browser.
-                exception = None
+                exception = None  # this variable never used
                 # if response.status_code in ERROR_CODES:
                 #     content = collections.OrderedDict()
                 #     content['http_status'] = response.status_code
@@ -455,7 +454,7 @@ class LambdaHandler(object):
             print(e)
             exc_info = sys.exc_info()
             message = ('An uncaught exception happened while servicing this request. '
-                      'You can investigate this with the `zappa tail` command.')
+                       'You can investigate this with the `zappa tail` command.')
 
             # If we didn't even build an app_module, just raise.
             if not settings.DJANGO_SETTINGS:
@@ -472,6 +471,7 @@ class LambdaHandler(object):
                 body['traceback'] = traceback.format_exception(*exc_info)  # traceback as a list for readability.
             content['body'] = json.dumps(body, sort_keys=True, indent=4).encode('utf-8')
             return content
+
 
 def lambda_handler(event, context):  # pragma: no cover
     return LambdaHandler.lambda_handler(event, context)
