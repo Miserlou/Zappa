@@ -1308,6 +1308,12 @@ class Zappa(object):
         Returns the record entry, else None.
 
         """
+        # make sure api gateway domain is present
+        try:
+            self.apigateway_client.get_domain_name(domainName=domain_name)
+        except Exception:
+            return None
+            
         try:
 
             zones = self.route53.list_hosted_zones()
