@@ -1314,19 +1314,11 @@ class Zappa(object):
             for zone in zones['HostedZones']:
                 records = self.route53.list_resource_record_sets(HostedZoneId=zone['Id'])
                 for record in records['ResourceRecordSets']:
-                    if record['Type'] == 'CNAME' and record['Name'] == domain_name:
+                    if record['Type'] == 'CNAME' and record['Name'][:-1] == domain_name:
                         return record
 
         except Exception:
             return None
-
-        # We may be in a position where Route53 doesn't have a domain, but the API Gateway does.
-        # We need to delete this before we can create the new Route53.
-        try:
-            api_gateway_domain = self.apigateway_client.get_domain_name(domainName=domain_name)
-            self.apigateway_client.delete_domain_name(domainName=domain_name)
-        except Exception:
-            pass
 
         return None
 
