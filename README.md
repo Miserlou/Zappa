@@ -653,6 +653,7 @@ To learn more about these capabilities, see [these slides](https://htmlpreview.g
 * [Gigger](https://www.gigger.rocks/) - The live music industry's search engine
 * [Zappa BitTorrent Tracker](https://github.com/Miserlou/zappa-bittorrent-tracker) - An experimental server-less BitTorrent tracker. Work in progress.
 * [JankyGlance](https://github.com/Miserlou/JankyGlance) - A server-less Yahoo! Pipes replacement.
+* [LambdaMailer](https://github.com/tryolabs/lambda-mailer) - A server-less endpoint for processing a contact form. 
 * And many more!
 
 Are you using Zappa? Let us know and we'll list your site here!
