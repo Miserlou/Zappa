@@ -862,7 +862,10 @@ class TestZappa(unittest.TestCase):
         zone = Zappa.get_best_match_zone(all_zones={ 'HostedZones': [
             {
                 'Name': 'example.com.au.',
-                'Id': 'zone-correct'
+                'Id': 'zone-correct',
+                'Config': {
+                    'PrivateZone': False
+                }
             }
         ]},
             domain='www.example.com.au')
@@ -872,7 +875,10 @@ class TestZappa(unittest.TestCase):
         zone = Zappa.get_best_match_zone(all_zones={'HostedZones': [
             {
                 'Name': 'example.com.au.',
-                'Id': 'zone-incorrect'
+                'Id': 'zone-incorrect',
+                'Config': {
+                    'PrivateZone': False
+                }
             }
         ]},
             domain='something-else.com.au')
@@ -882,16 +888,54 @@ class TestZappa(unittest.TestCase):
         zone = Zappa.get_best_match_zone(all_zones={'HostedZones': [
             {
                 'Name': 'example.com.au.',
-                'Id': 'zone-incorrect'
+                'Id': 'zone-incorrect',
+                'Config': {
+                    'PrivateZone': False
+                }
             },
             {
                 'Name': 'subdomain.example.com.au.',
-                'Id': 'zone-correct'
+                'Id': 'zone-correct',
+                'Config': {
+                    'PrivateZone': False
+                }
             }
         ]},
             domain='www.subdomain.example.com.au')
         assert zone == 'zone-correct'
 
+        # Check private zone is not matched
+        zone = Zappa.get_best_match_zone(all_zones={ 'HostedZones': [
+            {
+                'Name': 'example.com.au.',
+                'Id': 'zone-private',
+                'Config': {
+                    'PrivateZone': True
+                }
+            }
+        ]},
+            domain='www.example.com.au')
+        assert zone is None
+
+        # More involved, should ignore the private zone and match the public.
+        zone = Zappa.get_best_match_zone(all_zones={'HostedZones': [
+            {
+                'Name': 'subdomain.example.com.au.',
+                'Id': 'zone-private',
+                'Config': {
+                    'PrivateZone': True
+                }
+            },
+            {
+                'Name': 'subdomain.example.com.au.',
+                'Id': 'zone-public',
+                'Config': {
+                    'PrivateZone': False
+                }
+            }
+        ]},
+            domain='www.subdomain.example.com.au')
+        assert zone == 'zone-public'
 
     ##
     # Let's Encrypt / ACME
