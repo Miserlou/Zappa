@@ -22,7 +22,6 @@ import imp
 import importlib
 import logging
 import os
-import pkg_resources
 import random
 import re
 import requests
@@ -36,6 +35,7 @@ from click.exceptions import ClickException
 from dateutil import parser
 from datetime import datetime,timedelta
 from zappa import Zappa, logger, API_GATEWAY_REGIONS
+from version import __version__
 from util import check_new_version_available, detect_django_settings, detect_flask_apps
 
 CUSTOM_SETTINGS = [
@@ -827,8 +827,7 @@ class ZappaCLI(object):
         """
         Print the current zappa version.
         """
-        version = pkg_resources.require("zappa")[0].version
-        print(version)
+        print(__version__)
 
     def check_stage_name(self, stage_name):
         """
@@ -1187,7 +1186,7 @@ class ZappaCLI(object):
         Print a warning if there's a new Zappa version available.
         """
         try:
-            version = pkg_resources.require("zappa")[0].version
+            version = __version__
             updateable = check_new_version_available(version)
             if updateable:
                 click.echo(click.style("Important!", fg="yellow", bold=True) +
