@@ -1710,7 +1710,11 @@ class Zappa(object):
     @staticmethod
     def get_best_match_zone(all_zones, domain):
         """Return zone id which name is closer matched with domain name."""
-        zones = {zone['Name'][:-1]: zone['Id'] for zone in all_zones['HostedZones'] if zone['Name'][:-1] in domain}
+
+        # Related: https://github.com/Miserlou/Zappa/issues/459
+        public_zones = [zone for zone in all_zones['HostedZones'] if not zone['Config']['PrivateZone']]
+
+        zones = {zone['Name'][:-1]: zone['Id'] for zone in public_zones if zone['Name'][:-1] in domain}
         if zones:
             keys = max(zones.keys(), key=lambda a: len(a))  # get longest key -- best match.
             return zones[keys]
