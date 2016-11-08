@@ -1,5 +1,16 @@
 # Zappa Changelog
 
+## 0.28.3
+* Filter private hosted zones to avoid conflicts while certifying
+* Fix small Python3 bug (#457)
+* Fix for #453 (windows os.path)
+* Re-raise Zappa exception with full traceback
+* Skip pyc on django migrations, fixes #436
+* Delete correct domain name, #448
+
+## 0.28.2
+* added region and lambda name to not deployed error
+
 ## 0.28.1
 * Add "global" mode to init. Expect a blog post soon!
 * Small refactors and dependancy upgrades.
