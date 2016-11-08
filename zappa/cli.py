@@ -1434,7 +1434,7 @@ class ZappaCLI(object):
 
             # Lambda requires a specific chmod
             temp_settings = tempfile.NamedTemporaryFile(delete=False)
-            os.chmod(temp_settings.name, 0644)
+            os.chmod(temp_settings.name, 0o644)
             temp_settings.write(settings_s)
             temp_settings.close()
             lambda_zip.write(temp_settings.name, 'zappa_settings.py')
