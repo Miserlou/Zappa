@@ -351,7 +351,7 @@ to change Zappa's behavior. Use these at your own risk!
         "api_key": "your_api_key_id" // optional, use an existing API key. The option "api_key_required" must be true to apply
         "assume_policy": "my_assume_policy.json", // optional, IAM assume policy JSON file
         "attach_policy": "my_attach_policy.json", // optional, IAM attach policy JSON file
-        "aws_region": "us-east-1", // AWS Region (default US East),
+        "aws_region": "aws-region-name", // optional, uses region set in profile or environment variables if not set here,
         "callbacks": { // Call custom functions during the local Zappa deployment/update process
             "settings": "my_app.settings_callback", // After loading the settings
             "zip": "my_app.zip_callback", // After creating the package
