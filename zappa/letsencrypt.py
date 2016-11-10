@@ -40,7 +40,7 @@ LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())
 
 
-def get_cert_and_update_domain(zappa_instance, lambda_name, api_stage, domain, clean_up=True):
+def get_cert_and_update_domain(zappa_instance, lambda_name, api_stage, domain=None, clean_up=True):
     """
     Main cert installer path.
     """
@@ -59,28 +59,29 @@ def get_cert_and_update_domain(zappa_instance, lambda_name, api_stage, domain, c
         with open('/tmp/intermediate.pem') as f:
             certificate_chain = f.read()
 
-        if not zappa_instance.get_domain_name(domain):
+        if domain:
+            if not zappa_instance.get_domain_name(domain):
 
-            zappa_instance.create_domain_name(
-                domain,
-                domain + "-Zappa-LE-Cert",
-                certificate_body,
-                certificate_private_key,
-                certificate_chain,
-                lambda_name,
-                api_stage
-            )
-            print("Created a new domain name. Please note that it can take up to 40 minutes for this domain to be created and propagated through AWS, but it requires no further work on your part.")
-        else:
-            zappa_instance.update_domain_name(
-                domain,
-                domain + "-Zappa-LE-Cert",
-                certificate_body,
-                certificate_private_key,
-                certificate_chain
-            )
+                zappa_instance.create_domain_name(
+                    domain,
+                    domain + "-Zappa-LE-Cert",
+                    certificate_body,
+                    certificate_private_key,
+                    certificate_chain,
+                    lambda_name,
+                    api_stage
+                )
+                print("Created a new domain name. Please note that it can take up to 40 minutes for this domain to be created and propagated through AWS, but it requires no further work on your part.")
+            else:
+                zappa_instance.update_domain_name(
+                    domain,
+                    domain + "-Zappa-LE-Cert",
+                    certificate_body,
+                    certificate_private_key,
+                    certificate_chain
+                )
 
-    except Exception as e:
+    except Exception as e: # pragma: no cover
         print(e)
         return False
 

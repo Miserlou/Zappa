@@ -1005,6 +1005,12 @@ class TestZappa(unittest.TestCase):
 
         encode_certificate(b'123')
 
+        # without domain testing..
+        zappa_cli = ZappaCLI()
+        zappa_cli.api_stage = 'ttt888'
+        zappa_cli.load_settings('test_settings.json')
+        get_cert_and_update_domain(zappa_cli, 'kerplah', 'zzzz', domain=None, clean_up=True)
+
         os.remove('test_signed.crt')
         cleanup()
 
