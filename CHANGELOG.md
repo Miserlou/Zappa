@@ -1,5 +1,8 @@
 # Zappa Changelog
 
+## 0.29.0
+* Adds `extends` syntax to settings file.
+
 ## 0.28.3
 * Filter private hosted zones to avoid conflicts while certifying
 * Fix small Python3 bug (#457)

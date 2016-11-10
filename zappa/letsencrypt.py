@@ -81,7 +81,7 @@ def get_cert_and_update_domain(zappa_instance, lambda_name, api_stage, domain=No
                     certificate_chain
                 )
 
-    except Exception as e: # pragma: no cover
+    except Exception as e:
         print(e)
         return False
 
@@ -101,7 +101,7 @@ def create_domain_key():
         shell=True
     )
     out, err = proc.communicate()
-    if proc.returncode != 0:
+    if proc.returncode != 0: # pragma: no cover
         raise IOError("OpenSSL Error: {0}".format(err))
     return True
 
@@ -114,7 +114,7 @@ def create_domain_csr(domain):
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
     )
     out, err = proc.communicate()
-    if proc.returncode != 0:
+    if proc.returncode != 0: # pragma: no cover
         raise IOError("OpenSSL Error: {0}".format(err))
     return True
 
@@ -130,7 +130,7 @@ def create_chained_certificate():
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
     )
     out, err = proc.communicate()
-    if proc.returncode != 0:
+    if proc.returncode != 0: # pragma: no cover
         raise IOError("Error: {0}".format(err))
 
     return True
@@ -144,7 +144,7 @@ def parse_account_key():
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
     )
     out, err = proc.communicate()
-    if proc.returncode != 0:
+    if proc.returncode != 0: # pragma: no cover
         raise IOError("OpenSSL Error: {0}".format(err))
 
     return out
@@ -161,7 +161,7 @@ def parse_csr():
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
     )
     out, err = proc.communicate()
-    if proc.returncode != 0:
+    if proc.returncode != 0: # pragma: no cover
         raise IOError("Error loading {0}: {1}".format(csr_filename, err))
     domains = set([])
     common_name = re.search(r"Subject:.*? CN=([^\s,;/]+)", out.decode('utf8'))
@@ -367,7 +367,7 @@ def _send_signed_request(url, payload):
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
     )
     out, err = proc.communicate("{0}.{1}".format(protected64, payload64).encode('utf8'))
-    if proc.returncode != 0:
+    if proc.returncode != 0: # pragma: no cover
         raise IOError("OpenSSL Error: {0}".format(err))
     data = json.dumps({
         "header": header, "protected": protected64,
