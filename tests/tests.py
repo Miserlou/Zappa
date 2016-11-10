@@ -8,6 +8,7 @@ import random
 import string
 import unittest
 
+from click.exceptions import ClickException
 from lambda_packages import lambda_packages
 
 from .utils import placebo_session
@@ -739,6 +740,20 @@ class TestZappa(unittest.TestCase):
     def test_cli_sanity(self):
         zappa_cli = ZappaCLI()
         return
+
+    def test_load_settings(self):
+        zappa_cli = ZappaCLI()
+        zappa_cli.api_stage = 'ttt888'
+        zappa_cli.load_settings('test_settings.json')
+
+        zappa_cli = ZappaCLI()
+        zappa_cli.api_stage = 'extendo'
+        zappa_cli.load_settings('test_settings.json')
+
+        zappa_cli = ZappaCLI()
+        zappa_cli.api_stage = 'extendofail'
+        with self.assertRaises(ClickException):
+            zappa_cli.load_settings('test_settings.json')
 
     def test_cli_utility(self):
         zappa_cli = ZappaCLI()

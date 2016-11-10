@@ -118,9 +118,24 @@ class ZappaCLI(object):
 
     @property
     def stage_config(self):
-        """A shortcut property for settings of staging."""
+        """
+        A shortcut property for settings of a stage.
+        """
+
+        # Load any common extentions
+        # TODO: Make recursive
+        extends = self.zappa_settings[self.api_stage].get('extends', None)
+        if extends:
+            try:
+                settings_to_extend = self.zappa_settings[extends].copy()
+            except KeyError:
+                raise ClickException("Cannot extend settings for undefined environment '" + extends + "'.")
+            settings_to_extend.update(self.zappa_settings[self.api_stage])
+            settings = settings_to_extend
+        else:
+            settings = self.zappa_settings[self.api_stage].copy()
+
         # Backwards compatible for delete_zip setting that was more explicitly named delete_local_zip
-        settings = self.zappa_settings[self.api_stage]
         if u'delete_zip' in settings:
             settings[u'delete_local_zip'] = settings.get(u'delete_zip')
         return settings
@@ -1241,54 +1256,31 @@ class ZappaCLI(object):
         self.lambda_name = slugify.slugify(self.project_name + '-' + self.api_stage)
 
         # Load environment-specific settings
-        self.s3_bucket_name = self.zappa_settings[
-            self.api_stage].get('s3_bucket', "zappa-" + ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(9)))
-        self.vpc_config = self.zappa_settings[
-            self.api_stage].get('vpc_config', {})
-        self.memory_size = self.zappa_settings[
-            self.api_stage].get('memory_size', 512)
-        self.app_function = self.zappa_settings[
-            self.api_stage].get('app_function', None)
-        self.exception_handler = self.zappa_settings[
-            self.api_stage].get('exception_handler', None)
-        self.aws_region = self.zappa_settings[
-            self.api_stage].get('aws_region', None)
-        self.debug = self.zappa_settings[
-            self.api_stage].get('debug', True)
-        self.prebuild_script = self.zappa_settings[
-            self.api_stage].get('prebuild_script', None)
-        self.profile_name = self.zappa_settings[
-            self.api_stage].get('profile_name', None)
-        self.log_level = self.zappa_settings[
-            self.api_stage].get('log_level', "DEBUG")
-        self.domain = self.zappa_settings[
-            self.api_stage].get('domain', None)
-        self.timeout_seconds = self.zappa_settings[
-            self.api_stage].get('timeout_seconds', 30)
-        self.use_apigateway = self.zappa_settings[
-            self.api_stage].get('use_apigateway', True)
-        self.integration_content_type_aliases = self.zappa_settings[
-            self.api_stage].get('integration_content_type_aliases', {})
-        self.lambda_handler = self.zappa_settings[
-            self.api_stage].get('lambda_handler', 'handler.lambda_handler')
-        self.remote_env_bucket = self.zappa_settings[
-            self.api_stage].get('remote_env_bucket', None)
-        self.remote_env_file = self.zappa_settings[
-            self.api_stage].get('remote_env_file', None)
-        self.settings_file = self.zappa_settings[
-            self.api_stage].get('settings_file', None)
-        self.django_settings = self.zappa_settings[
-            self.api_stage].get('django_settings', None)
-        self.manage_roles = self.zappa_settings[
-            self.api_stage].get('manage_roles', True)
+        self.s3_bucket_name = self.stage_config.get('s3_bucket', "zappa-" + ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(9)))
+        self.vpc_config = self.stage_config.get('vpc_config', {})
+        self.memory_size = self.stage_config.get('memory_size', 512)
+        self.app_function = self.stage_config.get('app_function', None)
+        self.exception_handler = self.stage_config.get('exception_handler', None)
+        self.aws_region = self.stage_config.get('aws_region', None)
+        self.debug = self.stage_config.get('debug', True)
+        self.prebuild_script = self.stage_config.get('prebuild_script', None)
+        self.profile_name = self.stage_config.get('profile_name', None)
+        self.log_level = self.stage_config.get('log_level', "DEBUG")
+        self.domain = self.stage_config.get('domain', None)
+        self.timeout_seconds = self.stage_config.get('timeout_seconds', 30)
+        self.use_apigateway = self.stage_config.get('use_apigateway', True)
+        self.integration_content_type_aliases = self.stage_config.get('integration_content_type_aliases', {})
+        self.lambda_handler = self.stage_config.get('lambda_handler', 'handler.lambda_handler')
+        self.remote_env_bucket = self.stage_config.get('remote_env_bucket', None)
+        self.remote_env_file = self.stage_config.get('remote_env_file', None)
+        self.settings_file = self.stage_config.get('settings_file', None)
+        self.django_settings = self.stage_config.get('django_settings', None)
+        self.manage_roles = self.stage_config.get('manage_roles', True)
         self.api_key_required = self.stage_config.get('api_key_required', False)
-        self.api_key = self.zappa_settings[
-            self.api_stage].get('api_key')
+        self.api_key = self.stage_config.get('api_key')
         self.iam_authorization = self.stage_config.get('iam_authorization', False)
-        self.lambda_description = self.zappa_settings[
-            self.api_stage].get('lambda_description', "Zappa Deployment")
-        self.environment_variables = self.zappa_settings[
-            self.api_stage].get('environment_variables', {})
+        self.lambda_description = self.stage_config.get('lambda_description', "Zappa Deployment")
+        self.environment_variables = self.stage_config.get('environment_variables', {})
         self.check_environment(self.environment_variables)
         self.authorizer = self.stage_config.get('authorizer', {})
 

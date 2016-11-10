@@ -10,7 +10,7 @@
        },
        "delete_local_zip": true,
        "debug": true,
-       "parameter_depth": 2, 
+       "parameter_depth": 2,
        "prebuild_script": "test_settings.prebuild_me",
        "events": [
            {
@@ -38,11 +38,25 @@
        },
        "delete_local_zip": true,
        "debug": true,
-       "parameter_depth": 2, 
+       "parameter_depth": 2,
        "prebuild_script": "test_settings.prebuild_me",
        "events": [{
           "function": "tests.test_app.schedule_me",
           "expression": "rate(1 minute)"
        }]
+    },
+    "extendo": {
+       "extends": "ttt888",
+       "prebuild_script": "test_settings.prebuild_me",
+       "environment_variables": {
+          "EXTENDO": "You bet"
+       }
+    },
+    "extendofail": {
+       "extends": "failfail",
+       "prebuild_script": "test_settings.prebuild_me",
+       "environment_variables": {
+          "EXTENDO": "You bet"
+       }
     }
 }
