@@ -745,10 +745,13 @@ class TestZappa(unittest.TestCase):
         zappa_cli = ZappaCLI()
         zappa_cli.api_stage = 'ttt888'
         zappa_cli.load_settings('test_settings.json')
+        self.assertEqual(False, zappa_cli.stage_config['touch'])
 
         zappa_cli = ZappaCLI()
         zappa_cli.api_stage = 'extendo'
         zappa_cli.load_settings('test_settings.json')
+        self.assertEqual('lmbda', zappa_cli.stage_config['s3_bucket'])
+        self.assertEqual(True, zappa_cli.stage_config['touch'])
 
         zappa_cli = ZappaCLI()
         zappa_cli.api_stage = 'extendofail'

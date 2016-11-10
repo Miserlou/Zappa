@@ -47,6 +47,7 @@
     },
     "extendo": {
        "extends": "ttt888",
+       "touch": true,
        "prebuild_script": "test_settings.prebuild_me",
        "environment_variables": {
           "EXTENDO": "You bet"
