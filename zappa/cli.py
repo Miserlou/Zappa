@@ -122,7 +122,9 @@ class ZappaCLI(object):
         A shortcut property for settings of a stage.
         """
 
-        def get_stage_setting(stage, extended_stages=list()):
+        def get_stage_setting(stage, extended_stages=None):
+            if extended_stages is None:
+                extended_stages = []
 
             if stage in extended_stages:
                 raise RuntimeError(stage + " has already been extended to these settings. "
