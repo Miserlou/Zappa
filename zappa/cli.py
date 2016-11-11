@@ -113,7 +113,6 @@ class ZappaCLI(object):
     exception_handler = None
     environment_variables = None
     authorizer = None
-    extended_settings = None
 
     stage_name_env_pattern = re.compile('^[a-zA-Z0-9_]+$')
 
@@ -123,11 +122,12 @@ class ZappaCLI(object):
         A shortcut property for settings of a stage.
         """
 
-        def get_stage_setting(stage):
-            if stage in self.extended_settings:
+        def get_stage_setting(stage, extended_stages=list()):
+
+            if stage in extended_stages:
                 raise RuntimeError(stage + " has already been extended to these settings. "
                                            "There is a circular extends within the settings file.")
-            self.extended_settings.append(stage)
+            extended_stages.append(stage)
 
             try:
                 stage_settings = dict(self.zappa_settings[stage].copy())
@@ -137,11 +137,10 @@ class ZappaCLI(object):
             extends_stage = self.zappa_settings[stage].get('extends', None)
             if not extends_stage:
                 return stage_settings
-            extended_settings = get_stage_setting(stage=extends_stage)
+            extended_settings = get_stage_setting(stage=extends_stage, extended_stages=extended_stages)
             extended_settings.update(stage_settings)
             return extended_settings
 
-        self.extended_settings = []
         settings = get_stage_setting(stage=self.api_stage)
 
         # Backwards compatible for delete_zip setting that was more explicitly named delete_local_zip

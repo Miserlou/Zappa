@@ -53,6 +53,10 @@
           "EXTENDO": "You bet"
        }
     },
+    "extendo2": {
+       "extends": "extendo",
+       "s3_bucket": "lmbda2",
+    },
     "extendofail": {
        "extends": "failfail",
        "prebuild_script": "test_settings.prebuild_me",
