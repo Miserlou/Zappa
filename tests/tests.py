@@ -758,6 +758,11 @@ class TestZappa(unittest.TestCase):
         with self.assertRaises(ClickException):
             zappa_cli.load_settings('test_settings.json')
 
+        zappa_cli = ZappaCLI()
+        zappa_cli.api_stage = 'ttt888'
+        with self.assertRaises(RuntimeError):
+            zappa_cli.load_settings('tests/test_bad_circular_extends_settings.json')
+
     def test_cli_utility(self):
         zappa_cli = ZappaCLI()
         zappa_cli.api_stage = 'ttt888'
