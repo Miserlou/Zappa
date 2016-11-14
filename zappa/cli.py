@@ -829,12 +829,16 @@ class ZappaCLI(object):
         # Scheduled Events
         event_rules = self.zappa.get_event_rules_for_lambda(lambda_name=self.lambda_name)
         status_dict["Num. Event Rules"] = len(event_rules)
+        if len(event_rules) > 0:
+            status_dict['Events'] = []
         for rule in event_rules:
+            event_dict = {}
             rule_name = rule['Name']
-            status_dict["Event Rule Name"] = rule_name
-            status_dict["Event Rule Schedule"] = rule.get(u'ScheduleExpression', None)
-            status_dict["Event Rule State"] = rule.get(u'State', None).title()
-            status_dict["Event Rule ARN"] = rule.get(u'Arn', None)
+            event_dict["Event Rule Name"] = rule_name
+            event_dict["Event Rule Schedule"] = rule.get(u'ScheduleExpression', None)
+            event_dict["Event Rule State"] = rule.get(u'State', None).title()
+            event_dict["Event Rule ARN"] = rule.get(u'Arn', None)
+            status_dict['Events'].append(event_dict)
 
         if return_json:
             # Putting the status in machine readable format
@@ -843,7 +847,13 @@ class ZappaCLI(object):
         else:
             click.echo("Status for " + click.style(self.lambda_name, bold=True) + ": ")
             for k, v in status_dict.items():
-                tabular_print(k, v)
+                if k == 'Events':
+                    # Events are a list of dicts
+                    for event in v:
+                        for item_k, item_v in event.items():
+                            tabular_print(item_k, item_v)
+                else:
+                    tabular_print(k, v)
 
         # TODO: S3/SQS/etc. type events?
 
