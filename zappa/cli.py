@@ -122,22 +122,33 @@ class ZappaCLI(object):
         A shortcut property for settings of a stage.
         """
 
-        # Load any common extentions
-        # TODO: Make recursive
-        extends = self.zappa_settings[self.api_stage].get('extends', None)
-        if extends:
+        def get_stage_setting(stage, extended_stages=None):
+            if extended_stages is None:
+                extended_stages = []
+
+            if stage in extended_stages:
+                raise RuntimeError(stage + " has already been extended to these settings. "
+                                           "There is a circular extends within the settings file.")
+            extended_stages.append(stage)
+
             try:
-                settings_to_extend = self.zappa_settings[extends].copy()
+                stage_settings = dict(self.zappa_settings[stage].copy())
             except KeyError:
-                raise ClickException("Cannot extend settings for undefined environment '" + extends + "'.")
-            settings_to_extend.update(self.zappa_settings[self.api_stage])
-            settings = settings_to_extend
-        else:
-            settings = self.zappa_settings[self.api_stage].copy()
+                raise ClickException("Cannot extend settings for undefined environment '" + stage + "'.")
+
+            extends_stage = self.zappa_settings[stage].get('extends', None)
+            if not extends_stage:
+                return stage_settings
+            extended_settings = get_stage_setting(stage=extends_stage, extended_stages=extended_stages)
+            extended_settings.update(stage_settings)
+            return extended_settings
+
+        settings = get_stage_setting(stage=self.api_stage)
 
         # Backwards compatible for delete_zip setting that was more explicitly named delete_local_zip
         if u'delete_zip' in settings:
             settings[u'delete_local_zip'] = settings.get(u'delete_zip')
+
         return settings
 
     def handle(self, argv=None):

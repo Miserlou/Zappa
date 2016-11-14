@@ -1,6 +1,7 @@
 {
     "ttt888": {
        "touch": false,
+       "extends": "extendo",
        "s3_bucket": "lmbda",
        "app_function": "tests.test_app.hello_world",
        "callbacks": {
@@ -52,10 +53,6 @@
        "environment_variables": {
           "EXTENDO": "You bet"
        }
-    },
-    "extendo2": {
-       "extends": "extendo",
-       "s3_bucket": "lmbda2",
     },
     "extendofail": {
        "extends": "failfail",

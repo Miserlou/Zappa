@@ -758,6 +758,18 @@ class TestZappa(unittest.TestCase):
         with self.assertRaises(ClickException):
             zappa_cli.load_settings('test_settings.json')
 
+        zappa_cli = ZappaCLI()
+        zappa_cli.api_stage = 'ttt888'
+        with self.assertRaises(RuntimeError):
+            zappa_cli.load_settings('tests/test_bad_circular_extends_settings.json')
+
+        zappa_cli = ZappaCLI()
+        zappa_cli.api_stage = 'extendo2'
+        zappa_cli.load_settings('test_settings.json')
+        self.assertEqual('lmbda2', zappa_cli.stage_config['s3_bucket'])  # Second Extension
+        self.assertTrue(zappa_cli.stage_config['touch'])  # First Extension
+        self.assertTrue(zappa_cli.stage_config['delete_local_zip'])  # The base
+
     def test_cli_utility(self):
         zappa_cli = ZappaCLI()
         zappa_cli.api_stage = 'ttt888'
