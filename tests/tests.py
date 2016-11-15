@@ -68,6 +68,21 @@ class TestZappa(unittest.TestCase):
             self.assertTrue(os.path.isfile(path))
             os.remove(path)
 
+    def test_get_manylinux(self):
+        z = Zappa()
+        self.assertNotEqual(z.get_manylinux_wheel('pandas'), None)
+        self.assertEqual(z.get_manylinux_wheel('derpderpderpderp'), None)
+
+        # mock the pip.get_installed_distributions() to include a package in lambda_packages so that the code
+        # for zipping pre-compiled packages gets called
+        mock_named_tuple = collections.namedtuple('mock_named_tuple', ['project_name'])
+        mock_return_val = [mock_named_tuple('pandas')]
+        with mock.patch('pip.get_installed_distributions', return_value=mock_return_val):
+            z = Zappa()
+            path = z.create_lambda_zip(handler_file=os.path.realpath(__file__))
+            self.assertTrue(os.path.isfile(path))
+            os.remove(path)
+
     def test_load_credentials(self):
         z = Zappa()
         z.aws_region = 'us-east-1'

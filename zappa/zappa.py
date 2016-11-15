@@ -18,6 +18,7 @@ import troposphere.apigateway
 from distutils.dir_util import copy_tree
 
 from botocore.exceptions import ClientError
+from io import BytesIO
 from lambda_packages import lambda_packages
 from tqdm import tqdm
 
@@ -399,6 +400,18 @@ class Zappa(object):
             installed_packages_name_set = {package.project_name.lower() for package in
                                            pip.get_installed_distributions()}
 
+            # First try to use manylinux packages from PyPi..
+            # Related: https://github.com/Miserlou/Zappa/issues/398
+            for installed_package_name in installed_packages_name_set:
+                wheel_url = self.get_manylinux_wheel(installed_package_name)
+                if wheel_url:
+                    resp = requests.get(wheel_url, timeout=2, stream=True)
+                    resp.raw.decode_content = True
+                    zipresp = resp.raw
+                    with zipfile.ZipFile(BytesIO(zipresp.read())) as zfile:
+                        zfile.extractall(temp_package_path)
+
+            # ..then, do lambda-packages.
             for name, details in lambda_packages.items():
                 if name.lower() in installed_packages_name_set:
                     tar = tarfile.open(details['path'], mode="r:gz")
@@ -471,6 +484,26 @@ class Zappa(object):
             print("\n\nWarning: Application zip package is likely to be too large for AWS Lambda.\n\n")
 
         return zip_fname
+
+    def get_manylinux_wheel(self, package):
+        """
+        For a given package name, returns a link to the download URL,
+        else returns None.
+
+        Related: https://github.com/Miserlou/Zappa/issues/398
+        Examples here: https://gist.github.com/perrygeo/9545f94eaddec18a65fd7b56880adbae
+        """
+        url = 'https://pypi.python.org/pypi/{}/json'.format(package)
+        try:
+            res = requests.get(url, timeout=1.5)
+            data = res.json()
+            version = data['info']['version']
+            for f in data['releases'][version]:
+                if f['filename'].endswith('cp27mu-manylinux1_x86_64.whl'):
+                    return f['url']
+        except Exception, e: # pragma: no cover
+            return None
+        return None
 
     ##
     # S3
@@ -1247,7 +1280,7 @@ class Zappa(object):
                     'HostedZoneId': 'Z2FDTNDATAQYW2',
                     'DNSName': dns_name,
                     'EvaluateTargetHealth': False
-                }            
+                }
             }
         else:
             record_set = {
@@ -1259,7 +1292,7 @@ class Zappa(object):
                     }
                 ],
                 'TTL': 60
-            } 
+            }
 
         # Related: https://github.com/boto/boto3/issues/157
         # and: http://docs.aws.amazon.com/Route53/latest/APIReference/CreateAliasRRSAPI.html
