@@ -73,7 +73,7 @@ class TestZappa(unittest.TestCase):
         self.assertNotEqual(z.get_manylinux_wheel('pandas'), None)
         self.assertEqual(z.get_manylinux_wheel('derpderpderpderp'), None)
 
-        # mock the pip.get_installed_distributions() to include a package in lambda_packages so that the code
+        # mock the pip.get_installed_distributions() to include a package in manylinux so that the code
         # for zipping pre-compiled packages gets called
         mock_named_tuple = collections.namedtuple('mock_named_tuple', ['project_name'])
         mock_return_val = [mock_named_tuple('pandas')]
