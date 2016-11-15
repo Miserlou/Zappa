@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import boto3
 import botocore
 import json
@@ -11,9 +13,9 @@ import subprocess
 import tarfile
 import tempfile
 import time
-import zipfile
 import troposphere
 import troposphere.apigateway
+import zipfile
 
 from distutils.dir_util import copy_tree
 
@@ -310,8 +312,6 @@ class Zappa(object):
         """
         import pip
 
-        print("Packaging project as zip...")
-
         if not venv:
             if 'VIRTUAL_ENV' in os.environ:
                 venv = os.environ['VIRTUAL_ENV']
@@ -397,11 +397,13 @@ class Zappa(object):
 
         # Then the pre-compiled packages..
         if use_precompiled_packages:
+            print("Downloading and installing dependencies..")
             installed_packages_name_set = {package.project_name.lower() for package in
                                            pip.get_installed_distributions()}
 
             # First try to use manylinux packages from PyPi..
             # Related: https://github.com/Miserlou/Zappa/issues/398
+            progress = tqdm(total=len(installed_packages_name_set), unit_scale=False, unit='pkg')
             for installed_package_name in installed_packages_name_set:
                 wheel_url = self.get_manylinux_wheel(installed_package_name)
                 if wheel_url:
@@ -410,6 +412,7 @@ class Zappa(object):
                     zipresp = resp.raw
                     with zipfile.ZipFile(BytesIO(zipresp.read())) as zfile:
                         zfile.extractall(temp_package_path)
+                progress.update()
 
             # ..then, do lambda-packages.
             for name, details in lambda_packages.items():
@@ -430,6 +433,7 @@ class Zappa(object):
             shutil.copy(handler_file, os.path.join(temp_project_path, filename))
 
         # Then zip it all up..
+        print("Packaging project as zip..")
         try:
             # import zlib
             compression_method = zipfile.ZIP_DEFLATED
@@ -540,7 +544,7 @@ class Zappa(object):
         dest_path = os.path.split(source_path)[1]
         try:
             source_size = os.stat(source_path).st_size
-            print("Uploading {0} ({1})...".format(dest_path, self.human_size(source_size)))
+            print("Uploading {0} ({1})..".format(dest_path, self.human_size(source_size)))
             progress = tqdm(total=float(os.path.getsize(source_path)), unit_scale=True, unit='B')
 
             # Attempt to upload to S3 using the S3 meta client with the progress bar.
@@ -1066,7 +1070,7 @@ class Zappa(object):
             self.cf_client.delete_stack(StackName=name)
             if wait:
                 waiter = self.cf_client.get_waiter('stack_delete_complete')
-                print('Waiting for stack {0} to be deleted...'.format(name))
+                print('Waiting for stack {0} to be deleted..'.format(name))
                 waiter.wait(StackName=name)
             return True
         else:
@@ -1131,14 +1135,14 @@ class Zappa(object):
                                         Capabilities=capabilities,
                                         TemplateURL=url,
                                         Tags=tags)
-            print('Waiting for stack {0} to create (this can take a bit)...'.format(name))
+            print('Waiting for stack {0} to create (this can take a bit)..'.format(name))
         else:
             try:
                 self.cf_client.update_stack(StackName=name,
                                             Capabilities=capabilities,
                                             TemplateURL=url,
                                             Tags=tags)
-                print('Waiting for stack {0} to update...'.format(name))
+                print('Waiting for stack {0} to update..'.format(name))
             except botocore.client.ClientError as e:
                 if e.response['Error']['Message'] == 'No updates are to be performed.':
                     wait = False
@@ -1405,7 +1409,7 @@ class Zappa(object):
             role, credentials_arn = self.get_credentials_arn()
 
         except botocore.client.ClientError:
-            print("Creating " + self.role_name + " IAM Role...")
+            print("Creating " + self.role_name + " IAM Role..")
 
             role = self.iam.create_role(
                 RoleName=self.role_name,
