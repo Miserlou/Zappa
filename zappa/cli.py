@@ -1129,7 +1129,7 @@ class ZappaCLI(object):
 
             if 's3://' in account_key_location:
                 bucket = account_key_location.split('s3://')[1].split('/')[0]
-                key_name = account_key_location.split('s3://')[1].split('/')[1]
+                key_name = account_key_location.split('s3://')[1].split('/', 1)[1]
                 self.zappa.s3_client.download_file(bucket, key_name, '/tmp/account.key')
             else:
                 from shutil import copyfile
