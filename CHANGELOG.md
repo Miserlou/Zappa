@@ -5,6 +5,7 @@
 * Fixes Django migrations, #464
 * Adds support for manylinux wheels! #398
 * Fixes multiple events in `status` command
+* Fixes support for `certify` on apex domains, #451
 
 ## 0.28.3
 * Filter private hosted zones to avoid conflicts while certifying
