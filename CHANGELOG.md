@@ -2,6 +2,9 @@
 
 ## 0.29.0
 * Adds `extends` syntax to settings file.
+* Fixes Django migrations, #464
+* Adds support for manylinux wheels! #398
+* Fixes multiple events in `status` command
 
 ## 0.28.3
 * Filter private hosted zones to avoid conflicts while certifying
