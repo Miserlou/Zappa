@@ -36,7 +36,9 @@ from click.exceptions import ClickException
 from dateutil import parser
 from datetime import datetime,timedelta
 from zappa import Zappa, logger, API_GATEWAY_REGIONS
-from util import check_new_version_available, detect_django_settings, detect_flask_apps
+from util import (check_new_version_available, detect_django_settings,
+                  detect_flask_apps, parse_s3_url)
+
 
 CUSTOM_SETTINGS = [
     'assume_policy',
@@ -1127,9 +1129,8 @@ class ZappaCLI(object):
             if not account_key_location:
                 raise ClickException("Can't certify a domain without " + click.style("lets_encrypt_key", fg="red", bold=True) + " configured!")
 
-            if 's3://' in account_key_location:
-                bucket = account_key_location.split('s3://')[1].split('/')[0]
-                key_name = account_key_location.split('s3://')[1].split('/', 1)[1]
+            if account_key_location.startswith('s3://'):
+                bucket, key_name = parse_s3_url(account_key_location)
                 self.zappa.s3_client.download_file(bucket, key_name, '/tmp/account.key')
             else:
                 from shutil import copyfile
@@ -1292,8 +1293,10 @@ class ZappaCLI(object):
         self.use_apigateway = self.stage_config.get('use_apigateway', True)
         self.integration_content_type_aliases = self.stage_config.get('integration_content_type_aliases', {})
         self.lambda_handler = self.stage_config.get('lambda_handler', 'handler.lambda_handler')
+        # DEPRICATED. https://github.com/Miserlou/Zappa/issues/456
         self.remote_env_bucket = self.stage_config.get('remote_env_bucket', None)
         self.remote_env_file = self.stage_config.get('remote_env_file', None)
+        self.remote_env = self.stage_config.get('remote_env', None)
         self.settings_file = self.stage_config.get('settings_file', None)
         self.django_settings = self.stage_config.get('django_settings', None)
         self.manage_roles = self.stage_config.get('manage_roles', True)
@@ -1391,12 +1394,14 @@ class ZappaCLI(object):
                 settings_s = settings_s + "DOMAIN=None\n"
 
             # Pass through remote config bucket and path
-            if self.remote_env_bucket and self.remote_env_file:
-                settings_s = settings_s + "REMOTE_ENV_BUCKET='{0!s}'\n".format(
-                    self.remote_env_bucket
+            if self.remote_env:
+                settings_s = settings_s + "REMOTE_ENV='{0!s}'\n".format(
+                    self.remote_env
                 )
-                settings_s = settings_s + "REMOTE_ENV_FILE='{0!s}'\n".format(
-                    self.remote_env_file
+            # DEPRICATED. use remove_env instead
+            elif self.remote_env_bucket and self.remote_env_file:
+                settings_s = settings_s + "REMOTE_ENV='s3://{0!s}/{1!s}'\n".format(
+                    self.remote_env_bucket, self.remote_env_file
                 )
 
             # Local envs

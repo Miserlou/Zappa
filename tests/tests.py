@@ -6,6 +6,8 @@ import mock
 import os
 import random
 import string
+import zipfile
+import re
 import unittest
 
 from click.exceptions import ClickException
@@ -17,7 +19,9 @@ from zappa.cli import ZappaCLI, shamelessly_promote
 from zappa.ext.django_zappa import get_django_wsgi
 from zappa.handler import LambdaHandler, lambda_handler
 from zappa.letsencrypt import get_cert_and_update_domain, create_domain_key, create_domain_csr, create_chained_certificate, get_cert, cleanup, parse_account_key, parse_csr, sign_certificate, encode_certificate, register_account, verify_challenge
-from zappa.util import detect_django_settings, copytree, detect_flask_apps, add_event_source, remove_event_source, get_event_source_status
+from zappa.util import (detect_django_settings, copytree, detect_flask_apps,
+                        add_event_source, remove_event_source,
+                        get_event_source_status, parse_s3_url)
 from zappa.wsgi import create_wsgi_request, common_log
 from zappa.zappa import Zappa, ASSUME_POLICY, ATTACH_POLICY
 
@@ -1171,6 +1175,58 @@ USE_TZ = True
 
     def test_shameless(self):
         shamelessly_promote()
+
+
+    def test_s3_url_parser(self):
+        remote_bucket, remote_file = parse_s3_url('s3://my-project-config-files/filename.json')
+        self.assertEqual(remote_bucket, 'my-project-config-files')
+        self.assertEqual(remote_file, 'filename.json')
+
+        remote_bucket, remote_file = parse_s3_url('s3://your-bucket/account.key')
+        self.assertEqual(remote_bucket, 'your-bucket')
+        self.assertEqual(remote_file, 'account.key')
+
+        remote_bucket, remote_file = parse_s3_url('s3://my-config-bucket/super-secret-config.json')
+        self.assertEqual(remote_bucket, 'my-config-bucket')
+        self.assertEqual(remote_file, 'super-secret-config.json')
+
+        remote_bucket, remote_file = parse_s3_url('s3://your-secure-bucket/account.key')
+        self.assertEqual(remote_bucket, 'your-secure-bucket')
+        self.assertEqual(remote_file, 'account.key')
+
+        remote_bucket, remote_file = parse_s3_url('s3://your-bucket/subfolder/account.key')
+        self.assertEqual(remote_bucket, 'your-bucket')
+        self.assertEqual(remote_file, 'subfolder/account.key')
+
+        # Sad path
+        remote_bucket, remote_file = parse_s3_url('/dev/null')
+        self.assertEqual(remote_bucket, '')
+
+
+    def test_remote_env_package(self):
+        zappa_cli = ZappaCLI()
+        zappa_cli.api_stage = 'depricated_remote_env'
+        zappa_cli.load_settings('test_settings.json')
+        self.assertEqual('lmbda-env', zappa_cli.stage_config['remote_env_bucket'])
+        self.assertEqual('dev/env.json', zappa_cli.stage_config['remote_env_file'])
+        zappa_cli.create_package()
+        with zipfile.ZipFile(zappa_cli.zip_path, 'r') as lambda_zip:
+            content = lambda_zip.read('zappa_settings.py')
+        zappa_cli.remove_local_zip()
+        m = re.search("REMOTE_ENV='(.*)'", content)
+        self.assertEqual(m.group(1), 's3://lmbda-env/dev/env.json')
+
+        zappa_cli = ZappaCLI()
+        zappa_cli.api_stage = 'remote_env'
+        zappa_cli.load_settings('test_settings.json')
+        self.assertEqual('s3://lmbda-env/prod/env.json', zappa_cli.stage_config['remote_env'])
+        zappa_cli.create_package()
+        with zipfile.ZipFile(zappa_cli.zip_path, 'r') as lambda_zip:
+            content = lambda_zip.read('zappa_settings.py')
+        zappa_cli.remove_local_zip()
+        m = re.search("REMOTE_ENV='(.*)'", content)
+        self.assertEqual(m.group(1), 's3://lmbda-env/prod/env.json')
+
 
 if __name__ == '__main__':
     unittest.main()

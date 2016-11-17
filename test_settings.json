@@ -57,6 +57,15 @@
        "extends": "extendo",
        "s3_bucket": "lmbda2",
     },
+    "depricated_remote_env": {
+       "s3_bucket": "lmbda",
+       "remote_env_bucket": "lmbda-env",
+       "remote_env_file": "dev/env.json"
+    },
+    "remote_env": {
+       "s3_bucket": "lmbda",
+       "remote_env": "s3://lmbda-env/prod/env.json"
+    },
     "extendofail": {
        "extends": "failfail",
        "prebuild_script": "test_settings.prebuild_me",
