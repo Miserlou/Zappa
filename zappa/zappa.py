@@ -403,16 +403,19 @@ class Zappa(object):
 
             # First try to use manylinux packages from PyPi..
             # Related: https://github.com/Miserlou/Zappa/issues/398
-            progress = tqdm(total=len(installed_packages_name_set), unit_scale=False, unit='pkg')
-            for installed_package_name in installed_packages_name_set:
-                wheel_url = self.get_manylinux_wheel(installed_package_name)
-                if wheel_url:
-                    resp = requests.get(wheel_url, timeout=2, stream=True)
-                    resp.raw.decode_content = True
-                    zipresp = resp.raw
-                    with zipfile.ZipFile(BytesIO(zipresp.read())) as zfile:
-                        zfile.extractall(temp_package_path)
-                progress.update()
+            try:
+                progress = tqdm(total=len(installed_packages_name_set), unit_scale=False, unit='pkg')
+                for installed_package_name in installed_packages_name_set:
+                    wheel_url = self.get_manylinux_wheel(installed_package_name)
+                    if wheel_url:
+                        resp = requests.get(wheel_url, timeout=2, stream=True)
+                        resp.raw.decode_content = True
+                        zipresp = resp.raw
+                        with zipfile.ZipFile(BytesIO(zipresp.read())) as zfile:
+                            zfile.extractall(temp_package_path)
+                    progress.update()
+            except Exception:
+                pass # XXX - What should we do here?
 
             # ..then, do lambda-packages.
             for name, details in lambda_packages.items():
