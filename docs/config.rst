@@ -50,9 +50,8 @@ Envirnments, such as *dev*, *staging*, and *production* are configured in the *z
             "prebuild_script": "your_module.your_function",
             "profile_name": "your-profile-name",
             "project_name": "MyProject",
-            "remote_env_bucket": "my-project-config-files", // optional s3 bucket where remote_env_file can be located.
-            "remote_env_file": "filename.json",
-                // file in remote_env_bucket containing a flat json object which will be used to set custom environment variables.
+            "remote_env": "s3://my-project-config-files/filename.json",
+                // optional file in s3 bucket containing a flat json object which will be used to set custom environment variables.
             "role_name": "MyLambdaRole",
             "s3_bucket": "dev-bucket",
             "settings_file": "~/Projects/MyApp/settings/dev_settings.py",
