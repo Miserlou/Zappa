@@ -413,9 +413,10 @@ class Zappa(object):
                         zipresp = resp.raw
                         with zipfile.ZipFile(BytesIO(zipresp.read())) as zfile:
                             zfile.extractall(temp_package_path)
+                    progress.update()
             except Exception:
                 pass # XXX - What should we do here?
-            progress.update()
+            progress.close()
 
             # ..then, do lambda-packages.
             for name, details in lambda_packages.items():
