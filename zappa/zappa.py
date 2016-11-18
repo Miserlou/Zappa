@@ -398,8 +398,8 @@ class Zappa(object):
         # Then the pre-compiled packages..
         if use_precompiled_packages:
             print("Downloading and installing dependencies..")
-            installed_packages_name_set = {package.project_name.lower() for package in
-                                           pip.get_installed_distributions()}
+            installed_packages_name_set = [package.project_name.lower() for package in
+                                           pip.get_installed_distributions()]
 
             # First try to use manylinux packages from PyPi..
             # Related: https://github.com/Miserlou/Zappa/issues/398
