@@ -4,6 +4,8 @@ import os
 import requests
 import shutil
 import stat
+import urlparse
+
 
 def copytree(src, dst, symlinks=False, ignore=None):
     """
@@ -224,3 +226,17 @@ def check_new_version_available(this_version):
         return True
     else:
         return False
+
+def parse_s3_url(url):
+    """
+    Parses S3 URL.
+
+    Returns bucket (domain) and file (full path).
+    """
+    bucket = ''
+    path = ''
+    if url:
+        result = urlparse.urlparse(url)
+        bucket = result.netloc
+        path = result.path.strip('/')
+    return bucket, path

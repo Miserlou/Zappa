@@ -19,10 +19,13 @@ try:
     from zappa.cli import ZappaCLI
     from zappa.middleware import ZappaWSGIMiddleware
     from zappa.wsgi import create_wsgi_request, common_log
+    from zappa.util import parse_s3_url
 except ImportError as e:  # pragma: no cover
     from .cli import ZappaCLI
     from .middleware import ZappaWSGIMiddleware
     from .wsgi import create_wsgi_request, common_log
+    from .util import parse_s3_url
+
 
 # Set up logging
 logging.basicConfig()
@@ -88,8 +91,8 @@ class LambdaHandler(object):
                 level = logging.getLevelName(self.settings.LOG_LEVEL)
                 logger.setLevel(level)
 
-            remote_bucket = getattr(self.settings, 'REMOTE_ENV_BUCKET', None)
-            remote_file = getattr(self.settings, 'REMOTE_ENV_FILE', None)
+            remote_env = getattr(self.settings, 'REMOTE_ENV', None)
+            remote_bucket, remote_file = parse_s3_url(remote_env)
 
             if remote_bucket and remote_file:
                 self.load_remote_settings(remote_bucket, remote_file)
