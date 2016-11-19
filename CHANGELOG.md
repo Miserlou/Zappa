@@ -1,5 +1,10 @@
 # Zappa Changelog
 
+## 0.29.1
+* Fixes progress bar error for manylinux packages
+* Safely handle freezes when downloading from PyPI
+* Adds `s3://` syntax for remote env files. (#478, thanks @Leandr!)
+
 ## 0.29.0
 * Adds `extends` syntax to settings file.
 * Fixes Django migrations, #464
