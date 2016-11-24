@@ -1329,7 +1329,7 @@ class ZappaCLI(object):
         if self.app_function:
             self.collision_warning(self.app_function)
             if self.app_function[-3:] == '.py':
-                click.echo(click.style("Warning!", fg="yellow", bold=True) +
+                click.echo(click.style("Warning!", fg="red", bold=True) +
                            " Your app_function is pointing to a " + click.style("file and not a function", bold=True) +
                            "! It should probably be something like 'my_file.app', not 'my_file.py'!")
 
@@ -1606,7 +1606,7 @@ class ZappaCLI(object):
         ]
         for namespace_collision in namespace_collisions:
             if namespace_collision in item:
-                click.echo(click.style("Warning!", fg="yellow", bold=True) +
+                click.echo(click.style("Warning!", fg="red", bold=True) +
                            " You may have a namespace collision with " + click.style(item, bold=True) +
                            "! You may want to rename that file.")
 
