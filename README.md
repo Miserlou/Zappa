@@ -295,7 +295,11 @@ You can watch the logs of a deployment by calling the `tail` management command.
 
     $ zappa tail production
 
-By default, this will show all log items. You can use the argument `--http` to filter for HTTP requests, which will be in the common log format.
+By default, this will show all log items. You can use the argument `--http` to filter for HTTP requests, which will be in the Apache Common Log Format.
+
+    $ zappa tail production --http
+
+If you don't like the default log colors, you can turn them off with `--no-color`.
 
 #### Remote Function Invocation
 
