@@ -3,7 +3,7 @@
 ## 0.30.0
 * Adds colors to `zappa tail` output, fixes #492
 * Adds `--no-color` CLI argument
-* Adds fatal warning for bad `app_function`s.
+* Adds fatal warning for bad `app_function`s, fixes #485.
 
 ## 0.29.2
 * Fix S3 broken S3 events

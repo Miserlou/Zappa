@@ -1519,9 +1519,9 @@ class ZappaCLI(object):
             inside_squares = re.findall(r'\[([^]]*)\]', string)
             for token in inside_squares:
                 if token in ['CRITICAL', 'ERROR', 'WARNING', 'DEBUG', 'INFO', 'NOTSET']:
-                    final_string = final_string.replace('[' + token + ']', click.style(" [", fg='cyan') + click.style(token, fg='cyan', bold=True) + click.style("]", fg='cyan'))
+                    final_string = final_string.replace('[' + token + ']', click.style("[", fg='cyan') + click.style(token, fg='cyan', bold=True) + click.style("]", fg='cyan'))
                 else:
-                    final_string = final_string.replace('[' + token + ']', click.style(" [", fg='cyan') + click.style(token, bold=True) + click.style("]", fg='cyan'))
+                    final_string = final_string.replace('[' + token + ']', click.style("[", fg='cyan') + click.style(token, bold=True) + click.style("]", fg='cyan'))
 
             # Then do quoted strings
             quotes = re.findall(r'"[^"]*"', string)
@@ -1567,7 +1567,10 @@ class ZappaCLI(object):
                 except Exception: # pragma: no cover
                     pass
 
-            return final_string.replace('\t', ' ').replace('   ', ' ')
+            final_string = final_string.replace('\t', ' ').replace('   ', ' ')
+            if final_string[0] != ' ':
+                final_string = ' ' + final_string
+            return final_string
         except Exception as e: # pragma: no cover
             return string
 
