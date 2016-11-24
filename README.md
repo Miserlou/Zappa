@@ -295,6 +295,8 @@ You can watch the logs of a deployment by calling the `tail` management command.
 
     $ zappa tail production
 
+By default, this will show all log items. You can use the argument `--http` to filter for HTTP requests, which will be in the common log format.
+
 #### Remote Function Invocation
 
 You can execute any function in your application directly at any time by using the `invoke` command.
