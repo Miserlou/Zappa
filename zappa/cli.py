@@ -550,7 +550,7 @@ class ZappaCLI(object):
             self.lambda_name, versions_back=revision)
         print("Done!")
 
-    def tail(self, keep_open=True):
+    def tail(self, keep_open=True, colorize=True):
         """
         Tail this function's logs.
 
@@ -1480,7 +1480,7 @@ class ZappaCLI(object):
         if self.stage_config.get('delete_s3_zip', True):
             self.zappa.remove_from_s3(self.zip_path, self.s3_bucket_name)
 
-    def print_logs(self, logs):
+    def print_logs(self, logs, colorize=True):
         """
         Parse, filter and print logs to the console.
 
@@ -1496,7 +1496,77 @@ class ZappaCLI(object):
             if "END RequestId" in message:
                 continue
 
-            print("[" + str(timestamp) + "] " + message.strip())
+            if not colorize:
+                print("[" + str(timestamp) + "] " + message.strip())
+            else:
+                click.echo(click.style("[", fg='cyan') + click.style(str(timestamp), bold=True) + click.style("]", fg='cyan') + self.colorize_string(message.strip()))
+
+    def colorize_string(self, string):
+        """
+        Apply various heuristics to return a colorized version of a string.
+        If these fail, simply return the string in plaintext.
+        """
+
+        final_string = string
+        try:
+
+            import dateutil.parser
+
+            # First, do stuff in square brackets
+            inside_squares = re.findall(r'\[([^]]*)\]', string)
+            for token in inside_squares:
+                if token in ['CRITICAL', 'ERROR', 'WARNING', 'DEBUG', 'INFO', 'NOTSET']:
+                    final_string = final_string.replace('[' + token + ']', click.style(" [", fg='cyan') + click.style(token, fg='cyan', bold=True) + click.style("]", fg='cyan'))
+                else:
+                    final_string = final_string.replace('[' + token + ']', click.style(" [", fg='cyan') + click.style(token, bold=True) + click.style("]", fg='cyan'))
+
+            # Then do quoted strings
+            quotes = re.findall(r'"[^"]*"', string)
+            for token in quotes:
+                final_string = final_string.replace(token, click.style(token, fg="yellow"))
+
+            # And UUIDs
+            for token in final_string.replace('\t', ' ').split(' '):
+                try:
+                    if token.count('-') is 4 and token.replace('-', '').isalnum():
+                        final_string = final_string.replace(token, click.style(token, fg="magenta"))
+                except Exception: # pragma: no cover
+                    pass
+
+                # And IP addresses
+                try:
+                    if token.count('.') is 3 and token.replace('.', '').isnumeric():
+                        final_string = final_string.replace(token, click.style(token, fg="red"))
+                except Exception: # pragma: no cover
+                    pass
+
+                # And status codes
+                try:
+                    if token in ['200']:
+                        final_string = final_string.replace(token, click.style(token, fg="green"))
+                    if token in ['400', '401', '403', '404', '405', '500']:
+                        final_string = final_string.replace(token, click.style(token, fg="red"))
+                except Exception: # pragma: no cover
+                    pass
+
+            # And Zappa Events
+            try:
+                if "Zappa Event:" in final_string:
+                    final_string = final_string.replace("Zappa Event:", click.style("Zappa Event:", bold=True, fg="green"))
+            except Exception: # pragma: no cover
+                pass
+
+            # And dates
+            for token in final_string.split('\t'):
+                try:
+                    is_date = dateutil.parser.parse(token)
+                    final_string = final_string.replace(token, click.style(token, fg="green"))
+                except Exception: # pragma: no cover
+                    pass
+
+            return final_string.replace('\t', ' ').replace('   ', ' ')
+        except Exception as e: # pragma: no cover
+            return string
 
     def execute_prebuild_script(self):
         """

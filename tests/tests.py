@@ -811,6 +811,18 @@ class TestZappa(unittest.TestCase):
             {
                 'timestamp': '12345',
                 'message': 'test'
+            },
+            {
+                'timestamp': '1480001341214',
+                'message': '[INFO] 2016-11-24T15:29:13.326Z c0cb52d1-b25a-11e6-9b73-f940ce24319a 59.111.125.48 - -  [24/Nov/2016:15:29:13 +0000] "GET / HTTP/1.1" 200 2590 "" "python-requests/2.11.0" 0/4.672'
+            },
+            {
+                'timestamp': '1480001341214',
+                'message': '[INFO] 2016-11-24T15:29:13.326Z c0cb52d1-b25a-11e6-9b73-f940ce24319a 59.111.125.48 - -  [24/Nov/2016:15:29:13 +0000] "GET / HTTP/1.1" 400 2590 "" "python-requests/2.11.0" 0/4.672'
+            },
+            {
+                'timestamp': '1480001341215',
+                'message': '[1480001341258] [DEBUG] 2016-11-24T15:29:01.258Z b890d8f6-b25a-11e6-b6bc-718f7ec807df Zappa Event: {}'
             }
         ]
         zappa_cli.print_logs(logs)

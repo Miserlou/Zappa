@@ -285,7 +285,6 @@ class LambdaHandler(object):
 
         # If in DEBUG mode, log all raw incoming events.
         if settings.DEBUG:
-            print('Zappa Event: {}'.format(event))
             logger.debug('Zappa Event: {}'.format(event))
 
         # This is the result of a keep alive, recertify
