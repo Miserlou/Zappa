@@ -261,7 +261,7 @@ class LambdaHandler(object):
         Support S3, SNS, DynamoDB and kinesis events
         """
         if 's3' in record:
-            return record['s3']['configurationId']
+            return record['s3']['configurationId'].split(':')[-1]
 
         arn = None
         if 'Sns' in record:
