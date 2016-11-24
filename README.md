@@ -653,6 +653,7 @@ To learn more about these capabilities, see [these slides](https://htmlpreview.g
 * [Zappa BitTorrent Tracker](https://github.com/Miserlou/zappa-bittorrent-tracker) - An experimental server-less BitTorrent tracker. Work in progress.
 * [JankyGlance](https://github.com/Miserlou/JankyGlance) - A server-less Yahoo! Pipes replacement.
 * [LambdaMailer](https://github.com/tryolabs/lambda-mailer) - A server-less endpoint for processing a contact form.
+* [Voter Registration Microservice](https://topics.arlingtonva.us/2016/11/voter-registration-search-microservice/) - Official backup to to the Virginia Department of Elections portal.
 * And many more!
 
 Are you using Zappa? Let us know and we'll list your site here!

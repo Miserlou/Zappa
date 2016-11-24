@@ -160,8 +160,8 @@ class ZappaCLI(object):
         Parses command, load settings and dispatches accordingly.
 
         """
-        help_message = ("Please supply a command to execute. " +
-                       "Can be one of: {}".format(', '.join(x for x in sorted(CLI_COMMANDS))))
+        help_message = ("Please supply a valid command to execute. " +
+                       "Can be one of: {}.".format(', '.join(click.style(x, fg='green', bold=True) for x in sorted(CLI_COMMANDS))))
 
         parser = argparse.ArgumentParser(description='Zappa - Deploy Python applications to AWS Lambda and API Gateway.\n')
         parser.add_argument('command_env', metavar='U', type=str, nargs='*', help=help_message)
@@ -205,7 +205,7 @@ class ZappaCLI(object):
         self.command = self.command_env[0]
 
         if self.command not in CLI_COMMANDS:
-            print("The command '{}' is not recognized. {}".format(self.command, help_message))
+            print("The command '{}' is not recognized. {}".format(click.style(self.command, fg='red', bold=True), help_message))
             return
 
         # We don't have any settings yet, so make those first!
