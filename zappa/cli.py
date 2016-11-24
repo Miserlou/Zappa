@@ -181,6 +181,8 @@ class ZappaCLI(object):
                             default=False)
         parser.add_argument('--no-cleanup', action='store_true',
                             help="Don't remove certificate files from /tmp during certify. Dangerous.", default=False)
+        parser.add_argument('--no-color', action='store_true',
+                            help="Don't color log tail output.", default=False)
         parser.add_argument('--all', action='store_true',
                             help="Execute this command for all of our defined Zappa environments.", default=False)
         parser.add_argument('--json', action='store_true', help='Returns status in JSON format',
@@ -309,7 +311,7 @@ class ZappaCLI(object):
             self.invoke(command, command="manage")
 
         elif command == 'tail': # pragma: no cover
-            self.tail()
+            self.tail(colorize=(not self.vargs['no_color']))
         elif command == 'undeploy': # pragma: no cover
             self.undeploy(noconfirm=self.vargs['yes'], remove_logs=self.vargs['remove_logs'])
         elif command == 'schedule': # pragma: no cover
@@ -559,7 +561,7 @@ class ZappaCLI(object):
         try:
             # Tail the available logs
             all_logs = self.zappa.fetch_logs(self.lambda_name)
-            self.print_logs(all_logs)
+            self.print_logs(all_logs, colorize)
 
             # Keep polling, and print any new logs.
             loop = True
@@ -570,7 +572,7 @@ class ZappaCLI(object):
                     if log not in all_logs:
                         new_logs.append(log)
 
-                self.print_logs(new_logs)
+                self.print_logs(new_logs, colorize)
                 all_logs = all_logs + new_logs
                 if not keep_open:
                     loop = False
