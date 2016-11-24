@@ -348,7 +348,8 @@ to change Zappa's behavior. Use these at your own risk!
  {
     "dev": {
         "api_key_required": false, // enable securing API Gateway endpoints with x-api-key header (default False)
-        "api_key": "your_api_key_id" // optional, use an existing API key. The option "api_key_required" must be true to apply
+        "api_key": "your_api_key_id", // optional, use an existing API key. The option "api_key_required" must be true to apply
+        "apigateway_enabled": true, // Set to false if you don't want to create an API Gateway resource. Default true.
         "assume_policy": "my_assume_policy.json", // optional, IAM assume policy JSON file
         "attach_policy": "my_attach_policy.json", // optional, IAM attach policy JSON file
         "aws_region": "aws-region-name", // optional, uses region set in profile or environment variables if not set here,
@@ -429,7 +430,6 @@ to change Zappa's behavior. Use these at your own risk!
         "timeout_seconds": 30, // Maximum lifespan for the Lambda function (default 30, max 300.)
         "touch": false, // GET the production URL upon initial deployment (default True)
         "use_precompiled_packages": false, // If possible, use C-extension packages which have been pre-compiled for AWS Lambda
-        "use_apigateway": true, // Set to false if you don't want to create API Gateway resource. Default true
         "vpc_config": { // Optional VPC configuration for Lambda function
             "SubnetIds": [ "subnet-12345678" ], // Note: not all availability zones support Lambda!
             "SecurityGroupIds": [ "sg-12345678" ]

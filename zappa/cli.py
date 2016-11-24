@@ -808,7 +808,7 @@ class ZappaCLI(object):
         status_dict["Error Rate (24h)"] = error_rate
 
         # URLs
-        if self.zappa_settings[self.api_stage].get('use_apigateway', True):
+        if self.use_apigateway:
             api_url = self.zappa.get_api_url(
                 self.lambda_name,
                 self.api_stage)
@@ -1291,6 +1291,7 @@ class ZappaCLI(object):
         self.domain = self.stage_config.get('domain', None)
         self.timeout_seconds = self.stage_config.get('timeout_seconds', 30)
         self.use_apigateway = self.stage_config.get('use_apigateway', True)
+        self.use_apigateway = self.stage_config.get('apigateway_enabled', True) # https://github.com/Miserlou/Zappa/issues/490
         self.integration_content_type_aliases = self.stage_config.get('integration_content_type_aliases', {})
         self.lambda_handler = self.stage_config.get('lambda_handler', 'handler.lambda_handler')
         # DEPRICATED. https://github.com/Miserlou/Zappa/issues/456

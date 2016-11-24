@@ -1,5 +1,9 @@
 # Zappa Changelog
 
+## 0.29.2
+* Fix S3 broken S3 events
+* Move `use_apigateway` to `apigateway_enabled`
+
 ## 0.29.1
 * Fixes progress bar error for manylinux packages
 * Safely handle freezes when downloading from PyPI
