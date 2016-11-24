@@ -183,6 +183,8 @@ class ZappaCLI(object):
                             help="Don't remove certificate files from /tmp during certify. Dangerous.", default=False)
         parser.add_argument('--no-color', action='store_true',
                             help="Don't color log tail output.", default=False)
+        parser.add_argument('--http', action='store_true',
+                            help="Only show HTTP requests in tail output", default=False)
         parser.add_argument('--all', action='store_true',
                             help="Execute this command for all of our defined Zappa environments.", default=False)
         parser.add_argument('--json', action='store_true', help='Returns status in JSON format',
@@ -311,7 +313,7 @@ class ZappaCLI(object):
             self.invoke(command, command="manage")
 
         elif command == 'tail': # pragma: no cover
-            self.tail(colorize=(not self.vargs['no_color']))
+            self.tail(colorize=(not self.vargs['no_color']), http=self.vargs['http'])
         elif command == 'undeploy': # pragma: no cover
             self.undeploy(noconfirm=self.vargs['yes'], remove_logs=self.vargs['remove_logs'])
         elif command == 'schedule': # pragma: no cover
@@ -552,7 +554,7 @@ class ZappaCLI(object):
             self.lambda_name, versions_back=revision)
         print("Done!")
 
-    def tail(self, keep_open=True, colorize=True):
+    def tail(self, keep_open=True, colorize=True, http=False):
         """
         Tail this function's logs.
 
@@ -561,7 +563,7 @@ class ZappaCLI(object):
         try:
             # Tail the available logs
             all_logs = self.zappa.fetch_logs(self.lambda_name)
-            self.print_logs(all_logs, colorize)
+            self.print_logs(all_logs, colorize, http)
 
             # Keep polling, and print any new logs.
             loop = True
@@ -572,7 +574,7 @@ class ZappaCLI(object):
                     if log not in all_logs:
                         new_logs.append(log)
 
-                self.print_logs(new_logs, colorize)
+                self.print_logs(new_logs, colorize, http)
                 all_logs = all_logs + new_logs
                 if not keep_open:
                     loop = False
@@ -1103,7 +1105,7 @@ class ZappaCLI(object):
         # Give warning on --no-cleanup
         if no_cleanup:
             clean_up = False
-            click.echo(click.style("Warning!", fg="yellow", bold=True) + " You are calling certify with " +
+            click.echo(click.style("Warning!", fg="red", bold=True) + " You are calling certify with " +
                        click.style("--no-cleanup", bold=True) +
                        ". Your certificate files will remain in the system temporary directory after this command exectutes!")
         else:
@@ -1485,7 +1487,7 @@ class ZappaCLI(object):
         if self.stage_config.get('delete_s3_zip', True):
             self.zappa.remove_from_s3(self.zip_path, self.s3_bucket_name)
 
-    def print_logs(self, logs, colorize=True):
+    def print_logs(self, logs, colorize=True, http=False):
         """
         Parse, filter and print logs to the console.
 
@@ -1502,11 +1504,37 @@ class ZappaCLI(object):
                 continue
 
             if not colorize:
-                print("[" + str(timestamp) + "] " + message.strip())
+                if http:
+                    if self.is_http_log_entry(message.strip()):
+                        print("[" + str(timestamp) + "] " + message.strip())
+                else:
+                    print("[" + str(timestamp) + "] " + message.strip())
             else:
-                click.echo(click.style("[", fg='cyan') + click.style(str(timestamp), bold=True) + click.style("]", fg='cyan') + self.colorize_string(message.strip()))
+                if http:
+                    if self.is_http_log_entry(message.strip()):
+                        click.echo(click.style("[", fg='cyan') + click.style(str(timestamp), bold=True) + click.style("]", fg='cyan') + self.colorize_log_entry(message.strip()))
+                else:
+                    click.echo(click.style("[", fg='cyan') + click.style(str(timestamp), bold=True) + click.style("]", fg='cyan') + self.colorize_log_entry(message.strip()))
 
-    def colorize_string(self, string):
+    def is_http_log_entry(self, string):
+        """
+        Determines if a log entry is an HTTP-formatted log string or not.
+        """
+        # Debug event filter
+        if 'Zappa Event' in string:
+            return False
+
+        # IP address filter
+        for token in string.replace('\t', ' ').split(' '):
+            try:
+                if (token.count('.') is 3 and token.replace('.', '').isnumeric()):
+                    return True
+            except Exception: # pragma: no cover
+                pass
+
+        return False
+
+    def colorize_log_entry(self, string):
         """
         Apply various heuristics to return a colorized version of a string.
         If these fail, simply return the string in plaintext.
