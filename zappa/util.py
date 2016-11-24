@@ -159,6 +159,7 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
         arn_back = split_arn[-1]
         ctx.environment = arn_back
         funk.arn = arn_front
+        funk.name = ':'.join([arn_back, target_function])
     else:
         funk.arn = lambda_arn
 
