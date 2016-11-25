@@ -1,5 +1,9 @@
 # Zappa Changelog
 
+## 0.30.1
+* Add `--http` filter to `tail`
+* Prefer `apigateway_enabled` but still respect `use_apigateway`, #493
+
 ## 0.30.0
 * Adds colors to `zappa tail` output, fixes #492
 * Adds `--no-color` CLI argument
