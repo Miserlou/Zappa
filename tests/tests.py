@@ -212,6 +212,24 @@ class TestZappa(unittest.TestCase):
         self.assertEqual(False, parsable_template["Resources"]["GET0"]["Properties"]["ApiKeyRequired"])
         self.assertEqual(False, parsable_template["Resources"]["GET1"]["Properties"]["ApiKeyRequired"])
 
+        # CORS with auth
+        z.create_stack_template(lambda_arn, 'helloworld', False, {}, True, None, True)
+        parsable_template = json.loads(z.cf_template.to_json())
+        self.assertEqual("AWS_IAM", parsable_template["Resources"]["GET0"]["Properties"]["AuthorizationType"])
+        self.assertEqual("AWS_IAM", parsable_template["Resources"]["GET1"]["Properties"]["AuthorizationType"])
+        self.assertEqual("NONE", parsable_template["Resources"]["OPTIONS0"]["Properties"]["AuthorizationType"])
+        self.assertEqual("NONE", parsable_template["Resources"]["OPTIONS1"]["Properties"]["AuthorizationType"])
+        self.assertEqual("MOCK", parsable_template["Resources"]["OPTIONS0"]["Properties"]["Integration"]["Type"])
+        self.assertEqual("MOCK", parsable_template["Resources"]["OPTIONS1"]["Properties"]["Integration"]["Type"])
+        self.assertEqual("'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+                         parsable_template["Resources"]["OPTIONS0"]["Properties"]["Integration"]["IntegrationResponses"][0]["ResponseParameters"]["method.response.header.Access-Control-Allow-Headers"])
+        self.assertEqual("'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+                         parsable_template["Resources"]["OPTIONS1"]["Properties"]["Integration"]["IntegrationResponses"][0]["ResponseParameters"]["method.response.header.Access-Control-Allow-Headers"])
+        self.assertTrue(parsable_template["Resources"]["OPTIONS0"]["Properties"]["MethodResponses"][0]["ResponseParameters"]["method.response.header.Access-Control-Allow-Headers"])
+        self.assertTrue(parsable_template["Resources"]["OPTIONS1"]["Properties"]["MethodResponses"][0]["ResponseParameters"]["method.response.header.Access-Control-Allow-Headers"])
+        self.assertEqual(False, parsable_template["Resources"]["GET0"]["Properties"]["ApiKeyRequired"])
+        self.assertEqual(False, parsable_template["Resources"]["GET1"]["Properties"]["ApiKeyRequired"])
+
         # API Key auth
         z.create_stack_template(lambda_arn, 'helloworld', True, {}, True, None)
         parsable_template = json.loads(z.cf_template.to_json())
