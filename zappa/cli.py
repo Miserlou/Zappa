@@ -395,7 +395,7 @@ class ZappaCLI(object):
                                                         self.integration_content_type_aliases,
                                                         self.iam_authorization,
                                                         self.authorizer,
-                                                        self.enable_cors)
+                                                        self.cors)
 
             self.zappa.update_stack(self.lambda_name, self.s3_bucket_name, wait=True)
 
@@ -505,7 +505,7 @@ class ZappaCLI(object):
                                              self.integration_content_type_aliases,
                                              self.iam_authorization,
                                              self.authorizer,
-                                             self.enable_cors)
+                                             self.cors)
             self.zappa.update_stack(self.lambda_name, self.s3_bucket_name, wait=True, update_only=True)
 
             api_id = self.zappa.get_api_id(self.lambda_name)
@@ -1316,7 +1316,7 @@ class ZappaCLI(object):
         self.api_key_required = self.stage_config.get('api_key_required', False)
         self.api_key = self.stage_config.get('api_key')
         self.iam_authorization = self.stage_config.get('iam_authorization', False)
-        self.enable_cors = self.stage_config.get("enable_cors", False)
+        self.cors = self.stage_config.get("cors", None)
         self.lambda_description = self.stage_config.get('lambda_description', "Zappa Deployment")
         self.environment_variables = self.stage_config.get('environment_variables', {})
         self.check_environment(self.environment_variables)

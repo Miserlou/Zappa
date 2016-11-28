@@ -436,6 +436,7 @@ to change Zappa's behavior. Use these at your own risk!
         "timeout_seconds": 30, // Maximum lifespan for the Lambda function (default 30, max 300.)
         "touch": false, // GET the production URL upon initial deployment (default True)
         "use_precompiled_packages": false, // If possible, use C-extension packages which have been pre-compiled for AWS Lambda
+        "cors": true, // Enable cross-origin resource sharing. Disabled by default. If true, simulates the "Enable CORS" button on the API Gateway console. Can also be a dictionary specifying lists of "allowed_headers", "allowed_methods", and string of "allowed_origin"
         "vpc_config": { // Optional VPC configuration for Lambda function
             "SubnetIds": [ "subnet-12345678" ], // Note: not all availability zones support Lambda!
             "SecurityGroupIds": [ "sg-12345678" ]
