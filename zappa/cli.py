@@ -240,7 +240,6 @@ class ZappaCLI(object):
                     environments.append(self.zappa_settings.keys()[0])
                 else:
                     parser.error("Please supply an environment to interact with.")
-                    sys.exit(1)
             else:
                 environments.append(self.command_env[1])
 
@@ -1351,7 +1350,7 @@ class ZappaCLI(object):
         with open(settings_file) as json_file:
             try:
                 self.zappa_settings = json.load(json_file)
-            except ValueError:
+            except ValueError: # pragma: no cover
                 raise ValueError("Unable to load the zappa settings JSON. It may be malformed.")
 
     def create_package(self):
