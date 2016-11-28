@@ -1,0 +1,6 @@
+{
+    "lonely": {
+	"s3_bucket": "lmbda",
+	"app_function": "app.app"
+    }
+}
