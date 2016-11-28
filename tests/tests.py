@@ -847,6 +847,21 @@ class TestZappa(unittest.TestCase):
             zappa_cli.handle(argv)
         self.assertEqual(system_exit.exception.code, 1)
 
+    def test_cli_default(self):
+        # Discussion: https://github.com/Miserlou/Zappa/issues/422
+        zappa_cli = ZappaCLI()
+        argv = '-s tests/test_one_env.json status'.split()
+        # It'll fail, but at least it'll cover it.
+        with self.assertRaises(SystemExit) as system_exit:
+            zappa_cli.handle(argv)
+        self.assertEqual(system_exit.exception.code, 1)
+
+        zappa_cli = ZappaCLI()
+        argv = '-s test_settings.json status'.split()
+        with self.assertRaises(SystemExit) as system_exit:
+            zappa_cli.handle(argv)
+        self.assertEqual(system_exit.exception.code, 2)
+
     def test_bad_json_catch(self):
         zappa_cli = ZappaCLI()
         self.assertRaises(ValueError, zappa_cli.load_settings_file, 'tests/test_bad_settings.json')

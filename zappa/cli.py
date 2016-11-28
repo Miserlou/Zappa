@@ -233,7 +233,7 @@ class ZappaCLI(object):
         if all_environments: # All envs!
             environments = self.zappa_settings.keys()
         else: # Just one env.
-            if len(self.command_env) < 2: # pragma: no cover
+            if len(self.command_env) < 2:
                 # If there's only one environment defined in the settings,
                 # use that as the default.
                 if len(self.zappa_settings.keys()) is 1:
