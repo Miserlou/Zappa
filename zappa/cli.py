@@ -233,14 +233,13 @@ class ZappaCLI(object):
         if all_environments: # All envs!
             environments = self.zappa_settings.keys()
         else: # Just one env.
-            if len(self.command_env) < 2: # pragma: no cover
+            if len(self.command_env) < 2:
                 # If there's only one environment defined in the settings,
                 # use that as the default.
                 if len(self.zappa_settings.keys()) is 1:
                     environments.append(self.zappa_settings.keys()[0])
                 else:
                     parser.error("Please supply an environment to interact with.")
-                    sys.exit(1)
             else:
                 environments.append(self.command_env[1])
 
@@ -1354,7 +1353,7 @@ class ZappaCLI(object):
         with open(settings_file) as json_file:
             try:
                 self.zappa_settings = json.load(json_file)
-            except ValueError:
+            except ValueError: # pragma: no cover
                 raise ValueError("Unable to load the zappa settings JSON. It may be malformed.")
 
     def create_package(self):
