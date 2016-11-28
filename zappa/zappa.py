@@ -398,11 +398,12 @@ class Zappa(object):
             src_packages = os.path.join(venv, 'Src')
         else:
             src_packages = os.path.join(venv, 'src')
-        if minify:
-            excludes = ZIP_EXCLUDES + exclude
-            copytree(src_packages, temp_package_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
-        else:
-            copytree(src_packages, temp_package_path, symlinks=False)
+        if os.path.exists(src_packages):
+            if minify:
+                excludes = ZIP_EXCLUDES + exclude
+                copytree(src_packages, temp_package_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
+            else:
+                copytree(src_packages, temp_package_path, symlinks=False)
 
         copy_tree(temp_package_path, temp_project_path, update=True)
 
