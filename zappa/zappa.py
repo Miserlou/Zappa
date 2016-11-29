@@ -393,6 +393,18 @@ class Zappa(object):
             else:
                 copytree(site_packages_64, temp_package_path, symlinks=False)
 
+        # Then, do the src/.. for things installed with pip install -e git:// etc
+        if os.sys.platform == 'win32':
+            src_packages = os.path.join(venv, 'Src')
+        else:
+            src_packages = os.path.join(venv, 'src')
+        if os.path.exists(src_packages):
+            if minify:
+                excludes = ZIP_EXCLUDES + exclude
+                copytree(src_packages, temp_package_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
+            else:
+                copytree(src_packages, temp_package_path, symlinks=False)
+
         copy_tree(temp_package_path, temp_project_path, update=True)
 
         # Then the pre-compiled packages..
