@@ -1,5 +1,8 @@
 from __future__ import print_function
 
+import glob
+from setuptools import find_packages
+
 import boto3
 import botocore
 import json
@@ -301,6 +304,18 @@ class Zappa(object):
     ##
     # Packaging
     ##
+    def copy_editable_packages(self, egg_links, temp_package_path):
+        for egg_link in egg_links:
+            with open(egg_link) as df:
+                egg_path = df.read().decode('utf-8').splitlines()[0].strip()
+                pkgs = set([x.split(".")[0] for x in find_packages(egg_path, exclude=['test', 'tests'])])
+                for pkg in pkgs:
+                    copytree(os.path.join(egg_path, pkg), os.path.join(temp_package_path, pkg), symlinks=False)
+
+        if temp_package_path:
+            # now remove any egg-links as they will cause issues if they still exist
+            for link in glob.glob(os.path.join(temp_package_path, "*.egg-link")):
+                os.remove(link)
 
     def create_lambda_zip(self, prefix='lambda_package', handler_file=None,
                           minify=True, exclude=None, use_precompiled_packages=True, include=None, venv=None):
@@ -373,37 +388,33 @@ class Zappa(object):
             copytree(cwd, temp_project_path, symlinks=False)
 
         # Then, do the site-packages..
+        egg_links = []
         temp_package_path = os.path.join(tempfile.gettempdir(), str(int(time.time() + 1)))
         if os.sys.platform == 'win32':
             site_packages = os.path.join(venv, 'Lib', 'site-packages')
         else:
             site_packages = os.path.join(venv, 'lib', 'python2.7', 'site-packages')
+        egg_links.extend(glob.glob(os.path.join(site_packages, '*.egg-link')))
+
         if minify:
             excludes = ZIP_EXCLUDES + exclude
             copytree(site_packages, temp_package_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
+
         else:
             copytree(site_packages, temp_package_path, symlinks=False)
 
         # We may have 64-bin specific packages too.
         site_packages_64 = os.path.join(venv, 'lib64', 'python2.7', 'site-packages')
         if os.path.exists(site_packages_64):
+            egg_links.extend(glob.glob(os.path.join(site_packages_64, '*.egg-link')))
             if minify:
                 excludes = ZIP_EXCLUDES + exclude
                 copytree(site_packages_64, temp_package_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
             else:
                 copytree(site_packages_64, temp_package_path, symlinks=False)
 
-        # Then, do the src/.. for things installed with pip install -e git:// etc
-        if os.sys.platform == 'win32':
-            src_packages = os.path.join(venv, 'Src')
-        else:
-            src_packages = os.path.join(venv, 'src')
-        if os.path.exists(src_packages):
-            if minify:
-                excludes = ZIP_EXCLUDES + exclude
-                copytree(src_packages, temp_package_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
-            else:
-                copytree(src_packages, temp_package_path, symlinks=False)
+        if egg_links:
+            self.copy_editable_packages(egg_links, temp_package_path)
 
         copy_tree(temp_package_path, temp_project_path, update=True)
 
