@@ -304,6 +304,18 @@ class Zappa(object):
     ##
     # Packaging
     ##
+    def copy_editable_packages(self, egg_links, temp_package_path):
+        for egg_link in egg_links:
+            with open(egg_link) as df:
+                egg_path = df.read().decode('utf-8').splitlines()[0].strip()
+                pkgs = set([x.split(".")[0] for x in find_packages(egg_path, exclude=['test', 'tests'])])
+                for pkg in pkgs:
+                    copytree(os.path.join(egg_path, pkg), os.path.join(temp_package_path, pkg), symlinks=False)
+
+        if temp_package_path:
+            # now remove any egg-links as they will cause issues if they still exist
+            for link in glob.glob(os.path.join(temp_package_path, "*.egg-link")):
+                os.remove(link)
 
     def create_lambda_zip(self, prefix='lambda_package', handler_file=None,
                           minify=True, exclude=None, use_precompiled_packages=True, include=None, venv=None):
@@ -389,7 +401,7 @@ class Zappa(object):
             copytree(site_packages, temp_package_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
 
         else:
-            copytree(site_packages, temp_package_path, symlinks=False, ignore=shutil.ignore_patterns('*.egg-link'))
+            copytree(site_packages, temp_package_path, symlinks=False)
 
         # We may have 64-bin specific packages too.
         site_packages_64 = os.path.join(venv, 'lib64', 'python2.7', 'site-packages')
@@ -399,14 +411,10 @@ class Zappa(object):
                 excludes = ZIP_EXCLUDES + exclude
                 copytree(site_packages_64, temp_package_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
             else:
-                copytree(site_packages_64, temp_package_path, symlinks=False, ignore=shutil.ignore_patterns('*.egg-link'))
+                copytree(site_packages_64, temp_package_path, symlinks=False)
 
-        for egg_link in egg_links:
-            with open(egg_link) as df:
-                line = df.readlines()[0]  # egg-link files all ways has two lines, the first being the path
-                pkgs = set([x.split(".")[0] for x in find_packages(line, exclude=['test', 'tests'])])
-                for pkg in pkgs:
-                    copytree(pkg, temp_package_path, symlinks=False)
+        if egg_links:
+            self.copy_editable_packages(egg_links, temp_package_path)
 
         copy_tree(temp_package_path, temp_project_path, update=True)
 
