@@ -295,7 +295,9 @@ You can watch the logs of a deployment by calling the `tail` management command.
 
     $ zappa tail production
 
-By default, this will show all log items. You can use the argument `--http` to filter for HTTP requests, which will be in the Apache Common Log Format.
+By default, this will show all log items. In addition to HTTP and other events, anything `print`ed to `stdout` or `stderr` will be shown in the logs.
+
+You can use the argument `--http` to filter for HTTP requests, which will be in the Apache Common Log Format.
 
     $ zappa tail production --http
 
