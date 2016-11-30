@@ -1349,12 +1349,12 @@ class ZappaCLI(object):
 
         return self.zappa
 
-    def get_json_or_yaml_settings(self):
+    def get_json_or_yaml_settings(self, settings_name="zappa_settings"):
         """
         Return zappa_settings path as JSON or YAML, as appropriate.
         """
-        zs_json = "zappa_settings.json"
-        zs_yaml = "zappa_settings.yml"
+        zs_json = settings_name + ".json"
+        zs_yaml = settings_name + ".yml"
 
         # Must have at least one
         if not os.path.isfile(zs_json) and not os.path.isfile(zs_yaml):
