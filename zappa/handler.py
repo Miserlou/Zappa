@@ -1,4 +1,5 @@
 from __future__ import unicode_literals
+from __future__ import absolute_import
 
 import datetime
 import importlib
@@ -15,16 +16,12 @@ from werkzeug.wrappers import Response
 
 # This file may be copied into a project's root,
 # so handle both scenarios.
-try:
-    from zappa.cli import ZappaCLI
-    from zappa.middleware import ZappaWSGIMiddleware
-    from zappa.wsgi import create_wsgi_request, common_log
-    from zappa.util import parse_s3_url
-except ImportError as e:  # pragma: no cover
-    from .cli import ZappaCLI
-    from .middleware import ZappaWSGIMiddleware
-    from .wsgi import create_wsgi_request, common_log
-    from .util import parse_s3_url
+
+from zappa.cli import ZappaCLI
+from zappa.middleware import ZappaWSGIMiddleware
+from zappa.wsgi import create_wsgi_request, common_log
+from zappa.util import parse_s3_url
+
 
 
 # Set up logging
@@ -74,7 +71,7 @@ class LambdaHandler(object):
     def __new__(cls, settings_name="zappa_settings", session=None):
         """Singleton instance to avoid repeat setup"""
         if LambdaHandler.__instance is None:
-            LambdaHandler.__instance = object.__new__(cls, settings_name, session)
+            LambdaHandler.__instance = super(LambdaHandler, cls).__new__(cls)
         return LambdaHandler.__instance
 
     def __init__(self, settings_name="zappa_settings", session=None):
@@ -153,6 +150,9 @@ class LambdaHandler(object):
 
         try:
             content = remote_env_object['Body'].read().decode('utf-8')
+        except AttributeError:
+            content = remote_env_object['Body'].getvalue()
+
         except Exception as e:  # pragma: no cover
             # catch everything aws might decide to raise
             print('Exception while reading remote settings file.', e)
@@ -160,8 +160,8 @@ class LambdaHandler(object):
 
         try:
             settings_dict = json.loads(content)
-        except (ValueError, TypeError):  # pragma: no cover
-            print('Failed to parse remote settings!')
+        except (ValueError, TypeError) as e:  # pragma: no cover
+            print('Failed to parse remote settings! : ' + content)
             return
 
         # add each key-value to environment - overwrites existing keys!

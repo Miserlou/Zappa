@@ -17,3 +17,4 @@ troposphere==1.9.0
 Werkzeug==0.11.11
 wheel==0.29.0
 wsgi-request-logger==0.4.6
+letsencrypt

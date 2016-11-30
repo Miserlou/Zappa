@@ -55,7 +55,7 @@
     },
     "extendo2": {
        "extends": "extendo",
-       "s3_bucket": "lmbda2",
+       "s3_bucket": "lmbda2"
     },
     "depricated_remote_env": {
        "s3_bucket": "lmbda",

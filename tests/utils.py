@@ -1,8 +1,11 @@
+import platform
+
 import placebo
 import boto3
 import os
 import functools
 from contextlib import contextmanager
+
 from mock import patch, MagicMock
 
 PLACEBO_DIR = os.path.join(os.path.dirname(__file__), 'placebo')
@@ -59,13 +62,22 @@ def patch_open():
     yielded.
     Yields the mock for "open" and "file", respectively."""
     mock_open = MagicMock(spec=open)
-    mock_file = MagicMock(spec=file)
-
+    try:
+        mock_file = MagicMock(spec=file)
+    except NameError:
+        mock_file = MagicMock(spec=open)
     @contextmanager
     def stub_open(*args, **kwargs):
         mock_open(*args, **kwargs)
         yield mock_file
 
-    with patch('__builtin__.open', stub_open):
-        yield mock_open, mock_file
+    python_version = '.'.join(platform.python_version_tuple()[:2])
+
+    if int(python_version[0]) < 3:
+
+        with patch('__builtin__.open', stub_open):
+            yield mock_open, mock_file
+    else:
+        with patch('builtins.open', stub_open):
+            yield mock_open, mock_file
 

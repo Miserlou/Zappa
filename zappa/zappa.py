@@ -1,4 +1,6 @@
 from __future__ import print_function
+from __future__ import absolute_import
+import platform
 
 import glob
 from setuptools import find_packages
@@ -28,7 +30,7 @@ from lambda_packages import lambda_packages
 from tqdm import tqdm
 
 # Zappa imports
-from util import copytree, add_event_source, remove_event_source
+from zappa.util import copytree, add_event_source, remove_event_source
 
 logging.basicConfig(format='%(levelname)s:%(message)s')
 logger = logging.getLogger(__name__)
@@ -365,7 +367,7 @@ class Zappa(object):
                 parts.append(tail)
                 (path, tail) = os.path.split(path)
             parts.append(os.path.join(path, tail))
-            return map(os.path.normpath, parts)[::-1]
+            return list(map(os.path.normpath, parts))[::-1]
         split_venv = splitpath(venv)
         split_cwd = splitpath(cwd)
 
@@ -390,10 +392,13 @@ class Zappa(object):
         # Then, do the site-packages..
         egg_links = []
         temp_package_path = os.path.join(tempfile.gettempdir(), str(int(time.time() + 1)))
+        python_version = '.'.join(platform.python_version_tuple()[:2])
         if os.sys.platform == 'win32':
             site_packages = os.path.join(venv, 'Lib', 'site-packages')
         else:
-            site_packages = os.path.join(venv, 'lib', 'python2.7', 'site-packages')
+            site_packages = os.path.join(venv, 'lib', 'python%s' % python_version,
+                                         'site-packages')
+
         egg_links.extend(glob.glob(os.path.join(site_packages, '*.egg-link')))
 
         if minify:
@@ -404,7 +409,7 @@ class Zappa(object):
             copytree(site_packages, temp_package_path, symlinks=False)
 
         # We may have 64-bin specific packages too.
-        site_packages_64 = os.path.join(venv, 'lib64', 'python2.7', 'site-packages')
+        site_packages_64 = os.path.join(venv, 'lib64', 'python%s' % python_version, 'site-packages')
         if os.path.exists(site_packages_64):
             egg_links.extend(glob.glob(os.path.join(site_packages_64, '*.egg-link')))
             if minify:
@@ -533,7 +538,7 @@ class Zappa(object):
             for f in data['releases'][version]:
                 if f['filename'].endswith('cp27mu-manylinux1_x86_64.whl'):
                     return f['url']
-        except Exception, e: # pragma: no cover
+        except Exception as e: # pragma: no cover
             return None
         return None
 
@@ -1236,7 +1241,7 @@ class Zappa(object):
                                             TemplateURL=url,
                                             Tags=tags)
                 print('Waiting for stack {0} to update..'.format(name))
-            except botocore.client.ClientError as e:
+            except botocore.exceptions.ClientError as e:
                 if e.response['Error']['Message'] == 'No updates are to be performed.':
                     wait = False
                 else:
@@ -1709,7 +1714,7 @@ class Zappa(object):
             if error_code == 'AccessDeniedException':
                 raise
             else:
-                logger.debug('No target found for this rule: {} {}'.format(rule_name, e.message))
+                logger.debug('No target found for this rule: {} {}'.format(rule_name, e))
                 return
 
         if 'Targets' in targets and targets['Targets']:
@@ -1784,10 +1789,10 @@ class Zappa(object):
             else:
                 logger.debug('Failed to load Lambda function policy: {}'.format(policy_response))
         except ClientError as e:
-            if e.message.find('ResourceNotFoundException') > -1:
+            if  'ResourceNotFoundException' in e.response:
                 logger.debug('No policy found, must be first run.')
             else:
-                logger.error('Unexpected client error {}'.format(e.message))
+                logger.error('Unexpected client error {}'.format(e))
 
     ##
     # CloudWatch Logging

@@ -1,4 +1,6 @@
 # -*- coding: utf8 -*-
+from __future__ import absolute_import
+from __future__ import print_function
 import unittest
 import base58
 import json
@@ -8,6 +10,7 @@ from werkzeug.http import parse_cookie
 
 from zappa.wsgi import create_wsgi_request
 from zappa.middleware import ZappaWSGIMiddleware
+import six
 
 
 class TestWSGIMockMiddleWare(unittest.TestCase):
@@ -213,9 +216,12 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
         self.assertEqual(''.join(resp), body)
 
     def test_wsgi_middleware_uglystring(self):
-        ugly_string = unicode("˝ÓÔÒÚÆ☃ЗИЙКЛМФХЦЧШ차를 타고 온 펲시맨(╯°□°）╯︵ ┻━┻)"
-                              "לֹהִים, אֵת הַשָּׁמַיִם, וְאֵת הָt͔̦h̞̲e̢̤ ͍̬̲͖f̴̘͕̣è͖ẹ̥̩l͖͔͚i͓͚̦͠n͖͍̗͓̳̮g͍ ̨ 𝕢𝕦𝕚𝕔𝕜 𝕓𝕣𝕠𝕨",
-                              encoding='utf8')
+        try:
+            ugly_string = unicode("˝ÓÔÒÚÆ☃ЗИЙКЛМФХЦЧШ차를 타고 온 펲시맨(╯°□°）╯︵ ┻━┻)"
+                                  "לֹהִים, אֵת הַשָּׁמַיִם, וְאֵת הָt͔̦h̞̲e̢̤ ͍̬̲͖f̴̘͕̣è͖ẹ̥̩l͖͔͚i͓͚̦͠n͖͍̗͓̳̮g͍ ̨ 𝕢𝕦𝕚𝕔𝕜 𝕓𝕣𝕠𝕨")
+        except:
+            ugly_string = "˝ÓÔÒÚÆ☃ЗИЙКЛМФХЦЧШ차를 타고 온 펲시맨(╯°□°）╯︵ ┻━┻)" + \
+                                  "לֹהִים, אֵת הַשָּׁמַיִם, וְאֵת הָt͔̦h̞̲e̢̤ ͍̬̲͖f̴̘͕̣è͖ẹ̥̩l͖͔͚i͓͚̦͠n͖͍̗͓̳̮g͍ ̨ 𝕢𝕦𝕚𝕔𝕜 𝕓𝕣𝕠𝕨"
 
         # Pass some unicode through the middleware body
         def simple_app(environ, start_response):
@@ -230,7 +236,7 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
 
         # Call with empty WSGI Environment
         resp = app(dict(), self._start_response)
-        print(''.join(resp))
+        print((''.join(resp)))
 
         # Pass some unicode through the middleware headers
         def simple_app(environ, start_response):
@@ -245,7 +251,7 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
 
         # Call with empty WSGI Environment
         resp = app(dict(), self._start_response)
-        print(''.join(resp))
+        print((''.join(resp)))
 
     def test_wsgi_middleware_expiry(self):
         # Setting the cookies
@@ -376,7 +382,7 @@ class TestWSGIMiddleWare(unittest.TestCase):
 
         def set_cookies(environ, start_response):
             status = '200 OK'
-            print environ
+            print(environ)
             response_headers = [('Set-Cookie', 'foo=123'),
                                 ('Set-Cookie', 'bar=456'),
                                 ('Set-Cookie', 'baz=789')]
@@ -445,7 +451,7 @@ class TestWSGIMiddleWare(unittest.TestCase):
 
         def change_cookie(environ, start_response):
             status = '200 OK'
-            print 'environ', environ
+            print('environ', environ)
             response_headers = [('Set-Cookie', 'foo=new_value')]
             start_response(status, response_headers)
             return ['Set cookies!']
@@ -459,10 +465,15 @@ class TestWSGIMiddleWare(unittest.TestCase):
         self.assertEqual(len(zappa_cookie), 1)
         zappa_cookie1 = zappa_cookie[0]
         self.assertTrue(zappa_cookie1.startswith('zappa='))
+
         zdict = parse_cookie(zappa_cookie1)
-        print 'zdict', zdict
-        zdict2 = json.loads(base58.b58decode(zdict['zappa']))
-        print 'zdict2', zdict2
+        print('zdict', zdict)
+        try:
+            zdict2 = json.loads(base58.b58decode(zdict['zappa']))
+        except TypeError:
+            zdict2 = json.loads(bytes.decode(base58.b58decode(zdict['zappa'])))
+
+        print('zdict2', zdict2)
         self.assertEqual(len(zdict2), 3)
         self.assertEqual(zdict2['foo'], 'new_value')
         self.assertEqual(zdict2['bar'], '456')
@@ -476,7 +487,7 @@ class TestWSGIMiddleWare(unittest.TestCase):
 
         def read_cookies(environ, start_response):
             status = '200 OK'
-            print 'environ', environ
+            print('environ', environ)
             response_headers = []
             start_response(status, response_headers)
             return [environ['HTTP_COOKIE']]
@@ -487,14 +498,14 @@ class TestWSGIMiddleWare(unittest.TestCase):
                                       trailing_slash=False)
 
         response = Response.from_app(app, environ)
-        print "response", response
+        print("response", response)
         # Filter the headers for Set-Cookie header
         zappa_cookie = [x[1] for x in response.headers if x[0] == 'Set-Cookie']
         self.assertEqual(len(zappa_cookie), 1)
         zappa_cookie1 = zappa_cookie[0]
         self.assertTrue(zappa_cookie1.startswith('zappa='))
         zdict = parse_cookie(zappa_cookie1)
-        print 'zdict', zdict
+        print('zdict', zdict)
         cookies = json.loads(base58.b58decode(zdict['zappa']))
         self.assertEqual(cookies['foo'], 'new_value')
         self.assertEqual(cookies['bar'], '456')
