@@ -9,7 +9,9 @@ env:
   - TESTCASE=tests/test_handler.py
   - TESTCASE=tests/tests_middleware.py
   - TESTCASE=tests.py
-script: nosetests $TESTCASE --with-coverage --cover-package=zappa
+script: 
+  - nosetests $TESTCASE --with-coverage --cover-package=zappa
+  - coverage combine --append
 after_success:
   coveralls
 notifications:
