@@ -1,5 +1,10 @@
 # Zappa Changelog
 
+## 0.31.0
+* Adds the `cors` feature, big thanks to @AusIV!
+* Adds support for `-e` eggs, thanks to @schuyler1d and @xuru!
+* Adds support for YAML settings files. Eat up, hipsters.
+
 ## 0.30.1
 * Add `--http` filter to `tail`
 * Prefer `apigateway_enabled` but still respect `use_apigateway`, #493
