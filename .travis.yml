@@ -5,8 +5,13 @@ python:
 install:
   - "pip install setuptools --upgrade; pip install -r test_requirements.txt; pip install -e git+https://github.com/django/django-contrib-comments.git#egg=django-contrib-comments; python setup.py install" 
 # command to run tests
-script: nosetests --with-coverage --cover-package=zappa
+script: nosetests $TESTCASE --with-coverage --cover-package=zappa
 after_success:
   coveralls
 notifications:
   slack: zappateam:TTJ0mfHunDK0IBweKkEXjGpR
+env:
+  - TESTCASE=tests/test_app.py
+  - TESTCASE=tests/test_handler.py
+  - TESTCASE=tests/tests.py
+  - TESTCASE=tests/tests_middleware.py
