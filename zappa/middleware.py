@@ -1,3 +1,4 @@
+
 import base58
 import json
 import time
@@ -54,7 +55,7 @@ class ZappaWSGIMiddleware(object):
         only passing cookies that are still valid to the WSGI app.
         """
         self.start_response = start_response
-
+        print(environ)
         # Parse cookies from the WSGI environment
         parsed = parse_cookie(environ)
 
@@ -122,7 +123,10 @@ class ZappaWSGIMiddleware(object):
 
         # JSON-ify the cookie and encode it.
         pack_s = json.dumps(self.request_cookies)
-        encoded = base58.b58encode(pack_s)
+        try:
+            encoded = base58.b58encode(pack_s)
+        except TypeError:
+            encoded = base58.b58encode(str.encode(pack_s))
 
         # Set the result as the zappa cookie
         new_headers.append(
@@ -152,8 +156,14 @@ class ZappaWSGIMiddleware(object):
         Eat our Zappa cookie.
         Save the parsed cookies, as we need to send them back on every update.
         """
-        self.decoded_zappa = base58.b58decode(encoded_zappa)
+
+        try:
+            self.decoded_zappa = base58.b58decode(encoded_zappa)
+        except TypeError:
+            self.decoded_zappa = base58.b58decode(str.encode(encoded_zappa))
+
         self.request_cookies = json.loads(self.decoded_zappa)
+
 
     def filter_expired_cookies(self):
         """
@@ -173,10 +183,9 @@ class ZappaWSGIMiddleware(object):
             Yield name and expires of cookies.
         """
         for name, value in self.request_cookies.items():
-            cookie = (name + '=' + value).encode('utf-8')
+            cookie = (b'%s=%s' % (name ,value)).encode('utf-8')
             if cookie.count('=') is 1:
                 continue
-
             kvps = cookie.split(';')
             for kvp in kvps:
                 kvp = kvp.strip()

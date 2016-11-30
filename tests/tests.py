@@ -1,4 +1,8 @@
 # -*- coding: utf8 -*-
+from __future__ import absolute_import
+
+import platform
+
 import base64
 import collections
 import json
@@ -25,11 +29,15 @@ from zappa.util import (detect_django_settings, copytree, detect_flask_apps,
 from zappa.wsgi import create_wsgi_request, common_log
 from zappa.zappa import Zappa, ASSUME_POLICY, ATTACH_POLICY
 
+
+
 def random_string(length):
     return ''.join(random.choice(string.printable) for _ in range(length))
 
 
 class TestZappa(unittest.TestCase):
+    python_version = '.'.join(platform.python_version_tuple()[:2])
+
     def setUp(self):
         self.sleep_patch = mock.patch('time.sleep', return_value=None)
         # Tests expect us-east-1.
@@ -65,7 +73,8 @@ class TestZappa(unittest.TestCase):
         # mock the pip.get_installed_distributions() to include a package in lambda_packages so that the code
         # for zipping pre-compiled packages gets called
         mock_named_tuple = collections.namedtuple('mock_named_tuple', ['project_name'])
-        mock_return_val = [mock_named_tuple(lambda_packages.keys()[0])]  # choose name of 1st package in lambda_packages
+        mock_return_val = [mock_named_tuple(list(lambda_packages.keys())[0])]
+        # choose name of 1st package in lambda_packages
         with mock.patch('pip.get_installed_distributions', return_value=mock_return_val):
             z = Zappa()
             path = z.create_lambda_zip(handler_file=os.path.realpath(__file__))
@@ -329,8 +338,17 @@ class TestZappa(unittest.TestCase):
             self.assertRegexpMatches(document, pattern)
 
             for bad_code in ['200', '301', '302']:
-                document = base64.b64encode(head + bad_code + random_string(50))
-                self.assertNotRegexpMatches(document, pattern)
+                try:
+                    document = base64.b64encode(head + bad_code +
+                                            random_string(50))
+                except TypeError:
+                    document = base64.b64encode(str.encode(head + bad_code +
+                                                       random_string(50)))
+                try:
+                    self.assertNotRegexpMatches(document, pattern)
+                except TypeError:
+                    self.assertNotRegexpMatches(bytes.decode(document),
+                                                pattern)
 
     def test_200_pattern(self):
         pattern = Zappa.selection_pattern('200')
@@ -581,7 +599,7 @@ class TestZappa(unittest.TestCase):
         # Annoyingly, this will fail during record, but
         # the result will actually be okay to use in playback.
         # See: https://github.com/garnaat/placebo/issues/48
-        self.assertEqual(os.environ['hello'], 'world')
+        self.assertEqual(os.environ.get('hello'), 'world')
 
         event = {
             "body": {},
@@ -896,10 +914,17 @@ class TestZappa(unittest.TestCase):
         # Via http://stackoverflow.com/questions/2617057/how-to-supply-stdin-files-and-environment-variable-inputs-to-python-unit-tests
         inputs = ['dev', 'lmbda', 'test_settings', 'y', '']
 
+
         def test_for(inputs):
             input_generator = (i for i in inputs)
-            with mock.patch('__builtin__.raw_input', lambda prompt: next(input_generator)):
-                zappa_cli.init()
+            if int(self.python_version[0]) < 3:
+                with mock.patch('__builtin__.input', lambda prompt: next(input_generator)):
+                    zappa_cli.init()
+            else:
+                with mock.patch('builtins.input', lambda prompt: next(
+                        input_generator)):
+                    zappa_cli.init()
+
 
             if os.path.isfile('zappa_settings.json'):
                 os.remove('zappa_settings.json')
@@ -914,10 +939,17 @@ class TestZappa(unittest.TestCase):
 
         # Test via handle()
         input_generator = (i for i in inputs)
-        with mock.patch('__builtin__.raw_input', lambda prompt: next(input_generator)):
-            zappa_cli = ZappaCLI()
-            argv = ['init']
-            zappa_cli.handle(argv)
+        if int(self.python_version[0]) < 3:
+            with mock.patch('__builtin__.input', lambda prompt: next(input_generator)):
+                zappa_cli = ZappaCLI()
+                argv = ['init']
+                zappa_cli.handle(argv)
+        else:
+            with mock.patch('builtins.input', lambda prompt: next(
+                    input_generator)):
+                zappa_cli = ZappaCLI()
+                argv = ['init']
+                zappa_cli.handle(argv)
 
         if os.path.isfile('zappa_settings.json'):
             os.remove('zappa_settings.json')
@@ -1141,8 +1173,10 @@ USE_TZ = True
 
         app = get_django_wsgi('dj_test_settings')
         os.remove('dj_test_settings.py')
-        os.remove('dj_test_settings.pyc')
-
+        try:
+            os.remove('dj_test_settings.pyc')
+        except:
+            pass
     ##
     # Util / Misc
     ##
@@ -1229,7 +1263,11 @@ USE_TZ = True
         with zipfile.ZipFile(zappa_cli.zip_path, 'r') as lambda_zip:
             content = lambda_zip.read('zappa_settings.py')
         zappa_cli.remove_local_zip()
-        m = re.search("REMOTE_ENV='(.*)'", content)
+        try:
+            m = re.search("REMOTE_ENV='(.*)'", content)
+        except TypeError:
+            m = re.search("REMOTE_ENV='(.*)'", bytes.decode(content))
+
         self.assertEqual(m.group(1), 's3://lmbda-env/dev/env.json')
 
         zappa_cli = ZappaCLI()
@@ -1240,7 +1278,12 @@ USE_TZ = True
         with zipfile.ZipFile(zappa_cli.zip_path, 'r') as lambda_zip:
             content = lambda_zip.read('zappa_settings.py')
         zappa_cli.remove_local_zip()
-        m = re.search("REMOTE_ENV='(.*)'", content)
+        try:
+
+            m = re.search("REMOTE_ENV='(.*)'", content)
+        except:
+            m = re.search("REMOTE_ENV='(.*)'", bytes.decode(content))
+
         self.assertEqual(m.group(1), 's3://lmbda-env/prod/env.json')
 
 

@@ -1,9 +1,15 @@
+from __future__ import absolute_import
 import logging
 
 import base64
-from urllib import urlencode
+try:
+    from urllib import urlencode
+    from StringIO import StringIO
+except ImportError:
+    from urllib.parse import urlencode
+    from io import StringIO
+
 from requestlogger import ApacheFormatter
-from StringIO import StringIO
 
 from werkzeug import urls
 

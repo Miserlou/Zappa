@@ -4,7 +4,10 @@ import os
 import requests
 import shutil
 import stat
-import urlparse
+try:
+    from urllib.parse import urlparse
+except ImportError:
+    from urlparse import urlparse
 
 
 def copytree(src, dst, symlinks=False, ignore=None):
@@ -237,7 +240,7 @@ def parse_s3_url(url):
     bucket = ''
     path = ''
     if url:
-        result = urlparse.urlparse(url)
+        result = urlparse(url)
         bucket = result.netloc
         path = result.path.strip('/')
     return bucket, path
