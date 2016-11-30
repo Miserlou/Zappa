@@ -555,6 +555,8 @@ class TestZappa(unittest.TestCase):
         zappa_cli.load_settings('test_settings.json')
         self.assertEqual(False, zappa_cli.stage_config['touch'])
 
+    def test_load_extended_settings(self):
+
         zappa_cli = ZappaCLI()
         zappa_cli.api_stage = 'extendo'
         zappa_cli.load_settings('test_settings.json')
