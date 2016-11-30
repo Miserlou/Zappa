@@ -31,7 +31,9 @@ import string
 import sys
 import tempfile
 import time
+import yaml
 import zipfile
+
 from click.exceptions import ClickException
 from dateutil import parser
 from datetime import datetime,timedelta
@@ -167,7 +169,7 @@ class ZappaCLI(object):
         parser.add_argument('command_env', metavar='U', type=str, nargs='*', help=help_message)
         parser.add_argument('-n', '--num-rollback', type=int, default=0,
                             help='The number of versions to rollback.')
-        parser.add_argument('-s', '--settings_file', type=str, default='zappa_settings.json',
+        parser.add_argument('-s', '--settings_file', type=str, default=None,
                             help='The path to a zappa settings file.')
         parser.add_argument('-a', '--app_function', type=str, default=None,
                             help='The WSGI application function.')
@@ -1241,9 +1243,9 @@ class ZappaCLI(object):
             print(e)
             return
 
-    def load_settings(self, settings_file="zappa_settings.json", session=None):
+    def load_settings(self, settings_file=None, session=None):
         """
-        Load the local zappa_settings.json file.
+        Load the local zappa_settings file.
 
         An existing boto session can be supplied, though this is likely for testing purposes.
 
@@ -1251,6 +1253,8 @@ class ZappaCLI(object):
         """
 
         # Ensure we're passed a valid settings file.
+        if not settings_file:
+            settings_file = self.get_json_or_yaml_settings()
         if not os.path.isfile(settings_file):
             raise ClickException("Please configure your zappa_settings file.")
 
@@ -1345,16 +1349,42 @@ class ZappaCLI(object):
 
         return self.zappa
 
-    def load_settings_file(self, settings_file="zappa_settings.json"):
+    def get_json_or_yaml_settings(self):
+        """
+        Return zappa_settings path as JSON or YAML, as appropriate.
+        """
+        zs_json = "zappa_settings.json"
+        zs_yaml = "zappa_settings.yml"
+        if not os.path.isfile(zs_json) and not os.path.isfile(zs_yaml):
+            raise ClickException("Please configure a zappa_settings file.")
+        if os.path.isfile(zs_json):
+            settings_file = zs_json
+        else:
+            settings_file = zs_yaml
+        return settings_file
+
+    def load_settings_file(self, settings_file=None):
         """
         Load our settings file.
         """
 
-        with open(settings_file) as json_file:
-            try:
-                self.zappa_settings = json.load(json_file)
-            except ValueError: # pragma: no cover
-                raise ValueError("Unable to load the zappa settings JSON. It may be malformed.")
+        if not settings_file:
+            settings_file = self.get_json_or_yaml_settings()
+        if not os.path.isfile(settings_file):
+            raise ClickException("Please configure your zappa_settings file.")
+
+        if '.yml' in settings_file:
+            with open(settings_file) as yaml_file:
+                try:
+                    self.zappa_settings = yaml.load(yaml_file)
+                except ValueError: # pragma: no cover
+                    raise ValueError("Unable to load the Zappa settings YAML. It may be malformed.")
+        else:
+            with open(settings_file) as json_file:
+                try:
+                    self.zappa_settings = json.load(json_file)
+                except ValueError: # pragma: no cover
+                    raise ValueError("Unable to load the Zappa settings JSON. It may be malformed.")
 
     def create_package(self):
         """

@@ -447,6 +447,24 @@ to change Zappa's behavior. Use these at your own risk!
 }
 ```
 
+If you prefer YAML over JSON, you can also use a `zappa_settings.yml`, like so:
+
+```yaml
+---
+rev:
+  app_function: app.app
+  cors: true
+  s3_bucket: zappa-9j8hufxyv
+  environment_variables:
+    MYKEY: MYVAL
+  events:
+  - function: app.event_me
+    event_source:
+      arn: arn:aws:s3:::lmbda
+      events:
+      - s3:ObjectCreated:*
+```
+
 ## Advanced Usage
 
 #### Keeping The Server Warm

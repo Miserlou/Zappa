@@ -844,6 +844,18 @@ class TestZappa(unittest.TestCase):
         self.assertTrue(zappa_cli.stage_config['touch'])  # First Extension
         self.assertTrue(zappa_cli.stage_config['delete_local_zip'])  # The base
 
+    def test_load_settings_yaml(self):
+        zappa_cli = ZappaCLI()
+        zappa_cli.api_stage = 'ttt888'
+        zappa_cli.load_settings('tests/test_settings.yml')
+        self.assertEqual(False, zappa_cli.stage_config['touch'])
+
+        zappa_cli = ZappaCLI()
+        zappa_cli.api_stage = 'extendo'
+        zappa_cli.load_settings('tests/test_settings.yml')
+        self.assertEqual('lmbda', zappa_cli.stage_config['s3_bucket'])
+        self.assertEqual(True, zappa_cli.stage_config['touch'])
+
     def test_cli_utility(self):
         zappa_cli = ZappaCLI()
         zappa_cli.api_stage = 'ttt888'

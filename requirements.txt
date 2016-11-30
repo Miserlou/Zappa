@@ -9,6 +9,7 @@ kappa==0.6.0
 lambda-packages==0.10.0
 python-dateutil==2.6.0
 python-slugify==1.2.1
+PyYAML==3.12
 requests>=2.10.0
 six==1.10.0
 tqdm==4.10.0
