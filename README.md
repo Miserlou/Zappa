@@ -30,6 +30,7 @@
     - [Django Management Commands](#django-management-commands)
     - [Let's Encrypt SSL Domain Certification and Installation](#lets-encrypt-ssl-domain-certification-and-installation)
 - [Advanced Settings](#advanced-settings)
+    - [YAML Settings](#yaml-settings)
 - [Advanced Usage](#advanced-usage)
     - [Keeping The Server Warm](#keeping-the-server-warm)
     - [Serving Static Files / Binary Uploads](#serving-static-files--binary-uploads)
@@ -447,22 +448,27 @@ to change Zappa's behavior. Use these at your own risk!
 }
 ```
 
+#### YAML Settings
+
 If you prefer YAML over JSON, you can also use a `zappa_settings.yml`, like so:
 
 ```yaml
 ---
-rev:
-  app_function: app.app
-  cors: true
-  s3_bucket: zappa-9j8hufxyv
-  environment_variables:
-    MYKEY: MYVAL
+dev:
+  app_function: your_module.your_app
+  s3_bucket: your-code-bucket
   events:
-  - function: app.event_me
+  - function: your_module.your_function
     event_source:
-      arn: arn:aws:s3:::lmbda
+      arn: arn:aws:s3:::your-event-bucket
       events:
       - s3:ObjectCreated:*
+```
+
+You can also supply a custom settings file at any time with the `-s` argument, ex:
+
+```
+$ zappa deploy dev -s my-custom-settings.yml
 ```
 
 ## Advanced Usage

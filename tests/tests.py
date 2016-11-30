@@ -846,6 +846,9 @@ class TestZappa(unittest.TestCase):
 
     def test_load_settings_yaml(self):
         zappa_cli = ZappaCLI()
+        settings_file = get_json_or_yaml_settings()
+
+        zappa_cli = ZappaCLI()
         zappa_cli.api_stage = 'ttt888'
         zappa_cli.load_settings('tests/test_settings.yml')
         self.assertEqual(False, zappa_cli.stage_config['touch'])

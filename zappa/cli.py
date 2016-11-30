@@ -1355,12 +1355,17 @@ class ZappaCLI(object):
         """
         zs_json = "zappa_settings.json"
         zs_yaml = "zappa_settings.yml"
+
+        # Must have at least one
         if not os.path.isfile(zs_json) and not os.path.isfile(zs_yaml):
             raise ClickException("Please configure a zappa_settings file.")
+
+        # Prefer JSON
         if os.path.isfile(zs_json):
             settings_file = zs_json
         else:
             settings_file = zs_yaml
+
         return settings_file
 
     def load_settings_file(self, settings_file=None):
