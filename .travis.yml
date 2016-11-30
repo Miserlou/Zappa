@@ -13,7 +13,7 @@ env:
   - TESTCASE=tests/tests_placebo.py
   - TESTCASE=tests/tests.py
 script: 
-  - nosetests $TESTCASE --with-coverage --cover-package=zappa
+  - nosetests $TESTCASE --with-coverage --cover-package=zappa --with-timer
   - coverage combine --append
 after_success:
   coveralls
