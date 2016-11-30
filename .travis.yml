@@ -8,7 +8,7 @@ install:
 env:
   - TESTCASE=tests/test_handler.py
   - TESTCASE=tests/tests_middleware.py
-  - TESTCASE=tests.py
+  - TESTCASE=tests/tests.py
 script: 
   - nosetests $TESTCASE --with-coverage --cover-package=zappa
   - coverage combine --append
