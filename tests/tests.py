@@ -6,7 +6,7 @@ import platform
 import base64
 import collections
 import json
-from contextlib import nested
+
 
 import mock
 import os
@@ -83,8 +83,9 @@ class TestZappa(unittest.TestCase):
         temp_egg_link = os.path.join(temp_package_dir, 'package-python.egg-link')
 
         z = Zappa()
-        with nested(
-                patch_open(), mock.patch('glob.glob'), mock.patch('zappa.zappa.copytree')
+        with (
+                patch_open(), mock.patch('glob.glob'), mock.patch(
+                    'zappa.util.copytree')
         ) as ((mock_open, mock_file), mock_glob, mock_copytree):
             # We read in the contents of the egg-link file
             mock_file.read.return_value = "{}\n.".format(egg_path)

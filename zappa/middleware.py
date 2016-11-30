@@ -55,7 +55,6 @@ class ZappaWSGIMiddleware(object):
         only passing cookies that are still valid to the WSGI app.
         """
         self.start_response = start_response
-        print(environ)
         # Parse cookies from the WSGI environment
         parsed = parse_cookie(environ)
 
@@ -162,7 +161,7 @@ class ZappaWSGIMiddleware(object):
         except TypeError:
             self.decoded_zappa = base58.b58decode(str.encode(encoded_zappa))
 
-        self.request_cookies = json.loads(self.decoded_zappa)
+        self.request_cookies = json.loads(bytes.decode(self.decoded_zappa))
 
 
     def filter_expired_cookies(self):
@@ -183,7 +182,8 @@ class ZappaWSGIMiddleware(object):
             Yield name and expires of cookies.
         """
         for name, value in self.request_cookies.items():
-            cookie = (b'%s=%s' % (name ,value)).encode('utf-8')
+            cookie = '{}={}'.format(name ,value).encode('utf-8')
+
             if cookie.count('=') is 1:
                 continue
             kvps = cookie.split(';')

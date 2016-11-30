@@ -161,7 +161,6 @@ class LambdaHandler(object):
         try:
             settings_dict = json.loads(content)
         except (ValueError, TypeError) as e:  # pragma: no cover
-            print(content)
             print('Failed to parse remote settings! : ' + content)
             return
 

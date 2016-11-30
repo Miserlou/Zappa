@@ -470,10 +470,8 @@ class TestWSGIMiddleWare(unittest.TestCase):
         print('zdict', zdict)
         try:
             zdict2 = json.loads(base58.b58decode(zdict['zappa']))
-
         except TypeError:
-            print(base58.b58decode(zdict['zappa']))
-            zdict2 = json.loads(zdict.get('zappa'))
+            zdict2 = json.loads(bytes.decode(base58.b58decode(zdict['zappa'])))
 
         print('zdict2', zdict2)
         self.assertEqual(len(zdict2), 3)
