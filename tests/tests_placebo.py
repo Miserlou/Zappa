@@ -31,7 +31,7 @@ def random_string(length):
     return ''.join(random.choice(string.printable) for _ in range(length))
 
 
-class TestZappaPlacebo(unittest.TestCase):
+class TestZappa(unittest.TestCase):
     def setUp(self):
         self.sleep_patch = mock.patch('time.sleep', return_value=None)
         # Tests expect us-east-1.
