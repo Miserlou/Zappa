@@ -760,7 +760,7 @@ class Zappa(object):
     ##
 
     def create_api_gateway_routes(self, lambda_arn, api_name=None, api_key_required=False,
-                                  integration_content_type_aliases=None, authorization_type='NONE', authorizer=None):
+                                  integration_content_type_aliases=None, authorization_type='NONE', authorizer=None, cors_options=None):
         """
         Create the API Gateway for this Zappa deployment.
 
@@ -792,6 +792,9 @@ class Zappa(object):
         self.create_and_setup_methods(restapi, root_id, api_key_required, invocations_uri,
                                       integration_content_type_aliases, authorization_type, authorizer_resource, 0)
 
+        if cors_options is not None:
+            self.create_and_setup_cors(restapi, root_id, invocations_uri, 0, cors_options)
+
         resource = troposphere.apigateway.Resource('ResourceAnyPathSlashed')
         self.cf_api_resources.append(resource.title)
         resource.RestApiId = troposphere.Ref(restapi)
@@ -802,6 +805,8 @@ class Zappa(object):
         self.create_and_setup_methods(restapi, resource, api_key_required, invocations_uri,
                                       integration_content_type_aliases, authorization_type, authorizer_resource, 1)  # pragma: no cover
 
+        if cors_options is not None:
+            self.create_and_setup_cors(restapi, resource, invocations_uri, 1, cors_options)  # pragma: no cover
         return restapi
 
     def create_authorizer(self, restapi, uri, identity_source, authorizer_result_ttl, identity_validation_expression):
@@ -920,6 +925,66 @@ class Zappa(object):
             #     integration_response.SelectionPattern = self.selection_pattern(status_code)
             #     integration_response.StatusCode = status_code
             #     integration.IntegrationResponses.append(integration_response)
+
+    def create_and_setup_cors(self, restapi, resource, uri, depth, config):
+        """
+        Set up the methods, integration responses and method responses for a given API Gateway resource.
+        """
+        if config is True:
+            config = {}
+        method_name = "OPTIONS"
+        method = troposphere.apigateway.Method(method_name + str(depth))
+        method.RestApiId = troposphere.Ref(restapi)
+        if type(resource) is troposphere.apigateway.Resource:
+            method.ResourceId = troposphere.Ref(resource)
+        else:
+            method.ResourceId = resource
+        method.HttpMethod = method_name.upper()
+        method.AuthorizationType = "NONE"
+        method_response = troposphere.apigateway.MethodResponse()
+        method_response.ResponseModels = {
+            "application/json": "Empty"
+        }
+        response_headers = {
+            "Access-Control-Allow-Headers": "'%s'" % ",".join(config.get(
+                "allowed_headers", ["Content-Type", "X-Amz-Date",
+                                    "Authorization", "X-Api-Key",
+                                    "X-Amz-Security-Token"])),
+            "Access-Control-Allow-Methods": "'%s'" % ",".join(config.get(
+                "allowed_methods", ["GET", "POST", "OPTIONS"])),
+            "Access-Control-Allow-Origin": "'%s'" % config.get(
+                "allowed_origin", "*")
+        }
+        method_response.ResponseParameters = {
+            "method.response.header.%s" % key: True for key in response_headers
+        }
+        method_response.StatusCode = "200"
+        method.MethodResponses = [
+            method_response
+        ]
+        self.cf_template.add_resource(method)
+        self.cf_api_resources.append(method.title)
+
+        integration = troposphere.apigateway.Integration()
+        integration.Type = 'MOCK'
+        integration.PassthroughBehavior = 'NEVER'
+        integration.RequestTemplates = {
+            "application/json": "{\"statusCode\": 200}"
+        }
+        integration_response = troposphere.apigateway.IntegrationResponse()
+        integration_response.ResponseParameters = {
+            "method.response.header.%s" % key: value for key, value in response_headers.items()
+        }
+        integration_response.ResponseTemplates = {
+            "application/json": ""
+        }
+        integration_response.StatusCode = "200"
+        integration.IntegrationResponses = [
+            integration_response
+        ]
+
+        integration.Uri = uri
+        method.Integration = integration
 
     def deploy_api_gateway(self, api_id, stage_name, stage_description="", description="", cache_cluster_enabled=False,
                            cache_cluster_size='0.5', variables=None, cloudwatch_log_level='OFF',
@@ -1106,7 +1171,7 @@ class Zappa(object):
             return False
 
     def create_stack_template(self, lambda_arn, lambda_name, api_key_required, integration_content_type_aliases,
-                              iam_authorization, authorizer):
+                              iam_authorization, authorizer, cors_options=None):
         """
         Build the entire CF stack.
         Just used for the API Gateway, but could be expanded in the future.
@@ -1130,7 +1195,7 @@ class Zappa(object):
         self.cf_parameters = {}
 
         restapi = self.create_api_gateway_routes(lambda_arn, lambda_name, api_key_required,
-                                                 integration_content_type_aliases, auth_type, authorizer)
+                                                 integration_content_type_aliases, auth_type, authorizer, cors_options)
         return self.cf_template
 
     def update_stack(self, name, working_bucket, wait=False, update_only=False):
