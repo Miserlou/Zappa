@@ -3,6 +3,7 @@
        "touch": false,
        "s3_bucket": "lmbda",
        "app_function": "tests.test_app.hello_world",
+       "use_precompiled_packages": false, 
        "callbacks": {
            "settings": "test_settings.callback",
            "post": "test_settings.callback",
