@@ -1425,14 +1425,17 @@ class Zappa(object):
         # Patch operations described here: https://tools.ietf.org/html/rfc6902#section-4
         # and here: http://boto3.readthedocs.io/en/latest/reference/services/apigateway.html#APIGateway.Client.update_domain_name
 
+
+        print ("Updating domain name!")
+
         new_cert_name = 'Zappa' + str(time.time())
-        self.iam.create_server_certificate(
+        create_server_certificate_response = self.iam.create_server_certificate(
             ServerCertificateName=new_cert_name,
             CertificateBody=certificate_body,
             PrivateKey=certificate_private_key,
             CertificateChain=certificate_chain
         )
-        self.apigateway_client.update_domain_name(
+        update_domain_name_response = self.apigateway_client.update_domain_name(
             domainName=domain_name,
             patchOperations=[
                 {
@@ -1452,25 +1455,36 @@ class Zappa(object):
         Returns the record entry, else None.
 
         """
+        # make sure api gateway domain is present
         try:
+            self.apigateway_client.get_domain_name(domainName=domain_name)
+        except Exception:
+            return None
 
+        try:
             zones = self.route53.list_hosted_zones()
             for zone in zones['HostedZones']:
                 records = self.route53.list_resource_record_sets(HostedZoneId=zone['Id'])
                 for record in records['ResourceRecordSets']:
-                    if record['Type'] in ('CNAME', 'A') and record['Name'] == domain_name:
+                    if record['Type'] in ('CNAME', 'A') and record['Name'][:-1] == domain_name:
                         return record
 
-        except Exception:
+        except Exception as e:
             return None
+
+        ##
+        # Old, automatic logic.
+        # If re-introduced, should be moved to a new function.
+        # Related ticket: https://github.com/Miserlou/Zappa/pull/458
+        ##
 
         # We may be in a position where Route53 doesn't have a domain, but the API Gateway does.
         # We need to delete this before we can create the new Route53.
-        try:
-            api_gateway_domain = self.apigateway_client.get_domain_name(domainName=domain_name)
-            self.apigateway_client.delete_domain_name(domainName=domain_name)
-        except Exception:
-            pass
+        # try:
+        #     api_gateway_domain = self.apigateway_client.get_domain_name(domainName=domain_name)
+        #     self.apigateway_client.delete_domain_name(domainName=domain_name)
+        # except Exception:
+        #     pass
 
         return None
 
