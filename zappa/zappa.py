@@ -1426,7 +1426,7 @@ class Zappa(object):
         # and here: http://boto3.readthedocs.io/en/latest/reference/services/apigateway.html#APIGateway.Client.update_domain_name
 
 
-        print ("Updating domain name!")
+        print("Updating domain name!")
 
         new_cert_name = 'Zappa' + str(time.time())
         create_server_certificate_response = self.iam.create_server_certificate(
