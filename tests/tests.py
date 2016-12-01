@@ -595,6 +595,15 @@ class TestZappa(unittest.TestCase):
         self.assertEqual('lmbda', zappa_cli.stage_config['s3_bucket'])
         self.assertEqual(True, zappa_cli.stage_config['touch'])
 
+    def test_load_settings_toml(self):
+        zappa_cli = ZappaCLI()
+        settings_file = zappa_cli.get_json_or_yaml_settings("test_settings")
+
+        zappa_cli = ZappaCLI()
+        zappa_cli.api_stage = 'ttt888'
+        zappa_cli.load_settings('tests/test_settings.toml')
+        self.assertEqual(False, zappa_cli.stage_config['touch'])
+
     def test_cli_utility(self):
         zappa_cli = ZappaCLI()
         zappa_cli.api_stage = 'ttt888'

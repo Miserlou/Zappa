@@ -471,6 +471,14 @@ You can also supply a custom settings file at any time with the `-s` argument, e
 $ zappa deploy dev -s my-custom-settings.yml
 ```
 
+Similarly, you can supply a `zappa_settings.toml` file:
+
+```toml
+[dev]
+  app_function = "your_module.your_app"
+  s3_bucket = "your-code-bucket"
+```
+
 ## Advanced Usage
 
 #### Keeping The Server Warm
