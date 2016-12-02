@@ -5,9 +5,9 @@
        "app_function": "tests.test_app.hello_world",
        "use_precompiled_packages": false, 
        "callbacks": {
-           "settings": "test_settings.callback",
-           "post": "test_settings.callback",
-           "zip": "test_settings.callback"
+			"settings": "tests.test_app.callback",
+			"post": "tests.test_app.callback",
+			"zip": "test_settings.callback"
        },
        "delete_local_zip": true,
        "debug": true,

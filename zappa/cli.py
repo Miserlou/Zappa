@@ -13,6 +13,8 @@ from __future__ import division
 
 import argparse
 import base64
+import pkgutil
+
 import botocore
 import click
 import collections
@@ -1218,13 +1220,28 @@ class ZappaCLI(object):
 
         :return: None
         """
+
         callbacks = self.stage_config.get('callbacks', {})
         callback = callbacks.get(position)
 
         if callback:
-            (mod_name, cb_func) = callback.rsplit('.', 1)
+            (mod_path, cb_func) = callback.rsplit('.', 1)
 
-            module_ = importlib.import_module(mod_name)
+            try:  # Prefer callback in working directory
+                if mod_path.count('.') >= 1:  # Callback function is nested in a folder
+                    (mod_folder_path, mod_name) = mod_path.rsplit('.', 1)
+                    mod_folder_path_fragments = mod_folder_path.split('.')
+                    working_dir = os.path.join(os.getcwd(), *mod_folder_path_fragments)
+                else:
+                    mod_name = mod_path
+                    working_dir = os.getcwd()
+
+                working_dir_importer = pkgutil.get_importer(working_dir)
+                module_ = working_dir_importer.find_module(mod_name).load_module(mod_name)
+
+            except (ImportError, AttributeError):  # Callback func might be in virtualenv
+                module_ = importlib.import_module(mod_path)
+
             getattr(module_, cb_func)(self)  # Call the function passing self
 
     def check_for_update(self):
