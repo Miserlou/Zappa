@@ -967,10 +967,12 @@ USE_TZ = True
         zappa = Zappa()
         truncated = zappa.get_event_name("basldfkjalsdkfjalsdkfjaslkdfjalsdkfjadlsfkjasdlfkjasdlfkjasdflkjasdf-asdfasdfasdfasdfasdf", "this.is.my.dang.function.wassup.yeah.its.long")
         self.assertTrue(len(truncated) <= 64)
+        self.assertTrue(truncated.endswith("this.is.my.dang.function.wassup.yeah.its.long"))
         truncated = zappa.get_event_name("basldfkjalsdkfjalsdkfjaslkdfjalsdkfjadlsfkjasdlfkjasdlfkjasdflkjasdf-asdfasdfasdfasdfasdf", "thisidoasdfaljksdfalskdjfalsdkfjasldkfjalsdkfjalsdkfjalsdfkjalasdfasdfasdfasdklfjasldkfjalsdkjfaslkdfjasldkfjasdflkjdasfskdj")
         self.assertTrue(len(truncated) <= 64)
         truncated = zappa.get_event_name("a", "b")
         self.assertTrue(len(truncated) <= 64)
+        self.assertEqual(truncated, "a-b")
 
     def test_detect_dj(self):
         # Sanity
