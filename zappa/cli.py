@@ -1240,7 +1240,17 @@ class ZappaCLI(object):
                 module_ = working_dir_importer.find_module(mod_name).load_module(mod_name)
 
             except (ImportError, AttributeError):  # Callback func might be in virtualenv
-                module_ = importlib.import_module(mod_path)
+                try:
+                    module_ = importlib.import_module(mod_path)
+                except ImportError:
+                    raise ClickException(click.style("Failed ", fg="red") + 'to ' + click.style(
+                        "import {position} callback ".format(position=position),
+                        bold=True) + 'module: "{mod_path}"'.format(mod_path=click.style(mod_path, bold=True)))
+
+            if not hasattr(module_, cb_func):
+                raise ClickException(click.style("Failed ", fg="red") + 'to ' + click.style(
+                    "find {position} callback ".format(position=position), bold=True) + 'function: "{cb_func}" '.format(
+                    cb_func=click.style(cb_func, bold=True)) + 'in module "{mod_path}"'.format(mod_path=mod_path))
 
             getattr(module_, cb_func)(self)  # Call the function passing self
 
