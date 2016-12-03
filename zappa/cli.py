@@ -1111,7 +1111,7 @@ class ZappaCLI(object):
             clean_up = False
             click.echo(click.style("Warning!", fg="red", bold=True) + " You are calling certify with " +
                        click.style("--no-cleanup", bold=True) +
-                       ". Your certificate files will remain in the system temporary directory after this command exectutes!")
+                       ". Your certificate files will remain in the system temporary directory after this command executes!")
         else:
             clean_up = True
 
