@@ -6,6 +6,9 @@ import shutil
 import stat
 import urlparse
 
+##
+# Settings / Packaging
+##
 
 def copytree(src, dst, symlinks=False, ignore=None):
     """
@@ -41,6 +44,24 @@ def copytree(src, dst, symlinks=False, ignore=None):
             copytree(s, d, symlinks, ignore)
         else:
             shutil.copy2(s, d)
+
+def parse_s3_url(url):
+    """
+    Parses S3 URL.
+
+    Returns bucket (domain) and file (full path).
+    """
+    bucket = ''
+    path = ''
+    if url:
+        result = urlparse.urlparse(url)
+        bucket = result.netloc
+        path = result.path.strip('/')
+    return bucket, path
+
+##
+# `init` related
+##
 
 def detect_django_settings():
     """
@@ -97,6 +118,10 @@ def detect_flask_apps():
                     matches.append(app_module)
 
     return matches
+
+##
+# Event sources / Kappa
+##
 
 def get_event_source(event_source, lambda_arn, target_function, boto_session, dry=False):
     """
@@ -211,6 +236,10 @@ def get_event_source_status(event_source, lambda_arn, target_function, boto_sess
     event_source_obj, ctx, funk = get_event_source(event_source, lambda_arn, target_function, boto_session, dry=False)
     return event_source_obj.status(funk)
 
+##
+# Analytics / Surveillance / Nagging
+##
+
 def check_new_version_available(this_version):
     """
     Checks if a newer version of Zappa is available.
@@ -227,17 +256,3 @@ def check_new_version_available(this_version):
         return True
     else:
         return False
-
-def parse_s3_url(url):
-    """
-    Parses S3 URL.
-
-    Returns bucket (domain) and file (full path).
-    """
-    bucket = ''
-    path = ''
-    if url:
-        result = urlparse.urlparse(url)
-        bucket = result.netloc
-        path = result.path.strip('/')
-    return bucket, path
