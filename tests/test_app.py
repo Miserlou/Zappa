@@ -14,3 +14,7 @@ def hello_world(environ, start_response):
 
 def schedule_me():
     return "Hello!"
+
+def callback(self):
+    print("this is a callback")
+
