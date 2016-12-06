@@ -29,6 +29,7 @@
     - [Remote Function Invocation](#remote-function-invocation)
     - [Django Management Commands](#django-management-commands)
     - [Let's Encrypt SSL Domain Certification and Installation](#lets-encrypt-ssl-domain-certification-and-installation)
+    - [Enabling Bash completion](#enabling-bash-completion)
 - [Advanced Settings](#advanced-settings)
     - [YAML Settings](#yaml-settings)
 - [Advanced Usage](#advanced-usage)
@@ -347,6 +348,19 @@ And your domain will be verified, certified and registered!
 _(Please note that this can take around 45 minutes to take effect the first time your run the command, and around 60 seconds every time after that.)_
 
 More detailed instructions are available [in this handy guide](https://github.com/Miserlou/Zappa/blob/master/docs/domain_with_free_ssl_dns.md).
+
+#### Enabling Bash completion
+
+Bash completion can be enabled by adding the following to your .bashrc:
+
+	eval "$(register-python-argcomplete zappa)"
+
+`register-python-argcomplete` is provided by the argcomplete Python package. If this package was installed in a virtualenv
+then the command must be run there. Alternatively you can execute:
+
+	activate-global-python-argcomplete --dest=- > file
+
+The file's contents should then be sourced in e.g. ~/.bashrc.
 
 ## Advanced Settings
 

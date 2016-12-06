@@ -651,7 +651,9 @@ class TestZappa(unittest.TestCase):
         zappa_cli = ZappaCLI()
         # Sanity
         argv = '-s test_settings.json derp ttt888'.split()
-        zappa_cli.handle(argv)
+        with self.assertRaises(SystemExit) as system_exit:
+            zappa_cli.handle(argv)
+        self.assertEqual(system_exit.exception.code, 2)
 
     def test_cli_error_exit_code(self):
         # Discussion: https://github.com/Miserlou/Zappa/issues/407
