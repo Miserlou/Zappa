@@ -677,7 +677,7 @@ To learn more about these capabilities, see [these slides](https://htmlpreview.g
 * [Using Django-Zappa, Part 2: VPCs](https://serverlesscode.com/post/zappa-wsgi-for-python-pt-2/).
 * [Building Serverless Microservices with Zappa and Flask](https://gun.io/blog/serverless-microservices-with-zappa-and-flask/)
 * [Zappa で Hello World するまで (Japanese)](http://qiita.com/satoshi_iwashita/items/505492193317819772c7)
-* [How to Deploy Zappa with CloudFront, RDS and VPC](https://blog.zappa.io/posts/how-to-deploy-zappa-with-cloudfront-rds-and-vpc)
+* [How to Deploy Zappa with CloudFront, RDS and VPC](https://jinwright.net/how-deploy-serverless-wsgi-app-using-zappa/)
 * _Your guide here?_
 
 ## Zappa in the Press
