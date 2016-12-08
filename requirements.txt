@@ -6,7 +6,7 @@ futures==3.0.5
 hjson==2.0.2
 jmespath==0.9.0
 kappa==0.6.0
-lambda-packages==0.10.0
+lambda-packages==0.10.1
 python-dateutil==2.6.0
 python-slugify==1.2.1
 PyYAML==3.12
