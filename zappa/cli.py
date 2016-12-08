@@ -159,12 +159,12 @@ class ZappaCLI(object):
                 raise argparse.ArgumentTypeError(msg)
             return i
 
-        parser = argparse.ArgumentParser(
-            description=('Zappa - Deploy Python applications to AWS Lambda'
-                         ' and API Gateway.\n')
-        )
+        desc = ('Zappa - Deploy Python applications to AWS Lambda'
+                ' and API Gateway.\n')
+        parser = argparse.ArgumentParser(description=desc)
         parser.add_argument(
-            '-v', '--version', action='store_true',
+            '-v', '--version', action='version',
+            version=pkg_resources.get_distribution("zappa").version,
             help='Print the zappa version'
         )
         parser.add_argument(
@@ -176,11 +176,9 @@ class ZappaCLI(object):
 
         env_parser = argparse.ArgumentParser(add_help=False)
         group = env_parser.add_mutually_exclusive_group()
-        group.add_argument(
-            '--all', action='store_true',
-            help=('Execute this command for all of our '
-                  ' defined Zappa environments.')
-        )
+        all_help = ('Execute this command for all of our defined '
+                    'Zappa environments.')
+        group.add_argument('--all', action='store_true', help=all_help)
         group.add_argument('command_env', nargs='?')
         env_parser.add_argument('command_rest', nargs=argparse.REMAINDER)
 
@@ -199,6 +197,7 @@ class ZappaCLI(object):
             'deploy', parents=[env_parser], help='Deploy application.'
         )
         subparsers.add_parser('init', help='Initialize Zappa app.')
+
         invoke_parser = subparsers.add_parser(
             'invoke', parents=[env_parser],
             help='Invoke remote function.'
@@ -269,11 +268,6 @@ class ZappaCLI(object):
         argcomplete.autocomplete(parser)
         args = parser.parse_args(argv)
         self.vargs = vars(args)
-
-        # Version requires no arguments
-        if args.version: # pragma: no cover
-            self.print_version()
-            sys.exit(0)
 
         # Parse the input
         self.command_env = self.vargs.get('command_env')
@@ -929,13 +923,6 @@ class ZappaCLI(object):
         # TODO: S3/SQS/etc. type events?
 
         return True
-
-    def print_version(self): # pragma: no cover
-        """
-        Print the current zappa version.
-        """
-        version = pkg_resources.require("zappa")[0].version
-        print(version)
 
     def check_stage_name(self, stage_name):
         """

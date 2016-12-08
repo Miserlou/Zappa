@@ -4,6 +4,7 @@ import collections
 import json
 from contextlib import nested
 
+from io import StringIO
 import mock
 import os
 import random
@@ -11,6 +12,7 @@ import string
 import zipfile
 import re
 import unittest
+import sys
 
 from click.exceptions import ClickException
 from lambda_packages import lambda_packages
@@ -685,6 +687,20 @@ class TestZappa(unittest.TestCase):
         with self.assertRaises(SystemExit) as system_exit:
             zappa_cli.handle(argv)
         self.assertEqual(system_exit.exception.code, 2)
+
+    def test_cli_negative_rollback(self):
+        zappa_cli = ZappaCLI()
+        argv = '-s test_settings.json rollback -n -1 dev'.split()
+        output = StringIO()
+        old_stderr, sys.stderr = sys.stderr, output
+        with self.assertRaises(SystemExit) as system_exit:
+            zappa_cli.handle(argv)
+        self.assertEqual(system_exit.exception.code, 2)
+
+        error_msg = output.getvalue().strip()
+        expected = r".*This argument must be positive \(got -1\)$"
+        self.assertRegexpMatches(error_msg, expected)
+        sys.stderr = old_stderr
 
     def test_bad_json_catch(self):
         zappa_cli = ZappaCLI()
