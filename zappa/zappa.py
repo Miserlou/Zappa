@@ -781,13 +781,13 @@ class Zappa(object):
         authorizer_resource = None
         if authorizer:
             authorizer_lambda_arn = authorizer.get('arn', lambda_arn)
-            lambda_uri = 'arn:aws:apigateway:' + self.boto_session.region_name + ':lambda:path/2015-03-31/functions/' + authorizer_lambda_arn + '/invocations'
-
-            authorizer_resource = self.create_authorizer(restapi,
-                                                         lambda_uri,
-                                                         "method.request.header." + authorizer.get('token_header', 'Authorization'),
-                                                         authorizer.get('result_ttl', 300),
-                                                         authorizer.get('validation_expression', None))
+            lambda_uri = 'arn:aws:apigateway:{region_name}:lambda:path/2015-03-31/functions/{lambda_arn}/invocations'.format(
+                region_name=self.boto_session.region_name,
+                lambda_arn=authorizer_lambda_arn
+            )
+            authorizer_resource = self.create_authorizer(
+                restapi, lambda_uri, authorizer
+            )
 
         self.create_and_setup_methods(restapi, root_id, api_key_required, invocations_uri,
                                       integration_content_type_aliases, authorization_type, authorizer_resource, 0)
@@ -809,23 +809,29 @@ class Zappa(object):
             self.create_and_setup_cors(restapi, resource, invocations_uri, 1, cors_options)  # pragma: no cover
         return restapi
 
-    def create_authorizer(self, restapi, uri, identity_source, authorizer_result_ttl, identity_validation_expression):
+    def create_authorizer(self, restapi, uri, authorizer):
         """
         Create Authorizer for API gateway
         """
-        if not self.credentials_arn:
-            self.get_credentials_arn()
+        authorizer_type = authorizer.get("type", "TOKEN").upper()
+        identity_validation_expression = authorizer.get('validation_expression', None)
 
         authorizer_resource = troposphere.apigateway.Authorizer("Authorizer")
         authorizer_resource.RestApiId = troposphere.Ref(restapi)
-        authorizer_resource.Name = "ZappaAuthorizer"
-        authorizer_resource.Type = 'TOKEN'
-        authorizer_resource.AuthorizerResultTtlInSeconds = authorizer_result_ttl
+        authorizer_resource.Name = authorizer.get("name", "ZappaAuthorizer")
+        authorizer_resource.Type = authorizer_type
         authorizer_resource.AuthorizerUri = uri
-        authorizer_resource.IdentitySource = identity_source
-        authorizer_resource.AuthorizerCredentials = self.credentials_arn
+        authorizer_resource.IdentitySource = "method.request.header.%s" % authorizer.get('token_header', 'Authorization')
         if identity_validation_expression:
             authorizer_resource.IdentityValidationExpression = identity_validation_expression
+
+        if authorizer_type == 'TOKEN':
+            if not self.credentials_arn:
+                self.get_credentials_arn()
+            authorizer_resource.AuthorizerResultTtlInSeconds = authorizer.get('result_ttl', 300)
+            authorizer_resource.AuthorizerCredentials = self.credentials_arn
+        if authorizer_type == 'COGNITO_USER_POOLS':
+            authorizer_resource.ProviderARNs = authorizer.get('provider_arns')
 
         self.cf_api_resources.append(authorizer_resource.title)
         self.cf_template.add_resource(authorizer_resource)
@@ -1186,7 +1192,7 @@ class Zappa(object):
         elif iam_authorization:
             auth_type = "AWS_IAM"
         elif authorizer:
-            auth_type = "CUSTOM"
+            auth_type = authorizer.get("type", "CUSTOM")
 
         # build a fresh template
         self.cf_template = troposphere.Template()
