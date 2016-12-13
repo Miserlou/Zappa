@@ -951,7 +951,7 @@ class Zappa(object):
                                     "Authorization", "X-Api-Key",
                                     "X-Amz-Security-Token"])),
             "Access-Control-Allow-Methods": "'%s'" % ",".join(config.get(
-                "allowed_methods", ["GET", "POST", "OPTIONS"])),
+                "allowed_methods", ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"])),
             "Access-Control-Allow-Origin": "'%s'" % config.get(
                 "allowed_origin", "*")
         }
