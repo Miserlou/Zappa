@@ -1312,8 +1312,9 @@ class ZappaCLI(object):
                        " may be too long to deploy! Please make it <16 characters.")
 
         # The name of the actual AWS Lambda function, ex, 'helloworld-dev'
-        # Django's slugify doesn't replace _, but this does.
-        self.lambda_name = slugify.slugify(self.project_name + '-' + self.api_stage)
+        # No slugification, its user's responsibility to provide correct name
+        # and default is already slugified
+        self.lambda_name = self.project_name + '-' + self.api_stage
 
         # Load environment-specific settings
         self.s3_bucket_name = self.stage_config.get('s3_bucket', "zappa-" + ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(9)))
