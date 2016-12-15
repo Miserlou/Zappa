@@ -1408,6 +1408,7 @@ class ZappaCLI(object):
         # Create the zip file
         self.zip_path = self.zappa.create_lambda_zip(
                 self.lambda_name,
+                requirements=self.stage_config.get('requirements', []),
                 handler_file=handler_file,
                 use_precompiled_packages=self.stage_config.get('use_precompiled_packages', True),
                 exclude=self.stage_config.get('exclude', [])
