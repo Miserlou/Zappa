@@ -19,6 +19,7 @@ import troposphere
 import troposphere.apigateway
 import zipfile
 import pip
+import hashlib
 
 from botocore.exceptions import ClientError
 from io import BytesIO
@@ -194,7 +195,7 @@ LAMBDA_REGIONS = ['us-east-1', 'us-east-2', 'us-west-2', 'eu-central-1', 'eu-wes
 
 ZIP_EXCLUDES = [
     '*.exe', '*.DS_Store', '*.Python', '*.git', '.git/*', '*.zip', '*.tar.gz',
-    '*.hg', '*.egg-info', 'pip', 'docutils*', 'setuputils*'
+    '*.hg', '*.egg-info', 'pip', 'docutils*', 'setuputils*', ".zappa_cache"
 ]
 
 ##
@@ -367,7 +368,7 @@ class Zappa(object):
         # 4. Install into tempdir
         pip.main(["install", "-t", destination, pkg_name])
 
-    def _copytree(self, src, dest, excludes):
+    def _copytree(self, src, dest, excludes=None):
         """Copy a tree to a target destination."""
 
         if excludes:
@@ -390,7 +391,7 @@ class Zappa(object):
         return list(set(deps))  # de-dupe before returning
 
     def create_lambda_zip(self, prefix='lambda_package', requirements=None, handler_file=None,
-                          minify=True, exclude=None, use_precompiled_packages=True, include=None, venv=None):
+                          minify=True, exclude=None, use_precompiled_packages=True, include=None, venv=None, cache=True):
         """
         Create a Lambda-ready zip file of the current virtualenvironment and working directory.
 
@@ -420,6 +421,7 @@ class Zappa(object):
                 quit()
 
         cwd = os.getcwd()
+
         zip_fname = prefix + '-' + str(int(time.time())) + '.zip'
         zip_path = os.path.join(cwd, zip_fname)
 
@@ -455,16 +457,30 @@ class Zappa(object):
             requirements.add("zappa")  # just in case it's not there
             package_paths = []
 
-        print("Downloading and installing dependencies...")
-        progress = tqdm(total=len(requirements), unit_scale=False, unit='pkg')
-        self._installed_requirements = []
+        requirements_hash = hashlib.md5(":".join(sorted(requirements))).hexdigest()
+        cache_path = os.path.join(cwd, ".zappa_cache" + requirements_hash)
 
-        for pkg_name in requirements:
-            self.install_requirement(pkg_name, temp_package_path, package_paths,
-                                     excludes=excludes, use_precompiled_packages=use_precompiled_packages)
-            progress.update()
+        if cache and os.path.exists(cache_path):
+            temp_package_path = cache_path
+        else:
+            # Delete old cache folders
+            for dirname in os.listdir(cwd):
+                if dirname.startswith(".zappa_cache"):
+                    shutil.rmtree(os.path.join(cwd, dirname))
+
+            print("Downloading and installing dependencies...")
+            progress = tqdm(total=len(requirements), unit_scale=False, unit='pkg')
+            self._installed_requirements = []
+
+            for pkg_name in requirements:
+                self.install_requirement(pkg_name, temp_package_path, package_paths,
+                                         excludes=excludes, use_precompiled_packages=use_precompiled_packages)
+                progress.update()
+            if cache:
+                self._copytree(temp_package_path, cache_path, minify and excludes)
 
         self._copytree(temp_package_path, temp_project_path, minify and excludes)
+
 
         # If a handler_file is supplied, copy that to the root of the package,
         # because that's where AWS Lambda looks for it. It can't be inside a package.
