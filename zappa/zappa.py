@@ -424,24 +424,7 @@ class Zappa(object):
             installed_packages_name_set = [package.project_name.lower() for package in
                                            pip.get_installed_distributions()]
 
-            # First try to use manylinux packages from PyPi..
-            # Related: https://github.com/Miserlou/Zappa/issues/398
-            progress = tqdm(total=len(installed_packages_name_set), unit_scale=False, unit='pkg')
-            try:
-                for installed_package_name in installed_packages_name_set:
-                    wheel_url = self.get_manylinux_wheel(installed_package_name)
-                    if wheel_url:
-                        resp = requests.get(wheel_url, timeout=2, stream=True)
-                        resp.raw.decode_content = True
-                        zipresp = resp.raw
-                        with zipfile.ZipFile(BytesIO(zipresp.read())) as zfile:
-                            zfile.extractall(temp_package_path)
-                    progress.update()
-            except Exception:
-                pass # XXX - What should we do here?
-            progress.close()
-
-            # ..then, do lambda-packages.
+            # First, try lambda packages
             for name, details in lambda_packages.items():
                 if name.lower() in installed_packages_name_set:
                     tar = tarfile.open(details['path'], mode="r:gz")
@@ -450,8 +433,27 @@ class Zappa(object):
                         if member.isdir():
                             shutil.rmtree(os.path.join(temp_project_path, member.name), ignore_errors=True)
                             continue
-
                         tar.extract(member, temp_project_path)
+
+            progress = tqdm(total=len(installed_packages_name_set), unit_scale=False, unit='pkg')
+
+            # Then try to use manylinux packages from PyPi..
+            # Related: https://github.com/Miserlou/Zappa/issues/398
+            try:
+                for installed_package_name in installed_packages_name_set:
+                    if installed_package_name not in lambda_packages:
+                        wheel_url = self.get_manylinux_wheel(installed_package_name)
+                        if wheel_url:
+                            resp = requests.get(wheel_url, timeout=2, stream=True)
+                            resp.raw.decode_content = True
+                            zipresp = resp.raw
+                            with zipfile.ZipFile(BytesIO(zipresp.read())) as zfile:
+                                zfile.extractall(temp_project_path)
+                        progress.update()
+            except Exception:
+                pass # XXX - What should we do here?
+            progress.close()
+
 
         # If a handler_file is supplied, copy that to the root of the package,
         # because that's where AWS Lambda looks for it. It can't be inside a package.
