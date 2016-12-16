@@ -20,6 +20,7 @@ import troposphere.apigateway
 import zipfile
 import pip
 import hashlib
+import glob
 
 from botocore.exceptions import ClientError
 from io import BytesIO
@@ -309,6 +310,9 @@ class Zappa(object):
             pkgs = set([x.split(".")[0] for x in find_packages(egg_path, exclude=['test', 'tests'])])
             for pkg in pkgs:
                 copytree(os.path.join(egg_path, pkg), os.path.join(temp_package_path, pkg), symlinks=False)
+
+        for link in glob.glob(os.path.join(temp_package_path, "*.egg-link")):
+            os.remove(link)
 
     def install_requirement(self, pkg_name, destination, package_paths=None, excludes=None, use_precompiled_packages=True):
         """Copy a lambda-ready package into destination.
