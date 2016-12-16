@@ -1,5 +1,11 @@
 # Zappa Changelog
 
+# 0.32.0
+* Add Cognito Authorizers
+* Refactor CLI, add Bash Completion
+* Improve manylinux wheels
+* Varios fixes and req bumps
+
 ## 0.31.0
 * Adds the `cors` feature, big thanks to @AusIV!
 * Adds support for `-e` eggs, thanks to @schuyler1d and @xuru!
