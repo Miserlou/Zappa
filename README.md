@@ -39,7 +39,8 @@
     - [Enabling Secure Endpoints on API Gateway](#enabling-secure-endpoints-on-api-gateway)
       - [API Key](#api-key)
       - [IAM Policy](#iam-policy)
-      - [Authorizer](#authorizer)
+      - [API Gateway Authorizers](#api-gateway-authorizers)
+      - [Cognito User Pool Authorizer](#cognito-user-pool-authorizer)
     - [Deploying to a Domain With a Let's Encrypt Certificate (DNS Auth)](#deploying-to-a-domain-with-a-lets-encrypt-certificate-dns-auth)
     - [Deploying to a Domain With a Let's Encrypt Certificate (HTTP Auth)](#deploying-to-a-domain-with-a-lets-encrypt-certificate-http-auth)
     - [Setting Environment Variables](#setting-environment-variables)
@@ -523,7 +524,7 @@ You can use the `api_key_required` setting to generate and assign an API key to 
 
 You can enable IAM-based (v4 signing) authorization on an API by setting the `iam_authorization` setting to `true`. Your API will then require signed requests and access can be controlled via [IAM policy](https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-iam-policy-examples.html). Unsigned requests will receive a 403 response, as will requesters who are not authorized to access the API. Enabling this will override the Authorizer configuration (see below).
 
-##### Authorizer
+##### API Gateway Authorizers
 If you deploy an API endpoint with Zappa, you can take advantage of [API Gateway Authorizers](http://docs.aws.amazon.com/apigateway/latest/developerguide/use-custom-authorizer.html) to implement a token-based authentication - all you need to do is to provide a function to create the required output, Zappa takes care of the rest. A good start for the function is the [awslabs blueprint example.](https://github.com/awslabs/aws-apigateway-lambda-authorizer-blueprints/blob/master/blueprints/python/api-gateway-authorizer-python.py)
 
 If you are wondering for what you would use an Authorizer, here are some potential use cases:
@@ -533,6 +534,8 @@ If you are wondering for what you would use an Authorizer, here are some potenti
 3. Lookup in a self-managed DB (for example DynamoDB)
 
 Zappa can be configured to call a function inside your code to do the authorization, or to call some other existing lambda function (which lets you share the authorizer between multiple lambdas). You control the behavior by specifying either the `arn` or `function_name` values in the `authorizer` settings block.
+
+##### Cognito User Pool Authorizer
 
 You can also use AWS Cognito User Pool Authorizer by adding:
 
@@ -737,7 +740,7 @@ Are you using Zappa? Let us know and we'll list your site here!
 * [flask-ask](https://github.com/johnwheeler/flask-ask) - A framework for building Amazon Alexa applications. Uses Zappa for deployments.
 * [zappa-file-widget](https://github.com/anush0247/zappa-file-widget) - A Django plugin for supporting binary file uploads in Django on Zappa.
 * [zops](https://github.com/bjinwright/zops) - Utilities for teams and continuous integrations using Zappa.
-* [cookiecutter-mobile-backend](https://github.com/narfman0/cookiecutter-mobile-backend/) - A `cookiecutter` Django project with Zappa and S3 uploads support. 
+* [cookiecutter-mobile-backend](https://github.com/narfman0/cookiecutter-mobile-backend/) - A `cookiecutter` Django project with Zappa and S3 uploads support.
 
 ## Hacks
 
