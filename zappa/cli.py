@@ -11,6 +11,7 @@ Deploy arbitrary Python programs as serverless Zappa applications.
 from __future__ import unicode_literals
 from __future__ import division
 
+import argcomplete
 import argparse
 import base64
 import pkgutil
@@ -59,21 +60,6 @@ CUSTOM_SETTINGS = [
     'parameter_depth',
     'role_name',
     'touch',
-]
-
-CLI_COMMANDS = [
-    'certify',
-    'deploy',
-    'init',
-    'invoke',
-    'manage',
-    'rollback',
-    'schedule',
-    'status',
-    'tail',
-    'undeploy',
-    'unschedule',
-    'update'
 ]
 
 ##
@@ -165,57 +151,127 @@ class ZappaCLI(object):
         Parses command, load settings and dispatches accordingly.
 
         """
-        help_message = ("Please supply a valid command to execute. " +
-                       "Can be one of: {}.".format(', '.join(click.style(x, fg='green', bold=True) for x in sorted(CLI_COMMANDS))))
 
-        parser = argparse.ArgumentParser(description='Zappa - Deploy Python applications to AWS Lambda and API Gateway.\n')
-        parser.add_argument('command_env', metavar='U', type=str, nargs='*', help=help_message)
-        parser.add_argument('-n', '--num-rollback', type=int, default=0,
-                            help='The number of versions to rollback.')
-        parser.add_argument('-s', '--settings_file', type=str, default=None,
-                            help='The path to a zappa settings file.')
-        parser.add_argument('-a', '--app_function', type=str, default=None,
-                            help='The WSGI application function.')
-        parser.add_argument('-v', '--version', action='store_true', help='Print the zappa version', default=False)
-        parser.add_argument('-y', '--yes', action='store_true', help='Auto confirm yes', default=False)
-        parser.add_argument('--remove-logs', action='store_true',
-                            help='Removes log groups of api gateway and lambda task during the undeployment.',
-                            default=False)
-        parser.add_argument('--raw', action='store_true',
-                            help='When invoking remotely, invoke this python as a string, not as a modular path.',
-                            default=False)
-        parser.add_argument('--no-cleanup', action='store_true',
-                            help="Don't remove certificate files from /tmp during certify. Dangerous.", default=False)
-        parser.add_argument('--no-color', action='store_true',
-                            help="Don't color log tail output.", default=False)
-        parser.add_argument('--http', action='store_true',
-                            help="Only show HTTP requests in tail output", default=False)
-        parser.add_argument('--all', action='store_true',
-                            help="Execute this command for all of our defined Zappa environments.", default=False)
-        parser.add_argument('--json', action='store_true', help='Returns status in JSON format',
-                            default=False)  # https://github.com/Miserlou/Zappa/issues/407
+        def positive_int(s):
+            i = int(s)
+            if i < 0:
+                msg = "This argument must be positive (got {})".format(s)
+                raise argparse.ArgumentTypeError(msg)
+            return i
 
+        desc = ('Zappa - Deploy Python applications to AWS Lambda'
+                ' and API Gateway.\n')
+        parser = argparse.ArgumentParser(description=desc)
+        parser.add_argument(
+            '-v', '--version', action='version',
+            version=pkg_resources.get_distribution("zappa").version,
+            help='Print the zappa version'
+        )
+        parser.add_argument(
+            '-a', '--app_function', help='The WSGI application function.'
+        )
+        parser.add_argument(
+            '-s', '--settings_file', help='The path to a Zappa settings file.'
+        )
+
+        env_parser = argparse.ArgumentParser(add_help=False)
+        group = env_parser.add_mutually_exclusive_group()
+        all_help = ('Execute this command for all of our defined '
+                    'Zappa environments.')
+        group.add_argument('--all', action='store_true', help=all_help)
+        group.add_argument('command_env', nargs='?')
+        env_parser.add_argument('command_rest', nargs=argparse.REMAINDER)
+
+        subparsers = parser.add_subparsers(title='subcommands', dest='command')
+        cert_parser = subparsers.add_parser(
+            'certify', parents=[env_parser],
+            help='Create and install SSL certificate'
+        )
+        cert_parser.add_argument(
+            '--no-cleanup', action='store_true',
+            help=("Don't remove certificate files from /tmp during certify."
+                  " Dangerous.")
+        )
+
+        subparsers.add_parser(
+            'deploy', parents=[env_parser], help='Deploy application.'
+        )
+        subparsers.add_parser('init', help='Initialize Zappa app.')
+
+        invoke_parser = subparsers.add_parser(
+            'invoke', parents=[env_parser],
+            help='Invoke remote function.'
+        )
+        invoke_parser.add_argument(
+            '--raw', action='store_true',
+            help=('When invoking remotely, invoke this python as a string,'
+                  ' not as a modular path.')
+        )
+
+        subparsers.add_parser(
+            'manage', parents=[env_parser],
+            help='Invoke remote Django manage.py commands.'
+        )
+
+        rollback_parser = subparsers.add_parser(
+            'rollback', parents=[env_parser],
+            help='Rollback deployed code to a previous version.'
+        )
+        rollback_parser.add_argument(
+            '-n', '--num-rollback', type=positive_int, default=0,
+            help='The number of versions to rollback.'
+        )
+
+        subparsers.add_parser(
+            'schedule', parents=[env_parser],
+            help='Schedule functions to occur at regular intervals.'
+        )
+
+        status_parser = subparsers.add_parser(
+            'status', parents=[env_parser],
+            help='Show deployment status and event schedules.'
+        )
+        status_parser.add_argument(
+            '--json', action='store_true',
+            help='Returns status in JSON format.'
+        )  # https://github.com/Miserlou/Zappa/issues/407
+
+        tail_parser = subparsers.add_parser(
+            'tail', help='Tail deployment logs.'
+        )
+        tail_parser.add_argument(
+            '--no-color', action='store_true',
+            help="Don't color log tail output."
+        )
+        tail_parser.add_argument(
+            '--http', action='store_true',
+            help='Only show HTTP requests in tail output.'
+        )
+
+        undeploy_parser = subparsers.add_parser(
+            'undeploy', parents=[env_parser], help='Undeploy application.'
+        )
+        undeploy_parser.add_argument(
+            '--remove-logs', action='store_true',
+            help=('Removes log groups of api gateway and lambda task'
+                  ' during the undeployment.'),
+        )
+        undeploy_parser.add_argument(
+            '-y', '--yes', action='store_true', help='Auto confirm yes.'
+        )
+
+        subparsers.add_parser('unschedule', help='Unschedule functions.')
+        subparsers.add_parser(
+            'update', parents=[env_parser], help='Update deployed application.'
+        )
+
+        argcomplete.autocomplete(parser)
         args = parser.parse_args(argv)
-
         self.vargs = vars(args)
-        vargs_nosettings = self.vargs.copy()
-        vargs_nosettings.pop('settings_file')
-        if not any(vargs_nosettings.values()): # pragma: no cover
-            parser.error(help_message)
-            return
-
-        # Version requires no arguments
-        if args.version: # pragma: no cover
-            self.print_version()
-            sys.exit(0)
 
         # Parse the input
-        self.command_env = self.vargs['command_env']
-        self.command = self.command_env[0]
-
-        if self.command not in CLI_COMMANDS:
-            print("The command '{}' is not recognized. {}".format(click.style(self.command, fg='red', bold=True), help_message))
-            return
+        self.command_env = self.vargs.get('command_env')
+        self.command = args.command
 
         # We don't have any settings yet, so make those first!
         # (Settings-based interactions will fail
@@ -225,28 +281,28 @@ class ZappaCLI(object):
             return
 
         # Make sure there isn't a new version available
-        if not self.vargs['json']:
+        if not self.vargs.get('json'):
             self.check_for_update()
 
         # Load and Validate Settings File
-        self.load_settings_file(self.vargs['settings_file'])
+        self.load_settings_file(self.vargs.get('settings_file'))
 
         # Should we execute this for all environments, or just one?
-        all_environments = self.vargs['all']
+        all_environments = self.vargs.get('all')
         environments = []
 
         if all_environments: # All envs!
             environments = self.zappa_settings.keys()
         else: # Just one env.
-            if len(self.command_env) < 2:
+            if not self.command_env:
                 # If there's only one environment defined in the settings,
                 # use that as the default.
-                if len(self.zappa_settings.keys()) is 1:
+                if len(self.zappa_settings.keys()) == 1:
                     environments.append(self.zappa_settings.keys()[0])
                 else:
                     parser.error("Please supply an environment to interact with.")
             else:
-                environments.append(self.command_env[1])
+                environments.append(self.command_env)
 
         for environment in environments:
             try:
@@ -286,21 +342,18 @@ class ZappaCLI(object):
         elif command == 'update': # pragma: no cover
             self.update()
         elif command == 'rollback': # pragma: no cover
-            if self.vargs['num_rollback'] < 1: # pragma: no cover
-                parser.error("Please enter the number of iterations to rollback.")
-                return
             self.rollback(self.vargs['num_rollback'])
         elif command == 'invoke': # pragma: no cover
 
-            if len(self.command_env) < 2:
-                parser.error("Please enter the function to invoke.")
+            if not self.vargs.get('command_rest'):
+                print("Please enter the function to invoke.")
                 return
 
             self.invoke(self.command_env[-1], raw_python=self.vargs['raw'])
         elif command == 'manage': # pragma: no cover
 
-            if len(self.command_env) < 2:
-                parser.error("Please enter the management command to invoke.")
+            if not self.vargs.get('command_rest'):
+                print("Please enter the management command to invoke.")
                 return
 
             if not self.django_settings:
@@ -308,7 +361,7 @@ class ZappaCLI(object):
                 print("If this is a Django project, please define django_settings in your zappa_settings.")
                 return
 
-            command_tail = self.command_env[2:]
+            command_tail = self.vargs.get('command_rest')
             if len(command_tail) > 1:
                 command = " ".join(command_tail) # ex: zappa manage dev "shell --version"
             else:
@@ -870,13 +923,6 @@ class ZappaCLI(object):
         # TODO: S3/SQS/etc. type events?
 
         return True
-
-    def print_version(self): # pragma: no cover
-        """
-        Print the current zappa version.
-        """
-        version = pkg_resources.require("zappa")[0].version
-        print(version)
 
     def check_stage_name(self, stage_name):
         """
