@@ -152,13 +152,6 @@ class ZappaCLI(object):
 
         """
 
-        def positive_int(s):
-            i = int(s)
-            if i < 0:
-                msg = "This argument must be positive (got {})".format(s)
-                raise argparse.ArgumentTypeError(msg)
-            return i
-
         desc = ('Zappa - Deploy Python applications to AWS Lambda'
                 ' and API Gateway.\n')
         parser = argparse.ArgumentParser(description=desc)
@@ -182,6 +175,9 @@ class ZappaCLI(object):
         group.add_argument('command_env', nargs='?')
         env_parser.add_argument('command_rest', nargs=argparse.REMAINDER)
 
+        ##
+        # Certify
+        ##
         subparsers = parser.add_subparsers(title='subcommands', dest='command')
         cert_parser = subparsers.add_parser(
             'certify', parents=[env_parser],
@@ -193,11 +189,18 @@ class ZappaCLI(object):
                   " Dangerous.")
         )
 
+        ##
+        # Deploy
+        ##
         subparsers.add_parser(
             'deploy', parents=[env_parser], help='Deploy application.'
         )
         subparsers.add_parser('init', help='Initialize Zappa app.')
 
+
+        ##
+        # Invocation
+        ##
         invoke_parser = subparsers.add_parser(
             'invoke', parents=[env_parser],
             help='Invoke remote function.'
@@ -208,10 +211,24 @@ class ZappaCLI(object):
                   ' not as a modular path.')
         )
 
+        ##
+        # Manage
+        ##
         subparsers.add_parser(
             'manage', parents=[env_parser],
             help='Invoke remote Django manage.py commands.'
         )
+
+        ##
+        # Rollback
+        ##
+        def positive_int(s):
+            """ Ensure an arg is positive """
+            i = int(s)
+            if i < 0:
+                msg = "This argument must be positive (got {})".format(s)
+                raise argparse.ArgumentTypeError(msg)
+            return i
 
         rollback_parser = subparsers.add_parser(
             'rollback', parents=[env_parser],
@@ -222,11 +239,17 @@ class ZappaCLI(object):
             help='The number of versions to rollback.'
         )
 
+        ##
+        # Scheduling
+        ##
         subparsers.add_parser(
             'schedule', parents=[env_parser],
             help='Schedule functions to occur at regular intervals.'
         )
 
+        ##
+        # Status
+        ##
         status_parser = subparsers.add_parser(
             'status', parents=[env_parser],
             help='Show deployment status and event schedules.'
@@ -236,6 +259,9 @@ class ZappaCLI(object):
             help='Returns status in JSON format.'
         )  # https://github.com/Miserlou/Zappa/issues/407
 
+        ##
+        # Log Tailing
+        ##
         tail_parser = subparsers.add_parser(
             'tail', help='Tail deployment logs.'
         )
@@ -248,6 +274,9 @@ class ZappaCLI(object):
             help='Only show HTTP requests in tail output.'
         )
 
+        ##
+        # Undeploy
+        ##
         undeploy_parser = subparsers.add_parser(
             'undeploy', parents=[env_parser], help='Undeploy application.'
         )
@@ -260,7 +289,14 @@ class ZappaCLI(object):
             '-y', '--yes', action='store_true', help='Auto confirm yes.'
         )
 
+        ##
+        # Unschedule
+        ##
         subparsers.add_parser('unschedule', help='Unschedule functions.')
+
+        ##
+        # Updating
+        ##
         subparsers.add_parser(
             'update', parents=[env_parser], help='Update deployed application.'
         )
@@ -1286,7 +1322,7 @@ class ZappaCLI(object):
                 module_ = working_dir_importer.find_module(mod_name).load_module(mod_name)
 
             except (ImportError, AttributeError): # pragma: no cover
-              
+
                 try: # Callback func might be in virtualenv
                     module_ = importlib.import_module(mod_path)
                 except ImportError:
