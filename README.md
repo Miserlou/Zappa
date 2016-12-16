@@ -678,6 +678,7 @@ To learn more about these capabilities, see [these slides](https://htmlpreview.g
 * [Building Serverless Microservices with Zappa and Flask](https://gun.io/blog/serverless-microservices-with-zappa-and-flask/)
 * [Zappa で Hello World するまで (Japanese)](http://qiita.com/satoshi_iwashita/items/505492193317819772c7)
 * [How to Deploy Zappa with CloudFront, RDS and VPC](https://jinwright.net/how-deploy-serverless-wsgi-app-using-zappa/)
+* [zappa-examples - Flask, image uploads, django - more to come!](https://github.com/narfman0/zappa-examples/)
 * _Your guide here?_
 
 ## Zappa in the Press
