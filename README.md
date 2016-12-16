@@ -520,6 +520,18 @@ If you are wondering for what you would use an Authorizer, here are some potenti
 
 Zappa can be configured to call a function inside your code to do the authorization, or to call some other existing lambda function (which lets you share the authorizer between multiple lambdas). You control the behavior by specifying either the `arn` or `function_name` values in the `authorizer` settings block.
 
+You can also use AWS Cognito User Pool Authorizer by adding:
+
+```javascript
+{
+    "authorizer": {
+        "type": "COGNITO_USER_POOLS",
+        "provider_arns": [
+            "arn:aws:cognito-idp:{region}:{account_id}:userpool/{user_pool_id}"
+        ]
+    }
+}
+```
 
 #### Deploying to a Domain With a Let's Encrypt Certificate (DNS Auth)
 
