@@ -29,13 +29,13 @@
     - [Remote Function Invocation](#remote-function-invocation)
     - [Django Management Commands](#django-management-commands)
     - [Let's Encrypt SSL Domain Certification and Installation](#lets-encrypt-ssl-domain-certification-and-installation)
-    - [Enabling Bash completion](#enabling-bash-completion)
 - [Advanced Settings](#advanced-settings)
     - [YAML Settings](#yaml-settings)
 - [Advanced Usage](#advanced-usage)
     - [Keeping The Server Warm](#keeping-the-server-warm)
     - [Serving Static Files / Binary Uploads](#serving-static-files--binary-uploads)
     - [Enabling CORS](#enabling-cors)
+    - [Enabling Bash completion](#enabling-bash-completion)
     - [Enabling Secure Endpoints on API Gateway](#enabling-secure-endpoints-on-api-gateway)
       - [API Key](#api-key)
       - [IAM Policy](#iam-policy)
@@ -350,19 +350,6 @@ _(Please note that this can take around 45 minutes to take effect the first time
 
 More detailed instructions are available [in this handy guide](https://github.com/Miserlou/Zappa/blob/master/docs/domain_with_free_ssl_dns.md).
 
-#### Enabling Bash completion
-
-Bash completion can be enabled by adding the following to your .bashrc:
-
-	eval "$(register-python-argcomplete zappa)"
-
-`register-python-argcomplete` is provided by the argcomplete Python package. If this package was installed in a virtualenv
-then the command must be run there. Alternatively you can execute:
-
-	activate-global-python-argcomplete --dest=- > file
-
-The file's contents should then be sourced in e.g. ~/.bashrc.
-
 ## Advanced Settings
 
 There are other settings that you can define in your local settings
@@ -513,6 +500,19 @@ Similarly, you will not be able to accept binary multi-part uploads through the 
 The easiest way to enable CORS (Cross-Origin Resource Sharing) for in your Zappa application is to set `cors` to `true` in your Zappa settings file and updating, which is the equivalent of pushing the "Enable CORS" button in the AWS API Gateway console. This is disabled by default, but you may wish to enable it for APIs which are accssed from other domains, etc.
 
 You can also simply handle CORS directly in your application. If you do this, you'll need to add `Access-Control-Allow-Origin`, `Access-Control-Allow-Headers`, and `Access-Control-Allow-Methods` to the `method_header_types` key in your `zappa_settings.json`. See further [discussion here](https://github.com/Miserlou/Zappa/issues/41).
+
+#### Enabling Bash completion
+
+Bash completion can be enabled by adding the following to your .bashrc:
+
+  eval "$(register-python-argcomplete zappa)"
+
+`register-python-argcomplete` is provided by the argcomplete Python package. If this package was installed in a virtualenv
+then the command must be run there. Alternatively you can execute:
+
+  activate-global-python-argcomplete --dest=- > file
+
+The file's contents should then be sourced in e.g. ~/.bashrc.
 
 #### Enabling Secure Endpoints on API Gateway
 
