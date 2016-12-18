@@ -658,6 +658,33 @@ class Zappa(object):
             return False
         return True
 
+    def copy_on_s3(self, src_file_name, dst_file_name, bucket_name):
+        """
+        Copies src file to destination within a bucket.
+        """
+        try:
+            self.s3_client.head_bucket(Bucket=bucket_name)
+        except botocore.exceptions.ClientError as e:  # pragma: no cover
+            # If a client error is thrown, then check that it was a 404 error.
+            # If it was a 404 error, then the bucket does not exist.
+            error_code = int(e.response['Error']['Code'])
+            if error_code == 404:
+                return False
+
+        copy_src = {
+            "Bucket": bucket_name,
+            "Key": src_file_name
+        }
+        try:
+            self.s3_client.copy(
+                CopySource=copy_src,
+                Bucket=bucket_name,
+                Key=dst_file_name
+            )
+            return True
+        except botocore.exceptions.ClientError:  # pragma: no cover
+            return False
+
     def remove_from_s3(self, file_name, bucket_name):
         """
         Given a file name and a bucket, remove it from S3.

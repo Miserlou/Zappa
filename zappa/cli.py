@@ -470,6 +470,13 @@ class ZappaCLI(object):
             if not success:  # pragma: no cover
                 raise ClickException("Unable to upload handler to S3. Quitting.")
 
+            # Copy the project zip to the current project zip
+            current_project_name = '{0!s}_current_project.zip'.format(self.project_name)
+            success = self.zappa.copy_on_s3(src_file_name=self.zip_path, dst_file_name=current_project_name,
+                                            bucket_name=self.s3_bucket_name)
+            if not success:  # pragma: no cover
+                raise ClickException("Unable to copy the zip to be the current project. Quitting.")
+
             handler_file = self.handler_path
         else:
             handler_file = self.zip_path
@@ -584,6 +591,13 @@ class ZappaCLI(object):
             success = self.zappa.upload_to_s3(self.handler_path, self.s3_bucket_name)
             if not success:  # pragma: no cover
                 raise ClickException("Unable to upload handler to S3. Quitting.")
+
+            # Copy the project zip to the current project zip
+            current_project_name = '{0!s}_current_project.zip'.format(self.project_name)
+            success = self.zappa.copy_on_s3(src_file_name=self.zip_path, dst_file_name=current_project_name,
+                                            bucket_name=self.s3_bucket_name)
+            if not success:  # pragma: no cover
+                raise ClickException("Unable to copy the zip to be the current project. Quitting.")
 
             handler_file = self.handler_path
         else:
@@ -1654,7 +1668,7 @@ class ZappaCLI(object):
 
             # If slim handler, path to project zip
             if self.stage_config.get('slim_handler', False):
-                settings_s += "ZIP_PATH='s3://{0!s}/{1!s}'\n".format(self.s3_bucket_name, self.zip_path)
+                settings_s += "ZIP_PATH='s3://{0!s}/{1!s}_current_project.zip'\n".format(self.s3_bucket_name, self.project_name)
 
             # AWS Events function mapping
             event_mapping = {}
@@ -1708,11 +1722,11 @@ class ZappaCLI(object):
 
         # Remove the uploaded zip from S3, because it is now registered..
         if self.stage_config.get('delete_s3_zip', True):
+            self.zappa.remove_from_s3(self.zip_path, self.s3_bucket_name)
             if self.stage_config.get('slim_handler', False):
                 # Need to keep the project zip as the slim handler uses it.
                 self.zappa.remove_from_s3(self.handler_path, self.s3_bucket_name)
-            else:
-                self.zappa.remove_from_s3(self.zip_path, self.s3_bucket_name)
+
 
     def print_logs(self, logs, colorize=True, http=False):
         """
