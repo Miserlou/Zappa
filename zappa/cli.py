@@ -97,6 +97,7 @@ class ZappaCLI(object):
     s3_bucket_name = None
     settings_file = None
     zip_path = None
+    handler_path = None
     vpc_config = None
     memory_size = None
     use_apigateway = None
@@ -462,10 +463,21 @@ class ZappaCLI(object):
         if not success: # pragma: no cover
             raise ClickException("Unable to upload to S3. Quitting.")
 
+        # If lambda loads just a slim handler. The handler then downloads the project separately.
+        if self.stage_config.get('slim_handler', False):
+            # https://github.com/Miserlou/Zappa/issues/510
+            success = self.zappa.upload_to_s3(self.handler_path, self.s3_bucket_name)
+            if not success:  # pragma: no cover
+                raise ClickException("Unable to upload handler to S3. Quitting.")
+
+            handler_file = self.handler_path
+        else:
+            handler_file = self.zip_path
+
         # Register the Lambda function with that zip as the source
         # You'll also need to define the path to your lambda_handler code.
         self.lambda_arn = self.zappa.create_lambda_function(bucket=self.s3_bucket_name,
-                                                       s3_key=self.zip_path,
+                                                       s3_key=handler_file,
                                                        function_name=self.lambda_name,
                                                        handler=self.lambda_handler,
                                                        description=self.lambda_description,
@@ -511,9 +523,8 @@ class ZappaCLI(object):
         if self.stage_config.get('delete_local_zip', True):
             self.remove_local_zip()
 
-        # Remove the uploaded zip from S3, because it is now registered..
-        if self.stage_config.get('delete_s3_zip', True):
-            self.zappa.remove_from_s3(self.zip_path, self.s3_bucket_name)
+        # Remove the project zip from S3.
+        self.remove_uploaded_zip()
 
         self.callback('post')
 
@@ -564,18 +575,27 @@ class ZappaCLI(object):
 
         # Upload it to S3
         success = self.zappa.upload_to_s3(self.zip_path, self.s3_bucket_name)
-        if not success: # pragma: no cover
-            print("Unable to upload to S3. Quitting.")
-            sys.exit(-1)
+        if not success:  # pragma: no cover
+            raise ClickException("Unable to upload project to S3. Quitting.")
+
+        # If lambda loads just a slim handler. The handler then downloads the project separately.
+        if self.stage_config.get('slim_handler', False):
+            # https://github.com/Miserlou/Zappa/issues/510
+            success = self.zappa.upload_to_s3(self.handler_path, self.s3_bucket_name)
+            if not success:  # pragma: no cover
+                raise ClickException("Unable to upload handler to S3. Quitting.")
+
+            handler_file = self.handler_path
+        else:
+            handler_file = self.zip_path
 
         # Register the Lambda function with that zip as the source
         # You'll also need to define the path to your lambda_handler code.
         self.lambda_arn = self.zappa.update_lambda_function(
-            self.s3_bucket_name, self.zip_path, self.lambda_name)
+            self.s3_bucket_name, handler_file, self.lambda_name)
 
         # Remove the uploaded zip from S3, because it is now registered..
-        if self.stage_config.get('delete_s3_zip', True):
-            self.zappa.remove_from_s3(self.zip_path, self.s3_bucket_name)
+        self.remove_uploaded_zip()
 
         # Update the configuration, in case there are changes.
         self.lambda_arn = self.zappa.update_lambda_configuration(lambda_arn=self.lambda_arn,
@@ -1527,16 +1547,48 @@ class ZappaCLI(object):
             inspect.getfile(inspect.currentframe())))
         handler_file = os.sep.join(current_file.split(os.sep)[0:]) + os.sep + 'handler.py'
 
-        # Create the zip file
-        self.zip_path = self.zappa.create_lambda_zip(
-                self.lambda_name,
-                handler_file=handler_file,
+        # Create the zip file(s)
+        if self.stage_config.get('slim_handler', False):
+            # Create two zips. One with the application and the other with just the handler.
+            # https://github.com/Miserlou/Zappa/issues/510
+            self.zip_path = self.zappa.create_lambda_zip(
+                prefix=self.lambda_name,
                 use_precompiled_packages=self.stage_config.get('use_precompiled_packages', True),
                 exclude=self.stage_config.get('exclude', [])
             )
 
-        # Throw custom setings into the zip file
-        with zipfile.ZipFile(self.zip_path, 'a') as lambda_zip:
+            # Make sure the normal venv is not included in the handler's zip
+            exclude = self.stage_config.get('exclude', [])
+            cur_venv = self.zappa.get_current_venv()
+            exclude.append(cur_venv.split('/')[-1])
+            self.handler_path = self.zappa.create_lambda_zip(
+                prefix='handler_{0!s}'.format(self.lambda_name),
+                venv=self.zappa.create_handler_venv(),
+                handler_file=handler_file,
+                slim_handler=True,
+                exclude=exclude
+            )
+        else:
+            # Create a single zip that has the handler and application
+            self.zip_path = self.zappa.create_lambda_zip(
+                prefix=self.lambda_name,
+                handler_file=handler_file,
+                use_precompiled_packages=self.stage_config.get('use_precompiled_packages', True),
+                exclude=self.stage_config.get('exclude', [])
+            )
+            # Warn if this is too large for Lambda.
+            file_stats = os.stat(self.zip_path)
+            if file_stats.st_size > 52428800:  # pragma: no cover
+                print('\n\nWarning: Application zip package is likely to be too large for AWS Lambda.'
+                      'Try setting "slim_handler"=true in the zappa_settings.json.\n\n')
+
+        # Throw custom setings into the zip that handles requests
+        if self.stage_config.get('slim_handler', False):
+            handler_zip = self.handler_path
+        else:
+            handler_zip = self.zip_path
+
+        with zipfile.ZipFile(handler_zip, 'a') as lambda_zip:
 
             settings_s = "# Generated by Zappa\n"
 
@@ -1600,6 +1652,10 @@ class ZappaCLI(object):
             else:
                 settings_s = settings_s + "DJANGO_SETTINGS=None\n"
 
+            # If slim handler, path to project zip
+            if self.stage_config.get('slim_handler', False):
+                settings_s += "ZIP_PATH='s3://{0!s}/{1!s}'\n".format(self.s3_bucket_name, self.zip_path)
+
             # AWS Events function mapping
             event_mapping = {}
             events = self.stage_config.get('events', [])
@@ -1640,6 +1696,8 @@ class ZappaCLI(object):
             try:
                 if os.path.isfile(self.zip_path):
                     os.remove(self.zip_path)
+                if os.path.isfile(self.handler_path):
+                    os.remove(self.handler_path)
             except Exception as e: # pragma: no cover
                 sys.exit(-1)
 
@@ -1650,7 +1708,11 @@ class ZappaCLI(object):
 
         # Remove the uploaded zip from S3, because it is now registered..
         if self.stage_config.get('delete_s3_zip', True):
-            self.zappa.remove_from_s3(self.zip_path, self.s3_bucket_name)
+            if self.stage_config.get('slim_handler', False):
+                # Need to keep the project zip as the slim handler uses it.
+                self.zappa.remove_from_s3(self.handler_path, self.s3_bucket_name)
+            else:
+                self.zappa.remove_from_s3(self.zip_path, self.s3_bucket_name)
 
     def print_logs(self, logs, colorize=True, http=False):
         """

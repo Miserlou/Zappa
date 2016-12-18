@@ -8,6 +8,7 @@ import os
 import json
 import inspect
 import collections
+import zipfile
 
 import boto3
 import sys
@@ -110,6 +111,11 @@ class LambdaHandler(object):
             for key in self.settings.ENVIRONMENT_VARIABLES.keys():
                 os.environ[key] = self.settings.ENVIRONMENT_VARIABLES[key]
 
+            # Pulling from S3 if given a zip path
+            project_zip_path = getattr(self.settings, 'ZIP_PATH', None)
+            if project_zip_path:
+                self.load_remote_project_zip(project_zip_path)
+
             # Django gets special treatment.
             if not self.settings.DJANGO_SETTINGS:
                 # The app module
@@ -130,6 +136,33 @@ class LambdaHandler(object):
                 self.trailing_slash = True
 
             self.wsgi_app = ZappaWSGIMiddleware(wsgi_app_function)
+
+    def load_remote_project_zip(self, project_zip_path):
+        """
+        Puts the project files from S3 in /tmp and adds to path
+        """
+        project_folder = '/tmp/{0!s}'.format(self.settings.PROJECT_NAME)
+        if not os.path.isdir(project_folder):
+            # The project folder doesn't exist in this cold lambda, get it from S3
+            if not self.session:
+                boto_session = boto3.Session()
+            else:
+                boto_session = self.session
+
+            # Download the zip
+            remote_bucket, remote_file = project_zip_path.lstrip('s3://').split('/', 1)
+            s3 = boto_session.resource('s3')
+
+            zip_path = '/tmp/{0!s}'.format(remote_file)
+            s3.Object(remote_bucket, remote_file).download_file(zip_path)
+
+            # Unzip contents to project folder
+            with zipfile.ZipFile(zip_path, 'r') as z:
+                z.extractall(path=project_folder)
+
+        # Add to project path
+        sys.path.insert(0, project_folder)
+        return True
 
     def load_remote_settings(self, remote_bucket, remote_file):
         """
