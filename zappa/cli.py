@@ -263,7 +263,7 @@ class ZappaCLI(object):
         # Log Tailing
         ##
         tail_parser = subparsers.add_parser(
-            'tail', help='Tail deployment logs.'
+            'tail', parents=[env_parser], help='Tail deployment logs.'
         )
         tail_parser.add_argument(
             '--no-color', action='store_true',
