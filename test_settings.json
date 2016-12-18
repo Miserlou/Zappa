@@ -58,6 +58,11 @@
        "extends": "extendo",
        "s3_bucket": "lmbda2",
     },
+    "slim_handler": {
+       "extends": "ttt888",
+       "slim_handler": true,
+       "delete_local_zip": true
+    },
     "depricated_remote_env": {
        "s3_bucket": "lmbda",
        "remote_env_bucket": "lmbda-env",

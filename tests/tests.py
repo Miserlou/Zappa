@@ -1054,6 +1054,16 @@ USE_TZ = True
         m = re.search("REMOTE_ENV='(.*)'", content)
         self.assertEqual(m.group(1), 's3://lmbda-env/prod/env.json')
 
+    def test_slim_handler(self):
+        zappa_cli = ZappaCLI()
+        zappa_cli.api_stage = 'slim_handler'
+        zappa_cli.load_settings('test_settings.json')
+        zappa_cli.create_package()
+
+        self.assertTrue(os.path.isfile(zappa_cli.handler_path))
+        self.assertTrue(os.path.isfile(zappa_cli.zip_path))
+
+        zappa_cli.remove_local_zip()
 
 if __name__ == '__main__':
     unittest.main()
