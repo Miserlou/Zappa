@@ -626,12 +626,14 @@ class Zappa(object):
     ##
 
     def create_lambda_function(self, bucket, s3_key, function_name, handler, description="Zappa Deployment",
-                               timeout=30, memory_size=512, publish=True, vpc_config=None):
+                               timeout=30, memory_size=512, publish=True, vpc_config=None, environment_variables=None):
         """
         Given a bucket and key of a valid Lambda-zip, a function name and a handler, register that Lambda function.
         """
         if not vpc_config:
             vpc_config = {}
+        if not environment_variables:
+            environment_variables = {}
         if not self.credentials_arn:
             self.get_credentials_arn()
 
@@ -648,7 +650,10 @@ class Zappa(object):
             Timeout=timeout,
             MemorySize=memory_size,
             Publish=publish,
-            VpcConfig=vpc_config
+            VpcConfig=vpc_config,
+            Environment={
+                'Variables': environment_variables
+            }
         )
 
         return response['FunctionArn']
