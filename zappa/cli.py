@@ -463,7 +463,7 @@ class ZappaCLI(object):
         if not success: # pragma: no cover
             raise ClickException("Unable to upload to S3. Quitting.")
 
-        # If lambda loads just a slim handler. The handler then downloads the project separately.
+        # If using a slim handler, upload it to S3 and tell lambda to use this slim handler zip
         if self.stage_config.get('slim_handler', False):
             # https://github.com/Miserlou/Zappa/issues/510
             success = self.zappa.upload_to_s3(self.handler_path, self.s3_bucket_name)
@@ -578,7 +578,7 @@ class ZappaCLI(object):
         if not success:  # pragma: no cover
             raise ClickException("Unable to upload project to S3. Quitting.")
 
-        # If lambda loads just a slim handler. The handler then downloads the project separately.
+        # If using a slim handler, upload it to S3 and tell lambda to use this slim handler zip
         if self.stage_config.get('slim_handler', False):
             # https://github.com/Miserlou/Zappa/issues/510
             success = self.zappa.upload_to_s3(self.handler_path, self.s3_bucket_name)

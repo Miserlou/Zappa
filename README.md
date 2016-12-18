@@ -504,7 +504,7 @@ You can also simply handle CORS directly in your application. If you do this, yo
 
 #### Large Projects
 
-AWS currently limits Lambda zip sizes to 50 meg. If the project is larger than that, set the `slim_handler=true` in the zappa_settings.json. This just gives Lambda a small handler file. The handler file then pulls the large project down from S3 at run time. The initial load of the large project may add to runtime, but the different will be minimal on a warm lambda function.
+AWS currently limits Lambda zip sizes to 50 meg. If the project is larger than that, set the `slim_handler=true` in the zappa_settings.json. This just gives Lambda a small handler file. The handler file then pulls the large project down from S3 at run time. The initial load of the large project may add to runtime, but the difference should be minimal on a warm lambda function.
  
 
 #### Enabling Bash completion

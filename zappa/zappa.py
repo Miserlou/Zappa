@@ -335,7 +335,6 @@ class Zappa(object):
     def create_handler_venv(self):
         """
         Takes the installed zappa and brings it into a fresh virtualenv-like folder. All dependencies are then downloaded.
-        :return:
         """
         import pip
 
@@ -443,7 +442,7 @@ class Zappa(object):
 
         os.makedirs(temp_project_path)
         if not slim_handler:
-            # Slim handler only has Zappa + handler file.
+            # Slim handler does not take the project files.
             if minify:
                 excludes = ZIP_EXCLUDES + exclude + [split_venv[-1]]
                 copytree(cwd, temp_project_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
@@ -456,7 +455,7 @@ class Zappa(object):
             filename = handler_file.split(os.sep)[-1]
             shutil.copy(handler_file, os.path.join(temp_project_path, filename))
 
-        # This is a project zip_file
+        # Then, do site site-packages..
         egg_links = []
         temp_package_path = os.path.join(tempfile.gettempdir(), str(int(time.time() + 1)))
         if os.sys.platform == 'win32':
