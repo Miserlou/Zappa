@@ -1,6 +1,9 @@
 # Zappa Changelog
 
-# 0.32.0
+## 0.32.1
+* File `tail` broken in CLI refactor
+
+## 0.32.0
 * Add Cognito Authorizers
 * Refactor CLI, add Bash Completion
 * Improve manylinux wheels
