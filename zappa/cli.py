@@ -669,26 +669,20 @@ class ZappaCLI(object):
         """
         Tail this function's logs.
 
+        if keep_open, do so repeatedly, printing any new logs
         """
 
         try:
-            # Tail the available logs
-            all_logs = self.zappa.fetch_logs(self.lambda_name)
-            self.print_logs(all_logs, colorize, http)
-
-            # Keep polling, and print any new logs.
-            loop = True
-            while loop:
-                all_logs_again = self.zappa.fetch_logs(self.lambda_name)
-                new_logs = []
-                for log in all_logs_again:
-                    if log not in all_logs:
-                        new_logs.append(log)
-
+            since = 0
+            while True:
+                new_logs = self.zappa.fetch_logs(self.lambda_name, startTime=since)
+                new_logs = [ e for e in new_logs if e['timestamp'] > since ]
                 self.print_logs(new_logs, colorize, http)
-                all_logs = all_logs + new_logs
                 if not keep_open:
-                    loop = False
+                    break
+                if new_logs:
+                    since = new_logs[-1]['timestamp']
+                time.sleep(1)
         except KeyboardInterrupt: # pragma: no cover
             # Die gracefully
             try:
