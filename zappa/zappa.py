@@ -1818,19 +1818,14 @@ class Zappa(object):
 
         all_streams = streams['logStreams']
         all_names = [stream['logStreamName'] for stream in all_streams]
-        fle_args = {'logGroupName':log_name,
-                    'logStreamNames':all_names,
-                    'filterPattern':filter_pattern,
-                    'limit':limit
-                    }
-        events = []
-        response = {}
-        while not response or 'nextToken' in response:
-            if 'nextToken' in response: fle_args['nextToken'] = response['nextToken']
-            response = self.logs_client.filter_log_events(**fle_args)
-            events += response['events']
+        response = self.logs_client.filter_log_events(
+            logGroupName=log_name,
+            logStreamNames=all_names,
+            filterPattern=filter_pattern,
+            limit=limit
+        )
 
-        return sorted(events, key=lambda k: k['timestamp'])
+        return response['events']
 
     def remove_log_group(self, group_name):
         """
