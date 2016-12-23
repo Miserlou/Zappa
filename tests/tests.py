@@ -702,6 +702,89 @@ class TestZappa(unittest.TestCase):
         self.assertRegexpMatches(error_msg, expected)
         sys.stderr = old_stderr
 
+    @mock.patch('zappa.cli.ZappaCLI.dispatch_command')
+    def test_cli_invoke(self, _):
+        zappa_cli = ZappaCLI()
+        argv = '-s test_settings.json invoke '.split()
+        raw_tests = (
+            ['--raw', 'devor', '"print 1+2"'],
+            ['devor', '"print 1+2"', '--raw']
+        )
+
+        for cmd in raw_tests:
+            zappa_cli.handle(argv + cmd)
+            args = zappa_cli.vargs
+
+            self.assertFalse(args['all'])
+            self.assertTrue(args['raw'])
+            self.assertEquals(args['command_rest'], '"print 1+2"')
+            self.assertEquals(args['command_env'], 'devor')
+
+        all_raw_tests = (
+            ['--all', '--raw', '"print 1+2"'],
+            ['"print 1+2"', '--all', '--raw'],
+            ['--raw', '"print 1+2"', '--all'],
+            ['--all', '"print 1+2"', '--raw']
+        )
+        for cmd in all_raw_tests:
+            zappa_cli.handle(argv + cmd)
+            args = zappa_cli.vargs
+
+            self.assertTrue(args['all'])
+            self.assertTrue(args['raw'])
+            self.assertEquals(args['command_rest'], '"print 1+2"')
+            self.assertEquals(args['command_env'], None)
+
+        zappa_cli.handle(argv + ['devor', 'myapp.my_func'])
+        args = zappa_cli.vargs
+        self.assertEquals(args['command_rest'], 'myapp.my_func')
+
+        all_func_tests = (
+            ['--all', 'myapp.my_func'],
+            ['myapp.my_func', '--all']
+        )
+        for cmd in all_func_tests:
+            zappa_cli.handle(argv + cmd)
+            args = zappa_cli.vargs
+
+            self.assertTrue(args['all'])
+            self.assertEquals(args['command_rest'], 'myapp.my_func')
+
+
+    @mock.patch('zappa.cli.ZappaCLI.dispatch_command')
+    def test_cli_manage(self, _):
+        zappa_cli = ZappaCLI()
+        argv = '-s test_settings.json manage '.split()
+        all_tests = (
+            ['--all', 'showmigrations', 'admin'],
+            ['showmigrations', 'admin', '--all']
+        )
+
+        for cmd in all_tests:
+            zappa_cli.handle(argv + cmd)
+            args = zappa_cli.vargs
+
+            self.assertTrue(args['all'])
+            self.assertItemsEqual(
+                args['command_rest'], ['showmigrations', 'admin']
+            )
+
+        cmd = ['devor', 'showmigrations', 'admin']
+        zappa_cli.handle(argv + cmd)
+        args = zappa_cli.vargs
+
+        self.assertFalse(args['all'])
+        self.assertItemsEqual(
+            args['command_rest'], ['showmigrations', 'admin']
+        )
+
+        cmd = ['devor', '"shell --version"']
+        zappa_cli.handle(argv + cmd)
+        args = zappa_cli.vargs
+
+        self.assertFalse(args['all'])
+        self.assertItemsEqual(args['command_rest'], ['"shell --version"'])
+
     def test_bad_json_catch(self):
         zappa_cli = ZappaCLI()
         self.assertRaises(ValueError, zappa_cli.load_settings_file, 'tests/test_bad_settings.json')

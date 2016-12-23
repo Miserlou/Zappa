@@ -173,7 +173,6 @@ class ZappaCLI(object):
                     'Zappa environments.')
         group.add_argument('--all', action='store_true', help=all_help)
         group.add_argument('command_env', nargs='?')
-        env_parser.add_argument('command_rest', nargs=argparse.REMAINDER)
 
         ##
         # Certify
@@ -210,14 +209,19 @@ class ZappaCLI(object):
             help=('When invoking remotely, invoke this python as a string,'
                   ' not as a modular path.')
         )
+        invoke_parser.add_argument('command_rest')
 
         ##
         # Manage
         ##
-        subparsers.add_parser(
-            'manage', parents=[env_parser],
+        manage_parser = subparsers.add_parser(
+            'manage',
             help='Invoke remote Django manage.py commands.'
         )
+        rest_help = ("Command in the form of <env> <command>. <env> is not "
+                     "required if --all is specified")
+        manage_parser.add_argument('--all', action='store_true', help=all_help)
+        manage_parser.add_argument('command_rest', nargs='+', help=rest_help)
 
         ##
         # Rollback
@@ -306,7 +310,19 @@ class ZappaCLI(object):
         self.vargs = vars(args)
 
         # Parse the input
-        self.command_env = self.vargs.get('command_env')
+        # NOTE(rmoe): Special case for manage command
+        # The manage command can't have both command_env and command_rest
+        # arguments. Since they are both positional arguments argparse can't
+        # differentiate the two. This causes problems when used with --all.
+        # (e.g. "manage --all showmigrations admin" argparse thinks --all has
+        # been specified AND that command_env='showmigrations')
+        # By having command_rest collect everything but --all we can split it
+        # apart here instead of relying on argparse.
+        if args.command == 'manage' and not self.vargs.get('all'):
+            self.command_env = self.vargs['command_rest'].pop(0)
+        else:
+            self.command_env = self.vargs.get('command_env')
+
         self.command = args.command
 
         # We don't have any settings yet, so make those first!
@@ -385,7 +401,7 @@ class ZappaCLI(object):
                 print("Please enter the function to invoke.")
                 return
 
-            self.invoke(self.command_env[-1], raw_python=self.vargs['raw'])
+            self.invoke(self.vargs['command_rest'], raw_python=self.vargs['raw'])
         elif command == 'manage': # pragma: no cover
 
             if not self.vargs.get('command_rest'):
