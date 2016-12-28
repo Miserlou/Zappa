@@ -702,13 +702,14 @@ To learn more about these capabilities, see [these slides](https://htmlpreview.g
 
 ## Zappa Guides
 
-* [Django-Zappa tutorial screencast](https://www.youtube.com/watch?v=plUrbPN0xc8&feature=youtu.be).
+* [Django-Zappa tutorial (screencast)](https://www.youtube.com/watch?v=plUrbPN0xc8&feature=youtu.be).
 * [Using Django-Zappa, Part 1](https://serverlesscode.com/post/zappa-wsgi-for-python/).
 * [Using Django-Zappa, Part 2: VPCs](https://serverlesscode.com/post/zappa-wsgi-for-python-pt-2/).
 * [Building Serverless Microservices with Zappa and Flask](https://gun.io/blog/serverless-microservices-with-zappa-and-flask/)
 * [Zappa で Hello World するまで (Japanese)](http://qiita.com/satoshi_iwashita/items/505492193317819772c7)
 * [How to Deploy Zappa with CloudFront, RDS and VPC](https://jinwright.net/how-deploy-serverless-wsgi-app-using-zappa/)
 * [zappa-examples - Flask, Django, image uploads, and more!](https://github.com/narfman0/zappa-examples/)
+* [Deploy Flask-Ask to AWS Lambda with Zappa (screencast)](https://www.youtube.com/watch?v=mjWV4R2P4ks)
 * _Your guide here?_
 
 ## Zappa in the Press
