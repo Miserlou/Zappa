@@ -21,7 +21,6 @@ import click
 import collections
 import hjson as json
 import inspect
-import imp
 import importlib
 import logging
 import os
