@@ -1788,42 +1788,36 @@ class ZappaCLI(object):
 
         """
 
-        def execute_prebuild_script(self):
-            """
-            Parse and execute the prebuild_script from the zappa_settings.
+        (pb_mod_path, pb_func) = self.prebuild_script.rsplit('.', 1)
 
-            """
+        try:  # Prefer callback in working directory
+            if pb_mod_path.count('.') >= 1:  # Callback function is nested in a folder
+                (mod_folder_path, mod_name) = pb_mod_path.rsplit('.', 1)
+                mod_folder_path_fragments = mod_folder_path.split('.')
+                working_dir = os.path.join(os.getcwd(), *mod_folder_path_fragments)
+            else:
+                mod_name = pb_mod_path
+                working_dir = os.getcwd()
 
-            (pb_mod_path, pb_func) = self.prebuild_script.rsplit('.', 1)
+            working_dir_importer = pkgutil.get_importer(working_dir)
+            module_ = working_dir_importer.find_module(mod_name).load_module(mod_name)
 
-            try:  # Prefer callback in working directory
-                if pb_mod_path.count('.') >= 1:  # Callback function is nested in a folder
-                    (mod_folder_path, mod_name) = pb_mod_path.rsplit('.', 1)
-                    mod_folder_path_fragments = mod_folder_path.split('.')
-                    working_dir = os.path.join(os.getcwd(), *mod_folder_path_fragments)
-                else:
-                    mod_name = pb_mod_path
-                    working_dir = os.getcwd()
+        except (ImportError, AttributeError):
 
-                working_dir_importer = pkgutil.get_importer(working_dir)
-                module_ = working_dir_importer.find_module(mod_name).load_module(mod_name)
-
-            except (ImportError, AttributeError):
-
-                try:  # Prebuild func might be in virtualenv
-                    module_ = importlib.import_module(pb_mod_path)
-                except ImportError:  # pragma: no cover
-                    raise ClickException(click.style("Failed ", fg="red") + 'to ' + click.style(
-                        "import prebuild script ", bold=True) + 'module: "{pb_mod_path}"'.format(
-                        pb_mod_path=click.style(pb_mod_path, bold=True)))
-
-            if not hasattr(module_, pb_func):  # pragma: no cover
+            try:  # Prebuild func might be in virtualenv
+                module_ = importlib.import_module(pb_mod_path)
+            except ImportError:  # pragma: no cover
                 raise ClickException(click.style("Failed ", fg="red") + 'to ' + click.style(
-                    "find prebuild script ", bold=True) + 'function: "{pb_func}" '.format(
-                    pb_func=click.style(pb_func, bold=True)) + 'in module "{pb_mod_path}"'.format(
-                    pb_mod_path=pb_mod_path))
+                    "import prebuild script ", bold=True) + 'module: "{pb_mod_path}"'.format(
+                    pb_mod_path=click.style(pb_mod_path, bold=True)))
 
-            getattr(module_, pb_func)()  # Call the function passing self
+        if not hasattr(module_, pb_func):  # pragma: no cover
+            raise ClickException(click.style("Failed ", fg="red") + 'to ' + click.style(
+                "find prebuild script ", bold=True) + 'function: "{pb_func}" '.format(
+                pb_func=click.style(pb_func, bold=True)) + 'in module "{pb_mod_path}"'.format(
+                pb_mod_path=pb_mod_path))
+
+        getattr(module_, pb_func)()  # Call the function passing self
 
     def collision_warning(self, item):
         """
