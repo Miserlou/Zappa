@@ -1790,8 +1790,8 @@ class ZappaCLI(object):
 
         (pb_mod_path, pb_func) = self.prebuild_script.rsplit('.', 1)
 
-        try:  # Prefer callback in working directory
-            if pb_mod_path.count('.') >= 1:  # Callback function is nested in a folder
+        try:  # Prefer prebuild script in working directory
+            if pb_mod_path.count('.') >= 1:  # Prebuild script func is nested in a folder
                 (mod_folder_path, mod_name) = pb_mod_path.rsplit('.', 1)
                 mod_folder_path_fragments = mod_folder_path.split('.')
                 working_dir = os.path.join(os.getcwd(), *mod_folder_path_fragments)
