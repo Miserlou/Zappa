@@ -1817,7 +1817,7 @@ class ZappaCLI(object):
                 pb_func=click.style(pb_func, bold=True)) + 'in module "{pb_mod_path}"'.format(
                 pb_mod_path=pb_mod_path))
 
-        getattr(module_, pb_func)()  # Call the function passing self
+        getattr(module_, pb_func)()  # Call the function
 
     def collision_warning(self, item):
         """
