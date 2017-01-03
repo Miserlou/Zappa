@@ -5,6 +5,8 @@ from urllib import urlencode
 from requestlogger import ApacheFormatter
 from StringIO import StringIO
 
+from werkzeug import urls
+
 
 def create_wsgi_request(event_info, server_name='zappa', script_name=None,
                         trailing_slash=True):
@@ -40,7 +42,7 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
             if canonical != header:
                 headers[canonical] = headers.pop(header)
 
-        path = event_info['path']
+        path = urls.url_unquote(event_info['path'])
 
         # if 'url' in params:
         #     # new style
@@ -114,6 +116,9 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
 
         if remote_user:
             environ['REMOTE_USER'] = remote_user
+
+        if event_info['requestContext'].get('authorizer'):
+            environ['API_GATEWAY_AUTHORIZER'] = event_info['requestContext']['authorizer']
 
         return environ
 

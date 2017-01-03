@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-import base64
 import datetime
 import importlib
 import logging
@@ -20,10 +19,13 @@ try:
     from zappa.cli import ZappaCLI
     from zappa.middleware import ZappaWSGIMiddleware
     from zappa.wsgi import create_wsgi_request, common_log
+    from zappa.util import parse_s3_url
 except ImportError as e:  # pragma: no cover
     from .cli import ZappaCLI
     from .middleware import ZappaWSGIMiddleware
     from .wsgi import create_wsgi_request, common_log
+    from .util import parse_s3_url
+
 
 # Set up logging
 logging.basicConfig()
@@ -89,8 +91,8 @@ class LambdaHandler(object):
                 level = logging.getLevelName(self.settings.LOG_LEVEL)
                 logger.setLevel(level)
 
-            remote_bucket = getattr(self.settings, 'REMOTE_ENV_BUCKET', None)
-            remote_file = getattr(self.settings, 'REMOTE_ENV_FILE', None)
+            remote_env = getattr(self.settings, 'REMOTE_ENV', None)
+            remote_bucket, remote_file = parse_s3_url(remote_env)
 
             if remote_bucket and remote_file:
                 self.load_remote_settings(remote_bucket, remote_file)
@@ -120,7 +122,7 @@ class LambdaHandler(object):
 
                 try:  # Support both for tests
                     from zappa.ext.django import get_django_wsgi
-                except ImportError as e:  # pragma: no cover
+                except ImportError:  # pragma: no cover
                     from django_zappa_app import get_django_wsgi
 
                 # Get the Django WSGI app from our extension
@@ -205,7 +207,7 @@ class LambdaHandler(object):
             if not exception_processed:
                 # Only re-raise exception if handler directed so. Allows handler to control if lambda has to retry
                 # an event execution in case of failure.
-                raise ex
+                raise
 
     @classmethod
     def _process_exception(cls, exception_handler, event, context, exception):
@@ -259,7 +261,7 @@ class LambdaHandler(object):
         Support S3, SNS, DynamoDB and kinesis events
         """
         if 's3' in record:
-            return record['s3']['configurationId']
+            return record['s3']['configurationId'].split(':')[-1]
 
         arn = None
         if 'Sns' in record:
@@ -283,7 +285,6 @@ class LambdaHandler(object):
 
         # If in DEBUG mode, log all raw incoming events.
         if settings.DEBUG:
-            print('Zappa Event: {}'.format(event))
             logger.debug('Zappa Event: {}'.format(event))
 
         # This is the result of a keep alive, recertify
@@ -420,7 +421,7 @@ class LambdaHandler(object):
                 # pack the response as a deterministic B64 string and raise it
                 # as an error to match our APIGW regex.
                 # The DOCTYPE ensures that the page still renders in the browser.
-                exception = None
+                exception = None  # this variable never used
                 # if response.status_code in ERROR_CODES:
                 #     content = collections.OrderedDict()
                 #     content['http_status'] = response.status_code
@@ -454,7 +455,8 @@ class LambdaHandler(object):
             # Print statements are visible in the logs either way
             print(e)
             exc_info = sys.exc_info()
-            message = 'An uncaught exception happened while servicing this request. You can investigate this with the `zappa tail` command.'
+            message = ('An uncaught exception happened while servicing this request. '
+                       'You can investigate this with the `zappa tail` command.')
 
             # If we didn't even build an app_module, just raise.
             if not settings.DJANGO_SETTINGS:
@@ -471,6 +473,7 @@ class LambdaHandler(object):
                 body['traceback'] = traceback.format_exception(*exc_info)  # traceback as a list for readability.
             content['body'] = json.dumps(body, sort_keys=True, indent=4).encode('utf-8')
             return content
+
 
 def lambda_handler(event, context):  # pragma: no cover
     return LambdaHandler.lambda_handler(event, context)

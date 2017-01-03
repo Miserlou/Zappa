@@ -1,5 +1,59 @@
 # Zappa Changelog
 
+## 0.32.1
+* File `tail` broken in CLI refactor
+
+## 0.32.0
+* Add Cognito Authorizers
+* Refactor CLI, add Bash Completion
+* Improve manylinux wheels
+* Varios fixes and req bumps
+
+## 0.31.0
+* Adds the `cors` feature, big thanks to @AusIV!
+* Adds support for `-e` eggs, thanks to @schuyler1d and @xuru!
+* Adds support for YAML settings files. Eat up, hipsters.
+
+## 0.30.1
+* Add `--http` filter to `tail`
+* Prefer `apigateway_enabled` but still respect `use_apigateway`, #493
+
+## 0.30.0
+* Adds colors to `zappa tail` output, fixes #492
+* Adds `--no-color` CLI argument
+* Adds fatal warning for bad `app_function`s, fixes #485.
+
+## 0.29.2
+* Fix S3 broken S3 events
+* Move `use_apigateway` to `apigateway_enabled`
+
+## 0.29.1
+* Fixes progress bar error for manylinux packages
+* Safely handle freezes when downloading from PyPI
+* Adds `s3://` syntax for remote env files. (#478, thanks @Leandr!)
+
+## 0.29.0
+* Adds `extends` syntax to settings file.
+* Fixes Django migrations, #464
+* Adds support for manylinux wheels! #398
+* Fixes multiple events in `status` command
+* Fixes support for `certify` on apex domains, #451
+
+## 0.28.3
+* Filter private hosted zones to avoid conflicts while certifying
+* Fix small Python3 bug (#457)
+* Fix for #453 (windows os.path)
+* Re-raise Zappa exception with full traceback
+* Skip pyc on django migrations, fixes #436
+* Delete correct domain name, #448
+
+## 0.28.2
+* added region and lambda name to not deployed error
+
+## 0.28.1
+* Add "global" mode to init. Expect a blog post soon!
+* Small refactors and dependancy upgrades.
+
 ## 0.28.0
 * `--json` for machine readable status output
 * `--all` for global deployment prep

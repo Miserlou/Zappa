@@ -1,12 +1,12 @@
 {
     "ttt888": {
        "touch": false,
+       "extends": "extendo",
        "s3_bucket": "lmbda",
        "app_function": "tests.test_app.hello_world",
-       "use_precompiled_packages": false, 
        "callbacks": {
-           "settings": "tests.test_app.callback",
-           "post": "tests.test_app.callback",
+           "settings": "test_settings.callback",
+           "post": "test_settings.callback",
            "zip": "test_settings.callback"
        },
        "delete_local_zip": true,
@@ -53,19 +53,6 @@
        "environment_variables": {
           "EXTENDO": "You bet"
        }
-    },
-    "extendo2": {
-       "extends": "extendo",
-       "s3_bucket": "lmbda2",
-    },
-    "depricated_remote_env": {
-       "s3_bucket": "lmbda",
-       "remote_env_bucket": "lmbda-env",
-       "remote_env_file": "dev/env.json"
-    },
-    "remote_env": {
-       "s3_bucket": "lmbda",
-       "remote_env": "s3://lmbda-env/prod/env.json"
     },
     "extendofail": {
        "extends": "failfail",
