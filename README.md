@@ -554,12 +554,15 @@ You can also use AWS Cognito User Pool Authorizer by adding:
 
 #### Deploying with Custom Domain Name (with your own SSL Certs)
 
-The first step is to create a custom domain and upload your SSL cert / key / bundle - follow this guide [Set Up a Custom Domain Name for an API Gateway API](http://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-custom-domains.html#how-to-custom-domains-console)
-Ensure you have set the `domain` setting within your zappa settings JSON - this will avoid problems with the Base Path mapping between the Custom Domain and the API invoke URL, which gets the Stage Name appended in the URI.
-Deploy or update your app using zappa.
-Create a base path mapping between your custom domain name and your chosen API stage, leaving the base-path blank if you wish to access your app on the root path of your custom domain e.g. myapp.com/ rather than myapp.com/prod
+1. The first step is to create a custom domain and upload your SSL cert / key / bundle - follow this guide [Set Up a Custom Domain Name for an API Gateway API](http://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-custom-domains.html#how-to-custom-domains-console)
+2. Ensure you have set the `domain` setting within your zappa settings JSON - this will avoid problems with the Base Path mapping between the Custom Domain and the API invoke URL, which gets the Stage Name appended in the URI.
+3. Deploy or update your app using zappa
+4. Create a base path mapping between your custom domain name and your chosen API stage, leaving the base-path blank if you wish to access your app on the root path of your custom domain e.g. myapp.com/ rather than myapp.com/prod
+
 `$ aws apigateway create-base-path-mapping --domain-name myapp.com --rest-api-id 1234123412 --stage prod --base-path '' --region us-west-2`
-Ensure you have a CNAME to resolve your custom domain name to the CloudFront Distribution domain name which can be found using
+
+Ensure you have a CNAME to resolve your custom domain name to the CloudFront Distribution domain name which can be found using:
+
 `$ aws apigateway get-domain-names`
 
 #### Deploying to a Domain With a Let's Encrypt Certificate (DNS Auth)
