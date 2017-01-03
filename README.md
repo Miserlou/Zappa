@@ -42,7 +42,7 @@
       - [IAM Policy](#iam-policy)
       - [API Gateway Authorizers](#api-gateway-authorizers)
       - [Cognito User Pool Authorizer](#cognito-user-pool-authorizer)
-    - [Deploying with Custom Domain Name (with your own SSL Certs)](#deploying-with-custom-domain-own-ssl)
+    - [Deploying with Custom Domain Name (with your own SSL Certs)](#deploying-with-custom-domain-name-with-your-own-ssl-certs)
     - [Deploying to a Domain With a Let's Encrypt Certificate (DNS Auth)](#deploying-to-a-domain-with-a-lets-encrypt-certificate-dns-auth)
     - [Deploying to a Domain With a Let's Encrypt Certificate (HTTP Auth)](#deploying-to-a-domain-with-a-lets-encrypt-certificate-http-auth)
     - [Setting Environment Variables](#setting-environment-variables)
