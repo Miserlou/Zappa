@@ -739,6 +739,7 @@ Are you using Zappa? Let us know and we'll list your site here!
 ## Related Projects
 
 * [lambda-packages](http://github.com/Miserlou/lambda-packages) - Precompiled C-extension packages for AWS Lambda. Used automatically by Zappa.
+* [Mackenzie](http://github.com/Miserlou/Mackenzie) - AWS Lambda Infection Toolkit
 * [zappa-cms](http://github.com/Miserlou/zappa-cms) - A tiny server-less CMS for busy hackers. Work in progress.
 * [flask-ask](https://github.com/johnwheeler/flask-ask) - A framework for building Amazon Alexa applications. Uses Zappa for deployments.
 * [zappa-file-widget](https://github.com/anush0247/zappa-file-widget) - A Django plugin for supporting binary file uploads in Django on Zappa.
@@ -764,7 +765,7 @@ Please file tickets for discussion before submitting patches. Pull requests shou
 
 If you are adding a non-trivial amount of new code, please include a functioning test in your PR. For AWS calls, we use the `placebo` library, which you can learn to use [in their README](https://github.com/garnaat/placebo#usage-as-a-decorator). The test suite will be run by [Travis CI](https://travis-ci.org/Miserlou/Zappa) once you open a pull request.
 
-Please include the GitHub issue or pull request URL that has discussion related to your changes as a comment in the code ([example](https://github.com/Miserlou/Zappa/blob/fae2925431b820eaedf088a632022e4120a29f89/zappa/zappa.py#L241-L243)]). This greatly helps for project maintainability, as it allows us to trace back use cases and explain decision making.
+Please include the GitHub issue or pull request URL that has discussion related to your changes as a comment in the code ([example](https://github.com/Miserlou/Zappa/blob/fae2925431b820eaedf088a632022e4120a29f89/zappa/zappa.py#L241-L243)). This greatly helps for project maintainability, as it allows us to trace back use cases and explain decision making.
 
 #### Using a Local Repo
 
