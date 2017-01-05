@@ -1550,7 +1550,7 @@ class ZappaCLI(object):
                 use_precompiled_packages=self.stage_config.get('use_precompiled_packages', True),
                 exclude=self.stage_config.get(
                     'exclude',
-                    ["boto3", "*.dist-info", "dateutil", "botocore", "s3transfer", "six.py", "jmespath", "concurrent"])
+                    ["boto3", "dateutil", "botocore", "s3transfer", "six.py", "jmespath", "concurrent"])
             )
 
         # Throw custom setings into the zip file
