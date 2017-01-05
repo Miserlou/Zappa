@@ -14,7 +14,7 @@ env:
   - TESTCASE=tests/tests.py
 script: 
   - nosetests $TESTCASE --with-coverage --cover-package=zappa --with-timer
-  - coverage combine --append
+    #  - coverage combine --append
 after_success:
   coveralls
 notifications:
