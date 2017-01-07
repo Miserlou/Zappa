@@ -337,10 +337,10 @@ class Zappa(object):
             conda_mode = False
             if 'VIRTUAL_ENV' in os.environ:
                 venv = os.environ['VIRTUAL_ENV']
-            elif 'CONDA_ENV_PATH' in os.environ:
-                venv = os.environ['CONDA_ENV_PATH']
-                conda_env = venv
+            elif 'CONDA_PREFIX' in os.environ or 'CONDA_ENV_PATH' in os.environ:
                 conda_mode = True
+                venv = os.environ['CONDA_PREFIX'] if 'CONDA_PREFIX' in os.environ else os.environ['CONDA_ENV_PATH']
+                conda_env = venv
             elif os.path.exists('.python-version'):  # pragma: no cover
                 logger.debug("Pyenv's local virtualenv detected.")
                 try:
