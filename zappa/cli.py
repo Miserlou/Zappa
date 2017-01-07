@@ -1548,7 +1548,11 @@ class ZappaCLI(object):
                 self.lambda_name,
                 handler_file=handler_file,
                 use_precompiled_packages=self.stage_config.get('use_precompiled_packages', True),
-                exclude=self.stage_config.get('exclude', [])
+                exclude=self.stage_config.get(
+                    'exclude',
+                    # Exclude packages already builtin to the python lambda environment
+                    # https://github.com/Miserlou/Zappa/issues/556
+                    ["boto3", "dateutil", "botocore", "s3transfer", "six.py", "jmespath", "concurrent"])
             )
 
         # Throw custom setings into the zip file
