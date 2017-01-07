@@ -5,7 +5,7 @@
        "debug": true,
        "log_level": "DEBUG",
        "events": [{
-         "function": "dev_event_zappa_test_flask_app",
+         "function": "mymodule.myfunc",
          "expression": "rate(1 minute)"
          }],
        "aws_region": "us-west-2",
