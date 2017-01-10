@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+from distutils.spawn import find_executable
 import glob
 from setuptools import find_packages
 
@@ -30,7 +31,7 @@ from tqdm import tqdm
 from platform import machine
 
 # Zappa imports
-from util import copytree, add_event_source, remove_event_source, human_size
+from util import copytree, add_event_source, remove_event_source, human_size, call
 
 logging.basicConfig(format='%(levelname)s:%(message)s')
 logger = logging.getLogger(__name__)
@@ -322,16 +323,70 @@ class Zappa(object):
             for link in glob.glob(os.path.join(temp_package_path, "*.egg-link")):
                 os.remove(link)
 
-    def create_lambda_zip(self, prefix='lambda_package', handler_file=None,
-                          minify=True, exclude=None, use_precompiled_packages=True, include=None, venv=None, 
-                          exclude_conda_packages=[]):
+    def make_temp_project_from_conda(self, temp_project_path, conda_env_path):
+        if not conda_env_path:
+            conda_env_path = os.getenv('CONDA_PREFIX', os.getenv('CONDA_ENV_PATH'))
+        assert conda_env_path, "A conda environment must be activated to proceed."
+
+        # get the conda executable so we can subprocess to it
+        conda_exe = find_executable('conda')
+        assert conda_exe, "No conda executable found on path."
+
+        # get a list of conda packages in conda_env_path, in name=version format
+        # NOTE: Right now, this will only work for conda packages. As a future enhancement,
+        #       we can consider how best to include both conda and pip packages here.
+        # This query lets us decouple whatever the current OS is (could be OSX or Windows),
+        #   from the AWS-target linux-64
+        package_query = call(
+            "%(conda_exe)s list --json --prefix %(conda_env_path)s" % {
+                'conda_exe': conda_exe,
+                'conda_env_path': conda_env_path,
+            }
+        )
+        packages = ('='.join((pkg['name'], pkg['version']))
+                    for pkg in json.loads(package_query.stdout))
+
+        # create a new linux-64 conda environment at `temp_project_path` using `packages`
+        call(
+            "%(conda_exe)s install --yes --mkdir --json --prefix %(temp_project_path)s "
+            "%(packages)s" % {
+                'conda_exe': conda_exe,
+                'temp_project_path': temp_project_path,
+                'packages': ' '.join(packages),
+            },
+            env_vars={'CONDA_SUBDIR': 'linux-64'},
+        )
+
+        # remove conda-meta directory; after this, `temp_project_path` will no longer
+        #   be a conda environment
+        shutil.rmtree(os.path.join(temp_project_path, 'conda-meta'))
+
+        return temp_project_path
+
+
+    def create_lambda_zip(self, prefix='lambda_package', handler_file=None, minify=True,
+                          exclude=None, use_precompiled_packages=True, include=None, venv=None,
+                          exclude_conda_packages=()):
         """
         Create a Lambda-ready zip file of the current virtualenvironment and working directory.
 
-        Returns path to that file.
+        Args:
+            prefix (str): name of the current project
+            handler_file (str): path to an AWS Lambda handler file for this project
+                http://docs.aws.amazon.com/lambda/latest/dg/python-programming-model-handler-types.html
+            minify (bool): if True, apply file excludes supplied via configuration
+            exclude (Optional[Sequence]): glob patterns for files that should be excluded
+                from the zip
+            use_precompiled_packages (bool): use packages from the lambda_packages repo
+                and/or manylinux wheels
+            include (?): unused?
+            venv (str): path to virtualenv prefix
+            exclude_conda_packages (Optional[Sequence]): glob patterns for files that should be
+                excluded from the zip
 
+        Returns:
+            str: absolute path to a Lambda-ready zip file
         """
-        import pip
 
         if not venv:
             conda_mode = False
@@ -470,6 +525,7 @@ class Zappa(object):
         # Then the pre-compiled packages..
         if use_precompiled_packages:
             print("Downloading and installing dependencies..")
+            import pip
             installed_packages_name_set = [package.project_name.lower() for package in
                                            pip.get_installed_distributions()]
 

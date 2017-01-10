@@ -1,14 +1,23 @@
+from collections import namedtuple
 import fnmatch
-import json
+from logging import getLogger
 import os
-import requests
+from os.path import abspath
+import shlex
 import shutil
 import stat
+from subprocess import CalledProcessError, PIPE, Popen
+import sys
 import urlparse
+
+import requests
+
+logger = getLogger(__name__)
 
 ##
 # Settings / Packaging
 ##
+
 
 def copytree(src, dst, symlinks=False, ignore=None):
     """
@@ -141,15 +150,11 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
     to schedule this event, and return the event source.
 
     """
-    import kappa.function
-    import kappa.restapi
     import kappa.event_source.dynamodb_stream
     import kappa.event_source.kinesis
     import kappa.event_source.s3
     import kappa.event_source.sns
     import kappa.event_source.cloudwatch
-    import kappa.policy
-    import kappa.role
     import kappa.awsclient
 
     class PseudoContext(object):
@@ -266,3 +271,25 @@ def check_new_version_available(this_version):
         return True
     else:
         return False
+
+
+##
+# Subprocess
+##
+
+def call(command, path=None, env_vars=None, raise_on_error=True):
+    if not env_vars:
+        env_vars = {}
+    path = sys.prefix if path is None else abspath(path)
+    p = Popen(shlex.split(command), cwd=path, stdout=PIPE, stderr=PIPE, env=env_vars)
+    stdout, stderr = p.communicate()
+    rc = p.returncode
+    logger.debug("{0} $  {1}\n"
+                 "  stdout: {2}\n"
+                 "  stderr: {3}\n"
+                 "  rc: {4}"
+                 .format(path, command, stdout, stderr, rc))
+    if raise_on_error and rc != 0:
+        raise CalledProcessError(rc, command, "stdout: {0}\nstderr: {1}".format(stdout, stderr))
+    Response = namedtuple('Response', ['stdout', 'stderr', 'rc'])
+    return Response(stdout.decode('utf-8'), stderr.decode('utf-8'), int(rc))
