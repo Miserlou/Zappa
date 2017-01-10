@@ -323,52 +323,67 @@ class Zappa(object):
             for link in glob.glob(os.path.join(temp_package_path, "*.egg-link")):
                 os.remove(link)
 
-    def make_temp_project_from_conda(self, temp_project_path, conda_env_path):
-        if not conda_env_path:
-            conda_env_path = os.getenv('CONDA_PREFIX', os.getenv('CONDA_ENV_PATH'))
-        assert conda_env_path, "A conda environment must be activated to proceed."
+    def make_temp_environment_from_conda(self, temp_zappa_folder, conda_exe, conda_env_path, exclude_conda_packages):
+        temp_conda_env_path = os.path.join(temp_zappa_folder, 'conda_env')
+        change_arch = (('linux' not in sys.platform)
+                       or (machine() in ['armv6l', 'armv7l', 'ppc64le'])
+                       or (8 * tuple.__itemsize__ != 64))
+        if change_arch:
+            # If not on linux-64, get a list of conda packages in `conda_env_path`, in name=version format
+            # and create a new linux-64 conda environment at `temp_conda_env_path` using `packages`
+            # NOTE: Right now, this will only work for conda packages. As a future enhancement,
+            #       we can consider how best to include both conda and pip packages here.
+            package_query = call(
+                "%(conda_exe)s list --json --prefix %(conda_env_path)s" % {
+                    'conda_exe': conda_exe,
+                    'conda_env_path': conda_env_path,
+                }
+            )
+            packages = ('='.join((pkg['name'], pkg['version']))
+                        for pkg in json.loads(package_query.stdout))
 
-        # get the conda executable so we can subprocess to it
-        conda_exe = find_executable('conda')
-        assert conda_exe, "No conda executable found on path."
+            call(
+                "%(conda_exe)s install --yes --mkdir --json --prefix %(temp_conda_env_path)s "
+                "%(packages)s" % {
+                    'conda_exe': conda_exe,
+                    'temp_conda_env_path': temp_conda_env_path,
+                    'packages': ' '.join(packages),
+                },
+                env_vars={'CONDA_SUBDIR': 'linux-64'},
+            )
+        else:
+            # otherwise just create a temporary copy of `conda_env_path` at `temp_conda_env_path`
+            call(
+                "%(conda_exe)s create --yes --mkdir --json --prefix %(temp_conda_env_path)s "
+                "--clone %(conda_env_path)s" % {
+                    'conda_exe': conda_exe,
+                    'conda_env_path': conda_env_path,
+                    'temp_conda_env_path': temp_conda_env_path,
+                }
+            )
 
-        # get a list of conda packages in conda_env_path, in name=version format
-        # NOTE: Right now, this will only work for conda packages. As a future enhancement,
-        #       we can consider how best to include both conda and pip packages here.
-        # This query lets us decouple whatever the current OS is (could be OSX or Windows),
-        #   from the AWS-target linux-64
-        package_query = call(
-            "%(conda_exe)s list --json --prefix %(conda_env_path)s" % {
-                'conda_exe': conda_exe,
-                'conda_env_path': conda_env_path,
-            }
-        )
-        packages = ('='.join((pkg['name'], pkg['version']))
-                    for pkg in json.loads(package_query.stdout))
-
-        # create a new linux-64 conda environment at `temp_project_path` using `packages`
+        # remove excluded packages from the environment
         call(
-            "%(conda_exe)s install --yes --mkdir --json --prefix %(temp_project_path)s "
+            "%(conda_exe)s remove --yes --json --prefix %(temp_conda_env_path)s "
             "%(packages)s" % {
                 'conda_exe': conda_exe,
-                'temp_project_path': temp_project_path,
-                'packages': ' '.join(packages),
-            },
-            env_vars={'CONDA_SUBDIR': 'linux-64'},
+                'temp_conda_env_path': temp_conda_env_path,
+                'packages': ' '.join(exclude_conda_packages),
+            }
         )
 
-        # remove conda-meta directory; after this, `temp_project_path` will no longer
+        # remove conda-meta directory; after this, `temp_conda_env_path` will no longer
         #   be a conda environment
-        shutil.rmtree(os.path.join(temp_project_path, 'conda-meta'))
+        shutil.rmtree(os.path.join(temp_conda_env_path, 'conda-meta'))
 
-        return temp_project_path
+        return temp_conda_env_path
 
 
     def create_lambda_zip(self, prefix='lambda_package', handler_file=None, minify=True,
                           exclude=None, use_precompiled_packages=True, include=None, venv=None,
                           exclude_conda_packages=()):
         """
-        Create a Lambda-ready zip file of the current virtualenvironment and working directory.
+        Create a Lambda-ready zip file of the current virtual or conda environment and working directory.
 
         Args:
             prefix (str): name of the current project
@@ -381,21 +396,29 @@ class Zappa(object):
                 and/or manylinux wheels
             include (?): unused?
             venv (str): path to virtualenv prefix
-            exclude_conda_packages (Optional[Sequence]): glob patterns for files that should be
-                excluded from the zip
+            exclude_conda_packages (Optional[Sequence]): names of conda packages to exclude from the zip
 
         Returns:
             str: absolute path to a Lambda-ready zip file
         """
 
+        conda_mode = False
+        temp_zappa_folder = os.path.join(tempfile.gettempdir(), str(int(time.time())))
+        temp_project_path = os.path.join(temp_zappa_folder, 'project')
+        temp_package_path = os.path.join(temp_zappa_folder, 'package')
+
         if not venv:
-            conda_mode = False
+            conda_env_path = os.getenv('CONDA_PREFIX', os.getenv('CONDA_ENV_PATH'))
             if 'VIRTUAL_ENV' in os.environ:
                 venv = os.environ['VIRTUAL_ENV']
-            elif 'CONDA_PREFIX' in os.environ or 'CONDA_ENV_PATH' in os.environ:
+            elif conda_env_path is not None:
+                # get the conda executable so we can subprocess to it
+                conda_exe = find_executable('conda')
+                assert conda_exe, "No conda executable found on path."
                 conda_mode = True
-                venv = os.environ['CONDA_PREFIX'] if 'CONDA_PREFIX' in os.environ else os.environ['CONDA_ENV_PATH']
-                conda_env = venv
+                venv = make_temp_environment_from_conda(temp_zappa_folder = temp_zappa_folder,
+                    conda_exe = conda_exe, conda_env_path = conda_env_path,
+                    exclude_conda_packages = exclude_conda_packages)
             elif os.path.exists('.python-version'):  # pragma: no cover
                 logger.debug("Pyenv's local virtualenv detected.")
                 try:
@@ -412,16 +435,6 @@ class Zappa(object):
             else:  # pragma: no cover
                 print("Zappa requires an active virtual or conda environment.")
                 quit()
-
-            if conda_mode:
-                if (('linux' not in sys.platform)
-                        or (machine() in ['armv6l', 'armv7l', 'ppc64le'])
-                        or (8 * tuple.__itemsize__ != 64)):
-                    warnings.warn('The local architecture is different than that of AWS lambda (linux-64).\nMake sure the binaries in your conda environment are compatible with AWS lambda')
-                if sys.version_info[:2] != (2,7):
-                    warnings.warn('The local python version is different than that of AWS lambda (2.7.x).\nMake sure the binaries in your conda environment are compatible with AWS lambda')
-                if use_precompiled_packages:
-                    warnings.warn('Using conda while use_precompiled_packages is set to true is not recommended: it may lead to overwriting conda packages')
 
         cwd = os.getcwd()
         zip_fname = prefix + '-' + str(int(time.time())) + '.zip'
@@ -455,9 +468,6 @@ class Zappa(object):
             )
 
         # First, do the project..
-        temp_zappa_folder = os.path.join(tempfile.gettempdir(), str(int(time.time())))
-        temp_project_path = os.path.join(temp_zappa_folder, 'project')
-
         if minify:
             excludes = ZIP_EXCLUDES + exclude + [split_venv[-1]]
             copytree(cwd, temp_project_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
@@ -465,65 +475,48 @@ class Zappa(object):
             copytree(cwd, temp_project_path, symlinks=False)
 
         # Then, do the site-packages..
-        if not conda_mode:
-            egg_links = []
-            temp_package_path = os.path.join(temp_zappa_folder, 'package')
-            if os.sys.platform == 'win32':
-                site_packages = os.path.join(venv, 'Lib', 'site-packages')
-            else:
-                site_packages = os.path.join(venv, 'lib', 'python2.7', 'site-packages')
-            egg_links.extend(glob.glob(os.path.join(site_packages, '*.egg-link')))
-
-            if minify:
-                excludes = ZIP_EXCLUDES + exclude
-                copytree(site_packages, temp_package_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
-            else:
-                copytree(site_packages, temp_package_path, symlinks=False)
-
-            # We may have 64-bin specific packages too.
-            site_packages_64 = os.path.join(venv, 'lib64', 'python2.7', 'site-packages')
-            if os.path.exists(site_packages_64):
-                egg_links.extend(glob.glob(os.path.join(site_packages_64, '*.egg-link')))
-                if minify:
-                    excludes = ZIP_EXCLUDES + exclude
-                    copytree(site_packages_64, temp_package_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
-                else:
-                    copytree(site_packages_64, temp_package_path, symlinks=False)
-
-            if egg_links:
-                self.copy_editable_packages(egg_links, temp_package_path)
-
-            copy_tree(temp_package_path, temp_project_path, update=True)
+        if (os.sys.platform == 'win32') and not conda_mode:
+            site_packages = os.path.join(venv, 'Lib', 'site-packages')
         else:
-            temp_package_path = os.path.join(temp_zappa_folder,'conda_env')
-            site_packages = os.path.join(temp_package_path, 'lib', 'python2.7', 'site-packages')
+            site_packages = os.path.join(venv, 'lib', 'python2.7', 'site-packages')
+
+        # Extracts all egg files (e.g. setuptools)
+        egg_files = [f for f in os.listdir(site_packages) if os.path.isfile(os.path.join(site_packages, f)) and f.split('.')[-1]=='egg'] 
+        for egg_file in egg_files:
+            print('Extracting '+ egg_file)
+            with zipfile.ZipFile(os.path.join(site_packages,egg_file)) as zf:
+                zf.extractall(os.path.join(site_packages))
+            os.remove(os.path.join(site_packages,egg_file))
+
+        egg_links = []
+        egg_links.extend(glob.glob(os.path.join(site_packages, '*.egg-link')))
+
+        if minify:
+            excludes = ZIP_EXCLUDES + exclude
+            copytree(site_packages, temp_package_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
+
+        else:
+            copytree(site_packages, temp_package_path, symlinks=False)
+
+        # We may have 64-bin specific packages too.
+        site_packages_64 = os.path.join(venv, 'lib64', 'python2.7', 'site-packages')
+        if os.path.exists(site_packages_64):
+            egg_links.extend(glob.glob(os.path.join(site_packages_64, '*.egg-link')))
             if minify:
                 excludes = ZIP_EXCLUDES + exclude
-                shutil.copytree(conda_env, temp_package_path, symlinks=True, ignore=shutil.ignore_patterns(*excludes))
-                # Use conda cli to remove standard packages like python, pip, ...
-                if len(exclude_conda_packages):
-                    print('Removing ' + ', '.join(exclude_conda_packages) + ' from conda environment '+ temp_package_path)
-                    subprocess.call(['conda','remove','-p',temp_package_path,'--force','--yes']+exclude_conda_packages,
-                        stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
+                copytree(site_packages_64, temp_package_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
             else:
-                shutil.copytree(conda_env, temp_package_path, symlinks=True)
+                copytree(site_packages_64, temp_package_path, symlinks=False)
 
-            # Extracts all egg files (e.g. setuptools)
-            egg_files = [f for f in os.listdir(site_packages) if os.path.isfile(os.path.join(site_packages, f)) and f.split('.')[-1]=='egg']
-            for egg_file in egg_files:
-                print('Extracting '+ egg_file)
-                with zipfile.ZipFile(os.path.join(site_packages,egg_file)) as zf:
-                    zf.extractall(os.path.join(site_packages))
-                os.remove(os.path.join(site_packages,egg_file))
-            # Put site-packages at the root of the environment
-            print('Copying python packages')
-            copy_tree(site_packages, temp_project_path, update=True)
-            shutil.rmtree(site_packages)
-            print('Copying remaining binaries')
-            copy_tree(temp_package_path, temp_project_path, update=True)
+        if egg_links:
+            self.copy_editable_packages(egg_links, temp_package_path)
+
+        copy_tree(temp_package_path, temp_project_path, update=True)
 
         # Then the pre-compiled packages..
         if use_precompiled_packages:
+            if conda_mode:
+                warnings.warn('Using conda while use_precompiled_packages is set to true is not recommended: it may lead to overwriting conda packages')
             print("Downloading and installing dependencies..")
             import pip
             installed_packages_name_set = [package.project_name.lower() for package in
