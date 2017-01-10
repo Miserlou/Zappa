@@ -1950,10 +1950,17 @@ class Zappa(object):
                 self.boto_session = boto3.Session(profile_name=profile_name, region_name=self.aws_region)
             elif os.environ.get('AWS_ACCESS_KEY_ID') and os.environ.get('AWS_SECRET_ACCESS_KEY'):
                 region_name = os.environ.get('AWS_DEFAULT_REGION') or self.aws_region
-                self.boto_session = boto3.Session(
-                    aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
-                    aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY'),
-                    region_name=region_name)
+                session_kw = {
+                    "aws_access_key_id": os.environ.get('AWS_ACCESS_KEY_ID'),
+                    "aws_secret_access_key": os.environ.get('AWS_SECRET_ACCESS_KEY'),
+                    "region_name": region_name,
+                }
+
+                # If we're executing in a role, AWS_SESSION_TOKEN will be present, too.
+                if os.environ.get("AWS_SESSION_TOKEN"):
+                    session_kw["aws_session_token"] = os.environ.get("AWS_SESSION_TOKEN")
+
+                self.boto_session = boto3.Session(**session_kw)
             else:
                 self.boto_session = boto3.Session(region_name=self.aws_region)
 
