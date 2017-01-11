@@ -480,14 +480,6 @@ class Zappa(object):
         else:
             site_packages = os.path.join(venv, 'lib', 'python2.7', 'site-packages')
 
-        # Extracts all egg files (e.g. setuptools)
-        egg_files = [f for f in os.listdir(site_packages) if os.path.isfile(os.path.join(site_packages, f)) and f.split('.')[-1]=='egg'] 
-        for egg_file in egg_files:
-            print('Extracting '+ egg_file)
-            with zipfile.ZipFile(os.path.join(site_packages,egg_file)) as zf:
-                zf.extractall(os.path.join(site_packages))
-            os.remove(os.path.join(site_packages,egg_file))
-
         egg_links = []
         egg_links.extend(glob.glob(os.path.join(site_packages, '*.egg-link')))
 
