@@ -196,6 +196,12 @@ class ZappaCLI(object):
         )
         subparsers.add_parser('init', help='Initialize Zappa app.')
 
+        ##
+        # Build
+        ##
+        build_parser = subparsers.add_parser(
+            'build', parents=[env_parser], help='Build the application zip locally.'
+        )
 
         ##
         # Invocation
@@ -391,6 +397,8 @@ class ZappaCLI(object):
         # Hand it off
         if command == 'deploy': # pragma: no cover
             self.deploy()
+        if command == 'build': # pragma: no cover
+            self.build()
         elif command == 'update': # pragma: no cover
             self.update()
         elif command == 'rollback': # pragma: no cover
@@ -437,6 +445,19 @@ class ZappaCLI(object):
     ##
     # The Commands
     ##
+
+    def build(self):
+        """
+        Only build the package
+        """
+        self.zappa_settings['delete_local_zip'] = False
+        # Execute the prebuild script
+        if self.prebuild_script:
+            self.execute_prebuild_script()
+        # Create the Lambda Zip
+        self.create_package()
+        self.callback('zip')
+        click.echo(self.zip_path)
 
     def deploy(self):
         """
