@@ -450,7 +450,6 @@ class ZappaCLI(object):
         """
         Only build the package
         """
-        self.zappa_settings['delete_local_zip'] = False
         # Execute the prebuild script
         if self.prebuild_script:
             self.execute_prebuild_script()
