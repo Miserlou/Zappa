@@ -193,7 +193,7 @@ By default Zappa will always destroy the package. To keep the package after the 
 }
 ```
 
-Note that you can also use the `callbacks` setting to add a callback for `zip` to call a custom function when the build has finished and the zip is created. That way you might not need the zip to be kept around after the command has finished.
+Note that you can also use the `callbacks` setting to add a callback for `zip` to call a custom function when the build has finished and the zip is created. That way you might not need the zip to be kept around.
 
 #### Scheduling
 
