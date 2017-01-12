@@ -177,11 +177,11 @@ You can also `rollback` the deployed code to a previous version by supplying the
 
     $ zappa rollback production -n 3
 
-#### Build
+#### Package
 
-To only build the package in a zip locally you can use the `build` command:
+To only build the package in a zip locally you can use the `package` command:
 
-    $ zappa build production
+    $ zappa package production
 
 By default Zappa will always destroy the package. To keep the package after the command finishes you need to set the `delete_local_zip` flag to false:
 

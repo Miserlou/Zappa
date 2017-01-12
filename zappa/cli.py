@@ -197,10 +197,10 @@ class ZappaCLI(object):
         subparsers.add_parser('init', help='Initialize Zappa app.')
 
         ##
-        # Build
+        # Package
         ##
-        build_parser = subparsers.add_parser(
-            'build', parents=[env_parser], help='Build the application zip locally.'
+        package_parser = subparsers.add_parser(
+            'package', parents=[env_parser], help='Build the application zip package locally.'
         )
 
         ##
@@ -397,8 +397,8 @@ class ZappaCLI(object):
         # Hand it off
         if command == 'deploy': # pragma: no cover
             self.deploy()
-        if command == 'build': # pragma: no cover
-            self.build()
+        if command == 'package': # pragma: no cover
+            self.package()
         elif command == 'update': # pragma: no cover
             self.update()
         elif command == 'rollback': # pragma: no cover
@@ -446,7 +446,7 @@ class ZappaCLI(object):
     # The Commands
     ##
 
-    def build(self):
+    def package(self):
         """
         Only build the package
         """
