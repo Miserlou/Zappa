@@ -76,10 +76,12 @@
     },
     "build_package_only_delete_local_zip_false": {
       "delete_local_zip": false,
-      "use_precompiled_packages": false
+      "use_precompiled_packages": false,
+      "delete_s3_zip": false
     },
     "build_package_only_delete_local_zip_true": {
       "delete_local_zip": true,
-      "use_precompiled_packages": false
+      "use_precompiled_packages": false,
+      "delete_s3_zip": false
     }
 }
