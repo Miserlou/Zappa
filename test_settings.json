@@ -73,5 +73,13 @@
        "environment_variables": {
           "EXTENDO": "You bet"
        }
+    },
+    "build_package_only_delete_local_zip_false": {
+      "delete_local_zip": false,
+      "use_precompiled_packages": false
+    },
+    "build_package_only_delete_local_zip_true": {
+      "delete_local_zip": true,
+      "use_precompiled_packages": false
     }
 }
