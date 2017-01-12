@@ -1137,6 +1137,19 @@ USE_TZ = True
         m = re.search("REMOTE_ENV='(.*)'", content)
         self.assertEqual(m.group(1), 's3://lmbda-env/prod/env.json')
 
+    def test_package_only(self):
+
+        for keep_zip in [True, False]:
+            zappa_cli = ZappaCLI()
+            zappa_cli.api_stage = 'build_package_only_delete_local_zip_false' if keep_zip else 'build_package_only_delete_local_zip_true'
+            zappa_cli.load_settings('test_settings.json')
+            zappa_cli.package()
+            zappa_cli.on_exit()  # simulate the command exits
+            self.assertEqual(os.path.isfile(zappa_cli.zip_path), keep_zip)
+
+            if keep_zip:
+                # cleanup
+                os.remove(zappa_cli.zip_path)
 
 if __name__ == '__main__':
     unittest.main()

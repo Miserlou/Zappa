@@ -177,6 +177,24 @@ You can also `rollback` the deployed code to a previous version by supplying the
 
     $ zappa rollback production -n 3
 
+#### Package
+
+To only build the package in a zip locally you can use the `package` command:
+
+    $ zappa package production
+
+By default Zappa will always destroy the package. To keep the package after the command finishes you need to set the `delete_local_zip` flag to false:
+
+```javascript
+{
+    "production": {
+       "delete_local_zip": false
+    }
+}
+```
+
+Note that you can also use the `callbacks` setting to add a callback for `zip` to call a custom function when the build has finished and the zip is created. That way you might not need the zip to be kept around.
+
 #### Scheduling
 
 Zappa can be used to easily schedule functions to occur on regular intervals. This provides a much nicer, maintenance-free alternative to Celery!

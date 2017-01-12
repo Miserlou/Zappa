@@ -196,6 +196,12 @@ class ZappaCLI(object):
         )
         subparsers.add_parser('init', help='Initialize Zappa app.')
 
+        ##
+        # Package
+        ##
+        package_parser = subparsers.add_parser(
+            'package', parents=[env_parser], help='Build the application zip package locally.'
+        )
 
         ##
         # Invocation
@@ -391,6 +397,8 @@ class ZappaCLI(object):
         # Hand it off
         if command == 'deploy': # pragma: no cover
             self.deploy()
+        if command == 'package': # pragma: no cover
+            self.package()
         elif command == 'update': # pragma: no cover
             self.update()
         elif command == 'rollback': # pragma: no cover
@@ -437,6 +445,18 @@ class ZappaCLI(object):
     ##
     # The Commands
     ##
+
+    def package(self):
+        """
+        Only build the package
+        """
+        # Execute the prebuild script
+        if self.prebuild_script:
+            self.execute_prebuild_script()
+        # Create the Lambda Zip
+        self.create_package()
+        self.callback('zip')
+        click.echo(self.zip_path)
 
     def deploy(self):
         """
@@ -1672,6 +1692,15 @@ class ZappaCLI(object):
         if self.stage_config.get('delete_s3_zip', True):
             self.zappa.remove_from_s3(self.zip_path, self.s3_bucket_name)
 
+    def on_exit(self):
+        """
+        Cleanup after the command finishes.
+        Always called: SystemExit, KeyboardInterrupt and any other Exception that occurs.
+        """
+        if self.zip_path:
+            self.remove_uploaded_zip()
+            self.remove_local_zip()
+
     def print_logs(self, logs, colorize=True, http=False):
         """
         Parse, filter and print logs to the console.
@@ -1866,21 +1895,14 @@ def handle(): # pragma: no cover
         cli = ZappaCLI()
         sys.exit(cli.handle())
     except SystemExit as e: # pragma: no cover
-        if cli.zip_path:
-            cli.remove_uploaded_zip()
-            cli.remove_local_zip()
-
+        cli.on_exit()
         sys.exit(e.code)
 
     except KeyboardInterrupt: # pragma: no cover
-        if cli.zip_path: # Remove the Zip from S3 upon failure.
-            cli.remove_uploaded_zip()
-            cli.remove_local_zip()
+        cli.on_exit()
         sys.exit(130)
     except Exception as e:
-        if cli.zip_path: # Remove the Zip from S3 upon failure.
-            cli.remove_uploaded_zip()
-            cli.remove_local_zip()
+        cli.on_exit()
 
         click.echo("Oh no! An " + click.style("error occurred", fg='red', bold=True) + "! :(")
         click.echo("\n==============\n")
