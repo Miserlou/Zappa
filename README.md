@@ -25,6 +25,7 @@
     - [Scheduling](#scheduling)
     - [Executing in Response to AWS Events](#executing-in-response-to-aws-events)
     - [Undeploy](#undeploy)
+    - [Package](#package)
     - [Status](#status)
     - [Tailing Logs](#tailing-logs)
     - [Remote Function Invocation](#remote-function-invocation)
@@ -177,26 +178,6 @@ You can also `rollback` the deployed code to a previous version by supplying the
 
     $ zappa rollback production -n 3
 
-#### Package
-
-To only build the package zip locally you can use the `package` command:
-
-    $ zappa package production
-
-Zappa will always create the package regardless of your `delete_local_zip` setting.
-
-Note that if you have a `zip` callback in your `callbacks` setting it will also be invoked.
-
-```javascript
-{
-    "production": { // The name of your environment
-        "callbacks": {
-            "zip": "my_app.zip_callback"// After creating the package
-        }
-    }
-}
-```
-
 #### Scheduling
 
 Zappa can be used to easily schedule functions to occur on regular intervals. This provides a much nicer, maintenance-free alternative to Celery!
@@ -306,6 +287,24 @@ If you enabled CloudWatch Logs for your API Gateway service and you don't
 want to keep those logs, you can specify the `--remove-logs` argument to purge the logs for your API Gateway and your Lambda function:
 
     $ zappa undeploy production --remove-logs
+
+#### Package
+
+If you want to build your application package without actually uploading and registering it as a Lambda function, you can use the `package` command:
+
+    $ zappa package production
+
+If you have a `zip` callback in your `callbacks` setting, this will also be invoked.
+
+```javascript
+{
+    "production": { // The name of your environment
+        "callbacks": {
+            "zip": "my_app.zip_callback"// After creating the package
+        }
+    }
+}
+```
 
 #### Status
 
