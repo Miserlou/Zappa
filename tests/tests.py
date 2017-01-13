@@ -25,7 +25,7 @@ from zappa.handler import LambdaHandler, lambda_handler
 from zappa.letsencrypt import get_cert_and_update_domain, create_domain_key, create_domain_csr, create_chained_certificate, get_cert, cleanup, parse_account_key, parse_csr, sign_certificate, encode_certificate, register_account, verify_challenge
 from zappa.util import (detect_django_settings, copytree, detect_flask_apps,
                         add_event_source, remove_event_source,
-                        get_event_source_status, parse_s3_url)
+                        get_event_source_status, parse_s3_url, human_size)
 from zappa.wsgi import create_wsgi_request, common_log
 from zappa.zappa import Zappa, ASSUME_POLICY, ATTACH_POLICY
 
@@ -1060,9 +1060,8 @@ USE_TZ = True
     ##
 
     def test_human_units(self):
-        zappa = Zappa()
-        zappa.human_size(1)
-        zappa.human_size(9999999999999)
+        human_size(1)
+        human_size(9999999999999)
 
     def test_event_name(self):
         zappa = Zappa()
