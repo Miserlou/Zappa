@@ -179,21 +179,23 @@ You can also `rollback` the deployed code to a previous version by supplying the
 
 #### Package
 
-To only build the package in a zip locally you can use the `package` command:
+To only build the package zip locally you can use the `package` command:
 
     $ zappa package production
 
-By default Zappa will always destroy the package. To keep the package after the command finishes you need to set the `delete_local_zip` flag to false:
+Zappa will always create the package regardless of your `delete_local_zip` setting.
+
+Note that if you have a `zip` callback in your `callbacks` setting it will also be invoked.
 
 ```javascript
 {
-    "production": {
-       "delete_local_zip": false
+    "production": { // The name of your environment
+        "callbacks": {
+            "zip": "my_app.zip_callback"// After creating the package
+        }
     }
 }
 ```
-
-Note that you can also use the `callbacks` setting to add a callback for `zip` to call a custom function when the build has finished and the zip is created. That way you might not need the zip to be kept around.
 
 #### Scheduling
 
