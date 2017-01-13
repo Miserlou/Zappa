@@ -109,6 +109,9 @@ class ZappaCLI(object):
 
     stage_name_env_pattern = re.compile('^[a-zA-Z0-9_]+$')
 
+    def __init__(self):
+        self._stage_config_overrides = {}  # change using self.override_stage_config_setting(key, val)
+
     @property
     def stage_config(self):
         """
@@ -142,7 +145,26 @@ class ZappaCLI(object):
         if u'delete_zip' in settings:
             settings[u'delete_local_zip'] = settings.get(u'delete_zip')
 
+        settings.update(self.stage_config_overrides)
+
         return settings
+
+    @property
+    def stage_config_overrides(self):
+        """
+        Returns zappa_settings we forcefully override for the current stage
+        set by `self.override_stage_config_setting(key, value)`
+        """
+        return getattr(self, '_stage_config_overrides', {}).get(self.api_stage, {})
+
+    def override_stage_config_setting(self, key, val):
+        """
+        Forcefully override a setting set by zappa_settings (for the current stage only)
+        :param key: settings key
+        :param val: value
+        """
+        self._stage_config_overrides = getattr(self, '_stage_config_overrides', {})
+        self._stage_config_overrides.setdefault(self.api_stage, {})[key] = val
 
     def handle(self, argv=None):
         """
@@ -450,6 +472,8 @@ class ZappaCLI(object):
         """
         Only build the package
         """
+        # force not to delete the local zip
+        self.override_stage_config_setting('delete_local_zip', False)
         # Execute the prebuild script
         if self.prebuild_script:
             self.execute_prebuild_script()

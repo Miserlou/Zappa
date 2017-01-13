@@ -1139,17 +1139,20 @@ USE_TZ = True
 
     def test_package_only(self):
 
-        for keep_zip in [True, False]:
+        for delete_local_zip in [True, False]:
             zappa_cli = ZappaCLI()
-            zappa_cli.api_stage = 'build_package_only_delete_local_zip_false' if keep_zip else 'build_package_only_delete_local_zip_true'
+            if delete_local_zip:
+                zappa_cli.api_stage = 'build_package_only_delete_local_zip_true'
+            else:
+                zappa_cli.api_stage = 'build_package_only_delete_local_zip_false'
             zappa_cli.load_settings('test_settings.json')
             zappa_cli.package()
             zappa_cli.on_exit()  # simulate the command exits
-            self.assertEqual(os.path.isfile(zappa_cli.zip_path), keep_zip)
+            # the zip should never be removed
+            self.assertEqual(os.path.isfile(zappa_cli.zip_path), True)
 
-            if keep_zip:
-                # cleanup
-                os.remove(zappa_cli.zip_path)
+            # cleanup
+            os.remove(zappa_cli.zip_path)
 
 if __name__ == '__main__':
     unittest.main()
