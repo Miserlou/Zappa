@@ -28,7 +28,7 @@ from lambda_packages import lambda_packages
 from tqdm import tqdm
 
 # Zappa imports
-from util import copytree, add_event_source, remove_event_source
+from util import copytree, add_event_source, remove_event_source, human_size
 
 logging.basicConfig(format='%(levelname)s:%(message)s')
 logger = logging.getLogger(__name__)
@@ -577,7 +577,7 @@ class Zappa(object):
         dest_path = os.path.split(source_path)[1]
         try:
             source_size = os.stat(source_path).st_size
-            print("Uploading {0} ({1})..".format(dest_path, self.human_size(source_size)))
+            print("Uploading {0} ({1})..".format(dest_path, human_size(source_size)))
             progress = tqdm(total=float(os.path.getsize(source_path)), unit_scale=True, unit='B')
 
             # Attempt to upload to S3 using the S3 meta client with the progress bar.
@@ -1992,13 +1992,6 @@ class Zappa(object):
             pattern = pattern.replace('+', r"\+")
 
         return pattern
-
-    def human_size(self, num, suffix='B'):
-        for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
-            if abs(num) < 1024.0:
-                return "{0:3.1f}{1!s}{2!s}".format(num, unit, suffix)
-            num /= 1024.0
-        return "{0:.1f}{1!s}{2!s}".format(num, 'Yi', suffix)
 
     @staticmethod
     def service_from_arn(arn):

@@ -43,7 +43,7 @@ from dateutil import parser
 from datetime import datetime,timedelta
 from zappa import Zappa, logger, API_GATEWAY_REGIONS
 from util import (check_new_version_available, detect_django_settings,
-                  detect_flask_apps, parse_s3_url)
+                  detect_flask_apps, parse_s3_url, human_size)
 
 
 CUSTOM_SETTINGS = [
@@ -480,7 +480,8 @@ class ZappaCLI(object):
         # Create the Lambda Zip
         self.create_package()
         self.callback('zip')
-        click.echo(self.zip_path)
+        size = human_size(os.path.getsize(self.zip_path))
+        click.echo(click.style("Package created", fg="green", bold=True) + ": " + click.style(self.zip_path, bold=True) + " (" + size + ")")
 
     def deploy(self):
         """

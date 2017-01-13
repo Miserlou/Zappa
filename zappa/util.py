@@ -59,6 +59,16 @@ def parse_s3_url(url):
         path = result.path.strip('/')
     return bucket, path
 
+def human_size(num, suffix='B'):
+    """
+    Convert bytes length to a human-readable version
+    """
+    for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
+        if abs(num) < 1024.0:
+            return "{0:3.1f}{1!s}{2!s}".format(num, unit, suffix)
+        num /= 1024.0
+    return "{0:.1f}{1!s}{2!s}".format(num, 'Yi', suffix)
+
 ##
 # `init` related
 ##
