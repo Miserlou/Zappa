@@ -4,6 +4,7 @@ import collections
 import json
 from contextlib import nested
 
+from cStringIO import StringIO as OldStringIO
 from io import BytesIO, StringIO
 import flask
 import mock
@@ -1013,6 +1014,137 @@ class TestZappa(unittest.TestCase):
 
         os.remove('test_signed.crt')
         cleanup()
+
+
+    def test_certify_sanity_checks(self):
+        """
+        Make sure 'zappa certify':
+        * Writes a warning with the --no-cleanup flag.
+        * Errors out when a deployment hasn't taken place.
+        * Writes errors when certificate settings haven't been specified.
+        * Calls Zappa correctly for creates vs. updates.
+        """
+        old_stdout = sys.stderr
+        sys.stdout = OldStringIO() # print() barfs on io.* types.
+
+        try:
+            zappa_cli = ZappaCLI()
+            try:
+                zappa_cli.certify(no_cleanup=True)
+            except AttributeError:
+                # Since zappa_cli.zappa isn't initalized, the certify() call
+                # fails when it tries to inspect what Zappa has deployed.
+                pass
+
+            log_output = sys.stdout.getvalue()
+            self.assertIn("You are calling certify with", log_output)
+            self.assertIn("--no-cleanup", log_output)
+
+            class ZappaMock(object):
+                def __init__(self):
+                    self.function_versions = []
+                    self.domain_names = {}
+                    self.calls = []
+
+                def get_lambda_function_versions(self, function_name):
+                    return self.function_versions
+
+                def get_domain_name(self, domain):
+                    return self.domain_names.get(domain)
+
+                def create_domain_name(self, *args, **kw):
+                    self.calls.append(("create_domain_name", args, kw))
+
+                def update_domain_name(self, *args, **kw):
+                    self.calls.append(("update_domain_name", args, kw))
+
+            zappa_cli.zappa = ZappaMock()
+            self.assertRaises(ClickException, zappa_cli.certify)
+
+            # Make sure we get an error if we don't configure the domain.
+            zappa_cli.zappa.function_versions = ["$LATEST"]
+            zappa_cli.api_stage = "stage"
+            zappa_cli.zappa_settings = {"stage": {}}
+
+            try:
+                zappa_cli.certify()
+            except ClickException as e:
+                log_output = str(e)
+                self.assertIn("Can't certify a domain without", log_output)
+                self.assertIn("domain", log_output)
+
+            # Without any LetsEncrypt settings, we should get a message about
+            # not having a lets_encrypt_key setting.
+            zappa_cli.zappa_settings["stage"]["domain"] = "test.example.com"
+            try:
+                zappa_cli.certify()
+                self.fail("Expected a ClickException")
+            except ClickException as e:
+                log_output = str(e)
+                self.assertIn("Can't certify a domain without", log_output)
+                self.assertIn("lets_encrypt_key", log_output)
+
+            # With partial settings, we should get a message about not having
+            # certificate, certificate_key, and certificate_chain
+            zappa_cli.zappa_settings["stage"]["certificate"] = "foo"
+            try:
+                zappa_cli.certify()
+                self.fail("Expected a ClickException")
+            except ClickException as e:
+                log_output = str(e)
+                self.assertIn("Can't certify a domain without", log_output)
+                self.assertIn("certificate_key", log_output)
+                self.assertIn("certificate_chain", log_output)
+
+            zappa_cli.zappa_settings["stage"]["certificate_key"] = "key"
+            try:
+                zappa_cli.certify()
+                self.fail("Expected a ClickException")
+            except ClickException as e:
+                log_output = str(e)
+                self.assertIn("Can't certify a domain without", log_output)
+                self.assertIn("certificate_key", log_output)
+                self.assertIn("certificate_chain", log_output)
+
+            zappa_cli.zappa_settings["stage"]["certificate_chain"] = "chain"
+            del zappa_cli.zappa_settings["stage"]["certificate_key"]
+            try:
+                zappa_cli.certify()
+                self.fail("Expected a ClickException")
+            except ClickException as e:
+                log_output = str(e)
+                self.assertIn("Can't certify a domain without", log_output)
+                self.assertIn("certificate_key", log_output)
+                self.assertIn("certificate_chain", log_output)
+
+            # With all certificate settings, make sure Zappa's domain calls
+            # are executed.
+            cert_file = tempfile.NamedTemporaryFile()
+            cert_file.write("Hello world")
+            cert_file.flush()
+
+            zappa_cli.zappa_settings["stage"].update({
+                "certificate": cert_file.name,
+                "certificate_key": cert_file.name,
+                "certificate_chain": cert_file.name
+            })
+            sys.stdout.truncate(0)
+            zappa_cli.certify(no_cleanup=True)
+            self.assertEquals(len(zappa_cli.zappa.calls), 1)
+            self.assertTrue(zappa_cli.zappa.calls[0][0] == "create_domain_name")
+            log_output = sys.stdout.getvalue()
+            self.assertIn("Created a new domain name", log_output)
+
+            zappa_cli.zappa.calls = []
+            zappa_cli.zappa.domain_names["test.example.com"] = "*.example.com"
+            sys.stdout.truncate(0)
+            zappa_cli.certify(no_cleanup=True)
+            self.assertEquals(len(zappa_cli.zappa.calls), 1)
+            self.assertTrue(zappa_cli.zappa.calls[0][0] == "update_domain_name")
+            log_output = sys.stdout.getvalue()
+            self.assertNotIn("Created a new domain name", log_output)
+        finally:
+            sys.stdout = old_stdout
 
     ##
     # Django

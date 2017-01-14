@@ -1275,8 +1275,7 @@ class ZappaCLI(object):
         cert_chain_location = self.stage_config.get('certificate_chain', None)
 
         if not domain:
-            click.echo("Can't certify a domain without " + click.style("domain", fg="red", bold=True) + " configured!")
-            return
+            raise ClickException("Can't certify a domain without " + click.style("domain", fg="red", bold=True) + " configured!")
 
         if not cert_location:
             if not account_key_location:
@@ -1337,6 +1336,8 @@ class ZappaCLI(object):
                     certificate_private_key,
                     certificate_chain
                 )
+
+            cert_success = True
 
         # Deliberately undocumented feature (for now, at least.)
         # We are giving the user the ability to shoot themselves in the foot.
