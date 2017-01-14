@@ -4,7 +4,8 @@ import collections
 import json
 from contextlib import nested
 
-from io import StringIO
+from io import BytesIO, StringIO
+import flask
 import mock
 import os
 import random
@@ -1152,6 +1153,34 @@ USE_TZ = True
 
             # cleanup
             os.remove(zappa_cli.zip_path)
+
+    def test_flask_logging_bug(self):
+        # This checks whether Flask can write errors sanely.
+        # https://github.com/Miserlou/Zappa/issues/283
+        event = {
+                "body": {},
+                "headers": {},
+                "pathParameters": {},
+                "path": '/',
+                "httpMethod": "GET",
+                "queryStringParameters": {},
+                "requestContext": {}
+            }
+
+        old_stderr = sys.stderr
+        sys.stderr = BytesIO()
+        try:
+            environ = create_wsgi_request(event)
+            app = flask.Flask(__name__)
+            with app.request_context(environ):
+                app.logger.error(u"This is a test")
+                log_output = sys.stderr.getvalue()
+                self.assertNotIn(
+                    "'str' object has no attribute 'write'", log_output)
+                self.assertNotIn(
+                    "Logged from file tests.py", log_output)
+        finally:
+            sys.stderr = old_stderr
 
 if __name__ == '__main__':
     unittest.main()

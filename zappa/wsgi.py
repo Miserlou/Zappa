@@ -4,6 +4,7 @@ import base64
 from urllib import urlencode
 from requestlogger import ApacheFormatter
 from StringIO import StringIO
+from sys import stderr
 
 from werkzeug import urls
 
@@ -89,7 +90,7 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
             'wsgi.version': (1, 0),
             'wsgi.url_scheme': str('http'),
             'wsgi.input': body,
-            'wsgi.errors': str(''),
+            'wsgi.errors': stderr,
             'wsgi.multiprocess': False,
             'wsgi.multithread': False,
             'wsgi.run_once': False,
