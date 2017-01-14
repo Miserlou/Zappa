@@ -1195,8 +1195,10 @@ USE_TZ = True
             os.remove(zappa_cli.zip_path)
 
     def test_flask_logging_bug(self):
-        # This checks whether Flask can write errors sanely.
-        # https://github.com/Miserlou/Zappa/issues/283
+        """
+        This checks whether Flask can write errors sanely.
+        https://github.com/Miserlou/Zappa/issues/283
+        """
         event = {
                 "body": {},
                 "headers": {},
