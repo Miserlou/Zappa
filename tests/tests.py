@@ -13,7 +13,9 @@ import string
 import zipfile
 import re
 import unittest
+import shutil
 import sys
+import tempfile
 
 from click.exceptions import ClickException
 from lambda_packages import lambda_packages
@@ -585,9 +587,6 @@ class TestZappa(unittest.TestCase):
 
     def test_load_settings_yaml(self):
         zappa_cli = ZappaCLI()
-        settings_file = zappa_cli.get_json_or_yaml_settings("test_settings")
-
-        zappa_cli = ZappaCLI()
         zappa_cli.api_stage = 'ttt888'
         zappa_cli.load_settings('tests/test_settings.yml')
         self.assertEqual(False, zappa_cli.stage_config['touch'])
@@ -600,12 +599,53 @@ class TestZappa(unittest.TestCase):
 
     def test_load_settings_toml(self):
         zappa_cli = ZappaCLI()
-        settings_file = zappa_cli.get_json_or_yaml_settings("test_settings")
-
-        zappa_cli = ZappaCLI()
         zappa_cli.api_stage = 'ttt888'
         zappa_cli.load_settings('tests/test_settings.toml')
         self.assertEqual(False, zappa_cli.stage_config['touch'])
+
+    def test_settings_extension(self):
+        """
+        Make sure Zappa uses settings in the proper order: JSON, TOML, YAML.
+        """
+        tempdir = tempfile.mkdtemp(prefix="zappa-test-settings")
+        shutil.copy("tests/test_one_env.json", tempdir + "/zappa_settings.json")
+        shutil.copy("tests/test_settings.yml", tempdir + "/zappa_settings.yml")
+        shutil.copy("tests/test_settings.toml", tempdir + "/zappa_settings.toml")
+
+        orig_cwd = os.getcwd()
+        os.chdir(tempdir)
+        try:
+            zappa_cli = ZappaCLI()
+
+            # With all three, we should get the JSON file first.
+            self.assertEqual(zappa_cli.get_json_or_yaml_settings(),
+                             "zappa_settings.json")
+            zappa_cli.load_settings_file()
+            self.assertIn("lonely", zappa_cli.zappa_settings)
+            os.unlink("zappa_settings.json")
+
+            # Without the JSON file, we should get the TOML file.
+            self.assertEqual(zappa_cli.get_json_or_yaml_settings(),
+                             "zappa_settings.toml")
+            zappa_cli.load_settings_file()
+            self.assertIn("ttt888", zappa_cli.zappa_settings)
+            self.assertNotIn("devor", zappa_cli.zappa_settings)
+            os.unlink("zappa_settings.toml")
+
+            # With just the YAML file, we should get it.
+            self.assertEqual(zappa_cli.get_json_or_yaml_settings(),
+                             "zappa_settings.yml")
+            zappa_cli.load_settings_file()
+            self.assertIn("ttt888", zappa_cli.zappa_settings)
+            self.assertIn("devor", zappa_cli.zappa_settings)
+            os.unlink("zappa_settings.yml")
+
+            # Without anything, we should get an exception.
+            self.assertRaises(
+                ClickException, zappa_cli.get_json_or_yaml_settings)
+        finally:
+            os.chdir(orig_cwd)
+            shutil.rmtree(tempdir)
 
     def test_cli_utility(self):
         zappa_cli = ZappaCLI()
