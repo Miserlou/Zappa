@@ -3,14 +3,13 @@ import fnmatch
 from logging import getLogger
 import os
 from os.path import abspath
+import requests
 import shlex
 import shutil
 import stat
 from subprocess import CalledProcessError, PIPE, Popen
 import sys
 import urlparse
-
-import requests
 
 logger = getLogger(__name__)
 

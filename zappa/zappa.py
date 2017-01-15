@@ -334,13 +334,13 @@ class Zappa(object):
             # NOTE: Right now, this will only work for conda packages. As a future enhancement,
             #       we can consider how best to include both conda and pip packages here.
             package_query = call(
-                "%(conda_exe)s list --json --prefix %(conda_env_path)s" % {
+                "%(conda_exe)s list --export --prefix %(conda_env_path)s" % {
                     'conda_exe': conda_exe,
                     'conda_env_path': conda_env_path,
                 }
             )
-            packages = ('='.join((pkg['name'], pkg['version']))
-                        for pkg in json.loads(package_query.stdout))
+            print(package_query.stdout)
+            packages = package_query.stdout.splitlines()[3:]
 
             call(
                 "%(conda_exe)s install --yes --mkdir --json --prefix %(temp_conda_env_path)s "
@@ -362,15 +362,16 @@ class Zappa(object):
                 }
             )
 
-        # remove excluded packages from the environment
-        call(
-            "%(conda_exe)s remove --yes --json --prefix %(temp_conda_env_path)s "
-            "%(packages)s" % {
-                'conda_exe': conda_exe,
-                'temp_conda_env_path': temp_conda_env_path,
-                'packages': ' '.join(exclude_conda_packages),
-            }
-        )
+        if len(exclude_conda_packages):
+            # remove excluded packages from the environment
+            call(
+                "%(conda_exe)s remove --yes --force --json --prefix %(temp_conda_env_path)s "
+                "%(packages)s" % {
+                    'conda_exe': conda_exe,
+                    'temp_conda_env_path': temp_conda_env_path,
+                    'packages': ' '.join(exclude_conda_packages),
+                }
+            )
 
         # remove conda-meta directory; after this, `temp_conda_env_path` will no longer
         #   be a conda environment
@@ -416,7 +417,7 @@ class Zappa(object):
                 conda_exe = find_executable('conda')
                 assert conda_exe, "No conda executable found on path."
                 conda_mode = True
-                venv = make_temp_environment_from_conda(temp_zappa_folder = temp_zappa_folder,
+                venv = self.make_temp_environment_from_conda(temp_zappa_folder = temp_zappa_folder,
                     conda_exe = conda_exe, conda_env_path = conda_env_path,
                     exclude_conda_packages = exclude_conda_packages)
             elif os.path.exists('.python-version'):  # pragma: no cover
@@ -479,7 +480,6 @@ class Zappa(object):
             site_packages = os.path.join(venv, 'Lib', 'site-packages')
         else:
             site_packages = os.path.join(venv, 'lib', 'python2.7', 'site-packages')
-
         egg_links = []
         egg_links.extend(glob.glob(os.path.join(site_packages, '*.egg-link')))
 
@@ -508,7 +508,7 @@ class Zappa(object):
         # Then the pre-compiled packages..
         if use_precompiled_packages:
             if conda_mode:
-                warnings.warn('Using conda while use_precompiled_packages is set to true is not recommended: it may lead to overwriting conda packages')
+                print('Warning! Using conda while use_precompiled_packages is set to true is not recommended: it may lead to overwriting conda packages')
             print("Downloading and installing dependencies..")
             import pip
             installed_packages_name_set = [package.project_name.lower() for package in
