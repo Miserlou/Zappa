@@ -1600,7 +1600,7 @@ class ZappaCLI(object):
                     # https://github.com/Miserlou/Zappa/issues/556
                     ["boto3", "dateutil", "botocore", "s3transfer", "six.py", "jmespath", "concurrent"]),
                 exclude_conda_packages = self.stage_config.get('exclude_conda_packages',
-                    ['pip','python','readline','sqlite','wheel', 'boto3', 'botocore'])
+                    ['pip','python','readline','sqlite','wheel', 'boto3', 'botocore', 'tk'])
             )
 
         # Throw custom setings into the zip file
