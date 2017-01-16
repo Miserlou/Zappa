@@ -487,7 +487,8 @@ class ZappaCLI(object):
                                                        description=self.lambda_description,
                                                        vpc_config=self.vpc_config,
                                                        timeout=self.timeout_seconds,
-                                                       memory_size=self.memory_size)
+                                                       memory_size=self.memory_size,
+                                                       environment_variables=self.environment_variables)
 
         # Schedule events for this deployment
         self.schedule()
@@ -600,7 +601,8 @@ class ZappaCLI(object):
                                                        description=self.lambda_description,
                                                        vpc_config=self.vpc_config,
                                                        timeout=self.timeout_seconds,
-                                                       memory_size=self.memory_size)
+                                                       memory_size=self.memory_size,
+                                                       environment_variables=self.environment_variables)
 
         # Finally, delete the local copy our zip package
         if self.stage_config.get('delete_local_zip', True):
