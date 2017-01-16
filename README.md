@@ -52,6 +52,7 @@
     - [Catching Unhandled Exceptions](#catching-unhandled-exceptions)
     - [Using Custom AWS IAM Roles and Policies](#using-custom-aws-iam-roles-and-policies)
     - [Globally Available Server-less Architectures](#globally-available-server-less-architectures)
+    - [Remote Exception Logging](#remote-exception-logging)
 - [Zappa Guides](#zappa-guides)
 - [Zappa in the Press](#zappa-in-the-press)
 - [Sites Using Zappa](#sites-using-zappa)
@@ -718,6 +719,42 @@ Ongoing discussion about the minimum policy requirements necessary for a Zappa d
 During the `init` process, you will be given the option to deploy your application "globally." This will allow you to deploy your application to all available AWS regions simultaneously in order to provide a consistent global speed, increased redundancy, data isolation, and legal compliance. You can also choose to deploy only to "primary" locations, the AWS regions with `-1` in their names.
 
 To learn more about these capabilities, see [these slides](https://htmlpreview.github.io/?https://github.com/Miserlou/Talks/blob/master/serverless-london/global.html#0) from ServerlessConf London.
+
+#### Remote Exception Logging
+
+In order to use remote exception logging services like Sentry, you need configure them to send synchronous requests.
+
+##### Bottle
+
+```
+from bottle import route, run, request
+import bottle
+
+app = bottle.app()
+app.catchall = False
+
+from raven import Client
+from raven.contrib.bottle import Sentry
+client = Client('requests+https://<YOURDSN>')
+app = Sentry(app, client)
+```
+
+##### Flask
+
+```
+pip install blink
+```
+
+```
+from flask import Flask
+app = Flask(__name__)
+
+from raven.contrib.flask import Sentry
+sentry = Sentry(
+    app,
+    dsn='requests+https://<YOURDSN>'
+)
+```
 
 ## Zappa Guides
 
