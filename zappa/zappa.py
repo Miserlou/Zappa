@@ -629,7 +629,7 @@ class Zappa(object):
     ##
 
     def create_lambda_function(self, bucket, s3_key, function_name, handler, description="Zappa Deployment",
-                               timeout=30, memory_size=512, publish=True, vpc_config=None, environment_variables={}):
+                               timeout=30, memory_size=512, publish=True, vpc_config=None, environment_variables=None):
         """
         Given a bucket and key of a valid Lambda-zip, a function name and a handler, register that Lambda function.
         """
@@ -637,6 +637,8 @@ class Zappa(object):
             vpc_config = {}
         if not self.credentials_arn:
             self.get_credentials_arn()
+        if not environment_variables:
+            environment_variables = {}
 
         response = self.lambda_client.create_function(
             FunctionName=function_name,
@@ -673,7 +675,7 @@ class Zappa(object):
         return response['FunctionArn']
 
     def update_lambda_configuration(self, lambda_arn, function_name, handler, description="Zappa Deployment",
-                                    timeout=30, memory_size=512, publish=True, vpc_config=None, environment_variables={}):
+                                    timeout=30, memory_size=512, publish=True, vpc_config=None, environment_variables=None):
         """
         Given an existing function ARN, update the configuration variables.
         """
@@ -683,6 +685,8 @@ class Zappa(object):
             vpc_config = {}
         if not self.credentials_arn:
             self.get_credentials_arn()
+        if not environment_variables:
+            environment_variables = {}
 
         response = self.lambda_client.update_function_configuration(
             FunctionName=function_name,
