@@ -107,8 +107,10 @@ class LambdaHandler(object):
                 pass
 
             # Set any locally defined env vars
+            # Environement variable keys can't be Unicode
+            # https://github.com/Miserlou/Zappa/issues/604
             for key in self.settings.ENVIRONMENT_VARIABLES.keys():
-                os.environ[key] = self.settings.ENVIRONMENT_VARIABLES[key]
+                os.environ[str(key)] = self.settings.ENVIRONMENT_VARIABLES[key]
 
             # Django gets special treatment.
             if not self.settings.DJANGO_SETTINGS:
@@ -173,7 +175,11 @@ class LambdaHandler(object):
                 ))
             # Environement variable keys can't be Unicode
             # https://github.com/Miserlou/Zappa/issues/604
-            os.environ[str(key)] = value
+            try:
+                os.environ[str(key)] = value
+            except Exception:
+                if self.settings.LOG_LEVEL == "DEBUG":
+                    print("Environment variable keys must be non-unicode!")
 
     @staticmethod
     def import_module_and_get_function(whole_function):
