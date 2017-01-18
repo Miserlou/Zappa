@@ -43,13 +43,13 @@
       - [IAM Policy](#iam-policy)
       - [API Gateway Authorizers](#api-gateway-authorizers)
       - [Cognito User Pool Authorizer](#cognito-user-pool-authorizer)
-    - [Deploying with Custom Domain Name with SSL Certificates](#deploying-to-a-custom domain-name-with-ssl-certificates)
+    - [Deploying to a Custom Domain Name with SSL Certificates](#deploying-to-a-custom-domain-name-with-ssl-certificates)
       - [Deploying to a Domain With a Let's Encrypt Certificate (DNS Auth)](#deploying-to-a-domain-with-a-lets-encrypt-certificate-dns-auth)
       - [Deploying to a Domain With a Let's Encrypt Certificate (HTTP Auth)](#deploying-to-a-domain-with-a-lets-encrypt-certificate-http-auth)
       - [Deploying with Custom Domain Name (with your own SSL Certs)](#deploying-with-custom-domain-name-with-your-own-ssl-certs)
     - [Setting Environment Variables](#setting-environment-variables)
-       - [Local Environment Variables](#local-environment-variables)
-       - [Remote Environment Variables](#remote-environment-variables)
+      - [Local Environment Variables](#local-environment-variables)
+      - [Remote Environment Variables](#remote-environment-variables)
     - [Setting Integration Content-Type Aliases](#setting-integration-content-type-aliases)
     - [Catching Unhandled Exceptions](#catching-unhandled-exceptions)
     - [Using Custom AWS IAM Roles and Policies](#using-custom-aws-iam-roles-and-policies)
@@ -569,7 +569,8 @@ You can also use AWS Cognito User Pool Authorizer by adding:
             "arn:aws:cognito-idp:{region}:{account_id}:userpool/{user_pool_id}"
         ]
     }
-}```
+}
+```
 
 #### Deploying to a Custom Domain Name with SSL Certificates
 
