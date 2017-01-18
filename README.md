@@ -43,12 +43,13 @@
       - [IAM Policy](#iam-policy)
       - [API Gateway Authorizers](#api-gateway-authorizers)
       - [Cognito User Pool Authorizer](#cognito-user-pool-authorizer)
-    - [Deploying with Custom Domain Name (with your own SSL Certs)](#deploying-with-custom-domain-name-with-your-own-ssl-certs)
-    - [Deploying to a Domain With a Let's Encrypt Certificate (DNS Auth)](#deploying-to-a-domain-with-a-lets-encrypt-certificate-dns-auth)
-    - [Deploying to a Domain With a Let's Encrypt Certificate (HTTP Auth)](#deploying-to-a-domain-with-a-lets-encrypt-certificate-http-auth)
+    - [Deploying with Custom Domain Name with SSL Certificates](#deploying-to-a-custom domain-name-with-ssl-certificates)
+      - [Deploying to a Domain With a Let's Encrypt Certificate (DNS Auth)](#deploying-to-a-domain-with-a-lets-encrypt-certificate-dns-auth)
+      - [Deploying to a Domain With a Let's Encrypt Certificate (HTTP Auth)](#deploying-to-a-domain-with-a-lets-encrypt-certificate-http-auth)
+      - [Deploying with Custom Domain Name (with your own SSL Certs)](#deploying-with-custom-domain-name-with-your-own-ssl-certs)
     - [Setting Environment Variables](#setting-environment-variables)
-      - [Local Environment Variables](#local-environment-variables)
-      - [Remote Environment Variables](#remote-environment-variables)
+       - [Local Environment Variables](#local-environment-variables)
+       - [Remote Environment Variables](#remote-environment-variables)
     - [Setting Integration Content-Type Aliases](#setting-integration-content-type-aliases)
     - [Catching Unhandled Exceptions](#catching-unhandled-exceptions)
     - [Using Custom AWS IAM Roles and Policies](#using-custom-aws-iam-roles-and-policies)
@@ -568,14 +569,25 @@ You can also use AWS Cognito User Pool Authorizer by adding:
             "arn:aws:cognito-idp:{region}:{account_id}:userpool/{user_pool_id}"
         ]
     }
-}
-```
+}```
 
-#### Deploying with Custom Domain Name (with your own SSL Certs)
+#### Deploying to a Custom Domain Name with SSL Certificates
+
+##### Deploying to a Domain With a Let's Encrypt Certificate (DNS Auth)
+
+If you want to use Zappa on a domain with a free Let's Encrypt certificate using automatic Route 53 based DNS Authentication, you can follow [this handy guide](https://github.com/Miserlou/Zappa/blob/master/docs/domain_with_free_ssl_dns.md).
+
+##### Deploying to a Domain With a Let's Encrypt Certificate (HTTP Auth)
+
+If you want to use Zappa on a domain with a free Let's Encrypt certificate using HTTP Authentication, you can follow [this guide](https://github.com/Miserlou/Zappa/blob/master/docs/domain_with_free_ssl_http.md).
+
+However, it's now far easier to use Route 53-based DNS authentication, which will allow you to use a Let's Encrypt certificate with a single `$ zappa certify` command.
+
+##### Deploying with Custom Domain Name (with your own SSL Certs)
 
 1. The first step is to create a custom domain and upload your SSL cert / key / bundle - follow this guide [Set Up a Custom Domain Name for an API Gateway API](http://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-custom-domains.html#how-to-custom-domains-console)
-2. Ensure you have set the `domain` setting within your zappa settings JSON - this will avoid problems with the Base Path mapping between the Custom Domain and the API invoke URL, which gets the Stage Name appended in the URI
-3. Deploy or update your app using zappa
+2. Ensure you have set the `domain` setting within your Zappa settings JSON - this will avoid problems with the Base Path mapping between the Custom Domain and the API invoke URL, which gets the Stage Name appended in the URI
+3. Deploy or update your app using Zappa
 4. Create a base path mapping between your custom domain name and your chosen API stage, leaving the base-path blank if you wish to access your app on the root path of your custom domain e.g. myapp.com rather than myapp.com/prod
 
 `$ aws apigateway create-base-path-mapping --domain-name myapp.com --rest-api-id 123abc --stage prod --base-path '' --region us-west-2`
@@ -584,15 +596,7 @@ Ensure you have a CNAME to resolve your custom domain name to the CloudFront Dis
 
 `$ aws apigateway get-domain-names`
 
-#### Deploying to a Domain With a Let's Encrypt Certificate (DNS Auth)
-
-If you want to use Zappa on a domain with a free Let's Encrypt certificate using automatic Route 53 based DNS Authentication, you can follow [this handy guide](https://github.com/Miserlou/Zappa/blob/master/docs/domain_with_free_ssl_dns.md).
-
-#### Deploying to a Domain With a Let's Encrypt Certificate (HTTP Auth)
-
-If you want to use Zappa on a domain with a free Let's Encrypt certificate using HTTP Authentication, you can follow [this guide](https://github.com/Miserlou/Zappa/blob/master/docs/domain_with_free_ssl_http.md).
-
-However, it's now far easier to use Route 53-based DNS authentication, which will allow you to use a Let's Encrypt certificate with a single `$ zappa certify` command.
+There is an [open ticket](https://github.com/Miserlou/Zappa/issues/401) to automate this process.
 
 #### Setting Environment Variables
 
