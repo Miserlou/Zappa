@@ -25,6 +25,7 @@
     - [Scheduling](#scheduling)
     - [Executing in Response to AWS Events](#executing-in-response-to-aws-events)
     - [Undeploy](#undeploy)
+    - [Package](#package)
     - [Status](#status)
     - [Tailing Logs](#tailing-logs)
     - [Remote Function Invocation](#remote-function-invocation)
@@ -288,6 +289,24 @@ want to keep those logs, you can specify the `--remove-logs` argument to purge t
 
     $ zappa undeploy production --remove-logs
 
+#### Package
+
+If you want to build your application package without actually uploading and registering it as a Lambda function, you can use the `package` command:
+
+    $ zappa package production
+
+If you have a `zip` callback in your `callbacks` setting, this will also be invoked.
+
+```javascript
+{
+    "production": { // The name of your environment
+        "callbacks": {
+            "zip": "my_app.zip_callback"// After creating the package
+        }
+    }
+}
+```
+
 #### Status
 
 If you need to see the status of your deployment and event schedules, simply use the `status` command.
@@ -399,6 +418,7 @@ to change Zappa's behavior. Use these at your own risk!
             }
         ],
         "exception_handler": "your_module.report_exception", // function that will be invoked in case Zappa sees an unhandled exception raised from your code
+
         "exclude": ["*.gz", "*.rar"], // A list of regex patterns to exclude from the archive. To exclude boto3 and botocore (available in an older version on Lambda), add "boto3*" and "botocore*".
         "extends": "stage_name", // Duplicate and extend another stage's settings. For example, `dev-asia` could extend from `dev-common` with a different `s3_bucket` value.
         "http_methods": ["GET", "POST"], // HTTP Methods to route,
@@ -753,6 +773,7 @@ Are you using Zappa? Let us know and we'll list your site here!
 ## Related Projects
 
 * [lambda-packages](http://github.com/Miserlou/lambda-packages) - Precompiled C-extension packages for AWS Lambda. Used automatically by Zappa.
+* [Mackenzie](http://github.com/Miserlou/Mackenzie) - AWS Lambda Infection Toolkit
 * [zappa-cms](http://github.com/Miserlou/zappa-cms) - A tiny server-less CMS for busy hackers. Work in progress.
 * [flask-ask](https://github.com/johnwheeler/flask-ask) - A framework for building Amazon Alexa applications. Uses Zappa for deployments.
 * [zappa-file-widget](https://github.com/anush0247/zappa-file-widget) - A Django plugin for supporting binary file uploads in Django on Zappa.
@@ -778,7 +799,7 @@ Please file tickets for discussion before submitting patches. Pull requests shou
 
 If you are adding a non-trivial amount of new code, please include a functioning test in your PR. For AWS calls, we use the `placebo` library, which you can learn to use [in their README](https://github.com/garnaat/placebo#usage-as-a-decorator). The test suite will be run by [Travis CI](https://travis-ci.org/Miserlou/Zappa) once you open a pull request.
 
-Please include the GitHub issue or pull request URL that has discussion related to your changes as a comment in the code ([example](https://github.com/Miserlou/Zappa/blob/fae2925431b820eaedf088a632022e4120a29f89/zappa/zappa.py#L241-L243)]). This greatly helps for project maintainability, as it allows us to trace back use cases and explain decision making.
+Please include the GitHub issue or pull request URL that has discussion related to your changes as a comment in the code ([example](https://github.com/Miserlou/Zappa/blob/fae2925431b820eaedf088a632022e4120a29f89/zappa/zappa.py#L241-L243)). This greatly helps for project maintainability, as it allows us to trace back use cases and explain decision making.
 
 #### Using a Local Repo
 
