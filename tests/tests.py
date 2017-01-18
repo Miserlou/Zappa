@@ -90,7 +90,8 @@ class TestZappa(unittest.TestCase):
             # we use glob.glob to get the egg-links in the temp packages directory
             mock_glob.return_value = [temp_egg_link]
 
-            z.copy_editable_packages(egg_links, temp_package_dir)
+            for egg_link in egg_links:
+                z.copy_editable_package(egg_link, temp_package_dir)
 
             # make sure we copied the right directories
             mock_copytree.assert_called_with(

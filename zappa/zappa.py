@@ -1,6 +1,5 @@
 from __future__ import print_function
 
-import glob
 from setuptools import find_packages
 
 import boto3
@@ -19,8 +18,9 @@ import time
 import troposphere
 import troposphere.apigateway
 import zipfile
-
-from distutils.dir_util import copy_tree
+import pip
+import hashlib
+import glob
 
 from botocore.exceptions import ClientError
 from io import BytesIO
@@ -199,7 +199,7 @@ LAMBDA_REGIONS = ['us-east-1', 'us-east-2', 'us-west-2', 'eu-central-1', 'eu-wes
 # Related: https://github.com/Miserlou/Zappa/pull/581
 ZIP_EXCLUDES = [
     '*.exe', '*.DS_Store', '*.Python', '*.git', '.git/*', '*.zip', '*.tar.gz',
-    '*.hg', '*.egg-info', 'pip', 'docutils*', 'setuputils*'
+    '*.hg', '*.egg-info', 'pip', 'docutils*', 'setuputils*', ".zappa_cache"
 ]
 
 ##
@@ -289,7 +289,7 @@ class Zappa(object):
         self.cf_template = troposphere.Template()
         self.cf_api_resources = []
         self.cf_parameters = {}
-
+        self._installed_requirements = []
 
     def cache_param(self, value):
         '''Returns a troposphere Ref to a value cached as a parameter.'''
@@ -307,21 +307,98 @@ class Zappa(object):
     ##
     # Packaging
     ##
-    def copy_editable_packages(self, egg_links, temp_package_path):
-        for egg_link in egg_links:
-            with open(egg_link) as df:
-                egg_path = df.read().decode('utf-8').splitlines()[0].strip()
-                pkgs = set([x.split(".")[0] for x in find_packages(egg_path, exclude=['test', 'tests'])])
-                for pkg in pkgs:
-                    copytree(os.path.join(egg_path, pkg), os.path.join(temp_package_path, pkg), symlinks=False)
+    def copy_editable_package(self, egg_link, temp_package_path):
+        with open(egg_link) as df:
+            egg_path = df.read().decode('utf-8').splitlines()[0].strip()
+            pkgs = set([x.split(".")[0] for x in find_packages(egg_path, exclude=['test', 'tests'])])
+            for pkg in pkgs:
+                copytree(os.path.join(egg_path, pkg), os.path.join(temp_package_path, pkg), symlinks=False)
 
-        if temp_package_path:
-            # now remove any egg-links as they will cause issues if they still exist
-            for link in glob.glob(os.path.join(temp_package_path, "*.egg-link")):
-                os.remove(link)
+        for link in glob.glob(os.path.join(temp_package_path, "*.egg-link")):
+            os.remove(link)
 
-    def create_lambda_zip(self, prefix='lambda_package', handler_file=None,
-                          minify=True, exclude=None, use_precompiled_packages=True, include=None, venv=None):
+    def install_requirement(self, pkg_name, destination, package_paths=None, excludes=None, use_precompiled_packages=True):
+        """Copy a lambda-ready package into destination.
+
+        This will be either a manylinyx wheel or binary from lambda-packages,
+        a freshly installed dependency in temp_dir, or a dependency in found in
+        paths.
+        """
+        # 1. Check if there's a manylinux wheel
+        if pkg_name in self._installed_requirements:
+            return False
+
+        wheel_url = self.get_manylinux_wheel(pkg_name)
+        if use_precompiled_packages and wheel_url:
+            print("{:20} -> wheel".format(pkg_name))
+            try:
+                resp = requests.get(wheel_url, timeout=2, stream=True)
+                resp.raw.decode_content = True
+                zipresp = resp.raw
+                with zipfile.ZipFile(BytesIO(zipresp.read())) as zfile:
+                    zfile.extractall(destination)
+                self._installed_requirements.append(pkg_name)
+                return True
+            except Exception:
+                pass  # XXX - What should we do here?
+
+        # 2. Check if there's a lambd package
+        if use_precompiled_packages and pkg_name in lambda_packages:
+            tar = tarfile.open(lambda_packages[pkg_name]['path'], mode="r:gz")
+            for member in tar.getmembers():
+                tar.extract(member, destination)
+            self._installed_requirements.append(pkg_name)
+            return True
+
+        # 3. Check if it's in paths (typically site-packages in a venv)
+        for path in package_paths or []:
+            found_package = False
+            if os.path.exists(os.path.join(path, pkg_name)):
+                self._copytree(os.path.join(path, pkg_name), os.path.join(destination, pkg_name), excludes)
+                found_package = True
+
+            elif os.path.exists(os.path.join(path, pkg_name + ".pyc")):
+                shutil.copy(os.path.join(path, pkg_name + ".pyc"), os.path.join(destination, pkg_name + ".pyc"))
+                found_package = True
+
+            elif os.path.exists(os.path.join(path, pkg_name + ".egg-link")):
+                self.copy_editable_package(os.path.join(path, pkg_name + ".egg-link"), destination)
+                found_package = True
+
+            if found_package:
+                self._installed_requirements.append(pkg_name)
+                for dependency in self._get_dependencies(pkg_name):
+                    print("{} depends on {}...".format(pkg_name, dependency))
+                    self.install_requirement(dependency, destination, package_paths, excludes, use_precompiled_packages)
+                return True
+
+        # 4. Install into tempdir
+        pip.main(["install", "-t", destination, pkg_name])
+
+    def _copytree(self, src, dest, excludes=None):
+        """Copy a tree to a target destination."""
+
+        if excludes:
+            copytree(src, dest, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
+        else:
+            copytree(src, dest, symlinks=False)
+
+    def _get_dependencies(self, pkg_name, installed_distros=None):
+        """Get locally installed dependencies."""
+        deps = []
+        if not installed_distros:
+            installed_distros = pip.get_installed_distributions()
+
+        for package in installed_distros:
+            if package.project_name.lower() == pkg_name.lower():
+                for req in package.requires():
+                    if req.project_name.lower() not in self._installed_requirements:
+                        deps += [req.project_name]
+                        deps += self._get_dependencies(pkg_name=req.project_name, installed_distros=installed_distros)
+        return list(set(deps))  # de-dupe before returning
+
+    def create_lambda_zip(self, prefix='lambda_package', requirements=None, handler_file=None,
+                          minify=True, exclude=None, use_precompiled_packages=True, include=None, venv=None, cache=True):
         """
         Create a Lambda-ready zip file of the current virtualenvironment and working directory.
 
@@ -346,35 +423,24 @@ class Zappa(object):
                 bin_path = subprocess.check_output(['pyenv', 'which', 'python']).decode('utf-8')
                 venv = bin_path[:bin_path.rfind(env_name)] + env_name
                 logger.debug('env path = {}'.format(venv))
-            else:  # pragma: no cover
-                print("Zappa requires an active virtual environment.")
+            elif not requirements:  # pragma: no cover
+                print("No virtual environment detected - please specify your requirements explicitly in zappa_settings.json")
                 quit()
 
         cwd = os.getcwd()
+
         zip_fname = prefix + '-' + str(int(time.time())) + '.zip'
         zip_path = os.path.join(cwd, zip_fname)
 
+        venv_name = os.path.split(venv)[-1]
+        cwd_name = os.path.split(cwd)[-1]
+
         # Files that should be excluded from the zip
-        if exclude is None:
-            exclude = list()
-
-        # Exclude the zip itself
-        exclude.append(zip_path)
-
-        def splitpath(path):
-            parts = []
-            (path, tail) = os.path.split(path)
-            while path and tail:
-                parts.append(tail)
-                (path, tail) = os.path.split(path)
-            parts.append(os.path.join(path, tail))
-            return map(os.path.normpath, parts)[::-1]
-        split_venv = splitpath(venv)
-        split_cwd = splitpath(cwd)
+        excludes = (exclude or []) + ZIP_EXCLUDES + [venv_name, zip_path]
 
         # Ideally this should be avoided automatically,
         # but this serves as an okay stop-gap measure.
-        if split_venv[-1] == split_cwd[-1]:  # pragma: no cover
+        if venv_name == cwd_name:  # pragma: no cover
             print(
                 "Warning! Your project and virtualenv have the same name! You may want "
                 "to re-create your venv with a new name, or explicitly define a "
@@ -383,79 +449,44 @@ class Zappa(object):
 
         # First, do the project..
         temp_project_path = os.path.join(tempfile.gettempdir(), str(int(time.time())))
+        temp_package_path = os.path.join(tempfile.gettempdir(), str(int(time.time())) + "_packages")
 
-        if minify:
-            excludes = ZIP_EXCLUDES + exclude + [split_venv[-1]]
-            copytree(cwd, temp_project_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
-        else:
-            copytree(cwd, temp_project_path, symlinks=False)
+        self._copytree(cwd, temp_project_path, minify and excludes)
 
         # Then, do the site-packages..
-        egg_links = []
-        temp_package_path = os.path.join(tempfile.gettempdir(), str(int(time.time() + 1)))
-        if os.sys.platform == 'win32':
-            site_packages = os.path.join(venv, 'Lib', 'site-packages')
+        if not requirements:
+            requirements = set(pkg.project_name.lower() for pkg in pip.get_installed_distributions())
+            site_packages = os.path.join(venv, 'lib', '' if os.sys.platform == 'win32' else 'python2.7', 'site-packages')
+            site_packages_64 = os.path.join(venv, 'lib64', 'python2.7', 'site-packages')
+            package_paths = [site_packages, site_packages_64]
         else:
-            site_packages = os.path.join(venv, 'lib', 'python2.7', 'site-packages')
-        egg_links.extend(glob.glob(os.path.join(site_packages, '*.egg-link')))
+            requirements = set(pkg_name.lower() for pkg_name in requirements)
+            requirements.add("zappa")  # just in case it's not there
+            package_paths = []
 
-        if minify:
-            excludes = ZIP_EXCLUDES + exclude
-            copytree(site_packages, temp_package_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
+        requirements_hash = hashlib.md5(":".join(sorted(requirements))).hexdigest()
+        cache_path = os.path.join(cwd, ".zappa_cache" + requirements_hash)
 
+        if cache and os.path.exists(cache_path):
+            temp_package_path = cache_path
         else:
-            copytree(site_packages, temp_package_path, symlinks=False)
+            # Delete old cache folders
+            for dirname in os.listdir(cwd):
+                if dirname.startswith(".zappa_cache"):
+                    shutil.rmtree(os.path.join(cwd, dirname))
 
-        # We may have 64-bin specific packages too.
-        site_packages_64 = os.path.join(venv, 'lib64', 'python2.7', 'site-packages')
-        if os.path.exists(site_packages_64):
-            egg_links.extend(glob.glob(os.path.join(site_packages_64, '*.egg-link')))
-            if minify:
-                excludes = ZIP_EXCLUDES + exclude
-                copytree(site_packages_64, temp_package_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
-            else:
-                copytree(site_packages_64, temp_package_path, symlinks=False)
+            print("Downloading and installing dependencies...")
+            progress = tqdm(total=len(requirements), unit_scale=False, unit='pkg')
+            self._installed_requirements = []
 
-        if egg_links:
-            self.copy_editable_packages(egg_links, temp_package_path)
+            for pkg_name in requirements:
+                self.install_requirement(pkg_name, temp_package_path, package_paths,
+                                         excludes=excludes, use_precompiled_packages=use_precompiled_packages)
+                progress.update()
+            if cache:
+                self._copytree(temp_package_path, cache_path, minify and excludes)
 
-        copy_tree(temp_package_path, temp_project_path, update=True)
-
-        # Then the pre-compiled packages..
-        if use_precompiled_packages:
-            print("Downloading and installing dependencies..")
-            installed_packages_name_set = [package.project_name.lower() for package in
-                                           pip.get_installed_distributions()]
-
-            # First, try lambda packages
-            for name, details in lambda_packages.items():
-                if name.lower() in installed_packages_name_set:
-                    tar = tarfile.open(details['path'], mode="r:gz")
-                    for member in tar.getmembers():
-                        # If we can, trash the local version.
-                        if member.isdir():
-                            shutil.rmtree(os.path.join(temp_project_path, member.name), ignore_errors=True)
-                            continue
-                        tar.extract(member, temp_project_path)
-
-            progress = tqdm(total=len(installed_packages_name_set), unit_scale=False, unit='pkg')
-
-            # Then try to use manylinux packages from PyPi..
-            # Related: https://github.com/Miserlou/Zappa/issues/398
-            try:
-                for installed_package_name in installed_packages_name_set:
-                    if installed_package_name not in lambda_packages:
-                        wheel_url = self.get_manylinux_wheel(installed_package_name)
-                        if wheel_url:
-                            resp = requests.get(wheel_url, timeout=2, stream=True)
-                            resp.raw.decode_content = True
-                            zipresp = resp.raw
-                            with zipfile.ZipFile(BytesIO(zipresp.read())) as zfile:
-                                zfile.extractall(temp_project_path)
-                        progress.update()
-            except Exception:
-                pass # XXX - What should we do here?
-            progress.close()
+        self._copytree(temp_package_path, temp_project_path, minify and excludes)
 
 
         # If a handler_file is supplied, copy that to the root of the package,
@@ -513,7 +544,6 @@ class Zappa(object):
 
         # Trash the temp directory
         shutil.rmtree(temp_project_path)
-        shutil.rmtree(temp_package_path)
 
         # Warn if this is too large for Lambda.
         file_stats = os.stat(zip_path)
