@@ -171,7 +171,9 @@ class LambdaHandler(object):
                     key,
                     value
                 ))
-            os.environ[key] = value
+            # Environement variable keys can't be Unicode
+            # https://github.com/Miserlou/Zappa/issues/604
+            os.environ[str(key)] = value
 
     @staticmethod
     def import_module_and_get_function(whole_function):

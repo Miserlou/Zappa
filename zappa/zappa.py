@@ -452,8 +452,8 @@ class Zappa(object):
                             zipresp = resp.raw
                             with zipfile.ZipFile(BytesIO(zipresp.read())) as zfile:
                                 zfile.extractall(temp_project_path)
-                        progress.update()
-            except Exception:
+                    progress.update()
+            except Exception, e:
                 pass # XXX - What should we do here?
             progress.close()
 
