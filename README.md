@@ -181,11 +181,7 @@ You can also `rollback` the deployed code to a previous version by supplying the
 
 #### Scheduling
 
-Zappa can be used to easily 
-
-
-
-functions to occur on regular intervals. This provides a much nicer, maintenance-free alternative to Celery!
+Zappa can be used to easily schedule functions to occur on regular intervals. This provides a much nicer, maintenance-free alternative to Celery!
 These functions will be packaged and deployed along with your `app_function` and called from the handler automatically.
 Just list your functions and the expression to schedule them using [cron or rate syntax](http://docs.aws.amazon.com/lambda/latest/dg/tutorial-scheduled-events-schedule-expressions.html) in your *zappa_settings.json* file:
 
@@ -422,7 +418,6 @@ to change Zappa's behavior. Use these at your own risk!
             }
         ],
         "exception_handler": "your_module.report_exception", // function that will be invoked in case Zappa sees an unhandled exception raised from your code
-
         "exclude": ["*.gz", "*.rar"], // A list of regex patterns to exclude from the archive. To exclude boto3 and botocore (available in an older version on Lambda), add "boto3*" and "botocore*".
         "extends": "stage_name", // Duplicate and extend another stage's settings. For example, `dev-asia` could extend from `dev-common` with a different `s3_bucket` value.
         "http_methods": ["GET", "POST"], // HTTP Methods to route,
