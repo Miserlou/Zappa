@@ -1808,7 +1808,7 @@ class Zappa(object):
     # CloudWatch Logging
     ##
 
-    def fetch_logs(self, lambda_name, filter_pattern='', limit=10000):
+    def fetch_logs(self, lambda_name, filter_pattern='', limit=10000, startTime=0):
         """
         Fetch the CloudWatch logs for a given Lambda name.
         """
@@ -1821,14 +1821,24 @@ class Zappa(object):
 
         all_streams = streams['logStreams']
         all_names = [stream['logStreamName'] for stream in all_streams]
-        response = self.logs_client.filter_log_events(
-            logGroupName=log_name,
-            logStreamNames=all_names,
-            filterPattern=filter_pattern,
-            limit=limit
-        )
 
-        return response['events']
+        events = []
+        response = {}
+        while not response or 'nextToken' in response:
+            extra_args = {}
+            if 'nextToken' in response:
+                extra_args['nextToken'] = response['nextToken']
+            response = self.logs_client.filter_log_events(
+                logGroupName=log_name,
+                logStreamNames=all_names,
+                startTime=startTime,
+                filterPattern=filter_pattern,
+                limit=limit,
+                **extra_args
+            )
+            events += response['events']
+
+        return sorted(events, key=lambda k: k['timestamp'])
 
     def remove_log_group(self, group_name):
         """
