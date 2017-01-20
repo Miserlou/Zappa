@@ -37,7 +37,7 @@
     - [Keeping The Server Warm](#keeping-the-server-warm)
     - [Serving Static Files / Binary Uploads](#serving-static-files--binary-uploads)
     - [Enabling CORS](#enabling-cors)
-    - [Enabling Bash completion](#enabling-bash-completion)
+    - [Enabling Bash Completion](#enabling-bash-completion)
     - [Enabling Secure Endpoints on API Gateway](#enabling-secure-endpoints-on-api-gateway)
       - [API Key](#api-key)
       - [IAM Policy](#iam-policy)
@@ -54,6 +54,7 @@
     - [Catching Unhandled Exceptions](#catching-unhandled-exceptions)
     - [Using Custom AWS IAM Roles and Policies](#using-custom-aws-iam-roles-and-policies)
     - [Globally Available Server-less Architectures](#globally-available-server-less-architectures)
+    - [Raising AWS Service Limits](#raising-aws-service-limits)
 - [Zappa Guides](#zappa-guides)
 - [Zappa in the Press](#zappa-in-the-press)
 - [Sites Using Zappa](#sites-using-zappa)
@@ -523,7 +524,7 @@ The easiest way to enable CORS (Cross-Origin Resource Sharing) for in your Zappa
 
 You can also simply handle CORS directly in your application. If you do this, you'll need to add `Access-Control-Allow-Origin`, `Access-Control-Allow-Headers`, and `Access-Control-Allow-Methods` to the `method_header_types` key in your `zappa_settings.json`. See further [discussion here](https://github.com/Miserlou/Zappa/issues/41).
 
-#### Enabling Bash completion
+#### Enabling Bash Completion
 
 Bash completion can be enabled by adding the following to your .bashrc:
 
@@ -737,6 +738,12 @@ Ongoing discussion about the minimum policy requirements necessary for a Zappa d
 During the `init` process, you will be given the option to deploy your application "globally." This will allow you to deploy your application to all available AWS regions simultaneously in order to provide a consistent global speed, increased redundancy, data isolation, and legal compliance. You can also choose to deploy only to "primary" locations, the AWS regions with `-1` in their names.
 
 To learn more about these capabilities, see [these slides](https://htmlpreview.github.io/?https://github.com/Miserlou/Talks/blob/master/serverless-london/global.html#0) from ServerlessConf London.
+
+#### Raising AWS Service Limits
+
+Out of the box, AWS sets a limit of [100 concurrent executions](http://docs.aws.amazon.com/lambda/latest/dg/limits.html) for your functions. If you start to breach these limits, you may start to see errors like `ClientError: An error occurred (LimitExceededException) when calling the PutTargets.."` or something similar.
+
+To avoid this, you can file a [service ticket](https://console.aws.amazon.com/support/home#/) with Amazon to raise your limits up to the many tens of thousands of concurrent executions which you may need. This is a fairly common practice with Amazon, designed to prevent you from accidentally creating extremely expensive bug reports. So, before raising your service limits, make sure that you don't have any rogue scripts which could accidentally create tens of thousands of parallel executions that you don't want to pay for.
 
 ## Zappa Guides
 
