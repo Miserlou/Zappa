@@ -1,4 +1,4 @@
-argcomplete==1.7.0
+argcomplete==1.8.0
 base58==0.2.4
 botocore==1.4.93
 boto3==1.4.3
@@ -14,7 +14,7 @@ PyYAML==3.12
 requests>=2.10.0
 six==1.10.0
 toml==0.9.2
-tqdm==4.11.0
+tqdm==4.11.1
 troposphere>=1.9.0
 Werkzeug==0.11.15
 wheel==0.29.0
