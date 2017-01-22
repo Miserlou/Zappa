@@ -527,7 +527,7 @@ class ZappaCLI(object):
         # Fixes https://github.com/Miserlou/Zappa/issues/613
         try:
             self.lambda_arn = self.zappa.get_lambda_function(
-                FunctionName=self.lambda_name)
+                function_name=self.lambda_name)
         except botocore.client.ClientError:
             # Register the Lambda function with that zip as the source
             # You'll also need to define the path to your lambda_handler code.
