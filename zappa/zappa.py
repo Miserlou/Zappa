@@ -742,12 +742,9 @@ class Zappa(object):
 
         This requires the "lambda:GetFunction" role.
         """
-        try:
-            response = self.lambda_client.get_function(
+        response = self.lambda_client.get_function(
                 FunctionName=function_name)
-            return response['Configuration']['FunctionArn']
-        except ClientError as err:
-            return err
+        return response['Configuration']['FunctionArn']
 
     def get_lambda_function_versions(self, function_name):
         """

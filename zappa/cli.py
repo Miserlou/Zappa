@@ -528,7 +528,7 @@ class ZappaCLI(object):
         try:
             self.lambda_arn = self.zappa.get_lambda_function(
                 FunctionName=self.lambda_name)
-        except ClientError:
+        except botocore.client.ClientError:
             # Register the Lambda function with that zip as the source
             # You'll also need to define the path to your lambda_handler code.
             self.lambda_arn = self.zappa.create_lambda_function(
