@@ -736,6 +736,19 @@ class Zappa(object):
 
         return response['FunctionArn']
 
+    def get_lambda_function(self, function_name):
+        """
+        Returns the lambda function ARN, given a name
+
+        This requires the "lambda:GetFunction" role.
+        """
+        try:
+            response = self.lambda_client.get_function(
+                FunctionName=function_name)
+            return response['Configuration']['FunctionArn']
+        except ClientError as err:
+            return err
+
     def get_lambda_function_versions(self, function_name):
         """
         Simply returns the versions available for a Lambda function, given a function name.
