@@ -1350,7 +1350,7 @@ class ZappaCLI(object):
                     "find {position} callback ".format(position=position), bold=True) + 'function: "{cb_func}" '.format(
                     cb_func=click.style(cb_func, bold=True)) + 'in module "{mod_path}"'.format(mod_path=mod_path))
 
-            getattr(module_, cb_func)(self)  # Call the function passing self
+            getattr(module_, cb_func)(self) # Call the function passing self
 
     def check_for_update(self):
         """
