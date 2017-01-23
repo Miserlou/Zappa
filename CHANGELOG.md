@@ -1,5 +1,16 @@
 # Zappa Changelog
 
+## 0.33.0
+* Adds `package` command
+* Forbids the use of unicode environment variable keys
+* Initialize wsgi.errors to sys.stderr (was '')
+* Accept `AWS_SESSION_TOKEN` when executing via an IAM role (#589)
+* Set `REMOTE_USER` even when using `iam_authorization`
+* Rename `lets_encrypt_schedule` to `lets_encrypt_expression` (#571)
+* Messages in `tail` are now sequential
+* Bump version requirements, update README
+* Various other small changes
+
 ## 0.32.1
 * File `tail` broken in CLI refactor
 
