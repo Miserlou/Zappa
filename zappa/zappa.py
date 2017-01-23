@@ -752,10 +752,12 @@ class Zappa(object):
 
         """
         try:
-            response = self.lambda_client.list_versions_by_function(FunctionName=function_name)
+            response = self.lambda_client.list_versions_by_function(
+                FunctionName=function_name
+            )
             return response.get('Versions', [])
-        # reference: https://github.com/Miserlou/Zappa/issues/617
-        except botocore.exceptions.ClientError as e:
+        except Exception:
+            # reference: https://github.com/Miserlou/Zappa/issues/617
             print('You might need "lambda:ListVersionsByFunction" policy enabled')
             return [] # e.response['Error']['Message']
 
