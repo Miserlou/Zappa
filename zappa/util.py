@@ -1,3 +1,6 @@
+import calendar
+import datetime
+import durationpy
 import fnmatch
 import json
 import os
@@ -73,10 +76,6 @@ def string_to_timestamp(timestring):
     """
     Accepts a str, returns an int timestamp.
     """
-
-    import calendar
-    import datetime
-    import durationpy
 
     ts = None
 
