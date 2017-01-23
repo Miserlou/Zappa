@@ -754,6 +754,7 @@ class Zappa(object):
         try:
             response = self.lambda_client.list_versions_by_function(FunctionName=function_name)
             return response.get('Versions', [])
+        # reference: https://github.com/Miserlou/Zappa/issues/617
         except botocore.exceptions.ClientError as e:
             return e.response['Error']['Message']
 
