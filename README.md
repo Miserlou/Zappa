@@ -337,7 +337,7 @@ You can also limit the length of the tail with `--since`, which accepts a simple
 
 You can filter out the contents of the logs with `--filter`, like so:
 
-    $ zappa tail production --http --filter "POST" # Only show GET HTTP requests
+    $ zappa tail production --http --filter "POST" # Only show POST HTTP requests
 
 #### Remote Function Invocation
 
