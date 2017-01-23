@@ -324,7 +324,8 @@ class ZappaCLI(object):
         ##
         # Unschedule
         ##
-        subparsers.add_parser('unschedule', help='Unschedule functions.')
+        subparsers.add_parser('unschedule', parents=[env_parser],
+                              help='Unschedule functions.')
 
         ##
         # Updating
