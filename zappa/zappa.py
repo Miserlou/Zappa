@@ -754,8 +754,8 @@ class Zappa(object):
         try:
             response = self.lambda_client.list_versions_by_function(FunctionName=function_name)
             return response.get('Versions', [])
-        except Exception:
-            return []
+        except botocore.exceptions.ClientError as e:
+            return e.response['Error']['Message']
 
     def delete_lambda_function(self, function_name):
         """
