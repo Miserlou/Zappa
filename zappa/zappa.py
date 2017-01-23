@@ -757,9 +757,7 @@ class Zappa(object):
             )
             return response.get('Versions', [])
         except Exception:
-            # reference: https://github.com/Miserlou/Zappa/issues/617
-            print('You might need "lambda:ListVersionsByFunction" policy enabled')
-            return [] # e.response['Error']['Message']
+            return []
 
     def delete_lambda_function(self, function_name):
         """
