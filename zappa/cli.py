@@ -305,6 +305,15 @@ class ZappaCLI(object):
             '--http', action='store_true',
             help='Only show HTTP requests in tail output.'
         )
+        tail_parser.add_argument(
+            '--since', type=str, default="100000s",
+            help="Only show lines since a certain timeframe."
+        )
+        tail_parser.add_argument(
+            '--filter', type=str, default="",
+            help="Apply a filter pattern to the logs."
+        )
+
 
         ##
         # Undeploy
@@ -452,9 +461,17 @@ class ZappaCLI(object):
             self.invoke(command, command="manage")
 
         elif command == 'tail': # pragma: no cover
-            self.tail(colorize=(not self.vargs['no_color']), http=self.vargs['http'])
+            self.tail(
+                colorize=(not self.vargs['no_color']),
+                http=self.vargs['http'],
+                since=self.vargs['since'],
+                filter_pattern=self.vargs['filter'],
+                )
         elif command == 'undeploy': # pragma: no cover
-            self.undeploy(noconfirm=self.vargs['yes'], remove_logs=self.vargs['remove_logs'])
+            self.undeploy(
+                noconfirm=self.vargs['yes'],
+                remove_logs=self.vargs['remove_logs']
+                )
         elif command == 'schedule': # pragma: no cover
             self.schedule()
         elif command == 'unschedule': # pragma: no cover
@@ -710,7 +727,7 @@ class ZappaCLI(object):
             self.lambda_name, versions_back=revision)
         print("Done!")
 
-    def tail(self, keep_open=True, colorize=True, http=False):
+    def tail(self, since, filter_pattern, limit=10000, keep_open=True, colorize=True, http=False):
         """
         Tail this function's logs.
 
@@ -718,15 +735,26 @@ class ZappaCLI(object):
         """
 
         try:
-            since = 0
+
+            from util import string_to_timestamp
+            since_stamp = string_to_timestamp(since)
+
+            last_since = since_stamp
             while True:
-                new_logs = self.zappa.fetch_logs(self.lambda_name, startTime=since)
-                new_logs = [ e for e in new_logs if e['timestamp'] > since ]
+                new_logs = self.zappa.fetch_logs(
+                    self.lambda_name,
+                    start_time=since_stamp,
+                    limit=limit,
+                    filter_pattern=filter_pattern,
+                    )
+
+                new_logs = [ e for e in new_logs if e['timestamp'] > last_since ]
                 self.print_logs(new_logs, colorize, http)
+
                 if not keep_open:
                     break
                 if new_logs:
-                    since = new_logs[-1]['timestamp']
+                    last_since = new_logs[-1]['timestamp']
                 time.sleep(1)
         except KeyboardInterrupt: # pragma: no cover
             # Die gracefully

@@ -1808,7 +1808,7 @@ class Zappa(object):
     # CloudWatch Logging
     ##
 
-    def fetch_logs(self, lambda_name, filter_pattern='', limit=10000, startTime=0):
+    def fetch_logs(self, lambda_name, filter_pattern='', limit=10000, start_time=0):
         """
         Fetch the CloudWatch logs for a given Lambda name.
         """
@@ -1828,12 +1828,20 @@ class Zappa(object):
             extra_args = {}
             if 'nextToken' in response:
                 extra_args['nextToken'] = response['nextToken']
+
+            # Amazon uses millisecond epoch for some reason.
+            # Thanks, Jeff.
+            start_time = start_time * 1000
+            end_time = int(time.time()) * 1000
+
             response = self.logs_client.filter_log_events(
                 logGroupName=log_name,
                 logStreamNames=all_names,
-                startTime=startTime,
+                startTime=start_time,
+                endTime=end_time,
                 filterPattern=filter_pattern,
                 limit=limit,
+                interleaved=True, # Does this actually improve performance?
                 **extra_args
             )
             events += response['events']

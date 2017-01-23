@@ -69,6 +69,32 @@ def human_size(num, suffix='B'):
         num /= 1024.0
     return "{0:.1f}{1!s}{2!s}".format(num, 'Yi', suffix)
 
+def string_to_timestamp(timestring):
+    """
+    Accepts a str, returns an int timestamp.
+    """
+
+    import calendar
+    import datetime
+    import durationpy
+
+    ts = None
+
+    # Uses an extended version of Go's duration string.
+    try:
+        delta = durationpy.from_str(timestring);
+        past = datetime.datetime.utcnow() - delta
+        ts = calendar.timegm(past.timetuple())
+        return ts
+    except Exception as e:
+        pass
+
+    if ts:
+        return ts
+    # else:
+    #     print("Unable to parse timestring.")
+    return 0
+
 ##
 # `init` related
 ##

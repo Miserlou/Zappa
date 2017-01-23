@@ -329,6 +329,16 @@ You can use the argument `--http` to filter for HTTP requests, which will be in 
 
 If you don't like the default log colors, you can turn them off with `--no-color`.
 
+You can also limit the length of the tail with `--since`, which accepts a simple duration string:
+
+    $ zappa tail production --since 4h # 4 hours
+    $ zappa tail production --since 1m # 1 minute
+    $ zappa tail production --since 1mm # 1 month
+
+You can filter out the contents of the logs with `--filter`, like so:
+
+    $ zappa tail production --http --filter "POST" # Only show GET HTTP requests
+
 #### Remote Function Invocation
 
 You can execute any function in your application directly at any time by using the `invoke` command.
