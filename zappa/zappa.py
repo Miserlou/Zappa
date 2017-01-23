@@ -756,7 +756,8 @@ class Zappa(object):
             return response.get('Versions', [])
         # reference: https://github.com/Miserlou/Zappa/issues/617
         except botocore.exceptions.ClientError as e:
-            return e.response['Error']['Message']
+            print('You might need "lambda:ListVersionsByFunction" policy enabled')
+            return [] # e.response['Error']['Message']
 
     def delete_lambda_function(self, function_name):
         """
