@@ -136,9 +136,9 @@ This will automatically detect your application type (Flask/Django - Pyramid use
 
         // The modular python path to your WSGI application function.
         // In Flask and Bottle, this is your 'app' object.
-        // Flask:
+        // Flask (your_module.py):
         // app = Flask()
-        // Bottle:
+        // Bottle (your_module.py):
         // app = bottle.default_app()
         "app_function": "your_module.app"
     }
