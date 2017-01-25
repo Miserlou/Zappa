@@ -1322,7 +1322,7 @@ class ZappaCLI(object):
         callback = callbacks.get(position)
 
         if callback:
-            (mod_path, cb_func) = callback.rsplit('.', 1)
+            (mod_path, cb_func_name) = callback.rsplit('.', 1)
 
             try:  # Prefer callback in working directory
                 if mod_path.count('.') >= 1:  # Callback function is nested in a folder
@@ -1345,12 +1345,14 @@ class ZappaCLI(object):
                         "import {position} callback ".format(position=position),
                         bold=True) + 'module: "{mod_path}"'.format(mod_path=click.style(mod_path, bold=True)))
 
-            if not hasattr(module_, cb_func): # pragma: no cover
+            if not hasattr(module_, cb_func_name): # pragma: no cover
                 raise ClickException(click.style("Failed ", fg="red") + 'to ' + click.style(
-                    "find {position} callback ".format(position=position), bold=True) + 'function: "{cb_func}" '.format(
-                    cb_func=click.style(cb_func, bold=True)) + 'in module "{mod_path}"'.format(mod_path=mod_path))
-
-            getattr(module_, cb_func)(self) # Call the function passing self
+                    "find {position} callback ".format(position=position), bold=True) + 'function: "{cb_func_name}" '.format(
+                    cb_func_name=click.style(cb_func_name, bold=True)) + 'in module "{mod_path}"'.format(mod_path=mod_path))
+            
+            
+            cb_func = getattr(module_, cb_func_name)
+            cb_func(self) # Call the function passing self
 
     def check_for_update(self):
         """
@@ -1816,8 +1818,9 @@ class ZappaCLI(object):
                 "find prebuild script ", bold=True) + 'function: "{pb_func}" '.format(
                 pb_func=click.style(pb_func, bold=True)) + 'in module "{pb_mod_path}"'.format(
                 pb_mod_path=pb_mod_path))
-
-        getattr(module_, pb_func)()  # Call the function
+        
+        prebuild_function = getattr(module_, pb_func)
+        prebuild_function()  # Call the function
 
     def collision_warning(self, item):
         """
