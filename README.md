@@ -130,8 +130,16 @@ This will automatically detect your application type (Flask/Django - Pyramid use
 ```javascript
 {
     "dev": { // The name of your environment
-       "s3_bucket": "lmbda", // The name of your S3 bucket
-       "app_function": "your_module.app" // The python path to your WSGI application function. In Flask, this is your 'app' object.
+        // The name of your S3 bucket
+        "s3_bucket": "lmbda",
+
+        // The modular python path to your WSGI application function.
+        // In Flask and Bottle, this is your 'app' object.
+        // Flask:
+        // app = Flask()
+        // Bottle:
+        // app = bottle.default_app()
+        "app_function": "your_module.app"
     }
 }
 ```
