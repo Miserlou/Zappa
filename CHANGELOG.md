@@ -1,5 +1,9 @@
 # Zappa Changelog
 
+## 0.34.0
+* Adds `--since` and `--filter` to `tail`
+* Fixes `unschedule` command when used with specific stage
+
 ## 0.33.0
 * Adds `package` command
 * Forbids the use of unicode environment variable keys
