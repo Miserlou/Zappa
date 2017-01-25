@@ -129,7 +129,8 @@ This will automatically detect your application type (Flask/Django - Pyramid use
 
 ```javascript
 {
-    "dev": { // The name of your environment
+    // The name of your stage
+    "dev": {
         // The name of your S3 bucket
         "s3_bucket": "lmbda",
 
@@ -148,14 +149,14 @@ or for Django:
 
 ```javascript
 {
-    "dev": { // The name of your environment
+    "dev": { // The name of your stage
        "s3_bucket": "lmbda", // The name of your S3 bucket
        "django_settings": "your_project.settings" // The python path to your Django settings.
     }
 }
 ```
 
-You can define as many environments as your like - we recommend having _dev_, _staging_, and _production_.
+You can define as many stages as your like - we recommend having _dev_, _staging_, and _production_.
 
 Now, you're ready to deploy!
 
@@ -163,7 +164,7 @@ Now, you're ready to deploy!
 
 #### Initial Deployments
 
-Once your settings are configured, you can package and deploy your application to an environment called "production" with a single command:
+Once your settings are configured, you can package and deploy your application to a stage called "production" with a single command:
 
     $ zappa deploy production
     Deploying..
@@ -309,7 +310,7 @@ If you have a `zip` callback in your `callbacks` setting, this will also be invo
 
 ```javascript
 {
-    "production": { // The name of your environment
+    "production": { // The name of your stage
         "callbacks": {
             "zip": "my_app.zip_callback"// After creating the package
         }
