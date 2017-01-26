@@ -320,7 +320,83 @@ class Zappa(object):
             for link in glob.glob(os.path.join(temp_package_path, "*.egg-link")):
                 os.remove(link)
 
-    def create_lambda_zip(self, prefix='lambda_package', handler_file=None,
+    def get_deps_list(self, pkg_name, installed_distros=None):
+        """
+        For a given package, returns a list of required packages. Recursive.
+        """
+        import pip
+        deps = []
+        if not installed_distros:
+            installed_distros = pip.get_installed_distributions()
+        for package in installed_distros:
+            if package.project_name.lower() == pkg_name.lower():
+                deps = [(package.project_name, package.version)]
+                for req in package.requires():
+                    deps += self.get_deps_list(pkg_name=req.project_name, installed_distros=installed_distros)
+        return list(set(deps))  # de-dupe before returning
+
+    def create_handler_venv(self):
+        """
+        Takes the installed zappa and brings it into a fresh virtualenv-like folder. All dependencies are then downloaded.
+        """
+        import pip
+
+        # We will need the currenv venv to pull Zappa from
+        current_venv = self.get_current_venv()
+
+        # Make a new folder for the handler packages
+        ve_path = os.path.join(os.getcwd(), 'handler_venv')
+
+        if os.sys.platform == 'win32':
+            current_site_packages_dir = os.path.join(current_venv, 'Lib', 'site-packages')
+            venv_site_packages_dir = os.path.join(ve_path, 'Lib', 'site-packages')
+        else:
+            current_site_packages_dir = os.path.join(current_venv, 'lib', 'python2.7', 'site-packages')
+            venv_site_packages_dir = os.path.join(ve_path, 'lib', 'python2.7', 'site-packages')
+
+        if not os.path.isdir(venv_site_packages_dir):
+            os.makedirs(venv_site_packages_dir)
+
+        # Copy zappa* to the new virtualenv
+        zappa_things = [z for z in os.listdir(current_site_packages_dir) if z.lower()[:5] == 'zappa']
+        for z in zappa_things:
+            copytree(os.path.join(current_site_packages_dir, z), os.path.join(venv_site_packages_dir, z))
+
+        # Use pip to download zappa's dependencies. Copying from current venv causes issues with things like PyYAML that installs as yaml
+        zappa_deps = self.get_deps_list('zappa')
+        pkg_list = ['{0!s}=={1!s}'.format(dep, version) for dep, version in zappa_deps]
+
+        # Need to manually add setuptools
+        pkg_list.append('setuptools')
+        pip.main(["install", "--quiet", "--target", venv_site_packages_dir] + pkg_list)
+
+        return ve_path
+
+    def get_current_venv(self):
+        """
+        Returns the path to the current virtualenv
+        """
+        if 'VIRTUAL_ENV' in os.environ:
+            venv = os.environ['VIRTUAL_ENV']
+        elif os.path.exists('.python-version'):  # pragma: no cover
+            logger.debug("Pyenv's local virtualenv detected.")
+            try:
+                subprocess.check_output('pyenv', stderr=subprocess.STDOUT)
+            except OSError:
+                print("This directory seems to have pyenv's local venv"
+                      "but pyenv executable was not found.")
+            with open('.python-version', 'r') as f:
+                env_name = f.read()[:-1]
+                logger.debug('env name = {}'.format(env_name))
+            bin_path = subprocess.check_output(['pyenv', 'which', 'python']).decode('utf-8')
+            venv = bin_path[:bin_path.rfind(env_name)] + env_name
+            logger.debug('env path = {}'.format(venv))
+        else:  # pragma: no cover
+            print("Zappa requires an active virtual environment.")
+            quit()
+        return venv
+
+    def create_lambda_zip(self, prefix='lambda_package', handler_file=None, slim_handler=False,
                           minify=True, exclude=None, use_precompiled_packages=True, include=None, venv=None):
         """
         Create a Lambda-ready zip file of the current virtualenvironment and working directory.
@@ -331,24 +407,7 @@ class Zappa(object):
         import pip
 
         if not venv:
-            if 'VIRTUAL_ENV' in os.environ:
-                venv = os.environ['VIRTUAL_ENV']
-            elif os.path.exists('.python-version'):  # pragma: no cover
-                logger.debug("Pyenv's local virtualenv detected.")
-                try:
-                    subprocess.check_output('pyenv', stderr=subprocess.STDOUT)
-                except OSError:
-                    print("This directory seems to have pyenv's local venv"
-                          "but pyenv executable was not found.")
-                with open('.python-version', 'r') as f:
-                    env_name = f.read()[:-1]
-                    logger.debug('env name = {}'.format(env_name))
-                bin_path = subprocess.check_output(['pyenv', 'which', 'python']).decode('utf-8')
-                venv = bin_path[:bin_path.rfind(env_name)] + env_name
-                logger.debug('env path = {}'.format(venv))
-            else:  # pragma: no cover
-                print("Zappa requires an active virtual environment.")
-                quit()
+            venv = self.get_current_venv()
 
         cwd = os.getcwd()
         zip_fname = prefix + '-' + str(int(time.time())) + '.zip'
@@ -384,13 +443,22 @@ class Zappa(object):
         # First, do the project..
         temp_project_path = os.path.join(tempfile.gettempdir(), str(int(time.time())))
 
-        if minify:
-            excludes = ZIP_EXCLUDES + exclude + [split_venv[-1]]
-            copytree(cwd, temp_project_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
-        else:
-            copytree(cwd, temp_project_path, symlinks=False)
+        os.makedirs(temp_project_path)
+        if not slim_handler:
+            # Slim handler does not take the project files.
+            if minify:
+                excludes = ZIP_EXCLUDES + exclude + [split_venv[-1]]
+                copytree(cwd, temp_project_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
+            else:
+                copytree(cwd, temp_project_path, symlinks=False)
 
-        # Then, do the site-packages..
+        # If a handler_file is supplied, copy that to the root of the package,
+        # because that's where AWS Lambda looks for it. It can't be inside a package.
+        if handler_file:
+            filename = handler_file.split(os.sep)[-1]
+            shutil.copy(handler_file, os.path.join(temp_project_path, filename))
+
+        # Then, do site site-packages..
         egg_links = []
         temp_package_path = os.path.join(tempfile.gettempdir(), str(int(time.time() + 1)))
         if os.sys.platform == 'win32':
@@ -425,7 +493,8 @@ class Zappa(object):
         if use_precompiled_packages:
             print("Downloading and installing dependencies..")
             installed_packages_name_set = [package.project_name.lower() for package in
-                                           pip.get_installed_distributions()]
+                                           pip.get_installed_distributions()
+                                           if package.project_name.lower() in site_packages]
 
             # First, try lambda packages
             for name, details in lambda_packages.items():
@@ -457,12 +526,6 @@ class Zappa(object):
                 pass # XXX - What should we do here?
             progress.close()
 
-
-        # If a handler_file is supplied, copy that to the root of the package,
-        # because that's where AWS Lambda looks for it. It can't be inside a package.
-        if handler_file:
-            filename = handler_file.split(os.sep)[-1]
-            shutil.copy(handler_file, os.path.join(temp_project_path, filename))
 
         # Then zip it all up..
         print("Packaging project as zip..")
@@ -514,11 +577,9 @@ class Zappa(object):
         # Trash the temp directory
         shutil.rmtree(temp_project_path)
         shutil.rmtree(temp_package_path)
-
-        # Warn if this is too large for Lambda.
-        file_stats = os.stat(zip_path)
-        if file_stats.st_size > 52428800:  # pragma: no cover
-            print("\n\nWarning: Application zip package is likely to be too large for AWS Lambda.\n\n")
+        if os.path.isdir(venv) and slim_handler:
+            # Remove the temporary handler venv folder
+            shutil.rmtree(venv)
 
         return zip_fname
 
@@ -599,6 +660,33 @@ class Zappa(object):
             print(e)
             return False
         return True
+
+    def copy_on_s3(self, src_file_name, dst_file_name, bucket_name):
+        """
+        Copies src file to destination within a bucket.
+        """
+        try:
+            self.s3_client.head_bucket(Bucket=bucket_name)
+        except botocore.exceptions.ClientError as e:  # pragma: no cover
+            # If a client error is thrown, then check that it was a 404 error.
+            # If it was a 404 error, then the bucket does not exist.
+            error_code = int(e.response['Error']['Code'])
+            if error_code == 404:
+                return False
+
+        copy_src = {
+            "Bucket": bucket_name,
+            "Key": src_file_name
+        }
+        try:
+            self.s3_client.copy(
+                CopySource=copy_src,
+                Bucket=bucket_name,
+                Key=dst_file_name
+            )
+            return True
+        except botocore.exceptions.ClientError:  # pragma: no cover
+            return False
 
     def remove_from_s3(self, file_name, bucket_name):
         """

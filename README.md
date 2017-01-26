@@ -480,6 +480,7 @@ to change Zappa's behavior. Use these at your own risk!
         "remote_env": "s3://my-project-config-files/filename.json", // optional file in s3 bucket containing a flat json object which will be used to set custom environment variables.
         "role_name": "MyLambdaRole", // Name of Zappa execution role. Default ZappaExecutionRole. To use a different, pre-existing policy, you must also set manage_roles to false.
         "s3_bucket": "dev-bucket", // Zappa zip bucket,
+        "slim_handler": false, // Useful if project >50M. Set true to just upload a small handler to Lambda and load actual project from S3 at runtime.
         "settings_file": "~/Projects/MyApp/settings/dev_settings.py", // Server side settings file location,
         "timeout_seconds": 30, // Maximum lifespan for the Lambda function (default 30, max 300.)
         "touch": false, // GET the production URL upon initial deployment (default True)
@@ -542,6 +543,11 @@ Similarly, you will not be able to accept binary multi-part uploads through the 
 The easiest way to enable CORS (Cross-Origin Resource Sharing) for in your Zappa application is to set `cors` to `true` in your Zappa settings file and updating, which is the equivalent of pushing the "Enable CORS" button in the AWS API Gateway console. This is disabled by default, but you may wish to enable it for APIs which are accssed from other domains, etc.
 
 You can also simply handle CORS directly in your application. If you do this, you'll need to add `Access-Control-Allow-Origin`, `Access-Control-Allow-Headers`, and `Access-Control-Allow-Methods` to the `method_header_types` key in your `zappa_settings.json`. See further [discussion here](https://github.com/Miserlou/Zappa/issues/41).
+
+#### Large Projects
+
+AWS currently limits Lambda zip sizes to 50 meg. If the project is larger than that, set the `slim_handler=true` in the zappa_settings.json. This just gives Lambda a small handler file. The handler file then pulls the large project down from S3 at run time. The initial load of the large project may add to runtime, but the difference should be minimal on a warm lambda function.
+ 
 
 #### Enabling Bash Completion
 

@@ -1376,5 +1376,16 @@ USE_TZ = True
         finally:
             sys.stderr = old_stderr
 
+    def test_slim_handler(self):
+        zappa_cli = ZappaCLI()
+        zappa_cli.api_stage = 'slim_handler'
+        zappa_cli.load_settings('test_settings.json')
+        zappa_cli.create_package()
+
+        self.assertTrue(os.path.isfile(zappa_cli.handler_path))
+        self.assertTrue(os.path.isfile(zappa_cli.zip_path))
+
+        zappa_cli.remove_local_zip()
+
 if __name__ == '__main__':
     unittest.main()
