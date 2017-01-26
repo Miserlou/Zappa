@@ -2,7 +2,7 @@
 Configuration Reference
 =======================
 
-Envirnments, such as *dev*, *staging*, and *production* are configured in the *zappa_settings.json* file.  Here is an example of defining many of the available settings:
+Stages, such as *dev*, *staging*, and *production* are configured in the *zappa_settings.json* file.  Here is an example of defining many of the available settings:
 
 ::
 

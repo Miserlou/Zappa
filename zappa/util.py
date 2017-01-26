@@ -1,3 +1,6 @@
+import calendar
+import datetime
+import durationpy
 import fnmatch
 import json
 import os
@@ -58,6 +61,38 @@ def parse_s3_url(url):
         bucket = result.netloc
         path = result.path.strip('/')
     return bucket, path
+
+def human_size(num, suffix='B'):
+    """
+    Convert bytes length to a human-readable version
+    """
+    for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
+        if abs(num) < 1024.0:
+            return "{0:3.1f}{1!s}{2!s}".format(num, unit, suffix)
+        num /= 1024.0
+    return "{0:.1f}{1!s}{2!s}".format(num, 'Yi', suffix)
+
+def string_to_timestamp(timestring):
+    """
+    Accepts a str, returns an int timestamp.
+    """
+
+    ts = None
+
+    # Uses an extended version of Go's duration string.
+    try:
+        delta = durationpy.from_str(timestring);
+        past = datetime.datetime.utcnow() - delta
+        ts = calendar.timegm(past.timetuple())
+        return ts
+    except Exception as e:
+        pass
+
+    if ts:
+        return ts
+    # else:
+    #     print("Unable to parse timestring.")
+    return 0
 
 ##
 # `init` related

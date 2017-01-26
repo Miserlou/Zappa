@@ -108,8 +108,10 @@ class LambdaHandler(object):
                 pass
 
             # Set any locally defined env vars
+            # Environement variable keys can't be Unicode
+            # https://github.com/Miserlou/Zappa/issues/604
             for key in self.settings.ENVIRONMENT_VARIABLES.keys():
-                os.environ[key] = self.settings.ENVIRONMENT_VARIABLES[key]
+                os.environ[str(key)] = self.settings.ENVIRONMENT_VARIABLES[key]
 
             # Pulling from S3 if given a zip path
             project_zip_path = getattr(self.settings, 'ZIP_PATH', None)
@@ -204,7 +206,13 @@ class LambdaHandler(object):
                     key,
                     value
                 ))
-            os.environ[key] = value
+            # Environement variable keys can't be Unicode
+            # https://github.com/Miserlou/Zappa/issues/604
+            try:
+                os.environ[str(key)] = value
+            except Exception:
+                if self.settings.LOG_LEVEL == "DEBUG":
+                    print("Environment variable keys must be non-unicode!")
 
     @staticmethod
     def import_module_and_get_function(whole_function):

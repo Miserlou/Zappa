@@ -28,7 +28,7 @@ from lambda_packages import lambda_packages
 from tqdm import tqdm
 
 # Zappa imports
-from util import copytree, add_event_source, remove_event_source
+from util import copytree, add_event_source, remove_event_source, human_size
 
 logging.basicConfig(format='%(levelname)s:%(message)s')
 logger = logging.getLogger(__name__)
@@ -194,6 +194,9 @@ API_GATEWAY_REGIONS = ['us-east-1', 'us-east-2', 'us-west-2', 'eu-central-1', 'e
 LAMBDA_REGIONS = ['us-east-1', 'us-east-2', 'us-west-2', 'eu-central-1', 'eu-west-1', 'ap-northeast-1',
                   'ap-northeast-2', 'ap-southeast-1', 'ap-southeast-2']
 
+# We never need to include these.
+# Related: https://github.com/Miserlou/Zappa/pull/56
+# Related: https://github.com/Miserlou/Zappa/pull/581
 ZIP_EXCLUDES = [
     '*.exe', '*.DS_Store', '*.Python', '*.git', '.git/*', '*.zip', '*.tar.gz',
     '*.hg', '*.egg-info', 'pip', 'docutils*', 'setuputils*'
@@ -518,7 +521,7 @@ class Zappa(object):
                             zipresp = resp.raw
                             with zipfile.ZipFile(BytesIO(zipresp.read())) as zfile:
                                 zfile.extractall(temp_project_path)
-                        progress.update()
+                    progress.update()
             except Exception:
                 pass # XXX - What should we do here?
             progress.close()
@@ -635,7 +638,7 @@ class Zappa(object):
         dest_path = os.path.split(source_path)[1]
         try:
             source_size = os.stat(source_path).st_size
-            print("Uploading {0} ({1})..".format(dest_path, self.human_size(source_size)))
+            print("Uploading {0} ({1})..".format(dest_path, human_size(source_size)))
             progress = tqdm(total=float(os.path.getsize(source_path)), unit_scale=True, unit='B')
 
             # Attempt to upload to S3 using the S3 meta client with the progress bar.
@@ -821,13 +824,25 @@ class Zappa(object):
 
         return response['FunctionArn']
 
+    def get_lambda_function(self, function_name):
+        """
+        Returns the lambda function ARN, given a name
+
+        This requires the "lambda:GetFunction" role.
+        """
+        response = self.lambda_client.get_function(
+                FunctionName=function_name)
+        return response['Configuration']['FunctionArn']
+
     def get_lambda_function_versions(self, function_name):
         """
         Simply returns the versions available for a Lambda function, given a function name.
 
         """
         try:
-            response = self.lambda_client.list_versions_by_function(FunctionName=function_name)
+            response = self.lambda_client.list_versions_by_function(
+                FunctionName=function_name
+            )
             return response.get('Versions', [])
         except Exception:
             return []
@@ -1893,7 +1908,7 @@ class Zappa(object):
     # CloudWatch Logging
     ##
 
-    def fetch_logs(self, lambda_name, filter_pattern='', limit=10000):
+    def fetch_logs(self, lambda_name, filter_pattern='', limit=10000, start_time=0):
         """
         Fetch the CloudWatch logs for a given Lambda name.
         """
@@ -1906,14 +1921,32 @@ class Zappa(object):
 
         all_streams = streams['logStreams']
         all_names = [stream['logStreamName'] for stream in all_streams]
-        response = self.logs_client.filter_log_events(
-            logGroupName=log_name,
-            logStreamNames=all_names,
-            filterPattern=filter_pattern,
-            limit=limit
-        )
 
-        return response['events']
+        events = []
+        response = {}
+        while not response or 'nextToken' in response:
+            extra_args = {}
+            if 'nextToken' in response:
+                extra_args['nextToken'] = response['nextToken']
+
+            # Amazon uses millisecond epoch for some reason.
+            # Thanks, Jeff.
+            start_time = start_time * 1000
+            end_time = int(time.time()) * 1000
+
+            response = self.logs_client.filter_log_events(
+                logGroupName=log_name,
+                logStreamNames=all_names,
+                startTime=start_time,
+                endTime=end_time,
+                filterPattern=filter_pattern,
+                limit=limit,
+                interleaved=True, # Does this actually improve performance?
+                **extra_args
+            )
+            events += response['events']
+
+        return sorted(events, key=lambda k: k['timestamp'])
 
     def remove_log_group(self, group_name):
         """
@@ -2035,10 +2068,17 @@ class Zappa(object):
                 self.boto_session = boto3.Session(profile_name=profile_name, region_name=self.aws_region)
             elif os.environ.get('AWS_ACCESS_KEY_ID') and os.environ.get('AWS_SECRET_ACCESS_KEY'):
                 region_name = os.environ.get('AWS_DEFAULT_REGION') or self.aws_region
-                self.boto_session = boto3.Session(
-                    aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
-                    aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY'),
-                    region_name=region_name)
+                session_kw = {
+                    "aws_access_key_id": os.environ.get('AWS_ACCESS_KEY_ID'),
+                    "aws_secret_access_key": os.environ.get('AWS_SECRET_ACCESS_KEY'),
+                    "region_name": region_name,
+                }
+
+                # If we're executing in a role, AWS_SESSION_TOKEN will be present, too.
+                if os.environ.get("AWS_SESSION_TOKEN"):
+                    session_kw["aws_session_token"] = os.environ.get("AWS_SESSION_TOKEN")
+
+                self.boto_session = boto3.Session(**session_kw)
             else:
                 self.boto_session = boto3.Session(region_name=self.aws_region)
 
@@ -2070,13 +2110,6 @@ class Zappa(object):
             pattern = pattern.replace('+', r"\+")
 
         return pattern
-
-    def human_size(self, num, suffix='B'):
-        for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
-            if abs(num) < 1024.0:
-                return "{0:3.1f}{1!s}{2!s}".format(num, unit, suffix)
-            num /= 1024.0
-        return "{0:.1f}{1!s}{2!s}".format(num, 'Yi', suffix)
 
     @staticmethod
     def service_from_arn(arn):

@@ -21,7 +21,6 @@ import click
 import collections
 import hjson as json
 import inspect
-import imp
 import importlib
 import logging
 import os
@@ -43,7 +42,7 @@ from dateutil import parser
 from datetime import datetime,timedelta
 from zappa import Zappa, logger, API_GATEWAY_REGIONS
 from util import (check_new_version_available, detect_django_settings,
-                  detect_flask_apps, parse_s3_url)
+                  detect_flask_apps, parse_s3_url, human_size)
 
 
 CUSTOM_SETTINGS = [
@@ -110,6 +109,9 @@ class ZappaCLI(object):
 
     stage_name_env_pattern = re.compile('^[a-zA-Z0-9_]+$')
 
+    def __init__(self):
+        self._stage_config_overrides = {}  # change using self.override_stage_config_setting(key, val)
+
     @property
     def stage_config(self):
         """
@@ -143,7 +145,26 @@ class ZappaCLI(object):
         if u'delete_zip' in settings:
             settings[u'delete_local_zip'] = settings.get(u'delete_zip')
 
+        settings.update(self.stage_config_overrides)
+
         return settings
+
+    @property
+    def stage_config_overrides(self):
+        """
+        Returns zappa_settings we forcefully override for the current stage
+        set by `self.override_stage_config_setting(key, value)`
+        """
+        return getattr(self, '_stage_config_overrides', {}).get(self.api_stage, {})
+
+    def override_stage_config_setting(self, key, val):
+        """
+        Forcefully override a setting set by zappa_settings (for the current stage only)
+        :param key: settings key
+        :param val: value
+        """
+        self._stage_config_overrides = getattr(self, '_stage_config_overrides', {})
+        self._stage_config_overrides.setdefault(self.api_stage, {})[key] = val
 
     def handle(self, argv=None):
         """
@@ -174,7 +195,6 @@ class ZappaCLI(object):
                     'Zappa environments.')
         group.add_argument('--all', action='store_true', help=all_help)
         group.add_argument('command_env', nargs='?')
-        env_parser.add_argument('command_rest', nargs=argparse.REMAINDER)
 
         ##
         # Certify
@@ -198,6 +218,12 @@ class ZappaCLI(object):
         )
         subparsers.add_parser('init', help='Initialize Zappa app.')
 
+        ##
+        # Package
+        ##
+        package_parser = subparsers.add_parser(
+            'package', parents=[env_parser], help='Build the application zip package locally.'
+        )
 
         ##
         # Invocation
@@ -211,14 +237,19 @@ class ZappaCLI(object):
             help=('When invoking remotely, invoke this python as a string,'
                   ' not as a modular path.')
         )
+        invoke_parser.add_argument('command_rest')
 
         ##
         # Manage
         ##
-        subparsers.add_parser(
-            'manage', parents=[env_parser],
+        manage_parser = subparsers.add_parser(
+            'manage',
             help='Invoke remote Django manage.py commands.'
         )
+        rest_help = ("Command in the form of <env> <command>. <env> is not "
+                     "required if --all is specified")
+        manage_parser.add_argument('--all', action='store_true', help=all_help)
+        manage_parser.add_argument('command_rest', nargs='+', help=rest_help)
 
         ##
         # Rollback
@@ -264,7 +295,7 @@ class ZappaCLI(object):
         # Log Tailing
         ##
         tail_parser = subparsers.add_parser(
-            'tail', help='Tail deployment logs.'
+            'tail', parents=[env_parser], help='Tail deployment logs.'
         )
         tail_parser.add_argument(
             '--no-color', action='store_true',
@@ -274,6 +305,15 @@ class ZappaCLI(object):
             '--http', action='store_true',
             help='Only show HTTP requests in tail output.'
         )
+        tail_parser.add_argument(
+            '--since', type=str, default="100000s",
+            help="Only show lines since a certain timeframe."
+        )
+        tail_parser.add_argument(
+            '--filter', type=str, default="",
+            help="Apply a filter pattern to the logs."
+        )
+
 
         ##
         # Undeploy
@@ -293,7 +333,8 @@ class ZappaCLI(object):
         ##
         # Unschedule
         ##
-        subparsers.add_parser('unschedule', help='Unschedule functions.')
+        subparsers.add_parser('unschedule', parents=[env_parser],
+                              help='Unschedule functions.')
 
         ##
         # Updating
@@ -307,7 +348,19 @@ class ZappaCLI(object):
         self.vargs = vars(args)
 
         # Parse the input
-        self.command_env = self.vargs.get('command_env')
+        # NOTE(rmoe): Special case for manage command
+        # The manage command can't have both command_env and command_rest
+        # arguments. Since they are both positional arguments argparse can't
+        # differentiate the two. This causes problems when used with --all.
+        # (e.g. "manage --all showmigrations admin" argparse thinks --all has
+        # been specified AND that command_env='showmigrations')
+        # By having command_rest collect everything but --all we can split it
+        # apart here instead of relying on argparse.
+        if args.command == 'manage' and not self.vargs.get('all'):
+            self.command_env = self.vargs['command_rest'].pop(0)
+        else:
+            self.command_env = self.vargs.get('command_env')
+
         self.command = args.command
 
         # We don't have any settings yet, so make those first!
@@ -376,6 +429,8 @@ class ZappaCLI(object):
         # Hand it off
         if command == 'deploy': # pragma: no cover
             self.deploy()
+        if command == 'package': # pragma: no cover
+            self.package()
         elif command == 'update': # pragma: no cover
             self.update()
         elif command == 'rollback': # pragma: no cover
@@ -386,7 +441,7 @@ class ZappaCLI(object):
                 print("Please enter the function to invoke.")
                 return
 
-            self.invoke(self.command_env[-1], raw_python=self.vargs['raw'])
+            self.invoke(self.vargs['command_rest'], raw_python=self.vargs['raw'])
         elif command == 'manage': # pragma: no cover
 
             if not self.vargs.get('command_rest'):
@@ -407,9 +462,17 @@ class ZappaCLI(object):
             self.invoke(command, command="manage")
 
         elif command == 'tail': # pragma: no cover
-            self.tail(colorize=(not self.vargs['no_color']), http=self.vargs['http'])
+            self.tail(
+                colorize=(not self.vargs['no_color']),
+                http=self.vargs['http'],
+                since=self.vargs['since'],
+                filter_pattern=self.vargs['filter'],
+                )
         elif command == 'undeploy': # pragma: no cover
-            self.undeploy(noconfirm=self.vargs['yes'], remove_logs=self.vargs['remove_logs'])
+            self.undeploy(
+                noconfirm=self.vargs['yes'],
+                remove_logs=self.vargs['remove_logs']
+                )
         elif command == 'schedule': # pragma: no cover
             self.schedule()
         elif command == 'unschedule': # pragma: no cover
@@ -422,6 +485,21 @@ class ZappaCLI(object):
     ##
     # The Commands
     ##
+
+    def package(self):
+        """
+        Only build the package
+        """
+        # force not to delete the local zip
+        self.override_stage_config_setting('delete_local_zip', False)
+        # Execute the prebuild script
+        if self.prebuild_script:
+            self.execute_prebuild_script()
+        # Create the Lambda Zip
+        self.create_package()
+        self.callback('zip')
+        size = human_size(os.path.getsize(self.zip_path))
+        click.echo(click.style("Package created", fg="green", bold=True) + ": " + click.style(self.zip_path, bold=True) + " (" + size + ")")
 
     def deploy(self):
         """
@@ -481,16 +559,24 @@ class ZappaCLI(object):
         else:
             handler_file = self.zip_path
 
-        # Register the Lambda function with that zip as the source
-        # You'll also need to define the path to your lambda_handler code.
-        self.lambda_arn = self.zappa.create_lambda_function(bucket=self.s3_bucket_name,
-                                                       s3_key=handler_file,
-                                                       function_name=self.lambda_name,
-                                                       handler=self.lambda_handler,
-                                                       description=self.lambda_description,
-                                                       vpc_config=self.vpc_config,
-                                                       timeout=self.timeout_seconds,
-                                                       memory_size=self.memory_size)
+
+        # Fixes https://github.com/Miserlou/Zappa/issues/613
+        try:
+            self.lambda_arn = self.zappa.get_lambda_function(
+                function_name=self.lambda_name)
+        except botocore.client.ClientError:
+            # Register the Lambda function with that zip as the source
+            # You'll also need to define the path to your lambda_handler code.
+            self.lambda_arn = self.zappa.create_lambda_function(
+                bucket=self.s3_bucket_name,
+                s3_key=handler_file,
+                function_name=self.lambda_name,
+                handler=self.lambda_handler,
+                description=self.lambda_description,
+                vpc_config=self.vpc_config,
+                timeout=self.timeout_seconds,
+                memory_size=self.memory_size
+            )
 
         # Schedule events for this deployment
         self.schedule()
@@ -683,30 +769,35 @@ class ZappaCLI(object):
             self.lambda_name, versions_back=revision)
         print("Done!")
 
-    def tail(self, keep_open=True, colorize=True, http=False):
+    def tail(self, since, filter_pattern, limit=10000, keep_open=True, colorize=True, http=False):
         """
         Tail this function's logs.
 
+        if keep_open, do so repeatedly, printing any new logs
         """
 
         try:
-            # Tail the available logs
-            all_logs = self.zappa.fetch_logs(self.lambda_name)
-            self.print_logs(all_logs, colorize, http)
 
-            # Keep polling, and print any new logs.
-            loop = True
-            while loop:
-                all_logs_again = self.zappa.fetch_logs(self.lambda_name)
-                new_logs = []
-                for log in all_logs_again:
-                    if log not in all_logs:
-                        new_logs.append(log)
+            from util import string_to_timestamp
+            since_stamp = string_to_timestamp(since)
 
+            last_since = since_stamp
+            while True:
+                new_logs = self.zappa.fetch_logs(
+                    self.lambda_name,
+                    start_time=since_stamp,
+                    limit=limit,
+                    filter_pattern=filter_pattern,
+                    )
+
+                new_logs = [ e for e in new_logs if e['timestamp'] > last_since ]
                 self.print_logs(new_logs, colorize, http)
-                all_logs = all_logs + new_logs
+
                 if not keep_open:
-                    loop = False
+                    break
+                if new_logs:
+                    last_since = new_logs[-1]['timestamp']
+                time.sleep(1)
         except KeyboardInterrupt: # pragma: no cover
             # Die gracefully
             try:
@@ -1248,8 +1339,7 @@ class ZappaCLI(object):
         cert_chain_location = self.stage_config.get('certificate_chain', None)
 
         if not domain:
-            click.echo("Can't certify a domain without " + click.style("domain", fg="red", bold=True) + " configured!")
-            return
+            raise ClickException("Can't certify a domain without " + click.style("domain", fg="red", bold=True) + " configured!")
 
         if not cert_location:
             if not account_key_location:
@@ -1311,6 +1401,8 @@ class ZappaCLI(object):
                     certificate_chain
                 )
 
+            cert_success = True
+
         # Deliberately undocumented feature (for now, at least.)
         # We are giving the user the ability to shoot themselves in the foot.
         # _This is probably not a good idea._
@@ -1341,7 +1433,7 @@ class ZappaCLI(object):
         callback = callbacks.get(position)
 
         if callback:
-            (mod_path, cb_func) = callback.rsplit('.', 1)
+            (mod_path, cb_func_name) = callback.rsplit('.', 1)
 
             try:  # Prefer callback in working directory
                 if mod_path.count('.') >= 1:  # Callback function is nested in a folder
@@ -1355,21 +1447,23 @@ class ZappaCLI(object):
                 working_dir_importer = pkgutil.get_importer(working_dir)
                 module_ = working_dir_importer.find_module(mod_name).load_module(mod_name)
 
-            except (ImportError, AttributeError): # pragma: no cover
+            except (ImportError, AttributeError):
 
                 try: # Callback func might be in virtualenv
                     module_ = importlib.import_module(mod_path)
-                except ImportError:
+                except ImportError: # pragma: no cover
                     raise ClickException(click.style("Failed ", fg="red") + 'to ' + click.style(
                         "import {position} callback ".format(position=position),
                         bold=True) + 'module: "{mod_path}"'.format(mod_path=click.style(mod_path, bold=True)))
 
-            if not hasattr(module_, cb_func): # pragma: no cover
+            if not hasattr(module_, cb_func_name): # pragma: no cover
                 raise ClickException(click.style("Failed ", fg="red") + 'to ' + click.style(
-                    "find {position} callback ".format(position=position), bold=True) + 'function: "{cb_func}" '.format(
-                    cb_func=click.style(cb_func, bold=True)) + 'in module "{mod_path}"'.format(mod_path=mod_path))
+                    "find {position} callback ".format(position=position), bold=True) + 'function: "{cb_func_name}" '.format(
+                    cb_func_name=click.style(cb_func_name, bold=True)) + 'in module "{mod_path}"'.format(mod_path=mod_path))
 
-            getattr(module_, cb_func)(self)  # Call the function passing self
+
+            cb_func = getattr(module_, cb_func_name)
+            cb_func(self) # Call the function passing self
 
     def check_for_update(self):
         """
@@ -1588,7 +1682,11 @@ class ZappaCLI(object):
                 prefix=self.lambda_name,
                 handler_file=handler_file,
                 use_precompiled_packages=self.stage_config.get('use_precompiled_packages', True),
-                exclude=self.stage_config.get('exclude', [])
+                exclude=self.stage_config.get(
+                    'exclude',
+                    # Exclude packages already builtin to the python lambda environment
+                    # https://github.com/Miserlou/Zappa/issues/556
+                    ["boto3", "dateutil", "botocore", "s3transfer", "six.py", "jmespath", "concurrent"])
             )
             # Warn if this is too large for Lambda.
             file_stats = os.stat(self.zip_path)
@@ -1648,6 +1746,14 @@ class ZappaCLI(object):
             if self.aws_region:
                 env_dict['AWS_REGION'] = self.aws_region
             env_dict.update(dict(self.environment_variables))
+
+            # Environement variable keys can't be Unicode
+            # https://github.com/Miserlou/Zappa/issues/604
+            try:
+                env_dict = dict((k.encode('ascii'), v) for (k, v) in env_dict.items())
+            except Exception: # pragma: nocover
+                    raise ValueError("Environment variable keys must not be unicode.")
+
             settings_s = settings_s + "ENVIRONMENT_VARIABLES={0}\n".format(
                     env_dict
                 )
@@ -1727,6 +1833,15 @@ class ZappaCLI(object):
                 # Need to keep the project zip as the slim handler uses it.
                 self.zappa.remove_from_s3(self.handler_path, self.s3_bucket_name)
 
+
+    def on_exit(self):
+        """
+        Cleanup after the command finishes.
+        Always called: SystemExit, KeyboardInterrupt and any other Exception that occurs.
+        """
+        if self.zip_path:
+            self.remove_uploaded_zip()
+            self.remove_local_zip()
 
     def print_logs(self, logs, colorize=True, http=False):
         """
@@ -1849,18 +1964,37 @@ class ZappaCLI(object):
 
         """
 
-        # Parse the string
-        prebuild_module_s, prebuild_function_s = self.prebuild_script.rsplit('.', 1)
+        (pb_mod_path, pb_func) = self.prebuild_script.rsplit('.', 1)
 
-        # The module
-        prebuild_module = imp.load_source(prebuild_module_s, prebuild_module_s + '.py')
+        try:  # Prefer prebuild script in working directory
+            if pb_mod_path.count('.') >= 1:  # Prebuild script func is nested in a folder
+                (mod_folder_path, mod_name) = pb_mod_path.rsplit('.', 1)
+                mod_folder_path_fragments = mod_folder_path.split('.')
+                working_dir = os.path.join(os.getcwd(), *mod_folder_path_fragments)
+            else:
+                mod_name = pb_mod_path
+                working_dir = os.getcwd()
 
-        # The function
-        prebuild_function = getattr(prebuild_module, prebuild_function_s)
+            working_dir_importer = pkgutil.get_importer(working_dir)
+            module_ = working_dir_importer.find_module(mod_name).load_module(mod_name)
 
-        # Execute it
-        prebuild_function()
+        except (ImportError, AttributeError):
 
+            try:  # Prebuild func might be in virtualenv
+                module_ = importlib.import_module(pb_mod_path)
+            except ImportError:  # pragma: no cover
+                raise ClickException(click.style("Failed ", fg="red") + 'to ' + click.style(
+                    "import prebuild script ", bold=True) + 'module: "{pb_mod_path}"'.format(
+                    pb_mod_path=click.style(pb_mod_path, bold=True)))
+
+        if not hasattr(module_, pb_func):  # pragma: no cover
+            raise ClickException(click.style("Failed ", fg="red") + 'to ' + click.style(
+                "find prebuild script ", bold=True) + 'function: "{pb_func}" '.format(
+                pb_func=click.style(pb_func, bold=True)) + 'in module "{pb_mod_path}"'.format(
+                pb_mod_path=pb_mod_path))
+
+        prebuild_function = getattr(module_, pb_func)
+        prebuild_function()  # Call the function
 
     def collision_warning(self, item):
         """
@@ -1922,21 +2056,14 @@ def handle(): # pragma: no cover
         cli = ZappaCLI()
         sys.exit(cli.handle())
     except SystemExit as e: # pragma: no cover
-        if cli.zip_path:
-            cli.remove_uploaded_zip()
-            cli.remove_local_zip()
-
+        cli.on_exit()
         sys.exit(e.code)
 
     except KeyboardInterrupt: # pragma: no cover
-        if cli.zip_path: # Remove the Zip from S3 upon failure.
-            cli.remove_uploaded_zip()
-            cli.remove_local_zip()
+        cli.on_exit()
         sys.exit(130)
     except Exception as e:
-        if cli.zip_path: # Remove the Zip from S3 upon failure.
-            cli.remove_uploaded_zip()
-            cli.remove_local_zip()
+        cli.on_exit()
 
         click.echo("Oh no! An " + click.style("error occurred", fg='red', bold=True) + "! :(")
         click.echo("\n==============\n")

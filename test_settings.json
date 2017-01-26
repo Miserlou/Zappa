@@ -12,7 +12,7 @@
        "delete_local_zip": true,
        "debug": true,
        "parameter_depth": 2,
-       "prebuild_script": "test_settings.prebuild_me",
+       "prebuild_script": "tests.test_app.prebuild_me",
        "events": [
            {
                "function": "tests.test_app.schedule_me",
@@ -78,5 +78,15 @@
        "environment_variables": {
           "EXTENDO": "You bet"
        }
+    },
+    "build_package_only_delete_local_zip_false": {
+      "delete_local_zip": false,
+      "use_precompiled_packages": false,
+      "delete_s3_zip": false
+    },
+    "build_package_only_delete_local_zip_true": {
+      "delete_local_zip": true,
+      "use_precompiled_packages": false,
+      "delete_s3_zip": false
     }
 }
