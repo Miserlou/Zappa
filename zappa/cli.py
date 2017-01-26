@@ -1691,8 +1691,8 @@ class ZappaCLI(object):
             # Warn if this is too large for Lambda.
             file_stats = os.stat(self.zip_path)
             if file_stats.st_size > 52428800:  # pragma: no cover
-                print('\n\nWarning: Application zip package is likely to be too large for AWS Lambda.'
-                      'Try setting "slim_handler"=true in the zappa_settings.json.\n\n')
+                print('\n\nWarning: Application zip package is likely to be too large for AWS Lambda. '
+                      'Try setting "slim_handler" to true in your Zappa settings file.\n\n')
 
         # Throw custom setings into the zip that handles requests
         if self.stage_config.get('slim_handler', False):
