@@ -553,7 +553,9 @@ AWS currently limits Lambda zip sizes to 50 meg. If the project is larger than t
 
 Bash completion can be enabled by adding the following to your .bashrc:
 
+```bash
   eval "$(register-python-argcomplete zappa)"
+```
 
 `register-python-argcomplete` is provided by the argcomplete Python package. If this package was installed in a virtualenv
 then the command must be run there. Alternatively you can execute:
