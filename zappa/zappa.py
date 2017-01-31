@@ -842,7 +842,8 @@ class Zappa(object):
                 FunctionName=function_name
             )
             return response.get('Versions', [])
-        except Exception:
+        except Exception as e:
+            logger.exception('Could not list lambda versions: {}'.format(e.message))
             return []
 
     def delete_lambda_function(self, function_name):
