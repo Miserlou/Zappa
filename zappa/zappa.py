@@ -489,12 +489,17 @@ class Zappa(object):
 
         copy_tree(temp_package_path, temp_project_path, update=True)
 
+        package_to_keep = []
+        if os.path.isdir(site_packages):
+            package_to_keep += os.listdir(site_packages)
+        if os.path.isdir(site_packages_64):
+            package_to_keep += os.listdir(site_packages_64)
+
         # Then the pre-compiled packages..
         if use_precompiled_packages:
             print("Downloading and installing dependencies..")
             installed_packages_name_set = [package.project_name.lower() for package in
-                                           pip.get_installed_distributions() if (package.project_name in site_packages or
-                                           package.project_name in site_packages_64) and slim_handler]
+                                           pip.get_installed_distributions() if package.project_name in package_to_keep]
             # First, try lambda packages
             for name, details in lambda_packages.items():
                 if name.lower() in installed_packages_name_set:
