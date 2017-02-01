@@ -1,5 +1,12 @@
 # Zappa Changelog
 
+## 0.35.0
+* Replace ZappaCookie with Set-Cookie permutation! :D (#636)
+* Bump `lambda-packages` version
+* Fix installed_packages_name_set (#637)
+* Add `slim_handler` (#548)
+* Various small requirements bumps and other fixes.
+
 ## 0.34.0
 * Adds `--since` and `--filter` to `tail`
 * Fixes `unschedule` command when used with specific stage
