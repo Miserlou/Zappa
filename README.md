@@ -547,7 +547,7 @@ You can also simply handle CORS directly in your application. If you do this, yo
 #### Large Projects
 
 AWS currently limits Lambda zip sizes to 50 meg. If the project is larger than that, set the `slim_handler=true` in the zappa_settings.json. This just gives Lambda a small handler file. The handler file then pulls the large project down from S3 at run time. The initial load of the large project may add to runtime, but the difference should be minimal on a warm lambda function.
- 
+
 
 #### Enabling Bash Completion
 
@@ -826,7 +826,8 @@ Zappa goes quite far beyond what Lambda and API Gateway were ever intended to ha
 
 * ~~~Using VTL to map body, headers, method, params and query strings into JSON, and then turning that into valid WSGI.~~~
 * ~~~Attaching response codes to response bodies, Base64 encoding the whole thing, using that as a regex to route the response code, decoding the body in VTL, and mapping the response body to that.~~~
-* Packing and _Base58_ encoding multiple cookies into a single cookie because we can only map one kind.
+* ~~~Packing and _Base58_ encoding multiple cookies into a single cookie because we can only map one kind.~~~
+* Forcing the case permutations of "Set-Cookie" in order to return multiple headers at the same time.
 * ~~~Turning cookie-setting 301/302 responses into 200 responses with HTML redirects, because we have no way to set headers on redirects.~~~
 
 ## Contributing
