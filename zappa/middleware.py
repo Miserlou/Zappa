@@ -2,6 +2,12 @@ from werkzeug.wsgi import ClosingIterator
 
 
 def all_casings(input_string):
+    """
+    Permute all casings of a given string.
+
+    A pretty algoritm, via @Amber
+    http://stackoverflow.com/questions/6792803/finding-all-possible-case-permutations-in-python
+    """
     if not input_string:
         yield ""
     else:
@@ -16,6 +22,11 @@ def all_casings(input_string):
 
 
 class ZappaWSGIMiddleware(object):
+    """
+    Middleware functions necessary for a Zappa deployment.
+
+    Most hacks have now been remove except for Set-Cookie permuation.
+    """
     def __init__(self, application):
         self.application = application
 
@@ -26,6 +37,22 @@ class ZappaWSGIMiddleware(object):
         """
 
         def encode_response(status, headers, exc_info=None):
+            """
+            Create an APIGW-acceptable version of our cookies.
+
+            We have to use a bizarre hack that turns multiple Set-Cookie headers into
+            their case-permutated format, ex:
+
+            Set-cookie:
+            sEt-cookie:
+            seT-cookie:
+
+            To get around an API Gateway limitation.
+
+            This is weird, but better than our previous hack of creating a Base58-encoded
+            supercookie.
+            """
+
             # All the non-cookie headers should be sent unharmed.
             new_headers = [(header[0], header[1]) for header in headers if
                            header[0] != 'Set-Cookie']
