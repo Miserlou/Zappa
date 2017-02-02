@@ -1,5 +1,9 @@
 # Zappa Changelog
 
+## 0.35.1
+* Fix 64bit `lambda-packages` (#645)
+* Fix wheel packages (#642)
+
 ## 0.35.0
 * Replace ZappaCookie with Set-Cookie permutation! :D (#636)
 * Bump `lambda-packages` version
