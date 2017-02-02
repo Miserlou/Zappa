@@ -499,7 +499,8 @@ class Zappa(object):
         if use_precompiled_packages:
             print("Downloading and installing dependencies..")
             installed_packages_name_set = [package.project_name.lower() for package in
-                                           pip.get_installed_distributions() if package.project_name in package_to_keep]
+                                           pip.get_installed_distributions() if package.project_name in package_to_keep or
+                                           package.location in [site_packages, site_packages_64]]
             # First, try lambda packages
             for name, details in lambda_packages.items():
                 if name.lower() in installed_packages_name_set:
