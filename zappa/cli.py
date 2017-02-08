@@ -306,6 +306,10 @@ class ZappaCLI(object):
             help='Only show HTTP requests in tail output.'
         )
         tail_parser.add_argument(
+            '--non-http', action='store_true',
+            help='Only show non-HTTP requests in tail output.'
+        )
+        tail_parser.add_argument(
             '--since', type=str, default="100000s",
             help="Only show lines since a certain timeframe."
         )
@@ -465,6 +469,7 @@ class ZappaCLI(object):
             self.tail(
                 colorize=(not self.vargs['no_color']),
                 http=self.vargs['http'],
+                non_http=self.vargs['non_http'],
                 since=self.vargs['since'],
                 filter_pattern=self.vargs['filter'],
                 )
@@ -769,7 +774,7 @@ class ZappaCLI(object):
             self.lambda_name, versions_back=revision)
         print("Done!")
 
-    def tail(self, since, filter_pattern, limit=10000, keep_open=True, colorize=True, http=False):
+    def tail(self, since, filter_pattern, limit=10000, keep_open=True, colorize=True, http=False, non_http=False):
         """
         Tail this function's logs.
 
@@ -791,7 +796,7 @@ class ZappaCLI(object):
                     )
 
                 new_logs = [ e for e in new_logs if e['timestamp'] > last_since ]
-                self.print_logs(new_logs, colorize, http)
+                self.print_logs(new_logs, colorize, http, non_http)
 
                 if not keep_open:
                     break
@@ -1843,7 +1848,7 @@ class ZappaCLI(object):
             self.remove_uploaded_zip()
             self.remove_local_zip()
 
-    def print_logs(self, logs, colorize=True, http=False):
+    def print_logs(self, logs, colorize=True, http=False, non_http=False):
         """
         Parse, filter and print logs to the console.
 
@@ -1863,11 +1868,17 @@ class ZappaCLI(object):
                 if http:
                     if self.is_http_log_entry(message.strip()):
                         print("[" + str(timestamp) + "] " + message.strip())
+                elif non_http:
+                    if not self.is_http_log_entry(message.strip()):
+                        print("[" + str(timestamp) + "] " + message.strip())
                 else:
                     print("[" + str(timestamp) + "] " + message.strip())
             else:
                 if http:
                     if self.is_http_log_entry(message.strip()):
+                        click.echo(click.style("[", fg='cyan') + click.style(str(timestamp), bold=True) + click.style("]", fg='cyan') + self.colorize_log_entry(message.strip()))
+                elif non_http:
+                    if not self.is_http_log_entry(message.strip()):
                         click.echo(click.style("[", fg='cyan') + click.style(str(timestamp), bold=True) + click.style("]", fg='cyan') + self.colorize_log_entry(message.strip()))
                 else:
                     click.echo(click.style("[", fg='cyan') + click.style(str(timestamp), bold=True) + click.style("]", fg='cyan') + self.colorize_log_entry(message.strip()))

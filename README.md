@@ -336,6 +336,10 @@ You can use the argument `--http` to filter for HTTP requests, which will be in 
 
     $ zappa tail production --http
 
+Similarly, you can do the inverse and only show non-HTTP events and log messages:
+
+    $ zappa tail production --non-http
+
 If you don't like the default log colors, you can turn them off with `--no-color`.
 
 You can also limit the length of the tail with `--since`, which accepts a simple duration string:
@@ -347,6 +351,8 @@ You can also limit the length of the tail with `--since`, which accepts a simple
 You can filter out the contents of the logs with `--filter`, like so:
 
     $ zappa tail production --http --filter "POST" # Only show POST HTTP requests
+
+Note that this uses the [CloudWatch Logs filter syntax](http://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/FilterAndPatternSyntax.html).
 
 #### Remote Function Invocation
 
