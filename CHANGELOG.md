@@ -1,5 +1,8 @@
 # Zappa Changelog
 
+## 0.35.2
+* Adds `--non-http` to `tail`
+
 ## 0.35.1
 * Fix 64bit `lambda-packages` (#645)
 * Fix wheel packages (#642)
