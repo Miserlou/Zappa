@@ -457,7 +457,7 @@ class LambdaHandler(object):
                 zappa_returndict['headers'] = {}
                 for key, value in response.headers:
                     zappa_returndict['headers'][key] = value
-                if self.settings.BINARY_SUPPORT:
+                if settings.BINARY_SUPPORT:
                     zappa_returndict["isBase64Encoded"] = "true"
 
                 # To ensure correct status codes, we need to

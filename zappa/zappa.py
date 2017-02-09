@@ -1137,20 +1137,24 @@ class Zappa(object):
 
         return "https://{}.execute-api.{}.amazonaws.com/{}".format(api_id, self.boto_session.region_name, stage_name)
 
-    def add_binary_support(self, api_id):
-        """
-        add binary support
-        """
-        self.apigateway_client.update_rest_api(
-            restApiId=api_id,
-            patchOperations=[
-                {
-                    'op': 'add',
-                    'path': '/binaryMediaTypes/*~1*'
-                }
-            ]
-        )
-        print('Added binary support')
+    def add_binary_support(self,api_id):
+            """
+            add binary support
+            """
+            response = self.apigateway_client.get_rest_api(
+                restApiId=api_id
+            )
+            if "*/*" not in response["binaryMediaTypes"]:
+                self.apigateway_client.update_rest_api(
+                    restApiId=api_id,
+                    patchOperations=[
+                        {
+                            'op': "add",
+                            'path': '/binaryMediaTypes/*~1*'
+                        }
+                    ]
+                )
+            print('Added binary support')
 
     def remove_binary_support(self, api_id):
         """
@@ -1159,7 +1163,6 @@ class Zappa(object):
         response = self.apigateway_client.get_rest_api(
             restApiId=api_id
         )
-        print(response)
         if "*/*" in response["binaryMediaTypes"]:
             self.apigateway_client.update_rest_api(
                 restApiId=api_id,

@@ -1739,6 +1739,11 @@ class ZappaCLI(object):
 
             settings_s = settings_s + "LOG_LEVEL='{0!s}'\n".format((self.log_level))
 
+            if self.binary_support:
+                settings_s = settings_s + "BINARY_SUPPORT=True\n"
+            else:
+                settings_s = settings_s + "BINARY_SUPPORT=False\n"
+
             # If we're on a domain, we don't need to define the /<<env>> in
             # the WSGI PATH
             if self.domain:
