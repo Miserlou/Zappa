@@ -1154,7 +1154,6 @@ class Zappa(object):
                         }
                     ]
                 )
-            print('Added binary support')
 
     def remove_binary_support(self, api_id):
         """
@@ -1173,7 +1172,6 @@ class Zappa(object):
                     }
                 ]
             )
-        print('Removed binary support')
 
     def get_api_keys(self, api_id, stage_name):
         """
