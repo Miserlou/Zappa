@@ -616,6 +616,7 @@ class ZappaCLI(object):
 
             # Add binary support
             if self.binary_support:
+                print("binary true deploy")
                 self.zappa.add_binary_support(api_id=api_id)
 
             if self.stage_config.get('touch', True):
@@ -735,8 +736,10 @@ class ZappaCLI(object):
 
             # update binary support
             if self.binary_support:
+                print("binary true update")
                 self.zappa.add_binary_support(api_id=api_id)
             else:
+                print("binary flase update")
                 self.zappa.remove_binary_support(api_id=api_id)
 
             if self.stage_config.get('domain', None):
