@@ -1144,6 +1144,7 @@ class Zappa(object):
             response = self.apigateway_client.get_rest_api(
                 restApiId=api_id
             )
+            print(response)
             if "*/*" not in response["binaryMediaTypes"]:
                 self.apigateway_client.update_rest_api(
                     restApiId=api_id,
