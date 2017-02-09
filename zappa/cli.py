@@ -860,18 +860,18 @@ class ZappaCLI(object):
         for event in events:
             self.collision_warning(event.get('function'))
 
-        if self.zappa_settings[self.api_stage].get('keep_warm', True):
+        if self.stage_config.get('keep_warm', True):
             if not events:
                 events = []
 
-            keep_warm_rate = self.zappa_settings[self.api_stage].get('keep_warm_expression', "rate(4 minutes)")
+            keep_warm_rate = self.stage_config.get('keep_warm_expression', "rate(4 minutes)")
             events.append({'name': 'zappa-keep-warm',
                            'function': 'handler.keep_warm_callback',
                            'expression': keep_warm_rate,
                            'description': 'Zappa Keep Warm - {}'.format(self.lambda_name)})
 
 
-        if self.zappa_settings[self.api_stage].get('lets_encrypt_expression'):
+        if self.stage_config.get('lets_encrypt_expression'):
 
             function_response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name)
             conf = function_response['Configuration']
@@ -883,7 +883,7 @@ class ZappaCLI(object):
             else:
                 events.append({'name': 'zappa-le-certify',
                                'function': 'handler.certify_callback',
-                               'expression': self.zappa_settings[self.api_stage].get('lets_encrypt_expression'),
+                               'expression': self.stage_config.get('lets_encrypt_expression'),
                                'description': 'Zappa LE Certificate Renewer - {}'.format(self.lambda_name)})
 
         if events:
@@ -2032,9 +2032,9 @@ class ZappaCLI(object):
             stage_name=self.api_stage,
             cache_cluster_enabled=cache_cluster_enabled,
             cache_cluster_size=cache_cluster_size,
-            cloudwatch_log_level=self.zappa_settings[self.api_stage].get('cloudwatch_log_level', 'OFF'),
-            cloudwatch_data_trace=self.zappa_settings[self.api_stage].get('cloudwatch_data_trace', False),
-            cloudwatch_metrics_enabled=self.zappa_settings[self.api_stage].get('cloudwatch_metrics_enabled', False),
+            cloudwatch_log_level=self.stage_config.get('cloudwatch_log_level', 'OFF'),
+            cloudwatch_data_trace=self.stage_config.get('cloudwatch_data_trace', False),
+            cloudwatch_metrics_enabled=self.stage_config.get('cloudwatch_metrics_enabled', False),
         )
         return endpoint_url
 
