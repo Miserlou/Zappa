@@ -614,6 +614,10 @@ class ZappaCLI(object):
                 else:
                     self.zappa.add_api_stage_to_api_key(api_key=self.api_key, api_id=api_id, stage_name=self.api_stage)
 
+            # Add binary support
+            if self.binary_support:
+                self.zappa.add_binary_support(api_id=api_id)
+
             if self.stage_config.get('touch', True):
                 requests.get(endpoint_url)
 
@@ -728,6 +732,12 @@ class ZappaCLI(object):
 
             api_id = self.zappa.get_api_id(self.lambda_name)
             endpoint_url = self.deploy_api_gateway(api_id)
+
+            # update binary support
+            if self.binary_support:
+                self.zappa.add_binary_support(api_id=api_id)
+            else:
+                self.zappa.remove_binary_support(api_id=api_id)
 
             if self.stage_config.get('domain', None):
                 endpoint_url = self.stage_config.get('domain')
@@ -1560,6 +1570,7 @@ class ZappaCLI(object):
         self.settings_file = self.stage_config.get('settings_file', None)
         self.django_settings = self.stage_config.get('django_settings', None)
         self.manage_roles = self.stage_config.get('manage_roles', True)
+        self.binary_support = self.stage_config.get('binary_support', False)
         self.api_key_required = self.stage_config.get('api_key_required', False)
         self.api_key = self.stage_config.get('api_key')
         self.iam_authorization = self.stage_config.get('iam_authorization', False)
