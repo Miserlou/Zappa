@@ -602,14 +602,13 @@ class ZappaCLI(object):
 
             self.zappa.update_stack(self.lambda_name, self.s3_bucket_name, wait=True)
 
-            # Deploy the API!
             api_id = self.zappa.get_api_id(self.lambda_name)
 
             # Add binary support
             if self.binary_support:
-                print("binary true deploy")
                 self.zappa.add_binary_support(api_id=api_id)
 
+            # Deploy the API!
             endpoint_url = self.deploy_api_gateway(api_id)
             deployment_string = deployment_string + ": {}".format(endpoint_url)
 
@@ -733,15 +732,15 @@ class ZappaCLI(object):
             self.zappa.update_stack(self.lambda_name, self.s3_bucket_name, wait=True, update_only=True)
 
             api_id = self.zappa.get_api_id(self.lambda_name)
-            endpoint_url = self.deploy_api_gateway(api_id)
 
             # update binary support
             if self.binary_support:
-                print("binary true update")
                 self.zappa.add_binary_support(api_id=api_id)
             else:
-                print("binary flase update")
                 self.zappa.remove_binary_support(api_id=api_id)
+
+            endpoint_url = self.deploy_api_gateway(api_id)
+
 
             if self.stage_config.get('domain', None):
                 endpoint_url = self.stage_config.get('domain')

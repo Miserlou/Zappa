@@ -459,7 +459,6 @@ class LambdaHandler(object):
                     zappa_returndict['headers'][key] = value
                 if settings.BINARY_SUPPORT:
                     zappa_returndict["isBase64Encoded"] = "true"
-                print(zappa_returndict)
                 # To ensure correct status codes, we need to
                 # pack the response as a deterministic B64 string and raise it
                 # as an error to match our APIGW regex.
