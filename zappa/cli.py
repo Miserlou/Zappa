@@ -604,6 +604,12 @@ class ZappaCLI(object):
 
             # Deploy the API!
             api_id = self.zappa.get_api_id(self.lambda_name)
+
+            # Add binary support
+            if self.binary_support:
+                print("binary true deploy")
+                self.zappa.add_binary_support(api_id=api_id)
+
             endpoint_url = self.deploy_api_gateway(api_id)
             deployment_string = deployment_string + ": {}".format(endpoint_url)
 
@@ -613,11 +619,6 @@ class ZappaCLI(object):
                     self.zappa.create_api_key(api_id=api_id, stage_name=self.api_stage)
                 else:
                     self.zappa.add_api_stage_to_api_key(api_key=self.api_key, api_id=api_id, stage_name=self.api_stage)
-
-            # Add binary support
-            if self.binary_support:
-                print("binary true deploy")
-                self.zappa.add_binary_support(api_id=api_id)
 
             if self.stage_config.get('touch', True):
                 requests.get(endpoint_url)
