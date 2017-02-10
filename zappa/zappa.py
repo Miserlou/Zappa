@@ -1137,6 +1137,42 @@ class Zappa(object):
 
         return "https://{}.execute-api.{}.amazonaws.com/{}".format(api_id, self.boto_session.region_name, stage_name)
 
+    def add_binary_support(self,api_id):
+            """
+            add binary support
+            """
+            response = self.apigateway_client.get_rest_api(
+                restApiId=api_id
+            )
+            if "binaryMediaTypes" not in response or "*/*" not in response["binaryMediaTypes"]:
+                self.apigateway_client.update_rest_api(
+                    restApiId=api_id,
+                    patchOperations=[
+                        {
+                            'op': "add",
+                            'path': '/binaryMediaTypes/*~1*'
+                        }
+                    ]
+                )
+
+    def remove_binary_support(self, api_id):
+        """
+        remove binary support
+        """
+        response = self.apigateway_client.get_rest_api(
+            restApiId=api_id
+        )
+        if "binaryMediaTypes" in response and "*/*" in response["binaryMediaTypes"]:
+            self.apigateway_client.update_rest_api(
+                restApiId=api_id,
+                patchOperations=[
+                    {
+                        'op': 'remove',
+                        'path': '/binaryMediaTypes/*~1*'
+                    }
+                ]
+            )
+
     def get_api_keys(self, api_id, stage_name):
         """
         Generator that allows to iterate per API keys associated to an api_id and a stage_name.
