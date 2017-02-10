@@ -1459,7 +1459,7 @@ class Zappa(object):
                            lambda_name,
                            stage):
         """
-        Create the API GW domain
+        Create the API GW domain and returns the resulting dns_name
         """
 
         agw_response = self.apigateway_client.create_domain_name(
@@ -1481,7 +1481,7 @@ class Zappa(object):
             stage=stage
         )
 
-        return agw_response
+        return agw_response['distributionDomainName']
 
     def update_route53_records(self, domain_name, dns_name):
         """

@@ -1396,7 +1396,7 @@ class ZappaCLI(object):
 
         else:
             if not self.zappa.get_domain_name(domain):
-                agw_response = self.zappa.create_domain_name(
+                dns_name = self.zappa.create_domain_name(
                     domain,
                     domain + "-Zappa-Cert",
                     certificate_body,
@@ -1406,7 +1406,6 @@ class ZappaCLI(object):
                     self.api_stage
                 )
                 if self.stage_config.get('using_route53', True):
-                    dns_name = agw_response['distributionDomainName']
                     self.zappa.update_route53_records(domain, dns_name)
                 print("Created a new domain name. Please note that it can take up to 40 minutes for this domain to be "
                       "created and propagated through AWS, but it requires no further work on your part.")
