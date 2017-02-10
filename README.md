@@ -419,6 +419,9 @@ to change Zappa's behavior. Use these at your own risk!
         },
         "cache_cluster_enabled": false, // Use APIGW cache cluster (default False)
         "cache_cluster_size": 0.5, // APIGW Cache Cluster size (default 0.5)
+        "certificate": "my_cert.crt", // SSL certificate file location. Used to manually certify a custom domain
+        "certificate_key": "my_key.key", // SSL key file location. Used to manually certify a custom domain
+        "certificate_chain": "my_cert_chain.pem", // SSL certificate chain file location. Used to manually certify a custom domain
         "cloudwatch_log_level": "OFF", // Enables/configures a level of logging for the given staging. Available options: "OFF", "INFO", "ERROR", default "OFF".
         "cloudwatch_data_trace": false, // Logs all data about received events.
         "cloudwatch_metrics_enabled": false, // Additional metrics for the API Gateway.
@@ -491,6 +494,7 @@ to change Zappa's behavior. Use these at your own risk!
         "timeout_seconds": 30, // Maximum lifespan for the Lambda function (default 30, max 300.)
         "touch": false, // GET the production URL upon initial deployment (default True)
         "use_precompiled_packages": false, // If possible, use C-extension packages which have been pre-compiled for AWS Lambda
+        "using_route53": true, // Have Zappa update your Route53 Hosted Zones when certifying with a custom domain
         "vpc_config": { // Optional VPC configuration for Lambda function
             "SubnetIds": [ "subnet-12345678" ], // Note: not all availability zones support Lambda!
             "SecurityGroupIds": [ "sg-12345678" ]
@@ -618,7 +622,11 @@ If you want to use Zappa on a domain with a free Let's Encrypt certificate using
 
 However, it's now far easier to use Route 53-based DNS authentication, which will allow you to use a Let's Encrypt certificate with a single `$ zappa certify` command.
 
-##### Deploying with Custom Domain Name (with your own SSL Certs)
+##### Automatically Deploying with Custom Domain Name (with your own SSL Certs)
+
+If you want to use Zappa on a domain with a free Let's Encrypt certificate using automatic Route 53 based DNS Authentication
+
+##### Manually Deploying with Custom Domain Name (with your own SSL Certs)
 
 1. The first step is to create a custom domain and upload your SSL cert / key / bundle - follow this guide [Set Up a Custom Domain Name for an API Gateway API](http://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-custom-domains.html#how-to-custom-domains-console)
 2. Ensure you have set the `domain` setting within your Zappa settings JSON - this will avoid problems with the Base Path mapping between the Custom Domain and the API invoke URL, which gets the Stage Name appended in the URI

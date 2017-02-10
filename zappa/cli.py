@@ -1348,7 +1348,8 @@ class ZappaCLI(object):
 
         if not cert_location:
             if not account_key_location:
-                raise ClickException("Can't certify a domain without " + click.style("lets_encrypt_key", fg="red", bold=True) + " configured!")
+                raise ClickException("Can't certify a domain without " + click.style("lets_encrypt_key", fg="red", bold=True) +
+                                     " or " + click.style("certificate", fg="red", bold=True) + " configured!")
 
             if account_key_location.startswith('s3://'):
                 bucket, key_name = parse_s3_url(account_key_location)
@@ -1384,9 +1385,18 @@ class ZappaCLI(object):
                     domain,
                     clean_up
                 )
+
+            # Deliberately undocumented feature (for now, at least.)
+            # We are giving the user the ability to shoot themselves in the foot.
+            # _This is probably not a good idea._
+            # However, I am sick and tired of hitting the Let's Encrypt cert
+            # limit while testing.
+            if clean_up:
+                cleanup()
+
         else:
             if not self.zappa.get_domain_name(domain):
-                self.zappa.create_domain_name(
+                agw_response = self.zappa.create_domain_name(
                     domain,
                     domain + "-Zappa-Cert",
                     certificate_body,
@@ -1395,6 +1405,9 @@ class ZappaCLI(object):
                     self.lambda_name,
                     self.api_stage
                 )
+                if self.stage_config.get('using_route53', True):
+                    dns_name = agw_response['distributionDomainName']
+                    self.zappa.update_route53_records(domain, dns_name)
                 print("Created a new domain name. Please note that it can take up to 40 minutes for this domain to be "
                       "created and propagated through AWS, but it requires no further work on your part.")
             else:
@@ -1407,14 +1420,6 @@ class ZappaCLI(object):
                 )
 
             cert_success = True
-
-        # Deliberately undocumented feature (for now, at least.)
-        # We are giving the user the ability to shoot themselves in the foot.
-        # _This is probably not a good idea._
-        # However, I am sick and tired of hitting the Let's Encrypt cert
-        # limit while testing.
-        if clean_up:
-            cleanup()
 
         if cert_success:
             click.echo("Certificate " + click.style("updated", fg="green", bold=True) + "!")
