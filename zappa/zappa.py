@@ -395,6 +395,20 @@ class Zappa(object):
             quit()
         return venv
 
+    def remove_old_version_lambda_functions(self, lambda_name):
+        versions_response = self.lambda_client.list_versions_by_function(FunctionName=lambda_name)
+        available_versions_list = []
+        for version in versions_response['Versions']:
+            available_versions_list.append(version['Version'])
+        aliases_response = self.lambda_client.list_aliases(FunctionName=lambda_name)
+        aliased_versions_list = []
+        for alias in aliases_response['Aliases']:
+            aliased_versions_list.append(alias['FunctionVersion'])
+        untagged_versions = set(available_versions_list) - set(aliased_versions_list) - {'$LATEST'}
+        print("Deleting Untagged Versions")
+        for version in untagged_versions:
+            self.lambda_client.delete_function(FunctionName=lambda_name, Qualifier=version)
+
     def create_lambda_zip(self, prefix='lambda_package', handler_file=None, slim_handler=False,
                           minify=True, exclude=None, use_precompiled_packages=True, include=None, venv=None):
         """

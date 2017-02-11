@@ -706,6 +706,9 @@ class ZappaCLI(object):
         # Remove the uploaded zip from S3, because it is now registered..
         self.remove_uploaded_zip()
 
+        # remove old version_lambda functions
+        self.zappa.remove_old_version_lambda_functions(self.lambda_name)
+
         # Update the configuration, in case there are changes.
         self.lambda_arn = self.zappa.update_lambda_configuration(lambda_arn=self.lambda_arn,
                                                        function_name=self.lambda_name,
