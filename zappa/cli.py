@@ -985,8 +985,9 @@ class ZappaCLI(object):
         status_dict["Lambda Versions"] = len(lambda_versions)
         function_response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name)
         conf = function_response['Configuration']
+        self.lambda_arn = conf['FunctionArn']
         status_dict["Lambda Name"] = self.lambda_name
-        status_dict["Lambda ARN"] = conf['FunctionArn']
+        status_dict["Lambda ARN"] = self.lambda_arn
         status_dict["Lambda Role ARN"] = conf['Role']
         status_dict["Lambda Handler"] = conf['Handler']
         status_dict["Lambda Code Size"] = conf['CodeSize']
@@ -1058,7 +1059,7 @@ class ZappaCLI(object):
                 status_dict["Domain URL"] = "None Supplied"
 
         # Scheduled Events
-        event_rules = self.zappa.get_event_rules_for_lambda(lambda_name=self.lambda_name)
+        event_rules = self.zappa.get_event_rules_for_lambda(lambda_arn=self.lambda_arn)
         status_dict["Num. Event Rules"] = len(event_rules)
         if len(event_rules) > 0:
             status_dict['Events'] = []

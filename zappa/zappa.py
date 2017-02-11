@@ -1840,12 +1840,25 @@ class Zappa(object):
         # Delete our rule.
         self.events_client.delete_rule(Name=rule_name)
 
-    def get_event_rules_for_lambda(self, lambda_name):
+    def get_event_rule_names_for_lambda(self, lambda_arn):
         """
-        Get all of the rules associated with this function.
+        Get all of the rule names associated with a lambda function.
         """
-        rules = [r['Name'] for r in self.events_client.list_rules(NamePrefix=lambda_name)['Rules']]
-        return [self.events_client.describe_rule(Name=r) for r in rules]
+        response = self.events_client.list_rule_names_by_target(TargetArn=lambda_arn)
+        rule_names = response['RuleNames']
+        # Iterate when the results are paginated
+        while 'NextToken' in response:
+            response = self.events_client.list_rule_names_by_target(TargetArn=lambda_arn,
+                                                                    NextToken=response['NextToken'])
+            rule_names.extend(response['RuleNames'])
+        return rule_names
+
+    def get_event_rules_for_lambda(self, lambda_arn):
+        """
+        Get all of the rule details associated with this function.
+        """
+        rule_names = self.get_event_rule_names_for_lambda(lambda_arn=lambda_arn)
+        return [self.events_client.describe_rule(Name=r) for r in rule_names]
 
     def unschedule_events(self, events, lambda_arn=None, lambda_name=None, excluded_source_services=None):
         excluded_source_services = excluded_source_services or []
@@ -1857,9 +1870,8 @@ class Zappa(object):
         """
         self._clear_policy(lambda_name)
 
-        rules = self.events_client.list_rules(NamePrefix=lambda_name)
-        for rule in rules['Rules']:
-            rule_name = rule['Name']
+        rule_names = self.get_event_rule_names_for_lambda(lambda_arn=lambda_arn)
+        for rule_name in rule_names:
             self.delete_rule(rule_name)
             print('Unscheduled ' + rule_name + '.')
 
