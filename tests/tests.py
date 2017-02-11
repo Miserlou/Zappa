@@ -29,7 +29,8 @@ from zappa.handler import LambdaHandler, lambda_handler
 from zappa.letsencrypt import get_cert_and_update_domain, create_domain_key, create_domain_csr, create_chained_certificate, get_cert, cleanup, parse_account_key, parse_csr, sign_certificate, encode_certificate, register_account, verify_challenge
 from zappa.util import (detect_django_settings, copytree, detect_flask_apps,
                         add_event_source, remove_event_source,
-                        get_event_source_status, parse_s3_url, human_size, string_to_timestamp)
+                        get_event_source_status, parse_s3_url, human_size, string_to_timestamp,
+                        validate_name, InvalidAwsLambdaName)
 from zappa.wsgi import create_wsgi_request, common_log
 from zappa.zappa import Zappa, ASSUME_POLICY, ATTACH_POLICY
 
@@ -1390,6 +1391,23 @@ USE_TZ = True
         self.assertTrue(os.path.isfile(zappa_cli.zip_path))
 
         zappa_cli.remove_local_zip()
+
+
+
+    def test_validate_name(self):
+        fname = 'tests/name_scenarios.json'
+        with open(fname, 'r') as f:
+            scenarios = json.load(f)
+        for scenario in scenarios:
+            value = scenario["value"]
+            is_valid = scenario["is_valid"]
+            if is_valid:
+                assert validate_name(value)
+            else:
+                with self.assertRaises(InvalidAwsLambdaName) as exc:
+                    validate_name(value)
+
+
 
 if __name__ == '__main__':
     unittest.main()
