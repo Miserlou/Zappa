@@ -40,7 +40,7 @@ LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())
 
 
-def get_cert_and_update_domain(zappa_instance, lambda_name, api_stage, domain=None, clean_up=True):
+def get_cert_and_update_domain(zappa_instance, api_name, api_stage, domain=None, clean_up=True):
     """
     Main cert installer path.
     """
@@ -68,7 +68,7 @@ def get_cert_and_update_domain(zappa_instance, lambda_name, api_stage, domain=No
                     certificate_body,
                     certificate_private_key,
                     certificate_chain,
-                    lambda_name,
+                    api_name,
                     api_stage
                 )
                 print("Created a new domain name. Please note that it can take up to 40 minutes for this domain to be created and propagated through AWS, but it requires no further work on your part.")

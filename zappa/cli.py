@@ -593,17 +593,21 @@ class ZappaCLI(object):
             # Create and configure the API Gateway
 
             template = self.zappa.create_stack_template(self.lambda_arn,
-                                                        self.lambda_name,
+                                                        self.api_name,
                                                         self.api_key_required,
                                                         self.integration_content_type_aliases,
                                                         self.iam_authorization,
                                                         self.authorizer,
                                                         self.cors)
 
-            self.zappa.update_stack(self.lambda_name, self.s3_bucket_name, wait=True)
+            self.zappa.update_stack(self.api_name, self.s3_bucket_name, wait=True)
 
             # Deploy the API!
-            api_id = self.zappa.get_api_id(self.lambda_name)
+            api_id = self.zappa.get_api_id(self.api_name)
+
+            # deleting unused api deployments
+            self.zappa.delete_unused_api_deployments(api_id)
+
             endpoint_url = self.deploy_api_gateway(api_id)
             deployment_string = deployment_string + ": {}".format(endpoint_url)
 
@@ -718,15 +722,15 @@ class ZappaCLI(object):
         if self.use_apigateway:
 
             self.zappa.create_stack_template(self.lambda_arn,
-                                             self.lambda_name,
+                                             self.api_name,
                                              self.api_key_required,
                                              self.integration_content_type_aliases,
                                              self.iam_authorization,
                                              self.authorizer,
                                              self.cors)
-            self.zappa.update_stack(self.lambda_name, self.s3_bucket_name, wait=True, update_only=True)
+            self.zappa.update_stack(self.api_name, self.s3_bucket_name, wait=True, update_only=True)
 
-            api_id = self.zappa.get_api_id(self.lambda_name)
+            api_id = self.zappa.get_api_id(self.api_name)
             endpoint_url = self.deploy_api_gateway(api_id)
 
             if self.stage_config.get('domain', None):
@@ -749,11 +753,15 @@ class ZappaCLI(object):
             api_url = None
             if endpoint_url and 'amazonaws.com' not in endpoint_url:
                 api_url = self.zappa.get_api_url(
-                    self.lambda_name,
+                    self.api_name,
                     self.api_stage)
 
                 if endpoint_url != api_url:
                     deployed_string = deployed_string + " (" + api_url + ")"
+
+                # deleting unused api deployments
+                api_id = self.zappa.get_api_id(self.api_name)
+                self.zappa.delete_unused_api_deployments(api_id)
 
             if self.stage_config.get('touch', True):
                 if api_url:
@@ -822,17 +830,18 @@ class ZappaCLI(object):
 
         if self.use_apigateway:
             if remove_logs:
-                self.zappa.remove_api_gateway_logs(self.lambda_name)
+                self.zappa.remove_api_gateway_logs(self.api_name, self.api_stage)
 
             domain_name = self.stage_config.get('domain', None)
 
             # Only remove the api key when not specified
             if self.api_key_required and self.api_key is None:
-                api_id = self.zappa.get_api_id(self.lambda_name)
+                api_id = self.zappa.get_api_id(self.api_name)
                 self.zappa.remove_api_key(api_id, self.api_stage)
 
             gateway_id = self.zappa.undeploy_api_gateway(
-                self.lambda_name,
+                self.api_name,
+                self.api_stage,
                 domain_name=domain_name
             )
 
@@ -1039,13 +1048,13 @@ class ZappaCLI(object):
         # URLs
         if self.use_apigateway:
             api_url = self.zappa.get_api_url(
-                self.lambda_name,
+                self.api_name,
                 self.api_stage)
 
             status_dict["API Gateway URL"] = api_url
 
             # Api Keys
-            api_id = self.zappa.get_api_id(self.lambda_name)
+            api_id = self.zappa.get_api_id(self.api_name)
             for api_key in self.zappa.get_api_keys(api_id, self.api_stage):
                 status_dict["API Gateway x-api-key"] = api_key
 
@@ -1379,7 +1388,7 @@ class ZappaCLI(object):
             from letsencrypt import get_cert_and_update_domain, cleanup
             cert_success = get_cert_and_update_domain(
                     self.zappa,
-                    self.lambda_name,
+                    self.api_name,
                     self.api_stage,
                     domain,
                     clean_up
@@ -1392,7 +1401,7 @@ class ZappaCLI(object):
                     certificate_body,
                     certificate_private_key,
                     certificate_chain,
-                    self.lambda_name,
+                    self.api_name,
                     self.api_stage
                 )
                 print("Created a new domain name. Please note that it can take up to 40 minutes for this domain to be "
@@ -1561,6 +1570,7 @@ class ZappaCLI(object):
         self.django_settings = self.stage_config.get('django_settings', None)
         self.manage_roles = self.stage_config.get('manage_roles', True)
         self.api_key_required = self.stage_config.get('api_key_required', False)
+        self.api_name = slugify.slugify(self.stage_config.get('api_name', self.lambda_name))
         self.api_key = self.stage_config.get('api_key')
         self.iam_authorization = self.stage_config.get('iam_authorization', False)
         self.cors = self.stage_config.get("cors", None)
