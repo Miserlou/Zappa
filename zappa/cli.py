@@ -84,6 +84,7 @@ class ZappaCLI(object):
 
     # Specific settings
     api_stage = None
+    api_name = None
     app_function = None
     aws_region = None
     debug = None

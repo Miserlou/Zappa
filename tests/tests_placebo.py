@@ -337,6 +337,8 @@ class TestZappa(unittest.TestCase):
         zappa_cli.schedule()
         zappa_cli.unschedule()
         zappa_cli.undeploy(noconfirm=True, remove_logs=True)
+        zappa_cli.zappa.delete_unused_api_deployments('12345')
+        zappa_cli.zappa.remove_old_version_lambda_functions('baby-flask-devor')
 
     @placebo_session
     def test_cli_aws_status(self, session):
@@ -344,6 +346,7 @@ class TestZappa(unittest.TestCase):
         zappa_cli.api_stage = 'ttt888'
         zappa_cli.load_settings('test_settings.json', session)
         zappa_cli.api_stage = 'devor'
+        zappa_cli.api_name = 'baby-flask-devor'
         zappa_cli.lambda_name = 'baby-flask-devor'
         zappa_cli.zappa.credentials_arn = 'arn:aws:iam::12345:role/ZappaLambdaExecution'
         resp = zappa_cli.status()
