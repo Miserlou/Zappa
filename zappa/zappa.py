@@ -396,6 +396,11 @@ class Zappa(object):
         return venv
 
     def remove_old_version_lambda_functions(self, lambda_name):
+        """
+        Deletes un tagged old versions from lambda function
+        :param lambda_name lambda function name:
+        :return:
+        """
         versions_response = self.lambda_client.list_versions_by_function(FunctionName=lambda_name)
         available_versions_list = []
         for version in versions_response['Versions']:
@@ -1157,6 +1162,10 @@ class Zappa(object):
         return "https://{}.execute-api.{}.amazonaws.com/{}".format(api_id, self.boto_session.region_name, stage_name)
 
     def delete_unused_api_deployments(self, api_id):
+        """
+        :param api_id: rest api id to deleted un used api deployments
+        :return:
+        """
         api_stages = self.get_api_stages(api_id)
         deployment_ids = []
         for each_stage in api_stages:
