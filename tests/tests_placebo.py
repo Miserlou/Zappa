@@ -337,8 +337,6 @@ class TestZappa(unittest.TestCase):
         zappa_cli.schedule()
         zappa_cli.unschedule()
         zappa_cli.undeploy(noconfirm=True, remove_logs=True)
-        zappa_cli.zappa.delete_unused_api_deployments('12345')
-        zappa_cli.zappa.remove_old_version_lambda_functions('baby-flask-devor')
 
     @placebo_session
     def test_cli_aws_status(self, session):
