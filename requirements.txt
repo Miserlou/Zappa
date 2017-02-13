@@ -7,7 +7,7 @@ durationpy==0.3
 futures==3.0.5
 hjson==2.0.2
 jmespath==0.9.1
-kappa==0.6.0
+kappa==0.7.0
 lambda-packages==0.13.0
 python-dateutil==2.6.0
 python-slugify==1.2.1
