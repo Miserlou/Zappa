@@ -42,7 +42,8 @@ from dateutil import parser
 from datetime import datetime,timedelta
 from zappa import Zappa, logger, API_GATEWAY_REGIONS
 from util import (check_new_version_available, detect_django_settings,
-                  detect_flask_apps, parse_s3_url, human_size)
+                  detect_flask_apps, parse_s3_url, human_size,
+                  validate_name, InvalidAwsLambdaName)
 
 
 CUSTOM_SETTINGS = [
@@ -1518,17 +1519,14 @@ class ZappaCLI(object):
 
         # We need a working title for this project. Use one if supplied, else cwd dirname.
         if 'project_name' in self.stage_config: # pragma: no cover
-            self.project_name = self.stage_config['project_name']
+            # If the name is invalid, this will throw an exception with message up stack
+            self.project_name = validate_name(self.stage_config['project_name'])
         else:
             self.project_name = slugify.slugify(os.getcwd().split(os.sep)[-1])[:15]
 
-        if len(self.project_name) > 15: # pragma: no cover
-            click.echo(click.style("Warning", fg="red", bold=True) + "! Your " + click.style("project_name", bold=True) +
-                       " may be too long to deploy! Please make it <16 characters.")
-
         # The name of the actual AWS Lambda function, ex, 'helloworld-dev'
-        # Django's slugify doesn't replace _, but this does.
-        self.lambda_name = slugify.slugify(self.project_name + '-' + self.api_stage)
+        # Assume that we already have have validated the name beforehand.
+        self.lambda_name = self.project_name + '-' + self.api_stage
 
         # Load environment-specific settings
         self.s3_bucket_name = self.stage_config.get('s3_bucket', "zappa-" + ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(9)))

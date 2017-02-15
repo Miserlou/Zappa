@@ -1,13 +1,13 @@
 argcomplete==1.8.2
 base58==0.2.4
-botocore==1.5.10
+botocore==1.5.11
 boto3==1.4.4
 docutils>=0.12
 durationpy==0.3
 futures==3.0.5
 hjson==2.0.2
 jmespath==0.9.1
-kappa==0.6.0
+kappa==0.7.0
 lambda-packages==0.14.1
 python-dateutil==2.6.0
 python-slugify==1.2.1
