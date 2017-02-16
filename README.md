@@ -538,7 +538,9 @@ Zappa will automatically set up a regularly occurring execution of your applicat
 
 #### Serving Static Files / Binary Uploads
 
-Zappa is for running your application code, not for serving static web assets. If you plan on serving custom static assets in your web application (CSS/JavaScript/images/etc.,), you'll likely want to use a combination of AWS S3 and AWS CloudFront.
+Zappa is now able to serve binary files, as detected by their MIME-type.
+
+However, generally Zappa is designed for running your application code, not for serving static web assets. If you plan on serving custom static assets in your web application (CSS/JavaScript/images/etc.,), you'll likely want to use a combination of AWS S3 and AWS CloudFront.
 
 Your web application framework will likely be able to handle this for you automatically. For Flask, there is [Flask-S3](https://github.com/e-dard/flask-s3), and for Django, there is [Django-Storages](https://django-storages.readthedocs.io/en/latest/).
 
@@ -552,8 +554,7 @@ You can also simply handle CORS directly in your application. If you do this, yo
 
 #### Large Projects
 
-AWS currently limits Lambda zip sizes to 50 meg. If the project is larger than that, set the `slim_handler=true` in the zappa_settings.json. This just gives Lambda a small handler file. The handler file then pulls the large project down from S3 at run time. The initial load of the large project may add to runtime, but the difference should be minimal on a warm lambda function.
-
+AWS currently limits Lambda zip sizes to 50 megabytes. If your project is larger than that, set `slim_handler=true` in your `zappa_settings.json`. In this case, your fat application package will be replaced with a small handler-only package. The handler file then pulls the rest of the large project down from S3 at run time! The initial load of the large project may add to startup overhead, but the difference should be minimal on a warm lambda function. Note that this will also eat into the _memory_ space of your application function.
 
 #### Enabling Bash Completion
 
