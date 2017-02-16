@@ -9,7 +9,6 @@ import json
 import inspect
 import collections
 import zipfile
-import base64
 
 import boto3
 import sys
@@ -460,11 +459,8 @@ class LambdaHandler(object):
                     zappa_returndict['headers'][key] = value
 
                 if settings.BINARY_SUPPORT:
-                    try:
-                        base64.b64decode(zappa_returndict['body'])
+                    if not response.mimetype.startswith("text/") or response.mimetype != "application/json":
                         zappa_returndict["isBase64Encoded"] = "true"
-                    except BaseException:
-                        pass
 
                 # To ensure correct status codes, we need to
                 # pack the response as a deterministic B64 string and raise it
