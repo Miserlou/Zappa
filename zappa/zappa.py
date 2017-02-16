@@ -39,54 +39,6 @@ logger.setLevel(logging.INFO)
 # Policies And Template Mappings
 ##
 
-POST_TEMPLATE_MAPPING = """#set($rawPostData = $input.path("$"))
-{
-  "body" : "$util.base64Encode($input.body)",
-  "headers": {
-    #foreach($header in $input.params().header.keySet())
-    "$header": "$util.escapeJavaScript($input.params().header.get($header))" #if($foreach.hasNext),#end
-
-    #end
-  },
-  "method": "$context.httpMethod",
-  "params": {
-    #foreach($param in $input.params().path.keySet())
-    "$param": "$util.escapeJavaScript($input.params().path.get($param))" #if($foreach.hasNext),#end
-
-    #end
-  },
-  "query": {
-    #foreach($queryParam in $input.params().querystring.keySet())
-    "$queryParam": "$util.escapeJavaScript($input.params().querystring.get($queryParam))" #if($foreach.hasNext),#end
-
-    #end
-  }
-}"""
-
-FORM_ENCODED_TEMPLATE_MAPPING = """
-{
-  "body" : "$util.base64Encode($input.body)",
-  "headers": {
-    #foreach($header in $input.params().header.keySet())
-    "$header": "$util.escapeJavaScript($input.params().header.get($header))" #if($foreach.hasNext),#end
-
-    #end
-  },
-  "method": "$context.httpMethod",
-  "params": {
-    #foreach($param in $input.params().path.keySet())
-    "$param": "$util.escapeJavaScript($input.params().path.get($param))" #if($foreach.hasNext),#end
-
-    #end
-  },
-  "query": {
-    #foreach($queryParam in $input.params().querystring.keySet())
-    "$queryParam": "$util.escapeJavaScript($input.params().querystring.get($queryParam))" #if($foreach.hasNext),#end
-
-    #end
-  }
-}"""
-
 ASSUME_POLICY = """{
   "Version": "2012-10-17",
   "Statement": [
@@ -183,10 +135,6 @@ ATTACH_POLICY = """{
     ]
 }"""
 
-RESPONSE_TEMPLATE = """#set($inputRoot = $input.path('$'))\n$inputRoot.Content"""
-ERROR_RESPONSE_TEMPLATE = """#set($_body = $util.parseJson($input.path('$.errorMessage'))['content'])\n$util.base64Decode($_body)"""
-REDIRECT_RESPONSE_TEMPLATE = ""
-
 # Latest list: https://docs.aws.amazon.com/general/latest/gr/rande.html#apigateway_region
 API_GATEWAY_REGIONS = ['us-east-1', 'us-east-2',
                        'us-west-1', 'us-west-2',
@@ -230,23 +178,6 @@ class Zappa(object):
     http_methods = [
         'ANY'
     ]
-    parameter_depth = 8
-    integration_response_codes = [200, 201, 301, 400, 401, 403, 404, 405, 500]
-    integration_content_types = [
-        'text/html',
-    ]
-    method_response_codes = [200, 201, 301, 400, 401, 403, 404, 405, 500]
-    method_content_types = [
-        'text/html',
-    ]
-    method_header_types = [
-        'Content-Type',
-        'Location',
-        'Status',
-        'X-Frame-Options',
-        'Set-Cookie'
-    ]
-
     role_name = "ZappaLambdaExecution"
     assume_policy = ASSUME_POLICY
     attach_policy = ATTACH_POLICY
@@ -977,17 +908,6 @@ class Zappa(object):
             self.cf_template.add_resource(method)
             self.cf_api_resources.append(method.title)
 
-            # content_mapping_templates = {
-            #     'application/json': self.cache_param(POST_TEMPLATE_MAPPING),
-            #     'application/x-www-form-urlencoded': self.cache_param(POST_TEMPLATE_MAPPING),
-            #     'multipart/form-data': self.cache_param(FORM_ENCODED_TEMPLATE_MAPPING)
-            # }
-            # if integration_content_type_aliases:
-            #     for content_type in content_mapping_templates.keys():
-            #         aliases = integration_content_type_aliases.get(content_type, [])
-            #         for alias in aliases:
-            #             content_mapping_templates[alias] = self.cache_param(content_mapping_templates[content_type])
-
             if not self.credentials_arn:
                 self.get_credentials_arn()
             credentials = self.credentials_arn  # This must be a Role ARN
@@ -999,56 +919,9 @@ class Zappa(object):
             integration.IntegrationHttpMethod = 'POST'
             integration.IntegrationResponses = []
             integration.PassthroughBehavior = 'NEVER'
-            # integration.RequestParameters = {}
-            # integration.RequestTemplates = content_mapping_templates
             integration.Type = 'AWS_PROXY'
             integration.Uri = uri
             method.Integration = integration
-
-            ##
-            # Method Response
-            ##
-
-            # for response_code in self.method_response_codes:
-            #     status_code = str(response_code)
-
-            #     response_parameters = {"method.response.header." + header_type: False for header_type in self.method_header_types}
-            #     response_models = {content_type: 'Empty' for content_type in self.method_content_types}
-
-            #     response = troposphere.apigateway.MethodResponse()
-            #     response.ResponseModels = response_models
-            #     response.ResponseParameters = response_parameters
-            #     response.StatusCode = status_code
-            #     method.MethodResponses.append(response)
-
-            ##
-            # Integration Response
-            ##
-
-            # for response in self.integration_response_codes:
-            #     status_code = str(response)
-
-            #     response_parameters = {
-            #         "method.response.header." + header_type: self.cache_param("integration.response.body." + header_type)
-            #         for header_type in self.method_header_types}
-
-            #     # Error code matching RegEx
-            #     # Thanks to @KevinHornschemeier and @jayway
-            #     # for the discussion on this.
-            #     if status_code == '200':
-            #         response_templates = {content_type: self.cache_param(RESPONSE_TEMPLATE) for content_type in self.integration_content_types}
-            #     elif status_code in ['301', '302']:
-            #         response_templates = {content_type: REDIRECT_RESPONSE_TEMPLATE for content_type in self.integration_content_types}
-            #         response_parameters["method.response.header.Location"] = self.cache_param("integration.response.body.errorMessage")
-            #     else:
-            #         response_templates = {content_type: self.cache_param(ERROR_RESPONSE_TEMPLATE) for content_type in self.integration_content_types}
-
-            #     integration_response = troposphere.apigateway.IntegrationResponse()
-            #     integration_response.ResponseParameters = response_parameters
-            #     integration_response.ResponseTemplates = response_templates
-            #     integration_response.SelectionPattern = self.selection_pattern(status_code)
-            #     integration_response.StatusCode = status_code
-            #     integration.IntegrationResponses.append(integration_response)
 
     def create_and_setup_cors(self, restapi, resource, uri, depth, config):
         """
