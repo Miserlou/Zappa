@@ -603,8 +603,13 @@ class ZappaCLI(object):
 
             self.zappa.update_stack(self.lambda_name, self.s3_bucket_name, wait=True)
 
-            # Deploy the API!
             api_id = self.zappa.get_api_id(self.lambda_name)
+
+            # Add binary support
+            if self.binary_support:
+                self.zappa.add_binary_support(api_id=api_id)
+
+            # Deploy the API!
             endpoint_url = self.deploy_api_gateway(api_id)
             deployment_string = deployment_string + ": {}".format(endpoint_url)
 
@@ -728,7 +733,15 @@ class ZappaCLI(object):
             self.zappa.update_stack(self.lambda_name, self.s3_bucket_name, wait=True, update_only=True)
 
             api_id = self.zappa.get_api_id(self.lambda_name)
+
+            # update binary support
+            if self.binary_support:
+                self.zappa.add_binary_support(api_id=api_id)
+            else:
+                self.zappa.remove_binary_support(api_id=api_id)
+
             endpoint_url = self.deploy_api_gateway(api_id)
+
 
             if self.stage_config.get('domain', None):
                 endpoint_url = self.stage_config.get('domain')
@@ -1558,6 +1571,7 @@ class ZappaCLI(object):
         self.settings_file = self.stage_config.get('settings_file', None)
         self.django_settings = self.stage_config.get('django_settings', None)
         self.manage_roles = self.stage_config.get('manage_roles', True)
+        self.binary_support = self.stage_config.get('binary_support', False)
         self.api_key_required = self.stage_config.get('api_key_required', False)
         self.api_key = self.stage_config.get('api_key')
         self.iam_authorization = self.stage_config.get('iam_authorization', False)
@@ -1725,6 +1739,11 @@ class ZappaCLI(object):
                 settings_s = settings_s + "DEBUG=False\n"
 
             settings_s = settings_s + "LOG_LEVEL='{0!s}'\n".format((self.log_level))
+
+            if self.binary_support:
+                settings_s = settings_s + "BINARY_SUPPORT=True\n"
+            else:
+                settings_s = settings_s + "BINARY_SUPPORT=False\n"
 
             # If we're on a domain, we don't need to define the /<<env>> in
             # the WSGI PATH
