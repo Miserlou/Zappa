@@ -343,6 +343,8 @@ class Zappa(object):
         Returns path to that file.
 
         """
+        # Pip is a weird package.
+        # Calling this function in some environments without this can cause.. funkiness.
         import pip
 
         if not venv:
@@ -470,7 +472,6 @@ class Zappa(object):
                 pass # XXX - What should we do here?
             progress.close()
 
-
         # Then zip it all up..
         print("Packaging project as zip..")
         try:
@@ -506,11 +507,17 @@ class Zappa(object):
                         if pyc_time > py_time:
                             continue
 
+                # Make sure that the files are all correctly chmodded
+                # Related: https://github.com/Miserlou/Zappa/issues/484
+                os.chmod(os.path.join(root, filename),  0o644)
+
+                # Actually the file into the proper place in the zip
                 zipf.write(os.path.join(root, filename), os.path.join(root.replace(temp_project_path, ''), filename))
 
             if '__init__.py' not in files:
                 tmp_init = os.path.join(temp_project_path, '__init__.py')
                 open(tmp_init, 'a').close()
+                os.chmod(tmp_init,  0o644)
                 zipf.write(tmp_init,
                            os.path.join(root.replace(temp_project_path, ''),
                                         os.path.join(root.replace(temp_project_path, ''), '__init__.py')))
