@@ -790,6 +790,7 @@ To avoid this, you can file a [service ticket](https://console.aws.amazon.com/su
 * [zappa-examples - Flask, Django, image uploads, and more!](https://github.com/narfman0/zappa-examples/)
 * [Deploy Flask-Ask to AWS Lambda with Zappa (screencast)](https://www.youtube.com/watch?v=mjWV4R2P4ks)
 * [Secure 'Serverless' File Uploads with AWS Lambda, S3, and Zappa](http://blog.stratospark.com/secure-serverless-file-uploads-with-aws-lambda-s3-zappa.html)
+* [First Steps with AWS Lambda, Zappa and Python](https://andrich.blog/2017/02/12/first-steps-with-aws-lambda-zappa-flask-and-python/)
 * _Your guide here?_
 
 ## Zappa in the Press
@@ -828,6 +829,7 @@ Are you using Zappa? Let us know and we'll list your site here!
 * [Zappa Docker Image](https://github.com/danielwhatmuff/zappa) - A Docker image for running Zappa locally, based on Lambda Docker.
 * [zappa-django-example](https://github.com/edgarroman/zappa-django-example) - A complete example for running Django on Zappa.
 * [zappa-dashing](https://github.com/nikos/zappa-dashing) - Monitor your AWS environment (health/metrics) with Zappa and CloudWatch.
+* [s3env](https://github.com/cameronmaske/s3env) - Manipulate a remote Zappa environment variable key/value JSON object file in an S3 bucket through the CLI.
 
 ## Hacks
 
