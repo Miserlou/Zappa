@@ -168,7 +168,7 @@ class TestZappa(unittest.TestCase):
         lambda_arn = 'arn:aws:lambda:us-east-1:12345:function:helloworld'
 
         # No auth at all
-        z.create_stack_template(lambda_arn, 'helloworld', False, {}, False, None)
+        z.create_stack_template(lambda_arn, 'helloworld', False, False, None)
         parsable_template = json.loads(z.cf_template.to_json())
         self.assertEqual("NONE", parsable_template["Resources"]["GET0"]["Properties"]["AuthorizationType"])
         self.assertEqual("NONE", parsable_template["Resources"]["GET1"]["Properties"]["AuthorizationType"])
@@ -176,7 +176,7 @@ class TestZappa(unittest.TestCase):
         self.assertEqual(False, parsable_template["Resources"]["GET1"]["Properties"]["ApiKeyRequired"])
 
         # IAM auth
-        z.create_stack_template(lambda_arn, 'helloworld', False, {}, True, None)
+        z.create_stack_template(lambda_arn, 'helloworld', False, True, None)
         parsable_template = json.loads(z.cf_template.to_json())
         self.assertEqual("AWS_IAM", parsable_template["Resources"]["GET0"]["Properties"]["AuthorizationType"])
         self.assertEqual("AWS_IAM", parsable_template["Resources"]["GET1"]["Properties"]["AuthorizationType"])
@@ -184,7 +184,7 @@ class TestZappa(unittest.TestCase):
         self.assertEqual(False, parsable_template["Resources"]["GET1"]["Properties"]["ApiKeyRequired"])
 
         # CORS with auth
-        z.create_stack_template(lambda_arn, 'helloworld', False, {}, True, None, True)
+        z.create_stack_template(lambda_arn, 'helloworld', False, True, None, True)
         parsable_template = json.loads(z.cf_template.to_json())
         self.assertEqual("AWS_IAM", parsable_template["Resources"]["GET0"]["Properties"]["AuthorizationType"])
         self.assertEqual("AWS_IAM", parsable_template["Resources"]["GET1"]["Properties"]["AuthorizationType"])
@@ -202,7 +202,7 @@ class TestZappa(unittest.TestCase):
         self.assertEqual(False, parsable_template["Resources"]["GET1"]["Properties"]["ApiKeyRequired"])
 
         # API Key auth
-        z.create_stack_template(lambda_arn, 'helloworld', True, {}, True, None)
+        z.create_stack_template(lambda_arn, 'helloworld', True, True, None)
         parsable_template = json.loads(z.cf_template.to_json())
         self.assertEqual("AWS_IAM", parsable_template["Resources"]["GET0"]["Properties"]["AuthorizationType"])
         self.assertEqual("AWS_IAM", parsable_template["Resources"]["GET1"]["Properties"]["AuthorizationType"])
@@ -216,7 +216,7 @@ class TestZappa(unittest.TestCase):
             "token_header": "Authorization",
             "validation_expression": "xxx"
         }
-        z.create_stack_template(lambda_arn, 'helloworld', False, {}, True, authorizer)
+        z.create_stack_template(lambda_arn, 'helloworld', False, True, authorizer)
         parsable_template = json.loads(z.cf_template.to_json())
         self.assertEqual("AWS_IAM", parsable_template["Resources"]["GET0"]["Properties"]["AuthorizationType"])
         self.assertEqual("AWS_IAM", parsable_template["Resources"]["GET1"]["Properties"]["AuthorizationType"])
@@ -225,7 +225,7 @@ class TestZappa(unittest.TestCase):
 
         # Authorizer with validation expression
         invocations_uri = 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/' + lambda_arn + '/invocations'
-        z.create_stack_template(lambda_arn, 'helloworld', False, {}, False, authorizer)
+        z.create_stack_template(lambda_arn, 'helloworld', False, False, authorizer)
         parsable_template = json.loads(z.cf_template.to_json())
         self.assertEqual("CUSTOM", parsable_template["Resources"]["GET0"]["Properties"]["AuthorizationType"])
         self.assertEqual("CUSTOM", parsable_template["Resources"]["GET1"]["Properties"]["AuthorizationType"])
@@ -238,7 +238,7 @@ class TestZappa(unittest.TestCase):
 
         # Authorizer without validation expression
         authorizer.pop('validation_expression', None)
-        z.create_stack_template(lambda_arn, 'helloworld', False, {}, False, authorizer)
+        z.create_stack_template(lambda_arn, 'helloworld', False, False, authorizer)
         parsable_template = json.loads(z.cf_template.to_json())
         self.assertEqual("CUSTOM", parsable_template["Resources"]["GET0"]["Properties"]["AuthorizationType"])
         self.assertEqual("CUSTOM", parsable_template["Resources"]["GET1"]["Properties"]["AuthorizationType"])
@@ -250,7 +250,7 @@ class TestZappa(unittest.TestCase):
         authorizer = {
             "arn": "arn:aws:lambda:us-east-1:123456789012:function:my-function",
         }
-        z.create_stack_template(lambda_arn, 'helloworld', False, {}, False, authorizer)
+        z.create_stack_template(lambda_arn, 'helloworld', False, False, authorizer)
         parsable_template = json.loads(z.cf_template.to_json())
         self.assertEqual('arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:123456789012:function:my-function/invocations', parsable_template["Resources"]["Authorizer"]["Properties"]["AuthorizerUri"])
 
