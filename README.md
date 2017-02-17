@@ -456,7 +456,6 @@ to change Zappa's behavior. Use these at your own risk!
             "token_source": "Authorization", // Optional. Default 'Authorization'. The name of a custom authorization header containing the token that clients submit as part of their requests.
             "validation_expression": "^Bearer \\w+$", // Optional. A validation expression for the incoming token, specify a regular expression.
         },
-        "integration_response_codes": [200, 301, 404, 500], // Integration response status codes to route
         "keep_warm": true, // Create CloudWatch events to keep the server warm.
         "keep_warm_expression": "rate(4 minutes)", // How often to execute the keep-warm, in cron and rate format. Default 4 minutes.
         "lambda_description": "Your Description", // However you want to describe your project for the AWS console. Default "Zappa Deployment".
