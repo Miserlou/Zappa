@@ -458,11 +458,6 @@ to change Zappa's behavior. Use these at your own risk!
             "validation_expression": "^Bearer \\w+$", // Optional. A validation expression for the incoming token, specify a regular expression.
         },
         "integration_response_codes": [200, 301, 404, 500], // Integration response status codes to route
-        "integration_content_type_aliases": { // For routing requests with non-standard mime types
-            "application/json": [
-                "application/vnd.webhooks+json"
-            ]
-        },
         "keep_warm": true, // Create CloudWatch events to keep the server warm.
         "keep_warm_expression": "rate(4 minutes)", // How often to execute the keep-warm, in cron and rate format. Default 4 minutes.
         "lambda_description": "Your Description", // However you want to describe your project for the AWS console. Default "Zappa Deployment".
@@ -693,25 +688,6 @@ Now in your application you can use:
 import os
 db_string = os.environ.get('DB_CONNECTION_STRING')
 ```
-
-#### Setting Integration Content-Type Aliases
-
-By default, Zappa will only route the following MIME-types that are set explicitly via `Content-Type` header: `application/json`, `application/x-www-form-urlencoded`, and `multipart/form-data` (if the Content-Type header isn't set, `application/json` will be the default). If a request comes in with `Content-Type` header set to anything but those 3 values, Amazon will return a 415 status code and a `MIME type not supported` message. If there is a need to support custom MIME-types (e.g. when a third-party making requests to your API) you can specify aliases for the 3 default types:
-
-zappa_settings.json:
-```javascript
-{
-    "dev": {
-        ...
-        "integration_content_type_aliases": {
-            "application/json": ["application/vnd.webhooks+json"]
-         }
-    },
-    ...
-}
-```
-
-Now Zappa will use `application/json`'s template to route requests with MIME-type of `application/vnd.webhooks+json`. You will need to re-deploy your application for this change to take affect.
 
 #### Catching Unhandled Exceptions
 
