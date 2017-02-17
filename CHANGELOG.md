@@ -9,7 +9,7 @@
 * Fix unschedule events with trimmed names #662
 * Fix a few places where `extends` wasn't respecting `stage_config`, #655
 * Begin to remove some dead code
-* Dependancy bumps
+* Dependency bumps
 
 ## 0.35.2
 * Adds `--non-http` to `tail`
