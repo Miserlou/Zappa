@@ -54,9 +54,6 @@ CUSTOM_SETTINGS = [
     'delete_s3_zip',
     'exclude',
     'http_methods',
-    'method_header_types',
-    'method_response_codes',
-    'parameter_depth',
     'role_name',
     'touch',
 ]
