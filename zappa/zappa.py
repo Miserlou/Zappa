@@ -816,7 +816,7 @@ class Zappa(object):
     ##
 
     def create_api_gateway_routes(self, lambda_arn, api_name=None, api_key_required=False,
-                                  integration_content_type_aliases=None, authorization_type='NONE', authorizer=None, cors_options=None):
+                                authorization_type='NONE', authorizer=None, cors_options=None):
         """
         Create the API Gateway for this Zappa deployment.
 
@@ -846,7 +846,7 @@ class Zappa(object):
             )
 
         self.create_and_setup_methods(restapi, root_id, api_key_required, invocations_uri,
-                                      integration_content_type_aliases, authorization_type, authorizer_resource, 0)
+                                      authorization_type, authorizer_resource, 0)
 
         if cors_options is not None:
             self.create_and_setup_cors(restapi, root_id, invocations_uri, 0, cors_options)
@@ -859,7 +859,7 @@ class Zappa(object):
         self.cf_template.add_resource(resource)
 
         self.create_and_setup_methods(restapi, resource, api_key_required, invocations_uri,
-                                      integration_content_type_aliases, authorization_type, authorizer_resource, 1)  # pragma: no cover
+                                      authorization_type, authorizer_resource, 1)  # pragma: no cover
 
         if cors_options is not None:
             self.create_and_setup_cors(restapi, resource, invocations_uri, 1, cors_options)  # pragma: no cover
@@ -895,7 +895,7 @@ class Zappa(object):
         return authorizer_resource
 
     def create_and_setup_methods(self, restapi, resource, api_key_required, uri,
-                                 integration_content_type_aliases, authorization_type, authorizer_resource, depth):
+                                 authorization_type, authorizer_resource, depth):
         """
         Set up the methods, integration responses and method responses for a given API Gateway resource.
         """
@@ -1210,7 +1210,7 @@ class Zappa(object):
             print('ZappaProject tag not found on {0}, doing nothing'.format(name))
             return False
 
-    def create_stack_template(self, lambda_arn, lambda_name, api_key_required, integration_content_type_aliases,
+    def create_stack_template(self, lambda_arn, lambda_name, api_key_required,
                               iam_authorization, authorizer, cors_options=None):
         """
         Build the entire CF stack.
@@ -1235,7 +1235,7 @@ class Zappa(object):
         self.cf_parameters = {}
 
         restapi = self.create_api_gateway_routes(lambda_arn, lambda_name, api_key_required,
-                                                 integration_content_type_aliases, auth_type, authorizer, cors_options)
+                                                auth_type, authorizer, cors_options)
         return self.cf_template
 
     def update_stack(self, name, working_bucket, wait=False, update_only=False):

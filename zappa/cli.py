@@ -596,7 +596,6 @@ class ZappaCLI(object):
             template = self.zappa.create_stack_template(self.lambda_arn,
                                                         self.lambda_name,
                                                         self.api_key_required,
-                                                        self.integration_content_type_aliases,
                                                         self.iam_authorization,
                                                         self.authorizer,
                                                         self.cors)
@@ -726,7 +725,6 @@ class ZappaCLI(object):
             self.zappa.create_stack_template(self.lambda_arn,
                                              self.lambda_name,
                                              self.api_key_required,
-                                             self.integration_content_type_aliases,
                                              self.iam_authorization,
                                              self.authorizer,
                                              self.cors)
@@ -1563,7 +1561,6 @@ class ZappaCLI(object):
         if self.use_apigateway:
             self.use_apigateway = self.stage_config.get('apigateway_enabled', True)
 
-        self.integration_content_type_aliases = self.stage_config.get('integration_content_type_aliases', {})
         self.lambda_handler = self.stage_config.get('lambda_handler', 'handler.lambda_handler')
         # DEPRICATED. https://github.com/Miserlou/Zappa/issues/456
         self.remote_env_bucket = self.stage_config.get('remote_env_bucket', None)
