@@ -50,7 +50,6 @@
     - [Setting Environment Variables](#setting-environment-variables)
       - [Local Environment Variables](#local-environment-variables)
       - [Remote Environment Variables](#remote-environment-variables)
-    - [Setting Integration Content-Type Aliases](#setting-integration-content-type-aliases)
     - [Catching Unhandled Exceptions](#catching-unhandled-exceptions)
     - [Using Custom AWS IAM Roles and Policies](#using-custom-aws-iam-roles-and-policies)
     - [Globally Available Server-less Architectures](#globally-available-server-less-architectures)
