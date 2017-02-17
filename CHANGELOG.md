@@ -1,5 +1,16 @@
 # Zappa Changelog
 
+## 0.36.0
+* Add automatic support for serving binary files! Via @wobeng, closes #481
+* Fixes `rollback` default back to 1 from 0, #673
+* Ensure correct chmodding during package creation, #484
+* Update regions that Zappa supports, #667
+* Validate function names based on actual gateway rules #521
+* Fix unschedule events with trimmed names #662
+* Fix a few places where `extends` wasn't respecting `stage_config`, #655
+* Begin to remove some dead code
+* Dependancy bumps
+
 ## 0.35.2
 * Adds `--non-http` to `tail`
 
