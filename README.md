@@ -789,6 +789,7 @@ To avoid this, you can file a [service ticket](https://console.aws.amazon.com/su
 * [How to Deploy Zappa with CloudFront, RDS and VPC](https://jinwright.net/how-deploy-serverless-wsgi-app-using-zappa/)
 * [zappa-examples - Flask, Django, image uploads, and more!](https://github.com/narfman0/zappa-examples/)
 * [Deploy Flask-Ask to AWS Lambda with Zappa (screencast)](https://www.youtube.com/watch?v=mjWV4R2P4ks)
+* [Secure 'Serverless' File Uploads with AWS Lambda, S3, and Zappa](http://blog.stratospark.com/secure-serverless-file-uploads-with-aws-lambda-s3-zappa.html)
 * _Your guide here?_
 
 ## Zappa in the Press
