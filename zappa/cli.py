@@ -268,7 +268,7 @@ class ZappaCLI(object):
             help='Rollback deployed code to a previous version.'
         )
         rollback_parser.add_argument(
-            '-n', '--num-rollback', type=positive_int, default=0,
+            '-n', '--num-rollback', type=positive_int, default=1,
             help='The number of versions to rollback.'
         )
 
