@@ -1533,7 +1533,7 @@ class ZappaCLI(object):
 
         # The name of the actual AWS Lambda function, ex, 'helloworld-dev'
         # Assume that we already have have validated the name beforehand.
-        self.lambda_name = self.project_name + '-' + self.api_stage
+        self.lambda_name = slugify.slugify(self.project_name + '-' + self.api_stage)
 
         # Load environment-specific settings
         self.s3_bucket_name = self.stage_config.get('s3_bucket', "zappa-" + ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(9)))
