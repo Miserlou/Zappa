@@ -42,7 +42,8 @@ from dateutil import parser
 from datetime import datetime,timedelta
 from zappa import Zappa, logger, API_GATEWAY_REGIONS
 from util import (check_new_version_available, detect_django_settings,
-                  detect_flask_apps, parse_s3_url, human_size)
+                  detect_flask_apps, parse_s3_url, human_size,
+                  validate_name, InvalidAwsLambdaName)
 
 
 CUSTOM_SETTINGS = [
@@ -52,11 +53,6 @@ CUSTOM_SETTINGS = [
     'delete_local_zip',
     'delete_s3_zip',
     'exclude',
-    'http_methods',
-    'integration_response_codes',
-    'method_header_types',
-    'method_response_codes',
-    'parameter_depth',
     'role_name',
     'touch',
 ]
@@ -268,7 +264,7 @@ class ZappaCLI(object):
             help='Rollback deployed code to a previous version.'
         )
         rollback_parser.add_argument(
-            '-n', '--num-rollback', type=positive_int, default=0,
+            '-n', '--num-rollback', type=positive_int, default=1,
             help='The number of versions to rollback.'
         )
 
@@ -596,18 +592,24 @@ class ZappaCLI(object):
             template = self.zappa.create_stack_template(self.lambda_arn,
                                                         self.api_name,
                                                         self.api_key_required,
-                                                        self.integration_content_type_aliases,
                                                         self.iam_authorization,
                                                         self.authorizer,
                                                         self.cors)
 
             self.zappa.update_stack(self.api_name, self.s3_bucket_name, wait=True)
 
+
             # Deploy the API!
             api_id = self.zappa.get_api_id(self.api_name)
 
             # deleting unused api deployments
             self.zappa.delete_unused_api_deployments(api_id)
+
+            # Add binary support
+            if self.binary_support:
+                self.zappa.add_binary_support(api_id=api_id)
+
+            # Deploy the API!
 
             endpoint_url = self.deploy_api_gateway(api_id)
             deployment_string = deployment_string + ": {}".format(endpoint_url)
@@ -728,14 +730,22 @@ class ZappaCLI(object):
             self.zappa.create_stack_template(self.lambda_arn,
                                              self.api_name,
                                              self.api_key_required,
-                                             self.integration_content_type_aliases,
                                              self.iam_authorization,
                                              self.authorizer,
                                              self.cors)
             self.zappa.update_stack(self.api_name, self.s3_bucket_name, wait=True, update_only=True)
 
             api_id = self.zappa.get_api_id(self.api_name)
+
+
+            # update binary support
+            if self.binary_support:
+                self.zappa.add_binary_support(api_id=api_id)
+            else:
+                self.zappa.remove_binary_support(api_id=api_id)
+
             endpoint_url = self.deploy_api_gateway(api_id)
+
 
             if self.stage_config.get('domain', None):
                 endpoint_url = self.stage_config.get('domain')
@@ -998,8 +1008,9 @@ class ZappaCLI(object):
         status_dict["Lambda Versions"] = len(lambda_versions)
         function_response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name)
         conf = function_response['Configuration']
+        self.lambda_arn = conf['FunctionArn']
         status_dict["Lambda Name"] = self.lambda_name
-        status_dict["Lambda ARN"] = conf['FunctionArn']
+        status_dict["Lambda ARN"] = self.lambda_arn
         status_dict["Lambda Role ARN"] = conf['Role']
         status_dict["Lambda Handler"] = conf['Handler']
         status_dict["Lambda Code Size"] = conf['CodeSize']
@@ -1071,7 +1082,7 @@ class ZappaCLI(object):
                 status_dict["Domain URL"] = "None Supplied"
 
         # Scheduled Events
-        event_rules = self.zappa.get_event_rules_for_lambda(lambda_name=self.lambda_name)
+        event_rules = self.zappa.get_event_rules_for_lambda(lambda_arn=self.lambda_arn)
         status_dict["Num. Event Rules"] = len(event_rules)
         if len(event_rules) > 0:
             status_dict['Events'] = []
@@ -1531,17 +1542,14 @@ class ZappaCLI(object):
 
         # We need a working title for this project. Use one if supplied, else cwd dirname.
         if 'project_name' in self.stage_config: # pragma: no cover
-            self.project_name = self.stage_config['project_name']
+            # If the name is invalid, this will throw an exception with message up stack
+            self.project_name = validate_name(self.stage_config['project_name'])
         else:
             self.project_name = slugify.slugify(os.getcwd().split(os.sep)[-1])[:15]
 
-        if len(self.project_name) > 15: # pragma: no cover
-            click.echo(click.style("Warning", fg="red", bold=True) + "! Your " + click.style("project_name", bold=True) +
-                       " may be too long to deploy! Please make it <16 characters.")
-
         # The name of the actual AWS Lambda function, ex, 'helloworld-dev'
-        # Django's slugify doesn't replace _, but this does.
-        self.lambda_name = slugify.slugify(self.project_name + '-' + self.api_stage)
+        # Assume that we already have have validated the name beforehand.
+        self.lambda_name = self.project_name + '-' + self.api_stage
 
         # Load environment-specific settings
         self.s3_bucket_name = self.stage_config.get('s3_bucket', "zappa-" + ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(9)))
@@ -1564,7 +1572,6 @@ class ZappaCLI(object):
         if self.use_apigateway:
             self.use_apigateway = self.stage_config.get('apigateway_enabled', True)
 
-        self.integration_content_type_aliases = self.stage_config.get('integration_content_type_aliases', {})
         self.lambda_handler = self.stage_config.get('lambda_handler', 'handler.lambda_handler')
         # DEPRICATED. https://github.com/Miserlou/Zappa/issues/456
         self.remote_env_bucket = self.stage_config.get('remote_env_bucket', None)
@@ -1573,6 +1580,7 @@ class ZappaCLI(object):
         self.settings_file = self.stage_config.get('settings_file', None)
         self.django_settings = self.stage_config.get('django_settings', None)
         self.manage_roles = self.stage_config.get('manage_roles', True)
+        self.binary_support = self.stage_config.get('binary_support', False)
         self.api_key_required = self.stage_config.get('api_key_required', False)
         self.api_name = slugify.slugify(self.stage_config.get('api_name', self.lambda_name))
         self.api_key = self.stage_config.get('api_key')
@@ -1741,6 +1749,11 @@ class ZappaCLI(object):
                 settings_s = settings_s + "DEBUG=False\n"
 
             settings_s = settings_s + "LOG_LEVEL='{0!s}'\n".format((self.log_level))
+
+            if self.binary_support:
+                settings_s = settings_s + "BINARY_SUPPORT=True\n"
+            else:
+                settings_s = settings_s + "BINARY_SUPPORT=False\n"
 
             # If we're on a domain, we don't need to define the /<<env>> in
             # the WSGI PATH

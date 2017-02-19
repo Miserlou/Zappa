@@ -38,54 +38,6 @@ logger.setLevel(logging.INFO)
 # Policies And Template Mappings
 ##
 
-POST_TEMPLATE_MAPPING = """#set($rawPostData = $input.path("$"))
-{
-  "body" : "$util.base64Encode($input.body)",
-  "headers": {
-    #foreach($header in $input.params().header.keySet())
-    "$header": "$util.escapeJavaScript($input.params().header.get($header))" #if($foreach.hasNext),#end
-
-    #end
-  },
-  "method": "$context.httpMethod",
-  "params": {
-    #foreach($param in $input.params().path.keySet())
-    "$param": "$util.escapeJavaScript($input.params().path.get($param))" #if($foreach.hasNext),#end
-
-    #end
-  },
-  "query": {
-    #foreach($queryParam in $input.params().querystring.keySet())
-    "$queryParam": "$util.escapeJavaScript($input.params().querystring.get($queryParam))" #if($foreach.hasNext),#end
-
-    #end
-  }
-}"""
-
-FORM_ENCODED_TEMPLATE_MAPPING = """
-{
-  "body" : "$util.base64Encode($input.body)",
-  "headers": {
-    #foreach($header in $input.params().header.keySet())
-    "$header": "$util.escapeJavaScript($input.params().header.get($header))" #if($foreach.hasNext),#end
-
-    #end
-  },
-  "method": "$context.httpMethod",
-  "params": {
-    #foreach($param in $input.params().path.keySet())
-    "$param": "$util.escapeJavaScript($input.params().path.get($param))" #if($foreach.hasNext),#end
-
-    #end
-  },
-  "query": {
-    #foreach($queryParam in $input.params().querystring.keySet())
-    "$queryParam": "$util.escapeJavaScript($input.params().querystring.get($queryParam))" #if($foreach.hasNext),#end
-
-    #end
-  }
-}"""
-
 ASSUME_POLICY = """{
   "Version": "2012-10-17",
   "Statement": [
@@ -182,16 +134,20 @@ ATTACH_POLICY = """{
     ]
 }"""
 
-RESPONSE_TEMPLATE = """#set($inputRoot = $input.path('$'))\n$inputRoot.Content"""
-ERROR_RESPONSE_TEMPLATE = """#set($_body = $util.parseJson($input.path('$.errorMessage'))['content'])\n$util.base64Decode($_body)"""
-REDIRECT_RESPONSE_TEMPLATE = ""
-
 # Latest list: https://docs.aws.amazon.com/general/latest/gr/rande.html#apigateway_region
-API_GATEWAY_REGIONS = ['us-east-1', 'us-east-2', 'us-west-2', 'eu-central-1', 'eu-west-1', 'ap-northeast-1',
-                       'ap-northeast-2', 'ap-southeast-1', 'ap-southeast-2']
+API_GATEWAY_REGIONS = ['us-east-1', 'us-east-2',
+                       'us-west-1', 'us-west-2',
+                       'eu-central-1',
+                       'eu-west-1', 'eu-west-2',
+                       'ap-northeast-1', 'ap-northeast-2',
+                       'ap-southeast-1', 'ap-southeast-2']
 # Latest list: https://docs.aws.amazon.com/general/latest/gr/rande.html#lambda_region
-LAMBDA_REGIONS = ['us-east-1', 'us-east-2', 'us-west-2', 'eu-central-1', 'eu-west-1', 'ap-northeast-1',
-                  'ap-northeast-2', 'ap-southeast-1', 'ap-southeast-2']
+LAMBDA_REGIONS = ['us-east-1', 'us-east-2',
+                  'us-west-1', 'us-west-2',
+                  'eu-central-1',
+                  'eu-west-1', 'eu-west-2',
+                  'ap-northeast-1', 'ap-northeast-2',
+                  'ap-southeast-1', 'ap-southeast-2']
 
 # We never need to include these.
 # Related: https://github.com/Miserlou/Zappa/pull/56
@@ -222,23 +178,6 @@ class Zappa(object):
     http_methods = [
         'ANY'
     ]
-    parameter_depth = 8
-    integration_response_codes = [200, 201, 301, 400, 401, 403, 404, 405, 500]
-    integration_content_types = [
-        'text/html',
-    ]
-    method_response_codes = [200, 201, 301, 400, 401, 403, 404, 405, 500]
-    method_content_types = [
-        'text/html',
-    ]
-    method_header_types = [
-        'Content-Type',
-        'Location',
-        'Status',
-        'X-Frame-Options',
-        'Set-Cookie'
-    ]
-
     role_name = "ZappaLambdaExecution"
     assume_policy = ASSUME_POLICY
     attach_policy = ATTACH_POLICY
@@ -422,6 +361,8 @@ class Zappa(object):
         Returns path to that file.
 
         """
+        # Pip is a weird package.
+        # Calling this function in some environments without this can cause.. funkiness.
         import pip
 
         if not venv:
@@ -586,11 +527,17 @@ class Zappa(object):
                         if pyc_time > py_time:
                             continue
 
+                # Make sure that the files are all correctly chmodded
+                # Related: https://github.com/Miserlou/Zappa/issues/484
+                os.chmod(os.path.join(root, filename),  0o644)
+
+                # Actually the file into the proper place in the zip
                 zipf.write(os.path.join(root, filename), os.path.join(root.replace(temp_project_path, ''), filename))
 
             if '__init__.py' not in files:
                 tmp_init = os.path.join(temp_project_path, '__init__.py')
                 open(tmp_init, 'a').close()
+                os.chmod(tmp_init,  0o644)
                 zipf.write(tmp_init,
                            os.path.join(root.replace(temp_project_path, ''),
                                         os.path.join(root.replace(temp_project_path, ''), '__init__.py')))
@@ -891,8 +838,7 @@ class Zappa(object):
     ##
 
     def create_api_gateway_routes(self, lambda_arn, api_name=None, api_key_required=False,
-                                  integration_content_type_aliases=None, authorization_type='NONE', authorizer=None,
-                                  cors_options=None):
+                                  authorization_type='NONE', authorizer=None, cors_options=None):
         """
         Create the API Gateway for this Zappa deployment.
 
@@ -922,7 +868,7 @@ class Zappa(object):
             )
 
         self.create_and_setup_methods(restapi, root_id, api_key_required, invocations_uri,
-                                      integration_content_type_aliases, authorization_type, authorizer_resource, 0)
+                                      authorization_type, authorizer_resource, 0)
 
         if cors_options is not None:
             self.create_and_setup_cors(restapi, root_id, invocations_uri, 0, cors_options)
@@ -935,8 +881,7 @@ class Zappa(object):
         self.cf_template.add_resource(resource)
 
         self.create_and_setup_methods(restapi, resource, api_key_required, invocations_uri,
-                                      integration_content_type_aliases, authorization_type, authorizer_resource,
-                                      1)  # pragma: no cover
+                                       authorization_type, authorizer_resource, 1)  # pragma: no cover
 
         if cors_options is not None:
             self.create_and_setup_cors(restapi, resource, invocations_uri, 1, cors_options)  # pragma: no cover
@@ -973,7 +918,7 @@ class Zappa(object):
         return authorizer_resource
 
     def create_and_setup_methods(self, restapi, resource, api_key_required, uri,
-                                 integration_content_type_aliases, authorization_type, authorizer_resource, depth):
+                                 authorization_type, authorizer_resource, depth):
         """
         Set up the methods, integration responses and method responses for a given API Gateway resource.
         """
@@ -993,17 +938,6 @@ class Zappa(object):
             self.cf_template.add_resource(method)
             self.cf_api_resources.append(method.title)
 
-            # content_mapping_templates = {
-            #     'application/json': self.cache_param(POST_TEMPLATE_MAPPING),
-            #     'application/x-www-form-urlencoded': self.cache_param(POST_TEMPLATE_MAPPING),
-            #     'multipart/form-data': self.cache_param(FORM_ENCODED_TEMPLATE_MAPPING)
-            # }
-            # if integration_content_type_aliases:
-            #     for content_type in content_mapping_templates.keys():
-            #         aliases = integration_content_type_aliases.get(content_type, [])
-            #         for alias in aliases:
-            #             content_mapping_templates[alias] = self.cache_param(content_mapping_templates[content_type])
-
             if not self.credentials_arn:
                 self.get_credentials_arn()
             credentials = self.credentials_arn  # This must be a Role ARN
@@ -1015,56 +949,9 @@ class Zappa(object):
             integration.IntegrationHttpMethod = 'POST'
             integration.IntegrationResponses = []
             integration.PassthroughBehavior = 'NEVER'
-            # integration.RequestParameters = {}
-            # integration.RequestTemplates = content_mapping_templates
             integration.Type = 'AWS_PROXY'
             integration.Uri = uri
             method.Integration = integration
-
-            ##
-            # Method Response
-            ##
-
-            # for response_code in self.method_response_codes:
-            #     status_code = str(response_code)
-
-            #     response_parameters = {"method.response.header." + header_type: False for header_type in self.method_header_types}
-            #     response_models = {content_type: 'Empty' for content_type in self.method_content_types}
-
-            #     response = troposphere.apigateway.MethodResponse()
-            #     response.ResponseModels = response_models
-            #     response.ResponseParameters = response_parameters
-            #     response.StatusCode = status_code
-            #     method.MethodResponses.append(response)
-
-            ##
-            # Integration Response
-            ##
-
-            # for response in self.integration_response_codes:
-            #     status_code = str(response)
-
-            #     response_parameters = {
-            #         "method.response.header." + header_type: self.cache_param("integration.response.body." + header_type)
-            #         for header_type in self.method_header_types}
-
-            #     # Error code matching RegEx
-            #     # Thanks to @KevinHornschemeier and @jayway
-            #     # for the discussion on this.
-            #     if status_code == '200':
-            #         response_templates = {content_type: self.cache_param(RESPONSE_TEMPLATE) for content_type in self.integration_content_types}
-            #     elif status_code in ['301', '302']:
-            #         response_templates = {content_type: REDIRECT_RESPONSE_TEMPLATE for content_type in self.integration_content_types}
-            #         response_parameters["method.response.header.Location"] = self.cache_param("integration.response.body.errorMessage")
-            #     else:
-            #         response_templates = {content_type: self.cache_param(ERROR_RESPONSE_TEMPLATE) for content_type in self.integration_content_types}
-
-            #     integration_response = troposphere.apigateway.IntegrationResponse()
-            #     integration_response.ResponseParameters = response_parameters
-            #     integration_response.ResponseTemplates = response_templates
-            #     integration_response.SelectionPattern = self.selection_pattern(status_code)
-            #     integration_response.StatusCode = status_code
-            #     integration.IntegrationResponses.append(integration_response)
 
     def create_and_setup_cors(self, restapi, resource, uri, depth, config):
         """
@@ -1210,6 +1097,42 @@ class Zappa(object):
             restApiId=api_id,
         )
         return len(remaining_stages_response["item"])
+
+    def add_binary_support(self,api_id):
+            """
+            add binary support
+            """
+            response = self.apigateway_client.get_rest_api(
+                restApiId=api_id
+            )
+            if "binaryMediaTypes" not in response or "*/*" not in response["binaryMediaTypes"]:
+                self.apigateway_client.update_rest_api(
+                    restApiId=api_id,
+                    patchOperations=[
+                        {
+                            'op': "add",
+                            'path': '/binaryMediaTypes/*~1*'
+                        }
+                    ]
+                )
+
+    def remove_binary_support(self, api_id):
+        """
+        remove binary support
+        """
+        response = self.apigateway_client.get_rest_api(
+            restApiId=api_id
+        )
+        if "binaryMediaTypes" in response and "*/*" in response["binaryMediaTypes"]:
+            self.apigateway_client.update_rest_api(
+                restApiId=api_id,
+                patchOperations=[
+                    {
+                        'op': 'remove',
+                        'path': '/binaryMediaTypes/*~1*'
+                    }
+                ]
+            )
 
     def get_api_keys(self, api_id, stage_name):
         """
@@ -1361,7 +1284,7 @@ class Zappa(object):
             print('ZappaProject tag not found on {0}, doing nothing'.format(name))
             return False
 
-    def create_stack_template(self, lambda_arn, api_name, api_key_required, integration_content_type_aliases,
+    def create_stack_template(self, lambda_arn, api_name, api_key_required,
                               iam_authorization, authorizer, cors_options=None):
         """
         Build the entire CF stack.
@@ -1386,9 +1309,9 @@ class Zappa(object):
         self.cf_parameters = {}
 
         restapi = self.create_api_gateway_routes(lambda_arn, api_name=api_name, api_key_required=api_key_required,
-                                                 integration_content_type_aliases=integration_content_type_aliases,
                                                  authorization_type=auth_type,
                                                  authorizer=authorizer, cors_options=cors_options)
+
         return self.cf_template
 
     def update_stack(self, name, working_bucket, wait=False, update_only=False):
@@ -1916,12 +1839,25 @@ class Zappa(object):
         # Delete our rule.
         self.events_client.delete_rule(Name=rule_name)
 
-    def get_event_rules_for_lambda(self, lambda_name):
+    def get_event_rule_names_for_lambda(self, lambda_arn):
         """
-        Get all of the rules associated with this function.
+        Get all of the rule names associated with a lambda function.
         """
-        rules = [r['Name'] for r in self.events_client.list_rules(NamePrefix=lambda_name)['Rules']]
-        return [self.events_client.describe_rule(Name=r) for r in rules]
+        response = self.events_client.list_rule_names_by_target(TargetArn=lambda_arn)
+        rule_names = response['RuleNames']
+        # Iterate when the results are paginated
+        while 'NextToken' in response:
+            response = self.events_client.list_rule_names_by_target(TargetArn=lambda_arn,
+                                                                    NextToken=response['NextToken'])
+            rule_names.extend(response['RuleNames'])
+        return rule_names
+
+    def get_event_rules_for_lambda(self, lambda_arn):
+        """
+        Get all of the rule details associated with this function.
+        """
+        rule_names = self.get_event_rule_names_for_lambda(lambda_arn=lambda_arn)
+        return [self.events_client.describe_rule(Name=r) for r in rule_names]
 
     def unschedule_events(self, events, lambda_arn=None, lambda_name=None, excluded_source_services=None):
         excluded_source_services = excluded_source_services or []
@@ -1933,9 +1869,8 @@ class Zappa(object):
         """
         self._clear_policy(lambda_name)
 
-        rules = self.events_client.list_rules(NamePrefix=lambda_name)
-        for rule in rules['Rules']:
-            rule_name = rule['Name']
+        rule_names = self.get_event_rule_names_for_lambda(lambda_arn=lambda_arn)
+        for rule_name in rule_names:
             self.delete_rule(rule_name)
             print('Unscheduled ' + rule_name + '.')
 
