@@ -1533,6 +1533,9 @@ class ZappaCLI(object):
 
         # The name of the actual AWS Lambda function, ex, 'helloworld-dev'
         # Assume that we already have have validated the name beforehand.
+        # Related:  https://github.com/Miserlou/Zappa/pull/664
+        #           https://github.com/Miserlou/Zappa/issues/678
+        #           And various others from Slack.
         self.lambda_name = slugify.slugify(self.project_name + '-' + self.api_stage)
 
         # Load environment-specific settings
