@@ -453,8 +453,11 @@ class LambdaHandler(object):
 
                 if settings.BINARY_SUPPORT:
                     if not response.mimetype.startswith("text/") or response.mimetype != "application/json":
-                        zappa_returndict['body'] = base64.b64encode(zappa_returndict['body'])
-                        zappa_returndict["isBase64Encoded"] = "true"
+                        try:
+                            zappa_returndict['body'] = base64.b64encode(zappa_returndict['body'])
+                            zappa_returndict["isBase64Encoded"] = "true"
+                        except KeyError:
+                            pass
 
                 # Calculate the total response time,
                 # and log it in the Common Log format.
