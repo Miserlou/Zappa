@@ -46,7 +46,7 @@
     - [Deploying to a Custom Domain Name with SSL Certificates](#deploying-to-a-custom-domain-name-with-ssl-certificates)
       - [Deploying to a Domain With a Let's Encrypt Certificate (DNS Auth)](#deploying-to-a-domain-with-a-lets-encrypt-certificate-dns-auth)
       - [Deploying to a Domain With a Let's Encrypt Certificate (HTTP Auth)](#deploying-to-a-domain-with-a-lets-encrypt-certificate-http-auth)
-      - [Deploying with Custom Domain Name (with your own SSL Certs)](#deploying-with-custom-domain-name-with-your-own-ssl-certs)
+      - [Deploying with Custom Domain Name (with your own SSL Certs)](#deploying-to-domain-name-with-your-own-ssl-certs)
     - [Setting Environment Variables](#setting-environment-variables)
       - [Local Environment Variables](#local-environment-variables)
       - [Remote Environment Variables](#remote-environment-variables)
