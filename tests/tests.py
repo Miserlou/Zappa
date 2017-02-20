@@ -1154,7 +1154,7 @@ class TestZappa(unittest.TestCase):
 
             # Test creating domain without Route53
             zappa_cli.zappa_settings["stage"].update({
-                "using_route53": False,
+                "route53_enabled": False,
             })
             zappa_cli.zappa.calls = []
             zappa_cli.zappa.domain_names["test.example.com"] = ""

@@ -488,13 +488,13 @@ to change Zappa's behavior. Use these at your own risk!
         "project_name": "MyProject", // The name of the project as it appears on AWS. Defaults to a slugified `pwd`.
         "remote_env": "s3://my-project-config-files/filename.json", // optional file in s3 bucket containing a flat json object which will be used to set custom environment variables.
         "role_name": "MyLambdaRole", // Name of Zappa execution role. Default ZappaExecutionRole. To use a different, pre-existing policy, you must also set manage_roles to false.
+        "route53_enabled": true, // Have Zappa update your Route53 Hosted Zones when certifying with a custom domain
         "s3_bucket": "dev-bucket", // Zappa zip bucket,
         "slim_handler": false, // Useful if project >50M. Set true to just upload a small handler to Lambda and load actual project from S3 at runtime.
         "settings_file": "~/Projects/MyApp/settings/dev_settings.py", // Server side settings file location,
         "timeout_seconds": 30, // Maximum lifespan for the Lambda function (default 30, max 300.)
         "touch": false, // GET the production URL upon initial deployment (default True)
         "use_precompiled_packages": false, // If possible, use C-extension packages which have been pre-compiled for AWS Lambda
-        "using_route53": true, // Have Zappa update your Route53 Hosted Zones when certifying with a custom domain
         "vpc_config": { // Optional VPC configuration for Lambda function
             "SubnetIds": [ "subnet-12345678" ], // Note: not all availability zones support Lambda!
             "SecurityGroupIds": [ "sg-12345678" ]
@@ -627,7 +627,7 @@ However, it's now far easier to use Route 53-based DNS authentication, which wil
 1. The first step is to create a custom domain and obtain your SSL cert / key / bundle.
 2. Ensure you have set the `domain` setting within your Zappa settings JSON - this will avoid problems with the Base Path mapping between the Custom Domain and the API invoke URL, which gets the Stage Name appended in the URI
 3. Add the paths to your SSL cert / key / bundle to the `certificate`, `certificate_key`, and `certificate_chain` settings, respectively, in your Zappa settings JSON
-4. Set `using_route53` to `false` if you plan on using your own DNS provider, and not an AWS Route53 Hosted zone.
+4. Set `route53_enabled` to `false` if you plan on using your own DNS provider, and not an AWS Route53 Hosted zone.
 5. Deploy or update your app using Zappa
 6. Run `$ zappa certify` to upload your certificates and register the custom domain name with your API gateway.
 
