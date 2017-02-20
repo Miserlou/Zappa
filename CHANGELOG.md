@@ -1,5 +1,9 @@
 # Zappa Changelog
 
+## 0.36.1
+* Remove Kappa 0.6 specific hack
+* Bring back '-' substitution
+
 ## 0.36.0
 * Add automatic support for serving binary files! Via @wobeng, closes #481
 * Fixes `rollback` default back to 1 from 0, #673
