@@ -796,7 +796,8 @@ Are you using Zappa? Let us know and we'll list your site here!
 * [zappa-dashing](https://github.com/nikos/zappa-dashing) - Monitor your AWS environment (health/metrics) with Zappa and CloudWatch.
 * [s3env](https://github.com/cameronmaske/s3env) - Manipulate a remote Zappa environment variable key/value JSON object file in an S3 bucket through the CLI.
 * [zappa_resize_image_on_fly](https://github.com/wobeng/zappa_resize_image_on_fly) - Resize images on the fly using Flask, Zappa, Pillow, and OpenCV-python.
-* [gdrive-lambda](https://github.com/richiverse/gdrive-lambda) - pass json data to a csv file for end users who use Gdrive across the organization. 
+* [gdrive-lambda](https://github.com/richiverse/gdrive-lambda) - pass json data to a csv file for end users who use Gdrive across the organization.
+* [travis-build-repeat](https://github.com/bcongdon/travis-build-repeat) - Repeat TravisCI builds to avoid stale test results.
 
 ## Hacks
 
