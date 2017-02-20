@@ -1060,6 +1060,9 @@ class TestZappa(unittest.TestCase):
                 def create_domain_name(self, *args, **kw):
                     self.calls.append(("create_domain_name", args, kw))
 
+                def update_route53_records(self, *args, **kw):
+                    self.calls.append(("update_route53_records", args, kw))
+
                 def update_domain_name(self, *args, **kw):
                     self.calls.append(("update_domain_name", args, kw))
 
@@ -1135,8 +1138,9 @@ class TestZappa(unittest.TestCase):
             })
             sys.stdout.truncate(0)
             zappa_cli.certify(no_cleanup=True)
-            self.assertEquals(len(zappa_cli.zappa.calls), 1)
+            self.assertEquals(len(zappa_cli.zappa.calls), 2)
             self.assertTrue(zappa_cli.zappa.calls[0][0] == "create_domain_name")
+            self.assertTrue(zappa_cli.zappa.calls[1][0] == "update_route53_records")
             log_output = sys.stdout.getvalue()
             self.assertIn("Created a new domain name", log_output)
 
@@ -1148,6 +1152,19 @@ class TestZappa(unittest.TestCase):
             self.assertTrue(zappa_cli.zappa.calls[0][0] == "update_domain_name")
             log_output = sys.stdout.getvalue()
             self.assertNotIn("Created a new domain name", log_output)
+
+            # Test creating domain without Route53
+            zappa_cli.zappa_settings["stage"].update({
+                "route53_enabled": False,
+            })
+            zappa_cli.zappa.calls = []
+            zappa_cli.zappa.domain_names["test.example.com"] = ""
+            sys.stdout.truncate(0)
+            zappa_cli.certify(no_cleanup=True)
+            self.assertEquals(len(zappa_cli.zappa.calls), 1)
+            self.assertTrue(zappa_cli.zappa.calls[0][0] == "create_domain_name")
+            log_output = sys.stdout.getvalue()
+            self.assertIn("Created a new domain name", log_output)
         finally:
             sys.stdout = old_stdout
 

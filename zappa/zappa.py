@@ -1383,7 +1383,7 @@ class Zappa(object):
                            lambda_name,
                            stage):
         """
-        Great the API GW domain.
+        Create the API GW domain and returns the resulting dns_name
         """
 
         agw_response = self.apigateway_client.create_domain_name(
@@ -1394,19 +1394,24 @@ class Zappa(object):
             certificateChain=certificate_chain
         )
 
-        dns_name = agw_response['distributionDomainName']
-        zone_id = self.get_hosted_zone_id_for_domain(domain_name)
-
         api_id = self.get_api_id(lambda_name)
         if not api_id:
             raise LookupError("No API URL to certify found - did you deploy?")
 
-        response = self.apigateway_client.create_base_path_mapping(
+        self.apigateway_client.create_base_path_mapping(
             domainName=domain_name,
             basePath='',
             restApiId=api_id,
             stage=stage
         )
+
+        return agw_response['distributionDomainName']
+
+    def update_route53_records(self, domain_name, dns_name):
+        """
+        Updates Route53 Records following GW domain creation
+        """
+        zone_id = self.get_hosted_zone_id_for_domain(domain_name)
 
         is_apex = self.route53.get_hosted_zone(Id=zone_id)['HostedZone']['Name'][:-1] == domain_name
         if is_apex:
