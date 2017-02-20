@@ -1,6 +1,10 @@
+import calendar
+import datetime
+import durationpy
 import fnmatch
 import json
 import os
+import re
 import requests
 import shutil
 import stat
@@ -58,6 +62,38 @@ def parse_s3_url(url):
         bucket = result.netloc
         path = result.path.strip('/')
     return bucket, path
+
+def human_size(num, suffix='B'):
+    """
+    Convert bytes length to a human-readable version
+    """
+    for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
+        if abs(num) < 1024.0:
+            return "{0:3.1f}{1!s}{2!s}".format(num, unit, suffix)
+        num /= 1024.0
+    return "{0:.1f}{1!s}{2!s}".format(num, 'Yi', suffix)
+
+def string_to_timestamp(timestring):
+    """
+    Accepts a str, returns an int timestamp.
+    """
+
+    ts = None
+
+    # Uses an extended version of Go's duration string.
+    try:
+        delta = durationpy.from_str(timestring);
+        past = datetime.datetime.utcnow() - delta
+        ts = calendar.timegm(past.timetuple())
+        return ts
+    except Exception as e:
+        pass
+
+    if ts:
+        return ts
+    # else:
+    #     print("Unable to parse timestring.")
+    return 0
 
 ##
 # `init` related
@@ -256,3 +292,38 @@ def check_new_version_available(this_version):
         return True
     else:
         return False
+
+
+class InvalidAwsLambdaName(Exception):
+    """Exception: proposed AWS Lambda name is invalid"""
+    pass
+
+
+def validate_name(name, maxlen=80):
+    """Validate name for AWS Lambda function.
+    name: actual name (without `arn:aws:lambda:...:` prefix and without
+        `:$LATEST`, alias or version suffix.
+    maxlen: max allowed length for name without prefix and suffix.
+
+    The value 80 was calculated from prefix with longest known region name
+    and assuming that no alias or version would be longer than `$LATEST`.
+
+    Based on AWS Lambda spec
+    http://docs.aws.amazon.com/lambda/latest/dg/API_CreateFunction.html
+
+    Return: the name
+    Raise: InvalidAwsLambdaName, if the name is invalid.
+    """
+    if not isinstance(name, basestring):
+        msg = "Name must be of type string"
+        raise InvalidAwsLambdaName(msg)
+    if len(name) > maxlen:
+        msg = "Name is longer than {maxlen} characters."
+        raise InvalidAwsLambdaName(msg.format(maxlen=maxlen))
+    if len(name) == 0:
+        msg = "Name must not be empty string."
+        raise InvalidAwsLambdaName(msg)
+    if not re.match("^[a-zA-Z0-9-_]+$", name):
+        msg = "Name can only contain characters from a-z, A-Z, 0-9, _ and -"
+        raise InvalidAwsLambdaName(msg)
+    return name

@@ -1,0 +1,12 @@
+{
+    "status_code": 200,
+    "data": {
+        "RuleNames": [
+            "zappa-keep-warm-zappa-ttt888"
+        ],
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200,
+            "RequestId": "afe859ba-28f4-11e6-aa28-4d9f2eb25de5"
+        }
+    }
+}

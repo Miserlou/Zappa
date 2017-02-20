@@ -1,5 +1,54 @@
 # Zappa Changelog
 
+## 0.36.0
+* Add automatic support for serving binary files! Via @wobeng, closes #481
+* Fixes `rollback` default back to 1 from 0, #673
+* Ensure correct chmodding during package creation, #484
+* Update regions that Zappa supports, #667
+* Validate function names based on actual gateway rules #521
+* Fix unschedule events with trimmed names #662
+* Fix a few places where `extends` wasn't respecting `stage_config`, #655
+* Begin to remove some dead code
+* Dependency bumps
+
+## 0.35.2
+* Adds `--non-http` to `tail`
+
+## 0.35.1
+* Fix 64bit `lambda-packages` (#645)
+* Fix wheel packages (#642)
+
+## 0.35.0
+* Replace ZappaCookie with Set-Cookie permutation! :D (#636)
+* Bump `lambda-packages` version
+* Fix installed_packages_name_set (#637)
+* Add `slim_handler` (#548)
+* Various small requirements bumps and other fixes.
+
+## 0.34.0
+* Adds `--since` and `--filter` to `tail`
+* Fixes `unschedule` command when used with specific stage
+
+## 0.33.0
+* Adds `package` command
+* Forbids the use of unicode environment variable keys
+* Initialize wsgi.errors to sys.stderr (was '')
+* Accept `AWS_SESSION_TOKEN` when executing via an IAM role (#589)
+* Set `REMOTE_USER` even when using `iam_authorization`
+* Rename `lets_encrypt_schedule` to `lets_encrypt_expression` (#571)
+* Messages in `tail` are now sequential
+* Bump version requirements, update README
+* Various other small changes
+
+## 0.32.1
+* File `tail` broken in CLI refactor
+
+## 0.32.0
+* Add Cognito Authorizers
+* Refactor CLI, add Bash Completion
+* Improve manylinux wheels
+* Varios fixes and req bumps
+
 ## 0.31.0
 * Adds the `cors` feature, big thanks to @AusIV!
 * Adds support for `-e` eggs, thanks to @schuyler1d and @xuru!

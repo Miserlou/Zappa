@@ -4,6 +4,9 @@ import collections
 import json
 from contextlib import nested
 
+from cStringIO import StringIO as OldStringIO
+from io import BytesIO, StringIO
+import flask
 import mock
 import os
 import random
@@ -11,6 +14,9 @@ import string
 import zipfile
 import re
 import unittest
+import shutil
+import sys
+import tempfile
 
 from click.exceptions import ClickException
 from lambda_packages import lambda_packages
@@ -23,7 +29,8 @@ from zappa.handler import LambdaHandler, lambda_handler
 from zappa.letsencrypt import get_cert_and_update_domain, create_domain_key, create_domain_csr, create_chained_certificate, get_cert, cleanup, parse_account_key, parse_csr, sign_certificate, encode_certificate, register_account, verify_challenge
 from zappa.util import (detect_django_settings, copytree, detect_flask_apps,
                         add_event_source, remove_event_source,
-                        get_event_source_status, parse_s3_url)
+                        get_event_source_status, parse_s3_url, human_size, string_to_timestamp,
+                        validate_name, InvalidAwsLambdaName)
 from zappa.wsgi import create_wsgi_request, common_log
 from zappa.zappa import Zappa, ASSUME_POLICY, ATTACH_POLICY
 
@@ -101,8 +108,8 @@ class TestZappa(unittest.TestCase):
     def test_create_lambda_package(self):
         # mock the pip.get_installed_distributions() to include a package in lambda_packages so that the code
         # for zipping pre-compiled packages gets called
-        mock_named_tuple = collections.namedtuple('mock_named_tuple', ['project_name'])
-        mock_return_val = [mock_named_tuple(lambda_packages.keys()[0])]  # choose name of 1st package in lambda_packages
+        mock_named_tuple = collections.namedtuple('mock_named_tuple', ['project_name', 'location'])
+        mock_return_val = [mock_named_tuple(lambda_packages.keys()[0], '/path')]  # choose name of 1st package in lambda_packages
         with mock.patch('pip.get_installed_distributions', return_value=mock_return_val):
             z = Zappa()
             path = z.create_lambda_zip(handler_file=os.path.realpath(__file__))
@@ -116,8 +123,8 @@ class TestZappa(unittest.TestCase):
 
         # mock the pip.get_installed_distributions() to include a package in manylinux so that the code
         # for zipping pre-compiled packages gets called
-        mock_named_tuple = collections.namedtuple('mock_named_tuple', ['project_name'])
-        mock_return_val = [mock_named_tuple('pandas')]
+        mock_named_tuple = collections.namedtuple('mock_named_tuple', ['project_name', 'location'])
+        mock_return_val = [mock_named_tuple('pandas', '/path')]
         with mock.patch('pip.get_installed_distributions', return_value=mock_return_val):
             z = Zappa()
             path = z.create_lambda_zip(handler_file=os.path.realpath(__file__))
@@ -161,7 +168,7 @@ class TestZappa(unittest.TestCase):
         lambda_arn = 'arn:aws:lambda:us-east-1:12345:function:helloworld'
 
         # No auth at all
-        z.create_stack_template(lambda_arn, 'helloworld', False, {}, False, None)
+        z.create_stack_template(lambda_arn, 'helloworld', False, False, None)
         parsable_template = json.loads(z.cf_template.to_json())
         self.assertEqual("NONE", parsable_template["Resources"]["GET0"]["Properties"]["AuthorizationType"])
         self.assertEqual("NONE", parsable_template["Resources"]["GET1"]["Properties"]["AuthorizationType"])
@@ -169,7 +176,7 @@ class TestZappa(unittest.TestCase):
         self.assertEqual(False, parsable_template["Resources"]["GET1"]["Properties"]["ApiKeyRequired"])
 
         # IAM auth
-        z.create_stack_template(lambda_arn, 'helloworld', False, {}, True, None)
+        z.create_stack_template(lambda_arn, 'helloworld', False, True, None)
         parsable_template = json.loads(z.cf_template.to_json())
         self.assertEqual("AWS_IAM", parsable_template["Resources"]["GET0"]["Properties"]["AuthorizationType"])
         self.assertEqual("AWS_IAM", parsable_template["Resources"]["GET1"]["Properties"]["AuthorizationType"])
@@ -177,7 +184,7 @@ class TestZappa(unittest.TestCase):
         self.assertEqual(False, parsable_template["Resources"]["GET1"]["Properties"]["ApiKeyRequired"])
 
         # CORS with auth
-        z.create_stack_template(lambda_arn, 'helloworld', False, {}, True, None, True)
+        z.create_stack_template(lambda_arn, 'helloworld', False, True, None, True)
         parsable_template = json.loads(z.cf_template.to_json())
         self.assertEqual("AWS_IAM", parsable_template["Resources"]["GET0"]["Properties"]["AuthorizationType"])
         self.assertEqual("AWS_IAM", parsable_template["Resources"]["GET1"]["Properties"]["AuthorizationType"])
@@ -195,7 +202,7 @@ class TestZappa(unittest.TestCase):
         self.assertEqual(False, parsable_template["Resources"]["GET1"]["Properties"]["ApiKeyRequired"])
 
         # API Key auth
-        z.create_stack_template(lambda_arn, 'helloworld', True, {}, True, None)
+        z.create_stack_template(lambda_arn, 'helloworld', True, True, None)
         parsable_template = json.loads(z.cf_template.to_json())
         self.assertEqual("AWS_IAM", parsable_template["Resources"]["GET0"]["Properties"]["AuthorizationType"])
         self.assertEqual("AWS_IAM", parsable_template["Resources"]["GET1"]["Properties"]["AuthorizationType"])
@@ -209,7 +216,7 @@ class TestZappa(unittest.TestCase):
             "token_header": "Authorization",
             "validation_expression": "xxx"
         }
-        z.create_stack_template(lambda_arn, 'helloworld', False, {}, True, authorizer)
+        z.create_stack_template(lambda_arn, 'helloworld', False, True, authorizer)
         parsable_template = json.loads(z.cf_template.to_json())
         self.assertEqual("AWS_IAM", parsable_template["Resources"]["GET0"]["Properties"]["AuthorizationType"])
         self.assertEqual("AWS_IAM", parsable_template["Resources"]["GET1"]["Properties"]["AuthorizationType"])
@@ -218,7 +225,7 @@ class TestZappa(unittest.TestCase):
 
         # Authorizer with validation expression
         invocations_uri = 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/' + lambda_arn + '/invocations'
-        z.create_stack_template(lambda_arn, 'helloworld', False, {}, False, authorizer)
+        z.create_stack_template(lambda_arn, 'helloworld', False, False, authorizer)
         parsable_template = json.loads(z.cf_template.to_json())
         self.assertEqual("CUSTOM", parsable_template["Resources"]["GET0"]["Properties"]["AuthorizationType"])
         self.assertEqual("CUSTOM", parsable_template["Resources"]["GET1"]["Properties"]["AuthorizationType"])
@@ -231,7 +238,7 @@ class TestZappa(unittest.TestCase):
 
         # Authorizer without validation expression
         authorizer.pop('validation_expression', None)
-        z.create_stack_template(lambda_arn, 'helloworld', False, {}, False, authorizer)
+        z.create_stack_template(lambda_arn, 'helloworld', False, False, authorizer)
         parsable_template = json.loads(z.cf_template.to_json())
         self.assertEqual("CUSTOM", parsable_template["Resources"]["GET0"]["Properties"]["AuthorizationType"])
         self.assertEqual("CUSTOM", parsable_template["Resources"]["GET1"]["Properties"]["AuthorizationType"])
@@ -243,7 +250,7 @@ class TestZappa(unittest.TestCase):
         authorizer = {
             "arn": "arn:aws:lambda:us-east-1:123456789012:function:my-function",
         }
-        z.create_stack_template(lambda_arn, 'helloworld', False, {}, False, authorizer)
+        z.create_stack_template(lambda_arn, 'helloworld', False, False, authorizer)
         parsable_template = json.loads(z.cf_template.to_json())
         self.assertEqual('arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:123456789012:function:my-function/invocations', parsable_template["Resources"]["Authorizer"]["Properties"]["AuthorizerUri"])
 
@@ -582,9 +589,6 @@ class TestZappa(unittest.TestCase):
 
     def test_load_settings_yaml(self):
         zappa_cli = ZappaCLI()
-        settings_file = zappa_cli.get_json_or_yaml_settings("test_settings")
-
-        zappa_cli = ZappaCLI()
         zappa_cli.api_stage = 'ttt888'
         zappa_cli.load_settings('tests/test_settings.yml')
         self.assertEqual(False, zappa_cli.stage_config['touch'])
@@ -597,12 +601,53 @@ class TestZappa(unittest.TestCase):
 
     def test_load_settings_toml(self):
         zappa_cli = ZappaCLI()
-        settings_file = zappa_cli.get_json_or_yaml_settings("test_settings")
-
-        zappa_cli = ZappaCLI()
         zappa_cli.api_stage = 'ttt888'
         zappa_cli.load_settings('tests/test_settings.toml')
         self.assertEqual(False, zappa_cli.stage_config['touch'])
+
+    def test_settings_extension(self):
+        """
+        Make sure Zappa uses settings in the proper order: JSON, TOML, YAML.
+        """
+        tempdir = tempfile.mkdtemp(prefix="zappa-test-settings")
+        shutil.copy("tests/test_one_env.json", tempdir + "/zappa_settings.json")
+        shutil.copy("tests/test_settings.yml", tempdir + "/zappa_settings.yml")
+        shutil.copy("tests/test_settings.toml", tempdir + "/zappa_settings.toml")
+
+        orig_cwd = os.getcwd()
+        os.chdir(tempdir)
+        try:
+            zappa_cli = ZappaCLI()
+
+            # With all three, we should get the JSON file first.
+            self.assertEqual(zappa_cli.get_json_or_yaml_settings(),
+                             "zappa_settings.json")
+            zappa_cli.load_settings_file()
+            self.assertIn("lonely", zappa_cli.zappa_settings)
+            os.unlink("zappa_settings.json")
+
+            # Without the JSON file, we should get the TOML file.
+            self.assertEqual(zappa_cli.get_json_or_yaml_settings(),
+                             "zappa_settings.toml")
+            zappa_cli.load_settings_file()
+            self.assertIn("ttt888", zappa_cli.zappa_settings)
+            self.assertNotIn("devor", zappa_cli.zappa_settings)
+            os.unlink("zappa_settings.toml")
+
+            # With just the YAML file, we should get it.
+            self.assertEqual(zappa_cli.get_json_or_yaml_settings(),
+                             "zappa_settings.yml")
+            zappa_cli.load_settings_file()
+            self.assertIn("ttt888", zappa_cli.zappa_settings)
+            self.assertIn("devor", zappa_cli.zappa_settings)
+            os.unlink("zappa_settings.yml")
+
+            # Without anything, we should get an exception.
+            self.assertRaises(
+                ClickException, zappa_cli.get_json_or_yaml_settings)
+        finally:
+            os.chdir(orig_cwd)
+            shutil.rmtree(tempdir)
 
     def test_cli_utility(self):
         zappa_cli = ZappaCLI()
@@ -645,13 +690,19 @@ class TestZappa(unittest.TestCase):
         zappa_cli.print_logs(logs, colorize=False, http=True)
         zappa_cli.print_logs(logs, colorize=True, http=True)
         zappa_cli.print_logs(logs, colorize=True, http=False)
+        zappa_cli.print_logs(logs, colorize=True, non_http=True)
+        zappa_cli.print_logs(logs, colorize=True, non_http=False)
+        zappa_cli.print_logs(logs, colorize=True, non_http=True, http=True)
+        zappa_cli.print_logs(logs, colorize=True, non_http=False, http=False)
         zappa_cli.check_for_update()
 
     def test_cli_args(self):
         zappa_cli = ZappaCLI()
         # Sanity
         argv = '-s test_settings.json derp ttt888'.split()
-        zappa_cli.handle(argv)
+        with self.assertRaises(SystemExit) as system_exit:
+            zappa_cli.handle(argv)
+        self.assertEqual(system_exit.exception.code, 2)
 
     def test_cli_error_exit_code(self):
         # Discussion: https://github.com/Miserlou/Zappa/issues/407
@@ -683,6 +734,103 @@ class TestZappa(unittest.TestCase):
         with self.assertRaises(SystemExit) as system_exit:
             zappa_cli.handle(argv)
         self.assertEqual(system_exit.exception.code, 2)
+
+    def test_cli_negative_rollback(self):
+        zappa_cli = ZappaCLI()
+        argv = '-s test_settings.json rollback -n -1 dev'.split()
+        output = StringIO()
+        old_stderr, sys.stderr = sys.stderr, output
+        with self.assertRaises(SystemExit) as system_exit:
+            zappa_cli.handle(argv)
+        self.assertEqual(system_exit.exception.code, 2)
+
+        error_msg = output.getvalue().strip()
+        expected = r".*This argument must be positive \(got -1\)$"
+        self.assertRegexpMatches(error_msg, expected)
+        sys.stderr = old_stderr
+
+    @mock.patch('zappa.cli.ZappaCLI.dispatch_command')
+    def test_cli_invoke(self, _):
+        zappa_cli = ZappaCLI()
+        argv = '-s test_settings.json invoke '.split()
+        raw_tests = (
+            ['--raw', 'devor', '"print 1+2"'],
+            ['devor', '"print 1+2"', '--raw']
+        )
+
+        for cmd in raw_tests:
+            zappa_cli.handle(argv + cmd)
+            args = zappa_cli.vargs
+
+            self.assertFalse(args['all'])
+            self.assertTrue(args['raw'])
+            self.assertEquals(args['command_rest'], '"print 1+2"')
+            self.assertEquals(args['command_env'], 'devor')
+
+        all_raw_tests = (
+            ['--all', '--raw', '"print 1+2"'],
+            ['"print 1+2"', '--all', '--raw'],
+            ['--raw', '"print 1+2"', '--all'],
+            ['--all', '"print 1+2"', '--raw']
+        )
+        for cmd in all_raw_tests:
+            zappa_cli.handle(argv + cmd)
+            args = zappa_cli.vargs
+
+            self.assertTrue(args['all'])
+            self.assertTrue(args['raw'])
+            self.assertEquals(args['command_rest'], '"print 1+2"')
+            self.assertEquals(args['command_env'], None)
+
+        zappa_cli.handle(argv + ['devor', 'myapp.my_func'])
+        args = zappa_cli.vargs
+        self.assertEquals(args['command_rest'], 'myapp.my_func')
+
+        all_func_tests = (
+            ['--all', 'myapp.my_func'],
+            ['myapp.my_func', '--all']
+        )
+        for cmd in all_func_tests:
+            zappa_cli.handle(argv + cmd)
+            args = zappa_cli.vargs
+
+            self.assertTrue(args['all'])
+            self.assertEquals(args['command_rest'], 'myapp.my_func')
+
+
+    @mock.patch('zappa.cli.ZappaCLI.dispatch_command')
+    def test_cli_manage(self, _):
+        zappa_cli = ZappaCLI()
+        argv = '-s test_settings.json manage '.split()
+        all_tests = (
+            ['--all', 'showmigrations', 'admin'],
+            ['showmigrations', 'admin', '--all']
+        )
+
+        for cmd in all_tests:
+            zappa_cli.handle(argv + cmd)
+            args = zappa_cli.vargs
+
+            self.assertTrue(args['all'])
+            self.assertItemsEqual(
+                args['command_rest'], ['showmigrations', 'admin']
+            )
+
+        cmd = ['devor', 'showmigrations', 'admin']
+        zappa_cli.handle(argv + cmd)
+        args = zappa_cli.vargs
+
+        self.assertFalse(args['all'])
+        self.assertItemsEqual(
+            args['command_rest'], ['showmigrations', 'admin']
+        )
+
+        cmd = ['devor', '"shell --version"']
+        zappa_cli.handle(argv + cmd)
+        args = zappa_cli.vargs
+
+        self.assertFalse(args['all'])
+        self.assertItemsEqual(args['command_rest'], ['"shell --version"'])
 
     def test_bad_json_catch(self):
         zappa_cli = ZappaCLI()
@@ -872,6 +1020,137 @@ class TestZappa(unittest.TestCase):
         os.remove('test_signed.crt')
         cleanup()
 
+
+    def test_certify_sanity_checks(self):
+        """
+        Make sure 'zappa certify':
+        * Writes a warning with the --no-cleanup flag.
+        * Errors out when a deployment hasn't taken place.
+        * Writes errors when certificate settings haven't been specified.
+        * Calls Zappa correctly for creates vs. updates.
+        """
+        old_stdout = sys.stderr
+        sys.stdout = OldStringIO() # print() barfs on io.* types.
+
+        try:
+            zappa_cli = ZappaCLI()
+            try:
+                zappa_cli.certify(no_cleanup=True)
+            except AttributeError:
+                # Since zappa_cli.zappa isn't initalized, the certify() call
+                # fails when it tries to inspect what Zappa has deployed.
+                pass
+
+            log_output = sys.stdout.getvalue()
+            self.assertIn("You are calling certify with", log_output)
+            self.assertIn("--no-cleanup", log_output)
+
+            class ZappaMock(object):
+                def __init__(self):
+                    self.function_versions = []
+                    self.domain_names = {}
+                    self.calls = []
+
+                def get_lambda_function_versions(self, function_name):
+                    return self.function_versions
+
+                def get_domain_name(self, domain):
+                    return self.domain_names.get(domain)
+
+                def create_domain_name(self, *args, **kw):
+                    self.calls.append(("create_domain_name", args, kw))
+
+                def update_domain_name(self, *args, **kw):
+                    self.calls.append(("update_domain_name", args, kw))
+
+            zappa_cli.zappa = ZappaMock()
+            self.assertRaises(ClickException, zappa_cli.certify)
+
+            # Make sure we get an error if we don't configure the domain.
+            zappa_cli.zappa.function_versions = ["$LATEST"]
+            zappa_cli.api_stage = "stage"
+            zappa_cli.zappa_settings = {"stage": {}}
+
+            try:
+                zappa_cli.certify()
+            except ClickException as e:
+                log_output = str(e)
+                self.assertIn("Can't certify a domain without", log_output)
+                self.assertIn("domain", log_output)
+
+            # Without any LetsEncrypt settings, we should get a message about
+            # not having a lets_encrypt_key setting.
+            zappa_cli.zappa_settings["stage"]["domain"] = "test.example.com"
+            try:
+                zappa_cli.certify()
+                self.fail("Expected a ClickException")
+            except ClickException as e:
+                log_output = str(e)
+                self.assertIn("Can't certify a domain without", log_output)
+                self.assertIn("lets_encrypt_key", log_output)
+
+            # With partial settings, we should get a message about not having
+            # certificate, certificate_key, and certificate_chain
+            zappa_cli.zappa_settings["stage"]["certificate"] = "foo"
+            try:
+                zappa_cli.certify()
+                self.fail("Expected a ClickException")
+            except ClickException as e:
+                log_output = str(e)
+                self.assertIn("Can't certify a domain without", log_output)
+                self.assertIn("certificate_key", log_output)
+                self.assertIn("certificate_chain", log_output)
+
+            zappa_cli.zappa_settings["stage"]["certificate_key"] = "key"
+            try:
+                zappa_cli.certify()
+                self.fail("Expected a ClickException")
+            except ClickException as e:
+                log_output = str(e)
+                self.assertIn("Can't certify a domain without", log_output)
+                self.assertIn("certificate_key", log_output)
+                self.assertIn("certificate_chain", log_output)
+
+            zappa_cli.zappa_settings["stage"]["certificate_chain"] = "chain"
+            del zappa_cli.zappa_settings["stage"]["certificate_key"]
+            try:
+                zappa_cli.certify()
+                self.fail("Expected a ClickException")
+            except ClickException as e:
+                log_output = str(e)
+                self.assertIn("Can't certify a domain without", log_output)
+                self.assertIn("certificate_key", log_output)
+                self.assertIn("certificate_chain", log_output)
+
+            # With all certificate settings, make sure Zappa's domain calls
+            # are executed.
+            cert_file = tempfile.NamedTemporaryFile()
+            cert_file.write("Hello world")
+            cert_file.flush()
+
+            zappa_cli.zappa_settings["stage"].update({
+                "certificate": cert_file.name,
+                "certificate_key": cert_file.name,
+                "certificate_chain": cert_file.name
+            })
+            sys.stdout.truncate(0)
+            zappa_cli.certify(no_cleanup=True)
+            self.assertEquals(len(zappa_cli.zappa.calls), 1)
+            self.assertTrue(zappa_cli.zappa.calls[0][0] == "create_domain_name")
+            log_output = sys.stdout.getvalue()
+            self.assertIn("Created a new domain name", log_output)
+
+            zappa_cli.zappa.calls = []
+            zappa_cli.zappa.domain_names["test.example.com"] = "*.example.com"
+            sys.stdout.truncate(0)
+            zappa_cli.certify(no_cleanup=True)
+            self.assertEquals(len(zappa_cli.zappa.calls), 1)
+            self.assertTrue(zappa_cli.zappa.calls[0][0] == "update_domain_name")
+            log_output = sys.stdout.getvalue()
+            self.assertNotIn("Created a new domain name", log_output)
+        finally:
+            sys.stdout = old_stdout
+
     ##
     # Django
     ##
@@ -959,9 +1238,28 @@ USE_TZ = True
     ##
 
     def test_human_units(self):
-        zappa = Zappa()
-        zappa.human_size(1)
-        zappa.human_size(9999999999999)
+        human_size(1)
+        human_size(9999999999999)
+
+    def test_string_to_timestamp(self):
+        boo = string_to_timestamp("asdf")
+        self.assertTrue(boo == 0)
+
+        yay = string_to_timestamp("1h")
+        self.assertTrue(type(yay) == int)
+        self.assertTrue(yay > 0)
+
+        yay = string_to_timestamp("4m")
+        self.assertTrue(type(yay) == int)
+        self.assertTrue(yay > 0)
+
+        yay = string_to_timestamp("1mm")
+        self.assertTrue(type(yay) == int)
+        self.assertTrue(yay > 0)
+
+        yay = string_to_timestamp("1mm1w1d1h1m1s1ms1us")
+        self.assertTrue(type(yay) == int)
+        self.assertTrue(yay > 0)
 
     def test_event_name(self):
         zappa = Zappa()
@@ -1035,6 +1333,80 @@ USE_TZ = True
         zappa_cli.remove_local_zip()
         m = re.search("REMOTE_ENV='(.*)'", content)
         self.assertEqual(m.group(1), 's3://lmbda-env/prod/env.json')
+
+    def test_package_only(self):
+
+        for delete_local_zip in [True, False]:
+            zappa_cli = ZappaCLI()
+            if delete_local_zip:
+                zappa_cli.api_stage = 'build_package_only_delete_local_zip_true'
+            else:
+                zappa_cli.api_stage = 'build_package_only_delete_local_zip_false'
+            zappa_cli.load_settings('test_settings.json')
+            zappa_cli.package()
+            zappa_cli.on_exit()  # simulate the command exits
+            # the zip should never be removed
+            self.assertEqual(os.path.isfile(zappa_cli.zip_path), True)
+
+            # cleanup
+            os.remove(zappa_cli.zip_path)
+
+    def test_flask_logging_bug(self):
+        """
+        This checks whether Flask can write errors sanely.
+        https://github.com/Miserlou/Zappa/issues/283
+        """
+        event = {
+                "body": {},
+                "headers": {},
+                "pathParameters": {},
+                "path": '/',
+                "httpMethod": "GET",
+                "queryStringParameters": {},
+                "requestContext": {}
+            }
+
+        old_stderr = sys.stderr
+        sys.stderr = BytesIO()
+        try:
+            environ = create_wsgi_request(event)
+            app = flask.Flask(__name__)
+            with app.request_context(environ):
+                app.logger.error(u"This is a test")
+                log_output = sys.stderr.getvalue()
+                self.assertNotIn(
+                    "'str' object has no attribute 'write'", log_output)
+                self.assertNotIn(
+                    "Logged from file tests.py", log_output)
+        finally:
+            sys.stderr = old_stderr
+
+    def test_slim_handler(self):
+        zappa_cli = ZappaCLI()
+        zappa_cli.api_stage = 'slim_handler'
+        zappa_cli.load_settings('test_settings.json')
+        zappa_cli.create_package()
+
+        self.assertTrue(os.path.isfile(zappa_cli.handler_path))
+        self.assertTrue(os.path.isfile(zappa_cli.zip_path))
+
+        zappa_cli.remove_local_zip()
+
+
+
+    def test_validate_name(self):
+        fname = 'tests/name_scenarios.json'
+        with open(fname, 'r') as f:
+            scenarios = json.load(f)
+        for scenario in scenarios:
+            value = scenario["value"]
+            is_valid = scenario["is_valid"]
+            if is_valid:
+                assert validate_name(value)
+            else:
+                with self.assertRaises(InvalidAwsLambdaName) as exc:
+                    validate_name(value)
+
 
 
 if __name__ == '__main__':
