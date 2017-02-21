@@ -1181,7 +1181,6 @@ class ZappaCLI(object):
         click.echo("If you don't have a bucket yet, we'll create one for you too.")
         default_bucket = "zappa-" + ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(9))
         bucket = raw_input("What do you want call your bucket? (default '%s'): " % default_bucket) or default_bucket
-        # TODO actually create bucket.
 
         # Detect Django/Flask
         try: # pragma: no cover
