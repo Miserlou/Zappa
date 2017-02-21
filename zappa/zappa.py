@@ -509,15 +509,17 @@ class Zappa(object):
 
                 # Make sure that the files are all correctly chmodded
                 # Related: https://github.com/Miserlou/Zappa/issues/484
-                os.chmod(os.path.join(root, filename),  0o644)
+                # Related: https://github.com/Miserlou/Zappa/issues/682
+                os.chmod(os.path.join(root, filename),  0o755)
 
                 # Actually the file into the proper place in the zip
                 zipf.write(os.path.join(root, filename), os.path.join(root.replace(temp_project_path, ''), filename))
+                zipf.external_attr = 0755 << 16L
 
             if '__init__.py' not in files:
                 tmp_init = os.path.join(temp_project_path, '__init__.py')
                 open(tmp_init, 'a').close()
-                os.chmod(tmp_init,  0o644)
+                os.chmod(tmp_init,  0o755)
                 zipf.write(tmp_init,
                            os.path.join(root.replace(temp_project_path, ''),
                                         os.path.join(root.replace(temp_project_path, ''), '__init__.py')))
