@@ -1029,9 +1029,9 @@ class Zappa(object):
 
         return "https://{}.execute-api.{}.amazonaws.com/{}".format(api_id, self.boto_session.region_name, stage_name)
 
-    def add_binary_support(self,api_id):
+    def add_binary_support(self, api_id):
             """
-            add binary support
+            Add binary support
             """
             response = self.apigateway_client.get_rest_api(
                 restApiId=api_id
@@ -1049,7 +1049,7 @@ class Zappa(object):
 
     def remove_binary_support(self, api_id):
         """
-        remove binary support
+        Remove binary support
         """
         response = self.apigateway_client.get_rest_api(
             restApiId=api_id

@@ -1570,7 +1570,7 @@ class ZappaCLI(object):
         self.settings_file = self.stage_config.get('settings_file', None)
         self.django_settings = self.stage_config.get('django_settings', None)
         self.manage_roles = self.stage_config.get('manage_roles', True)
-        self.binary_support = self.stage_config.get('binary_support', False)
+        self.binary_support = self.stage_config.get('binary_support', True)
         self.api_key_required = self.stage_config.get('api_key_required', False)
         self.api_key = self.stage_config.get('api_key')
         self.iam_authorization = self.stage_config.get('iam_authorization', False)

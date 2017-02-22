@@ -28,9 +28,10 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
         elif event_info['requestContext'].get('identity'):
             remote_user = event_info['requestContext']['identity'].get('userArn')
 
-        # Related: https://github.com/Miserlou/Zappa/issues/677
+        # Related:  https://github.com/Miserlou/Zappa/issues/677
+        #           https://github.com/Miserlou/Zappa/issues/683
         if binary_support:
-            if method in ["POST", "PUT", "PATCH"]:
+            if event_info.get('isBase64Encoded', False):
                 encoded_body = event_info['body']
                 body = base64.b64decode(encoded_body)
             else:
