@@ -826,15 +826,17 @@ To use the git HEAD, you *probably can't* use `pip install -e `. Instead, you sh
 
 ## Patrons
 
-If you or your company uses Zappa, please consider giving what you can to support the ongoing development of the project! You can become a patron by [visiting our Patreon page](https://patreon.com/zappa)
+If you or your company uses **Zappa**, please consider giving what you can to support the ongoing development of the project!
 
-Zappa is currently supported by:
+You can become a patron by **[visiting our Patreon page](https://patreon.com/zappa)**.
+
+Zappa is currently supported by these awesome individuals and companies:
 
   * Nathan Lawrence
   * LaunchLab
   * Sean Paley
 
-Thank you very much!
+Thank you very, very much!
 
 ## Support / Development / Training / Consulting
 
