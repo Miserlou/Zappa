@@ -1,5 +1,8 @@
 # Zappa Changelog
 
+## 0.37.1
+* Add binary upload support, fix #683
+
 ## 0.37.0
 * Add support for custom, non-Let's Encrypt certificates, thanks to Benjamin Congdon
 * Change default permissions to allow executable binaries, #682
