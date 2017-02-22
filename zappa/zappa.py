@@ -529,15 +529,17 @@ class Zappa(object):
 
                 # Make sure that the files are all correctly chmodded
                 # Related: https://github.com/Miserlou/Zappa/issues/484
-                os.chmod(os.path.join(root, filename),  0o644)
+                # Related: https://github.com/Miserlou/Zappa/issues/682
+                os.chmod(os.path.join(root, filename),  0o755)
 
                 # Actually the file into the proper place in the zip
                 zipf.write(os.path.join(root, filename), os.path.join(root.replace(temp_project_path, ''), filename))
+                zipf.external_attr = 0755 << 16L
 
             if '__init__.py' not in files:
                 tmp_init = os.path.join(temp_project_path, '__init__.py')
                 open(tmp_init, 'a').close()
-                os.chmod(tmp_init,  0o644)
+                os.chmod(tmp_init,  0o755)
                 zipf.write(tmp_init,
                            os.path.join(root.replace(temp_project_path, ''),
                                         os.path.join(root.replace(temp_project_path, ''), '__init__.py')))
@@ -1459,7 +1461,7 @@ class Zappa(object):
                            api_name,
                            stage):
         """
-        Great the API GW domain.
+        Create the API GW domain and returns the resulting dns_name
         """
 
         agw_response = self.apigateway_client.create_domain_name(
@@ -1470,19 +1472,24 @@ class Zappa(object):
             certificateChain=certificate_chain
         )
 
-        dns_name = agw_response['distributionDomainName']
-        zone_id = self.get_hosted_zone_id_for_domain(domain_name)
-
         api_id = self.get_api_id(api_name)
         if not api_id:
             raise LookupError("No API URL to certify found - did you deploy?")
 
-        response = self.apigateway_client.create_base_path_mapping(
+        self.apigateway_client.create_base_path_mapping(
             domainName=domain_name,
             basePath='',
             restApiId=api_id,
             stage=stage
         )
+
+        return agw_response['distributionDomainName']
+
+    def update_route53_records(self, domain_name, dns_name):
+        """
+        Updates Route53 Records following GW domain creation
+        """
+        zone_id = self.get_hosted_zone_id_for_domain(domain_name)
 
         is_apex = self.route53.get_hosted_zone(Id=zone_id)['HostedZone']['Name'][:-1] == domain_name
         if is_apex:

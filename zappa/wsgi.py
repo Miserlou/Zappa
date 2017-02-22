@@ -10,7 +10,7 @@ from werkzeug import urls
 
 
 def create_wsgi_request(event_info, server_name='zappa', script_name=None,
-                        trailing_slash=True):
+                        trailing_slash=True, binary_support=False):
         """
         Given some event_info,
         create and return a valid WSGI request environ.
@@ -28,17 +28,19 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
         elif event_info['requestContext'].get('identity'):
             remote_user = event_info['requestContext']['identity'].get('userArn')
 
-
-        # Non-GET data is B64'd through the APIGW.
-        # if method in ["POST", "PUT", "PATCH"]:
-        #     encoded_body = event_info['body']
-        #     body = base64.b64decode(encoded_body)
-        # else:
-
-        body = event_info['body']
-        # Will this generate unicode errors?
-        # Early experiments indicate no, but this still looks unsafe to me.
-        body = str(body)
+        # Related: https://github.com/Miserlou/Zappa/issues/677
+        if binary_support:
+            if method in ["POST", "PUT", "PATCH"]:
+                encoded_body = event_info['body']
+                body = base64.b64decode(encoded_body)
+            else:
+                body = event_info['body']
+                # Will this generate unicode errors?
+                # Early experiments indicate no, but this still looks unsafe to me.
+                body = str(body)
+        else:
+            body = event_info['body']
+            body = str(body)
 
         # Make header names canonical, e.g. content-type => Content-Type
         for header in headers.keys():
@@ -47,25 +49,6 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
                 headers[canonical] = headers.pop(header)
 
         path = urls.url_unquote(event_info['path'])
-
-        # if 'url' in params:
-        #     # new style
-        #     path = '/' + params.get('url') + "/"
-        # else:
-        #     # old style
-        #     path = "/"
-        #     for key in sorted(params.keys()):
-        #         path = path + params[key] + "/"
-
-        #     # This determines if we should return
-        #     # site.com/resource/ : site.com/resource
-        #     # site.com/resource : site.com/resource
-        #     # vs.
-        #     # site.com/resource/ : site.com/resource/
-        #     # site.com/resource : site.com/resource/
-        #     # If no params are present, keep the slash.
-        # if not trailing_slash and params.keys():
-        #     path = path[:-1]
 
         if query:
             query_string = urlencode(query)

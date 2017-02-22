@@ -1,5 +1,14 @@
 # Zappa Changelog
 
+## 0.37.0
+* Add support for custom, non-Let's Encrypt certificates, thanks to Benjamin Congdon
+* Change default permissions to allow executable binaries, #682
+* Fix binary support for Django POST, #677
+
+## 0.36.1
+* Remove Kappa 0.6 specific hack
+* Bring back '-' substitution
+
 ## 0.36.0
 * Add automatic support for serving binary files! Via @wobeng, closes #481
 * Fixes `rollback` default back to 1 from 0, #673
