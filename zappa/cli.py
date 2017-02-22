@@ -942,8 +942,17 @@ class ZappaCLI(object):
                 lambda_arn=function_response['Configuration']['FunctionArn'],
                 lambda_name=self.lambda_name,
                 events=events
-                )
+            )
 
+        # Add async SNS
+        if self.stage_config.get('async_enabled', True):
+            self.lambda_arn = self.zappa.get_lambda_function(
+                function_name=self.lambda_name)
+            topic_arn = self.zappa.create_async_sns_topic(
+                lambda_name=self.lambda_name,
+                lambda_arn=self.lambda_arn
+            )
+            click.echo('SNS Topic created: %s' % topic_arn)
 
     def unschedule(self):
         """
