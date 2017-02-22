@@ -527,13 +527,13 @@ Zappa will automatically set up a regularly occurring execution of your applicat
 
 #### Serving Static Files / Binary Uploads
 
-Zappa is now able to serve binary files, as detected by their MIME-type.
+Zappa is now able to serve and receive binary files, as detected by their MIME-type.
 
 However, generally Zappa is designed for running your application code, not for serving static web assets. If you plan on serving custom static assets in your web application (CSS/JavaScript/images/etc.,), you'll likely want to use a combination of AWS S3 and AWS CloudFront.
 
 Your web application framework will likely be able to handle this for you automatically. For Flask, there is [Flask-S3](https://github.com/e-dard/flask-s3), and for Django, there is [Django-Storages](https://django-storages.readthedocs.io/en/latest/).
 
-Similarly, you will not be able to accept binary multi-part uploads through the API Gateway. Instead, you should design your application so that binary uploads go [directly to S3](http://docs.aws.amazon.com/AWSJavaScriptSDK/guide/browser-examples.html#Uploading_a_local_file_using_the_File_API), which then triggers an event response defined in your `events` setting! That's thinking serverlessly!
+Similarly, you may want to design your application so that static binary uploads go [directly to S3](http://docs.aws.amazon.com/AWSJavaScriptSDK/guide/browser-examples.html#Uploading_a_local_file_using_the_File_API), which then triggers an event response defined in your `events` setting! That's thinking serverlessly!
 
 #### Enabling CORS
 
@@ -821,6 +821,18 @@ Please include the GitHub issue or pull request URL that has discussion related 
 #### Using a Local Repo
 
 To use the git HEAD, you *probably can't* use `pip install -e `. Instead, you should clone the repo to your machine and then `pip install /path/to/zappa/repo` or `ln -s /path/to/zappa/repo/zappa zappa` in your local project.
+
+## Patrons
+
+If you or your company uses Zappa, please consider giving what you can to support the ongoing development of the project! You can become a patron by [visiting our Patreon page](https://patreon.com/zappa)
+
+Zappa is currently supported by:
+
+  * Nathan Lawrence
+  * LaunchLab
+  * Sean Paley
+
+Thank you very much!
 
 ## Support / Development / Training / Consulting
 
