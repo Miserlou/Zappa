@@ -56,6 +56,7 @@
     - [Using Custom AWS IAM Roles and Policies](#using-custom-aws-iam-roles-and-policies)
     - [Globally Available Server-less Architectures](#globally-available-server-less-architectures)
     - [Raising AWS Service Limits](#raising-aws-service-limits)
+    - [Using Zappa With Docker](#using-zappa-with-docker)
 - [Zappa Guides](#zappa-guides)
 - [Zappa in the Press](#zappa-in-the-press)
 - [Sites Using Zappa](#sites-using-zappa)
@@ -744,6 +745,10 @@ To learn more about these capabilities, see [these slides](https://htmlpreview.g
 Out of the box, AWS sets a limit of [100 concurrent executions](http://docs.aws.amazon.com/lambda/latest/dg/limits.html) for your functions. If you start to breach these limits, you may start to see errors like `ClientError: An error occurred (LimitExceededException) when calling the PutTargets.."` or something similar.
 
 To avoid this, you can file a [service ticket](https://console.aws.amazon.com/support/home#/) with Amazon to raise your limits up to the many tens of thousands of concurrent executions which you may need. This is a fairly common practice with Amazon, designed to prevent you from accidentally creating extremely expensive bug reports. So, before raising your service limits, make sure that you don't have any rogue scripts which could accidentally create tens of thousands of parallel executions that you don't want to pay for.
+
+#### Using Zappa With Docker
+
+If Docker is part of your team's CI, testing, or deployments, you may want to check out [this handy guide](https://blog.zappa.io/posts/simplified-aws-lambda-deployments-with-docker-and-zappa) on using Zappa with Docker.
 
 ## Zappa Guides
 
