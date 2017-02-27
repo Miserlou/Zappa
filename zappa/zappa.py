@@ -1,10 +1,8 @@
 from __future__ import print_function
 
-import glob
-from setuptools import find_packages
-
 import boto3
 import botocore
+import glob
 import json
 import logging
 import os
@@ -20,15 +18,19 @@ import troposphere
 import troposphere.apigateway
 import zipfile
 
-from distutils.dir_util import copy_tree
-
 from botocore.exceptions import ClientError
+from distutils.dir_util import copy_tree
 from io import BytesIO
 from lambda_packages import lambda_packages
+from setuptools import find_packages
 from tqdm import tqdm
 
 # Zappa imports
 from util import copytree, add_event_source, remove_event_source, human_size
+
+##
+# Logging Config
+##
 
 logging.basicConfig(format='%(levelname)s:%(message)s')
 logger = logging.getLogger(__name__)
@@ -141,6 +143,7 @@ API_GATEWAY_REGIONS = ['us-east-1', 'us-east-2',
                        'eu-west-1', 'eu-west-2',
                        'ap-northeast-1', 'ap-northeast-2',
                        'ap-southeast-1', 'ap-southeast-2']
+
 # Latest list: https://docs.aws.amazon.com/general/latest/gr/rande.html#lambda_region
 LAMBDA_REGIONS = ['us-east-1', 'us-east-2',
                   'us-west-1', 'us-west-2',
@@ -161,7 +164,6 @@ ZIP_EXCLUDES = [
 ##
 # Classes
 ##
-
 
 class Zappa(object):
     """
@@ -1100,9 +1102,9 @@ class Zappa(object):
         )
         return len(remaining_stages_response["item"])
 
-    def add_binary_support(self,api_id):
+    def add_binary_support(self, api_id):
             """
-            add binary support
+            Add binary support
             """
             response = self.apigateway_client.get_rest_api(
                 restApiId=api_id
@@ -1120,7 +1122,7 @@ class Zappa(object):
 
     def remove_binary_support(self, api_id):
         """
-        remove binary support
+        Remove binary support
         """
         response = self.apigateway_client.get_rest_api(
             restApiId=api_id
