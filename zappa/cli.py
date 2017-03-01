@@ -1616,7 +1616,7 @@ class ZappaCLI(object):
         if not os.path.isfile(zs_json) \
             and not os.path.isfile(zs_yaml) \
             and not os.path.isfile(zs_toml):
-            raise ClickException("Please configure a zappa_settings file.")
+            raise ClickException("Please configure a zappa_settings file or call `zappa init`.")
 
         # Prefer JSON
         if os.path.isfile(zs_json):
@@ -1636,7 +1636,7 @@ class ZappaCLI(object):
         if not settings_file:
             settings_file = self.get_json_or_yaml_settings()
         if not os.path.isfile(settings_file):
-            raise ClickException("Please configure your zappa_settings file.")
+            raise ClickException("Please configure your zappa_settings file or call `zappa init`.")
 
         if '.yml' in settings_file:
             with open(settings_file) as yaml_file:
