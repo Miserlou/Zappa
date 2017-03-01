@@ -1827,7 +1827,7 @@ class Zappa(object):
                     function,
                     self.boto_session
                 )
-                print("Removed event " + name + ".")
+                print("Removed event " + name + " (" + str(event_source['events']) + ").")
 
     def _clear_policy(self, lambda_name):
         """

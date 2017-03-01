@@ -211,7 +211,25 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
 
     funk = PseudoFunction()
     funk.name = lambda_arn
-    funk.arn = lambda_arn
+
+    # Kappa 0.6.0 requires this nasty hacking,
+    # hopefully we can remove at least some of this soon.
+    # Kappa 0.7.0 introduces a whole host over other changes we don't
+    # really want, so we're stuck here for a little while.
+
+    # Related:  https://github.com/Miserlou/Zappa/issues/684
+    #           https://github.com/Miserlou/Zappa/issues/688
+    #           https://github.com/Miserlou/Zappa/commit/3216f7e5149e76921ecdf9451167846b95616313
+    if svc == 's3':
+        split_arn = lambda_arn.split(':')
+        arn_front = ':'.join(split_arn[:-1])
+        arn_back = split_arn[-1]
+        ctx.environment = arn_back
+        funk.arn = arn_front
+        funk.name = ':'.join([arn_back, target_function])
+    else:
+        funk.arn = lambda_arn
+
     funk._context = ctx
 
     event_source_obj = event_source_func(ctx, event_source)
