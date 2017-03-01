@@ -30,7 +30,9 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
 
         # Related:  https://github.com/Miserlou/Zappa/issues/677
         #           https://github.com/Miserlou/Zappa/issues/683
-        if binary_support and (method in ["POST", "PUT", "PATCH"]):
+        #           https://github.com/Miserlou/Zappa/issues/696
+        #           https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Summary_table
+        if binary_support and (method in ["POST", "PUT", "PATCH", "DELETE", "CONNECT", "OPTIONS"]):
             if event_info.get('isBase64Encoded', False):
                 encoded_body = event_info['body']
                 body = base64.b64decode(encoded_body)
