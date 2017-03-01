@@ -1,5 +1,9 @@
 # Zappa Changelog
 
+## 0.37.2
+* Revert to Kappa 0.6.0 #684 and others
+* Add binary support for more HTTP methods, #696
+
 ## 0.37.1
 * Add binary upload support, fix #683
 
