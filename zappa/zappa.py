@@ -133,13 +133,6 @@ ATTACH_POLICY = """{
                 "route53:*"
             ],
             "Resource": "*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": [
-                "rekognition:*"
-            ],
-            "Resource": "*"
         }
     ]
 }"""
