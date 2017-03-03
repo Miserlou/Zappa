@@ -1324,7 +1324,7 @@ class ZappaCLI(object):
         click.echo("\nTo learn more, check out our project page on " + click.style("GitHub", bold=True) +
                    " here: " + click.style("https://github.com/Miserlou/Zappa", fg="cyan", bold=True))
         click.echo("and stop by our " + click.style("Slack", bold=True) + " channel here: " +
-                   click.style("http://bit.do/zappa", fg="cyan", bold=True))
+                   click.style("https://slack.zappa.io", fg="cyan", bold=True))
         click.echo("\nEnjoy!,")
         click.echo(" ~ Team " + click.style("Zappa", bold=True) + "!")
 
