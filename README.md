@@ -751,7 +751,7 @@ To manually define the permissions policy of your Zappa execution role, you must
 
 Ongoing discussion about the minimum policy requirements necessary for a Zappa deployment [can be found here](https://github.com/Miserlou/Zappa/issues/244).
 
-If you only need to add a few permissions to your execution policy, you can use the `extra_permissions` setting like so:
+If you only need to add a few permissions to the default Zappa execution policy, you can use the `extra_permissions` setting like so:
 
 ```javascript
 {
