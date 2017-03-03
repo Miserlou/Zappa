@@ -78,7 +78,9 @@ def get_cert_and_update_domain(zappa_instance, lambda_name, api_stage, domain=No
                     domain + "-Zappa-LE-Cert",
                     certificate_body,
                     certificate_private_key,
-                    certificate_chain
+                    certificate_chain,
+                    lambda_name,
+                    api_stage
                 )
 
     except Exception as e:

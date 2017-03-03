@@ -1467,41 +1467,45 @@ class Zappa(object):
                            certificate_name,
                            certificate_body,
                            certificate_private_key,
-                           certificate_chain):
+                           certificate_chain,
+                           lambda_name,
+                           stage):
         """
-        Update an IAM server cert and AGW domain name with it.
+
+        This doesn't quite do what it seems like.
+
+        Unfortunately, there is currently no way to programatically rotate the
+        certificate for a currently deployed domain.
+
+        So, what we can do instead is delete the record of it and then recreate it.
+
+        The problem is that this causes a period of downtime. This could take up to 40 minutes,
+        in theory, but in practice this seems to only take less than a minute, making it
+        at least somewhat acceptable.
+
+        Related issues:     https://github.com/Miserlou/Zappa/issues/590
+                            https://github.com/Miserlou/Zappa/issues/588
+                            https://github.com/Miserlou/Zappa/pull/458
+
+
         """
-        # Patch operations described here: https://tools.ietf.org/html/rfc6902#section-4
-        # and here: http://boto3.readthedocs.io/en/latest/reference/services/apigateway.html#APIGateway.Client.update_domain_name
 
         print("Updating domain name!")
 
-        new_cert_name = 'Zappa' + str(time.time())
+        certificate_name = certificate_name + str(time.time())
 
-        # response = self.iam_client.upload_server_certificate(
-        #     ServerCertificateName=new_cert_name,
-        #     CertificateBody=certificate_body,
-        #     PrivateKey=certificate_private_key,
-        #     CertificateChain=certificate_chain
-        # )
+        import pdb
+        pdb.set_trace()
 
-        create_server_certificate_response = self.iam.create_server_certificate(
-            ServerCertificateName=new_cert_name,
-            CertificateBody=certificate_body,
-            PrivateKey=certificate_private_key,
-            CertificateChain=certificate_chain
-        )
-
-        update_domain_name_response = self.apigateway_client.update_domain_name(
-            domainName=domain_name,
-            patchOperations=[
-                {
-                    'op': 'replace',
-                    'path': '/certificateName',
-                    'value': new_cert_name,
-                }
-            ]
-        )
+        api_gateway_domain = self.apigateway_client.get_domain_name(domainName=domain_name)
+        self.apigateway_client.delete_domain_name(domainName=domain_name)
+        self.create_domain_name(domain_name,
+                           certificate_name,
+                           certificate_body,
+                           certificate_private_key,
+                           certificate_chain,
+                           lambda_name,
+                           stage)
 
         return
 

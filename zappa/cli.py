@@ -1430,7 +1430,9 @@ class ZappaCLI(object):
                     domain + "-Zappa-Cert",
                     certificate_body,
                     certificate_private_key,
-                    certificate_chain
+                    certificate_chain,
+                    self.lambda_name,
+                    self.api_stage
                 )
 
             cert_success = True
