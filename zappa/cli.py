@@ -314,7 +314,6 @@ class ZappaCLI(object):
             help="Apply a filter pattern to the logs."
         )
 
-
         ##
         # Undeploy
         ##
@@ -341,6 +340,13 @@ class ZappaCLI(object):
         ##
         subparsers.add_parser(
             'update', parents=[env_parser], help='Update deployed application.'
+        )
+
+        ##
+        # Debug
+        ##
+        subparsers.add_parser(
+            'shell', parents=[env_parser], help='A debug shell with a loaded Zappa object.'
         )
 
         argcomplete.autocomplete(parser)
@@ -482,6 +488,8 @@ class ZappaCLI(object):
             self.status(return_json=self.vargs['json'])
         elif command == 'certify': # pragma: no cover
             self.certify(no_cleanup=self.vargs['no_cleanup'])
+        elif command == 'shell': # pragma: no cover
+            self.shell()
 
     ##
     # The Commands
@@ -1433,6 +1441,16 @@ class ZappaCLI(object):
             click.echo(click.style("Failed", fg="red", bold=True) + " to generate or install certificate! :(")
             click.echo("\n==============\n")
             shamelessly_promote()
+
+    ##
+    # Shell
+    ##
+    def shell(self):
+        """
+        Spawn a debug shell.
+        """
+        self.zappa.shell()
+        return
 
     ##
     # Utility

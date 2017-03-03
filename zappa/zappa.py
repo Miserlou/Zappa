@@ -1474,16 +1474,24 @@ class Zappa(object):
         # Patch operations described here: https://tools.ietf.org/html/rfc6902#section-4
         # and here: http://boto3.readthedocs.io/en/latest/reference/services/apigateway.html#APIGateway.Client.update_domain_name
 
-
         print("Updating domain name!")
 
         new_cert_name = 'Zappa' + str(time.time())
+
+        # response = self.iam_client.upload_server_certificate(
+        #     ServerCertificateName=new_cert_name,
+        #     CertificateBody=certificate_body,
+        #     PrivateKey=certificate_private_key,
+        #     CertificateChain=certificate_chain
+        # )
+
         create_server_certificate_response = self.iam.create_server_certificate(
             ServerCertificateName=new_cert_name,
             CertificateBody=certificate_body,
             PrivateKey=certificate_private_key,
             CertificateChain=certificate_chain
         )
+
         update_domain_name_response = self.apigateway_client.update_domain_name(
             domainName=domain_name,
             patchOperations=[
@@ -2000,6 +2008,13 @@ class Zappa(object):
     ##
     # Utility
     ##
+
+    def shell(self):
+        """
+        Spawn a PDB shell.
+        """
+        import pdb
+        pdb.set_trace()
 
     def load_credentials(self, boto_session=None, profile_name=None):
         """
