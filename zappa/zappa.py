@@ -1423,7 +1423,7 @@ class Zappa(object):
                 'Name': domain_name,
                 'Type': 'A',
                 'AliasTarget': {
-                    'HostedZoneId': 'Z2FDTNDATAQYW2',
+                    'HostedZoneId': 'Z2FDTNDATAQYW2', # This is a magic value that means "CloudFront"
                     'DNSName': dns_name,
                     'EvaluateTargetHealth': False
                 }
@@ -1469,10 +1469,11 @@ class Zappa(object):
                            certificate_private_key,
                            certificate_chain,
                            lambda_name,
-                           stage):
+                           stage,
+                           route53=True):
         """
 
-        This doesn't quite do what it seems like.
+        This doesn't quite do what it seems like it should do.
 
         Unfortunately, there is currently no way to programatically rotate the
         certificate for a currently deployed domain.
@@ -1480,7 +1481,7 @@ class Zappa(object):
         So, what we can do instead is delete the record of it and then recreate it.
 
         The problem is that this causes a period of downtime. This could take up to 40 minutes,
-        in theory, but in practice this seems to only take less than a minute, making it
+        in theory, but in practice this seems to only take (way) less than a minute, making it
         at least somewhat acceptable.
 
         Related issues:     https://github.com/Miserlou/Zappa/issues/590
@@ -1494,18 +1495,16 @@ class Zappa(object):
 
         certificate_name = certificate_name + str(time.time())
 
-        import pdb
-        pdb.set_trace()
-
         api_gateway_domain = self.apigateway_client.get_domain_name(domainName=domain_name)
         self.apigateway_client.delete_domain_name(domainName=domain_name)
-        self.create_domain_name(domain_name,
+        dns_name = self.create_domain_name(domain_name,
                            certificate_name,
                            certificate_body,
                            certificate_private_key,
                            certificate_chain,
                            lambda_name,
                            stage)
+        self.update_route53_records(domain_name, dns_name)
 
         return
 
@@ -1516,7 +1515,7 @@ class Zappa(object):
         Returns the record entry, else None.
 
         """
-        # make sure api gateway domain is present
+        # Make sure api gateway domain is present
         try:
             self.apigateway_client.get_domain_name(domainName=domain_name)
         except Exception:

@@ -1422,7 +1422,7 @@ class ZappaCLI(object):
                 )
                 if self.stage_config.get('route53_enabled', True):
                     self.zappa.update_route53_records(domain, dns_name)
-                print("Created a new domain name. Please note that it can take up to 40 minutes for this domain to be "
+                print("Created a new domain name with supplied certificate. Please note that it can take up to 40 minutes for this domain to be "
                       "created and propagated through AWS, but it requires no further work on your part.")
             else:
                 self.zappa.update_domain_name(
@@ -1432,7 +1432,8 @@ class ZappaCLI(object):
                     certificate_private_key,
                     certificate_chain,
                     self.lambda_name,
-                    self.api_stage
+                    self.api_stage,
+                    self.stage_config.get('route53_enabled', True)
                 )
 
             cert_success = True
