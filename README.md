@@ -765,6 +765,7 @@ If you only need to add a few permissions to your execution policy, you can use 
     },
     ...
 }
+```
 
 #### Globally Available Server-less Architectures
 
