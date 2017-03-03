@@ -1453,6 +1453,7 @@ class ZappaCLI(object):
         """
         Spawn a debug shell.
         """
+        click.echo(click.style("NOTICE!", fg="yellow", bold=True) + " This is a " + click.style("local", fg="green", bold=True) + " shell, inside a " + click.style("Zappa", bold=True) + " object!")
         self.zappa.shell()
         return
 
