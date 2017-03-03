@@ -229,14 +229,14 @@ See the [example](example/) for more details.
 
 Similarly, you can have your functions execute in response to events that happen in the AWS ecosystem, such as S3 uploads, DynamoDB entries, Kinesis streams, and SNS messages.
 
-In your *zappa_settings.json* file, define your [event sources](http://docs.aws.amazon.com/lambda/latest/dg/invoking-lambda-function.html) and the function you wish to execute. For instance, this will execute `your_module.your_function` in response to new objects in your `my-bucket` S3 bucket. Note that `your_function` must accept `event` and `context` parameters.
+In your *zappa_settings.json* file, define your [event sources](http://docs.aws.amazon.com/lambda/latest/dg/invoking-lambda-function.html) and the function you wish to execute. For instance, this will execute `your_module.process_upload_function` in response to new objects in your `my-bucket` S3 bucket. Note that `process_upload_function` must accept `event` and `context` parameters.
 
 ```javascript
 {
     "production": {
        ...
        "events": [{
-            "function": "your_module.your_function",
+            "function": "your_module.process_upload_function",
             "event_source": {
                   "arn":  "arn:aws:s3:::my-bucket",
                   "events": [
@@ -254,6 +254,27 @@ And then:
     $ zappa schedule production
 
 And now your function will execute every time a new upload appears in your bucket!
+
+To access the key's information in your application context, you'll want `process_upload_function` to look something like this:
+
+```python
+import boto3
+s3_client = boto3.client('s3')
+
+def process_upload_function(event, context):
+    """
+    Process a file upload.
+    """
+
+    # Get the uploaded file's information
+    bucket = event['Records'][0]['s3']['bucket']['name'] # Will be `my-bucket`
+    key = event['Records'][0]['s3']['object']['key'] # Will be the file path of whatever file was uploaded.
+
+    # Get the bytes from S3
+    s3_client.download_file(bucket, key, '/tmp/' + key) # Download this file to writable tmp space.
+    file_bytes = open('/tmp/' + key).read()
+```
+
 
 Similarly, for a [Simple Notification Service](https://aws.amazon.com/sns/) event:
 

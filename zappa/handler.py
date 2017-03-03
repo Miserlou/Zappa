@@ -117,14 +117,19 @@ class LambdaHandler(object):
             if project_zip_path:
                 self.load_remote_project_zip(project_zip_path)
 
-            # Django gets special treatment.
-            if not self.settings.DJANGO_SETTINGS:
+            # This is a non-WSGI application
+            if not hasattr(self.settings, 'APP_MODULE'):
+                self.app_module = None
+                wsgi_app_function = None
+            # This is probably a normal WSGI app
+            elif not self.settings.DJANGO_SETTINGS:
                 # The app module
                 self.app_module = importlib.import_module(self.settings.APP_MODULE)
 
                 # The application
                 wsgi_app_function = getattr(self.app_module, self.settings.APP_FUNCTION)
                 self.trailing_slash = False
+            # Django gets special treatment.
             else:
 
                 try:  # Support both for tests
