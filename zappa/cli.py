@@ -53,6 +53,7 @@ CUSTOM_SETTINGS = [
     'delete_local_zip',
     'delete_s3_zip',
     'exclude',
+    'extra_permissions',
     'role_name',
     'touch',
 ]

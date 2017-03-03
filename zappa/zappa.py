@@ -181,6 +181,7 @@ class Zappa(object):
         'ANY'
     ]
     role_name = "ZappaLambdaExecution"
+    extra_permissions = None
     assume_policy = ASSUME_POLICY
     attach_policy = ATTACH_POLICY
     cloudwatch_log_levels = ['OFF', 'ERROR', 'INFO']
@@ -1504,7 +1505,8 @@ class Zappa(object):
                            certificate_chain,
                            lambda_name,
                            stage)
-        self.update_route53_records(domain_name, dns_name)
+        if route53:
+            self.update_route53_records(domain_name, dns_name)
 
         return
 
@@ -1569,6 +1571,11 @@ class Zappa(object):
         """
         attach_policy_obj = json.loads(self.attach_policy)
         assume_policy_obj = json.loads(self.assume_policy)
+
+        if self.extra_permissions:
+            for permission in self.extra_permissions:
+                attach_policy_obj['Statement'].append(dict(permission))
+
         updated = False
 
         # Create the role if needed

@@ -474,6 +474,11 @@ to change Zappa's behavior. Use these at your own risk!
         "exception_handler": "your_module.report_exception", // function that will be invoked in case Zappa sees an unhandled exception raised from your code
         "exclude": ["*.gz", "*.rar"], // A list of regex patterns to exclude from the archive. To exclude boto3 and botocore (available in an older version on Lambda), add "boto3*" and "botocore*".
         "extends": "stage_name", // Duplicate and extend another stage's settings. For example, `dev-asia` could extend from `dev-common` with a different `s3_bucket` value.
+        "extra_permissions": [{ // Attach any extra permissions to this policy. Default None
+            "Effect": "Allow",
+            "Action": ["rekognition:*"], // AWS Service ARN
+            "Resource": "*"
+        }],
         "iam_authorization": true, // optional, use IAM to require request signing. Default false. Note that enabling this will override the authorizer configuration.
         "authorizer": {
             "function": "your_module.your_auth_function", // Local function to run for token validation. For more information about the function see below.
@@ -745,6 +750,21 @@ To manually define the permissions policy of your Zappa execution role, you must
 ```
 
 Ongoing discussion about the minimum policy requirements necessary for a Zappa deployment [can be found here](https://github.com/Miserlou/Zappa/issues/244).
+
+If you only need to add a few permissions to your execution policy, you can use the `extra_permissions` setting like so:
+
+```javascript
+{
+    "dev": {
+        ...
+        "extra_permissions": [{ // Attach any extra permissions to this policy.
+            "Effect": "Allow",
+            "Action": ["rekognition:*"], // AWS Service ARN
+            "Resource": "*"
+        }]
+    },
+    ...
+}
 
 #### Globally Available Server-less Architectures
 
