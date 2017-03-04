@@ -1575,6 +1575,7 @@ class Zappa(object):
         if self.extra_permissions:
             for permission in self.extra_permissions:
                 attach_policy_obj['Statement'].append(dict(permission))
+            self.attach_policy = json.dumps(attach_policy_obj)
 
         updated = False
 
@@ -1597,6 +1598,7 @@ class Zappa(object):
         try:
             if policy.policy_document != attach_policy_obj:
                 print("Updating zappa-permissions policy on " + self.role_name + " IAM Role.")
+
                 policy.put(PolicyDocument=self.attach_policy)
                 updated = True
 
