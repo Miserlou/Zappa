@@ -1348,9 +1348,8 @@ class ZappaCLI(object):
         Register or update a domain certificate for this env.
         """
 
-        domain = self.stage_config.get('domain')
         if not no_confirm: # pragma: no cover
-            if not manual and self.zappa.get_domain_name(domain):
+            if not manual and self.zappa.get_domain_name(self.domain):
                 click.echo(click.style("Warning!", fg="red", bold=True) + " If you have already certified this domain and are calling certify again, you may incur downtime.")
                 click.echo("You can avoid this downtime by calling certify with " + click.style("--manual", bold=True) + " and rotating your certificate yourself through the AWS console.")
             confirm = raw_input("Are you sure you want to certify? [y/n] ")
@@ -1378,7 +1377,7 @@ class ZappaCLI(object):
         cert_key_location = self.stage_config.get('certificate_key', None)
         cert_chain_location = self.stage_config.get('certificate_chain', None)
 
-        if not domain:
+        if not self.domain:
             raise ClickException("Can't certify a domain without " + click.style("domain", fg="red", bold=True) + " configured!")
 
         if not cert_location:
@@ -1408,7 +1407,7 @@ class ZappaCLI(object):
                 certificate_chain = f.read()
 
 
-        click.echo("Certifying domain " + click.style(domain, fg="green", bold=True) + "..")
+        click.echo("Certifying domain " + click.style(self.domain, fg="green", bold=True) + "..")
 
         # Get cert and update domain.
         if not cert_location:
@@ -1417,7 +1416,7 @@ class ZappaCLI(object):
                     self.zappa,
                     self.lambda_name,
                     self.api_stage,
-                    domain,
+                    self.domain,
                     clean_up,
                     manual
                 )
@@ -1431,10 +1430,10 @@ class ZappaCLI(object):
                 cleanup()
 
         else:
-            if not self.zappa.get_domain_name(domain):
+            if not self.zappa.get_domain_name(self.domain):
                 dns_name = self.zappa.create_domain_name(
-                    domain,
-                    domain + "-Zappa-Cert",
+                    self.domain,
+                    self.domain + "-Zappa-Cert",
                     certificate_body,
                     certificate_private_key,
                     certificate_chain,
@@ -1442,13 +1441,13 @@ class ZappaCLI(object):
                     self.api_stage
                 )
                 if self.stage_config.get('route53_enabled', True):
-                    self.zappa.update_route53_records(domain, dns_name)
+                    self.zappa.update_route53_records(self.domain, dns_name)
                 print("Created a new domain name with supplied certificate. Please note that it can take up to 40 minutes for this domain to be "
                       "created and propagated through AWS, but it requires no further work on your part.")
             else:
                 self.zappa.update_domain_name(
-                    domain,
-                    domain + "-Zappa-Cert",
+                    self.domain,
+                    self.domain + "-Zappa-Cert",
                     certificate_body,
                     certificate_private_key,
                     certificate_chain,
