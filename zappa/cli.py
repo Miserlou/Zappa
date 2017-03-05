@@ -1348,10 +1348,7 @@ class ZappaCLI(object):
         Register or update a domain certificate for this env.
         """
 
-        # Get install account_key to /tmp/account_key.pem
-        account_key_location = self.stage_config.get('lets_encrypt_key')
         domain = self.stage_config.get('domain')
-
         if not no_confirm: # pragma: no cover
             if not manual and self.zappa.get_domain_name(domain):
                 click.echo(click.style("Warning!", fg="red", bold=True) + " If you have already certified this domain and are calling certify again, you may incur downtime.")
@@ -1375,6 +1372,8 @@ class ZappaCLI(object):
             raise ClickException("This application " + click.style("isn't deployed yet", fg="red") +
                                  " - did you mean to call " + click.style("deploy", bold=True) + "?")
 
+        # Get install account_key to /tmp/account_key.pem
+        account_key_location = self.stage_config.get('lets_encrypt_key')
         cert_location = self.stage_config.get('certificate', None)
         cert_key_location = self.stage_config.get('certificate_key', None)
         cert_chain_location = self.stage_config.get('certificate_chain', None)
