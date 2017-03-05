@@ -206,6 +206,14 @@ class ZappaCLI(object):
             help=("Don't remove certificate files from /tmp during certify."
                   " Dangerous.")
         )
+        cert_parser.add_argument(
+            '--manual', action='store_true',
+            help=("Gets new Let's Encrypt certificates, but prints them to console."
+                "Does not update API Gateway domains.")
+        )
+        cert_parser.add_argument(
+            '-y', '--yes', action='store_true', help='Auto confirm yes.'
+        )
 
         ##
         # Deploy
@@ -475,12 +483,12 @@ class ZappaCLI(object):
                 non_http=self.vargs['non_http'],
                 since=self.vargs['since'],
                 filter_pattern=self.vargs['filter'],
-                )
+            )
         elif command == 'undeploy': # pragma: no cover
             self.undeploy(
-                noconfirm=self.vargs['yes'],
+                no_confirm=self.vargs['yes'],
                 remove_logs=self.vargs['remove_logs']
-                )
+            )
         elif command == 'schedule': # pragma: no cover
             self.schedule()
         elif command == 'unschedule': # pragma: no cover
@@ -488,7 +496,11 @@ class ZappaCLI(object):
         elif command == 'status': # pragma: no cover
             self.status(return_json=self.vargs['json'])
         elif command == 'certify': # pragma: no cover
-            self.certify(no_cleanup=self.vargs['no_cleanup'])
+            self.certify(
+                no_cleanup=self.vargs['no_cleanup'],
+                no_confirm=self.vargs['yes'],
+                manual=self.vargs['manual']
+            )
         elif command == 'shell': # pragma: no cover
             self.shell()
 
@@ -826,12 +838,12 @@ class ZappaCLI(object):
             except SystemExit:
                 os._exit(130)
 
-    def undeploy(self, noconfirm=False, remove_logs=False):
+    def undeploy(self, no_confirm=False, remove_logs=False):
         """
         Tear down an exiting deployment.
         """
 
-        if not noconfirm: # pragma: no cover
+        if not no_confirm: # pragma: no cover
             confirm = raw_input("Are you sure you want to undeploy? [y/n] ")
             if confirm != 'y':
                 return
@@ -1331,10 +1343,22 @@ class ZappaCLI(object):
 
         return
 
-    def certify(self, no_cleanup=False):
+    def certify(self, no_cleanup=False, no_confirm=True, manual=False):
         """
         Register or update a domain certificate for this env.
         """
+
+        # Get install account_key to /tmp/account_key.pem
+        account_key_location = self.stage_config.get('lets_encrypt_key')
+        domain = self.stage_config.get('domain')
+
+        if not no_confirm: # pragma: no cover
+            if not manual and self.zappa.get_domain_name(domain):
+                click.echo(click.style("Warning!", fg="red", bold=True) + " If you have already certified this domain and are calling certify again, you may incur downtime.")
+                click.echo("You can avoid this downtime by calling certify with " + click.style("--manual", bold=True) + " and rotating your certificate yourself through the AWS console.")
+            confirm = raw_input("Are you sure you want to certify? [y/n] ")
+            if confirm != 'y':
+                return
 
         # Give warning on --no-cleanup
         if no_cleanup:
@@ -1350,10 +1374,6 @@ class ZappaCLI(object):
         if len(deployed_versions) == 0:
             raise ClickException("This application " + click.style("isn't deployed yet", fg="red") +
                                  " - did you mean to call " + click.style("deploy", bold=True) + "?")
-
-        # Get install account_key to /tmp/account_key.pem
-        account_key_location = self.stage_config.get('lets_encrypt_key')
-        domain = self.stage_config.get('domain')
 
         cert_location = self.stage_config.get('certificate', None)
         cert_key_location = self.stage_config.get('certificate_key', None)
@@ -1399,7 +1419,8 @@ class ZappaCLI(object):
                     self.lambda_name,
                     self.api_stage,
                     domain,
-                    clean_up
+                    clean_up,
+                    manual
                 )
 
             # Deliberately undocumented feature (for now, at least.)

@@ -40,10 +40,18 @@ LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())
 
 
-def get_cert_and_update_domain(zappa_instance, lambda_name, api_stage, domain=None, clean_up=True):
+def get_cert_and_update_domain(
+                                zappa_instance,
+                                lambda_name,
+                                api_stage,
+                                domain=None,
+                                clean_up=True,
+                                manual=False,
+                            ):
     """
     Main cert installer path.
     """
+
     try:
         create_domain_key()
         create_domain_csr(domain)
@@ -59,29 +67,38 @@ def get_cert_and_update_domain(zappa_instance, lambda_name, api_stage, domain=No
         with open('/tmp/intermediate.pem') as f:
             certificate_chain = f.read()
 
-        if domain:
-            if not zappa_instance.get_domain_name(domain):
+        if not manual:
+            if domain:
+                if not zappa_instance.get_domain_name(domain):
+                    zappa_instance.create_domain_name(
+                        domain,
+                        domain + "-Zappa-LE-Cert",
+                        certificate_body,
+                        certificate_private_key,
+                        certificate_chain,
+                        lambda_name,
+                        api_stage
+                    )
+                    print("Created a new domain name. Please note that it can take up to 40 minutes for this domain to be created and propagated through AWS, but it requires no further work on your part.")
+                else:
+                    zappa_instance.update_domain_name(
+                        domain,
+                        domain + "-Zappa-LE-Cert",
+                        certificate_body,
+                        certificate_private_key,
+                        certificate_chain,
+                        lambda_name,
+                        api_stage
+                    )
+        else:
+            print("Cerificate body:\n")
+            print(certificate_body)
 
-                zappa_instance.create_domain_name(
-                    domain,
-                    domain + "-Zappa-LE-Cert",
-                    certificate_body,
-                    certificate_private_key,
-                    certificate_chain,
-                    lambda_name,
-                    api_stage
-                )
-                print("Created a new domain name. Please note that it can take up to 40 minutes for this domain to be created and propagated through AWS, but it requires no further work on your part.")
-            else:
-                zappa_instance.update_domain_name(
-                    domain,
-                    domain + "-Zappa-LE-Cert",
-                    certificate_body,
-                    certificate_private_key,
-                    certificate_chain,
-                    lambda_name,
-                    api_stage
-                )
+            print("\nCerificate private key:\n")
+            print(certificate_private_key)
+
+            print("\nCerificate chain:\n")
+            print(certificate_chain)
 
     except Exception as e:
         print(e)
