@@ -1073,6 +1073,7 @@ class TestZappa(unittest.TestCase):
             zappa_cli.zappa.function_versions = ["$LATEST"]
             zappa_cli.api_stage = "stage"
             zappa_cli.zappa_settings = {"stage": {}}
+            zappa_cli.load_settings('test_settings.json')
 
             try:
                 zappa_cli.certify()
