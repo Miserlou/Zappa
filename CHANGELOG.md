@@ -1,5 +1,12 @@
 # Zappa Changelog
 
+## 0.38.0
+* Add confirm to `certify`
+* Add `--manual` to `--certify`
+* Fix `certify` for existing domains
+* Add `extra_permissions` setting
+* Add `shell` command
+
 ## 0.37.2
 * Revert to Kappa 0.6.0 #684 and others
 * Add binary support for more HTTP methods, #696
