@@ -118,7 +118,7 @@ class LambdaHandler(object):
                 self.load_remote_project_zip(project_zip_path)
 
             # This is a non-WSGI application
-            if not hasattr(self.settings, 'APP_MODULE'):
+            if not hasattr(self.settings, 'APP_MODULE') and not hasattr(self.settings, 'DJANGO_SETTINGS'):
                 self.app_module = None
                 wsgi_app_function = None
             # This is probably a normal WSGI app
