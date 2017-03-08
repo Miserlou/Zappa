@@ -1,5 +1,8 @@
 # Zappa Changelog
 
+## 0.38.1
+* Hotfix for broken Django deploys
+
 ## 0.38.0
 * Add confirm to `certify`
 * Add `--manual` to `--certify`
