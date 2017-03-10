@@ -168,6 +168,9 @@ class LambdaHandler(object):
 
         # Add to project path
         sys.path.insert(0, project_folder)
+        
+        # Change working directory to project folder
+        os.chdir(project_folder)
         return True
 
     def load_remote_settings(self, remote_bucket, remote_file):
