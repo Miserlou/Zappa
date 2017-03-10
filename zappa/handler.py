@@ -170,6 +170,7 @@ class LambdaHandler(object):
         sys.path.insert(0, project_folder)
         
         # Change working directory to project folder
+        # Related: https://github.com/Miserlou/Zappa/issues/702
         os.chdir(project_folder)
         return True
 
