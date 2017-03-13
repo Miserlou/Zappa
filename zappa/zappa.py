@@ -1390,10 +1390,10 @@ class Zappa(object):
                            certificate_private_key=None,
                            certificate_chain=None,
                            certificate_arn=None,
-                           lambda_name,
-                           stage):
+                           lambda_name=None,
+                           stage=None):
         """
-        Create the API GW domain and returns the resulting dns_name
+        Creates the API GW domain and returns the resulting DNS name.
         """
 
         # This is a Let's Encrypt or custom certificate
@@ -1484,8 +1484,8 @@ class Zappa(object):
                            certificate_private_key=None,
                            certificate_chain=None,
                            certificate_arn=None,
-                           lambda_name,
-                           stage,
+                           lambda_name=None,
+                           stage=None,
                            route53=True):
         """
 
