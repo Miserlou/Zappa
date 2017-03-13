@@ -1,5 +1,10 @@
 # Zappa Changelog
 
+## 0.39.0
+* Add `certificate_arn` setting, support for AWS Certificate Manager (#710)
+* Fix zip permissions when building on Windows (#714)
+* Change the active working directory to `/tmp` when using the slim handler so that relative filepaths work. (#711)
+
 ## 0.38.1
 * Hotfix for broken Django deploys
 
