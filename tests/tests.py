@@ -1034,6 +1034,7 @@ class TestZappa(unittest.TestCase):
 
         try:
             zappa_cli = ZappaCLI()
+            zappa_cli.domain = "test.example.com"
             try:
                 zappa_cli.certify(no_cleanup=True)
             except AttributeError:
