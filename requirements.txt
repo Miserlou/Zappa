@@ -6,7 +6,7 @@ docutils>=0.12
 durationpy==0.3
 futures==3.0.5
 hjson==2.0.2
-jmespath==0.9.1
+jmespath==0.9.2
 kappa==0.6.0
 lambda-packages==0.14.2
 python-dateutil==2.6.0
