@@ -448,7 +448,7 @@ to change Zappa's behavior. Use these at your own risk!
         "certificate_key": "my_key.key", // SSL key file location. Used to manually certify a custom domain
         "certificate_chain": "my_cert_chain.pem", // SSL certificate chain file location. Used to manually certify a custom domain
         "certificate_arn": "arn:aws:acm:us-east-1:1234512345:certificate/aaaa-bbb-cccc-dddd", // ACM certificate ARN.
-        "cloudwatch_log_level": "OFF", // Enables/configures a level of logging for the given staging. Available options: "OFF", "INFO", "ERROR", default "OFF".
+        "cloudwatch_log_level": "OFF", // Enables/configures a level of logging for the given staging. Available options: "OFF", "INFO", "ERROR", default "OFF". C
         "cloudwatch_data_trace": false, // Logs all data about received events. Default false.
         "cloudwatch_metrics_enabled": false, // Additional metrics for the API Gateway. Default false.
         "cors": true, // Enable Cross-Origin Resource Sharing. Default false. If true, simulates the "Enable CORS" button on the API Gateway console. Can also be a dictionary specifying lists of "allowed_headers", "allowed_methods", and string of "allowed_origin"
@@ -650,10 +650,10 @@ However, it's now far easier to use Route 53-based DNS authentication, which wil
 ##### Deploying to a Domain With AWS Certificate Manager
 
 1. Verify your domain in the AWS Ceriticate Manager console.
-2) Request a certificate for your domain or subdomain (`sub.yourdomain.tld`), or request a wildcard domain `*.yourdomain.tld`)
-3) Copy the entire ARN of that certificate and place it in a setting called `certificate_arn`.
-4) Set your desired domain in the `domain` setting.
-5) Call `$ zappa certify` to create and associate the API Gateway distribution using that ceritficate.
+2. In the console, request a certificate for your domain or subdomain (`sub.yourdomain.tld`), or request a wildcard domain (`*.yourdomain.tld`).
+3. Copy the entire ARN of that certificate and place it in the Zappa setting `certificate_arn`.
+4. Set your desired domain in the `domain` setting.
+5. Call `$ zappa certify` to create and associate the API Gateway distribution using that ceritficate.
 
 #### Setting Environment Variables
 
