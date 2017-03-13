@@ -48,6 +48,7 @@
       - [Deploying to a Domain With a Let's Encrypt Certificate (DNS Auth)](#deploying-to-a-domain-with-a-lets-encrypt-certificate-dns-auth)
       - [Deploying to a Domain With a Let's Encrypt Certificate (HTTP Auth)](#deploying-to-a-domain-with-a-lets-encrypt-certificate-http-auth)
       - [Deploying to a Domain With Your Own SSL Certs](#deploying-to-a-domain-with-your-own-ssl-certs)
+      - [Deploying to a Domain With AWS Certificate Manager](#deploying-to-a-domain-with-aws-certificate-manager)
     - [Setting Environment Variables](#setting-environment-variables)
       - [Local Environment Variables](#local-environment-variables)
       - [Remote Environment Variables](#remote-environment-variables)
@@ -446,6 +447,7 @@ to change Zappa's behavior. Use these at your own risk!
         "certificate": "my_cert.crt", // SSL certificate file location. Used to manually certify a custom domain
         "certificate_key": "my_key.key", // SSL key file location. Used to manually certify a custom domain
         "certificate_chain": "my_cert_chain.pem", // SSL certificate chain file location. Used to manually certify a custom domain
+        "certificate_arn": "arn:aws:acm:us-east-1:1234512345:certificate/aaaa-bbb-cccc-dddd", // ACM certificate ARN.
         "cloudwatch_log_level": "OFF", // Enables/configures a level of logging for the given staging. Available options: "OFF", "INFO", "ERROR", default "OFF".
         "cloudwatch_data_trace": false, // Logs all data about received events. Default false.
         "cloudwatch_metrics_enabled": false, // Additional metrics for the API Gateway. Default false.
@@ -644,6 +646,14 @@ However, it's now far easier to use Route 53-based DNS authentication, which wil
 4. Set `route53_enabled` to `false` if you plan on using your own DNS provider, and not an AWS Route53 Hosted zone.
 5. Deploy or update your app using Zappa
 6. Run `$ zappa certify` to upload your certificates and register the custom domain name with your API gateway.
+
+##### Deploying to a Domain With AWS Certificate Manager
+
+1. Verify your domain in the AWS Ceriticate Manager console.
+2) Request a certificate for your domain or subdomain (`sub.yourdomain.tld`), or request a wildcard domain `*.yourdomain.tld`)
+3) Copy the entire ARN of that certificate and place it in a setting called `certificate_arn`.
+4) Set your desired domain in the `domain` setting.
+5) Call `$ zappa certify` to create and associate the API Gateway distribution using that ceritficate.
 
 #### Setting Environment Variables
 
