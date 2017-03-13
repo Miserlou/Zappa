@@ -516,6 +516,7 @@ class Zappa(object):
                 os.chmod(os.path.join(root, filename),  0o755)
 
                 # Actually put the file into the proper place in the zip
+                # Related: https://github.com/Miserlou/Zappa/pull/716
                 zipi = zipfile.ZipInfo(os.path.join(root.replace(temp_project_path, '').lstrip(os.sep), filename))
                 zipi.create_system = 3
                 zipi.external_attr = 0o755 << 16L
