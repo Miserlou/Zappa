@@ -30,7 +30,7 @@
     - [Tailing Logs](#tailing-logs)
     - [Remote Function Invocation](#remote-function-invocation)
     - [Django Management Commands](#django-management-commands)
-    - [Let's Encrypt SSL Domain Certification and Installation](#lets-encrypt-ssl-domain-certification-and-installation)
+    - [SSL Certification](#ssl-certification)
 - [Advanced Settings](#advanced-settings)
     - [YAML Settings](#yaml-settings)
 - [Advanced Usage](#advanced-usage)
@@ -408,11 +408,13 @@ Commands which require direct user input, such as `createsuperuser`, should be [
 
 _(Please note that commands which take over 30 seconds to execute may time-out. See [this related issue](https://github.com/Miserlou/Zappa/issues/205#issuecomment-236391248) for a work-around.)_
 
-#### Let's Encrypt SSL Domain Certification and Installation
+#### SSL Certification
 
-If you want to use Zappa applications on a custom domain or subdomain, you'll need to supply a valid SSL certificate. Fortunately for you, Zappa can automatically create and install free valid SSL certificates using Let's Encrypt!
+If you want to use Zappa applications on a custom domain or subdomain, you'll need to supply a valid SSL certificate.
 
-If your domain is located within an AWS Route 53 Hosted Zone and you've defined `domain` and `lets_encrypt_key` (ex: `openssl genrsa 2048 > account.key`) settings, all you need to do is:
+Zappa gives you three options here: Custom SSL certificates, AWS Certificate Manager-generated certificates, and Let's Encrypt certificates.
+
+If your domain is located within an AWS Route 53 Hosted Zone and you've defined settings for `domain` and either `certificate`, `certificate_arn` or `lets_encrypt_key` (ex: `openssl genrsa 2048 > account.key`), all you need to do is:
 
     $ zappa certify production
 
@@ -420,7 +422,7 @@ And your domain will be verified, certified and registered!
 
 Please note that this can take around 45 minutes to take effect. You can avoid this by using the `certify --manual` and then copying the values presented into the AWS Console.
 
-More detailed instructions are available [in this handy guide](https://github.com/Miserlou/Zappa/blob/master/docs/domain_with_free_ssl_dns.md).
+More detailed instructions are available [in this handy guide](https://github.com/Miserlou/Zappa/blob/master/docs/domain_with_free_ssl_dns.md) and lower down in this README file.
 
 ## Advanced Settings
 
