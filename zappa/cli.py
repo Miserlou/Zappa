@@ -1381,6 +1381,11 @@ class ZappaCLI(object):
         cert_chain_location = self.stage_config.get('certificate_chain', None)
         cert_arn = self.stage_config.get('certificate_arn', None)
 
+        # These are sensitive
+        certificate_body = None
+        certificate_private_key = None
+        certificate_chain = None
+
         # Prepare for custom Let's Encrypt
         if not cert_location and not cert_arn:
             if not account_key_location:
@@ -1397,7 +1402,7 @@ class ZappaCLI(object):
                 copyfile(account_key_location, '/tmp/account.key')
 
         # Prepare for Custom SSL
-        elif not lets_encrypt_key and not cert_arn:
+        elif not account_key_location and not cert_arn:
             if not cert_location or not cert_key_location or not cert_chain_location:
                 raise ClickException("Can't certify a domain without " +
                                      click.style("certificate, certificate_key and certificate_chain", fg="red", bold=True) + " configured!")
