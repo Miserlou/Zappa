@@ -515,9 +515,12 @@ class Zappa(object):
                 # Related: https://github.com/Miserlou/Zappa/issues/682
                 os.chmod(os.path.join(root, filename),  0o755)
 
-                # Actually the file into the proper place in the zip
-                zipf.write(os.path.join(root, filename), os.path.join(root.replace(temp_project_path, ''), filename))
-                zipf.external_attr = 0755 << 16L
+                # Actually put the file into the proper place in the zip
+                zipi = zipfile.ZipInfo(os.path.join(root.replace(temp_project_path, '').lstrip(os.sep), filename))
+                zipi.create_system = 3
+                zipi.external_attr = 0o755 << 16L
+                with open(os.path.join(root, filename), 'rb') as f:
+                    zipf.writestr(zipi, f.read(), compression_method)
 
             if '__init__.py' not in files:
                 tmp_init = os.path.join(temp_project_path, '__init__.py')
