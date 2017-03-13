@@ -1348,6 +1348,9 @@ class ZappaCLI(object):
         Register or update a domain certificate for this env.
         """
 
+        if not self.domain:
+            raise ClickException("Can't certify a domain without " + click.style("domain", fg="red", bold=True) + " configured!")
+
         if not no_confirm: # pragma: no cover
             if not manual and self.zappa.get_domain_name(self.domain):
                 click.echo(click.style("Warning!", fg="red", bold=True) + " If you have already certified this domain and are calling certify again, you may incur downtime.")
@@ -1371,27 +1374,30 @@ class ZappaCLI(object):
             raise ClickException("This application " + click.style("isn't deployed yet", fg="red") +
                                  " - did you mean to call " + click.style("deploy", bold=True) + "?")
 
-        # Get install account_key to /tmp/account_key.pem
-        account_key_location = self.stage_config.get('lets_encrypt_key')
+
+        account_key_location = self.stage_config.get('lets_encrypt_key', None)
         cert_location = self.stage_config.get('certificate', None)
         cert_key_location = self.stage_config.get('certificate_key', None)
         cert_chain_location = self.stage_config.get('certificate_chain', None)
+        cert_arn = self.stage_config.get('certificate_arn', None)
 
-        if not self.domain:
-            raise ClickException("Can't certify a domain without " + click.style("domain", fg="red", bold=True) + " configured!")
-
-        if not cert_location:
+        # Prepare for custom Let's Encrypt
+        if not cert_location and not cert_arn:
             if not account_key_location:
                 raise ClickException("Can't certify a domain without " + click.style("lets_encrypt_key", fg="red", bold=True) +
-                                     " or " + click.style("certificate", fg="red", bold=True) + " configured!")
+                                     " or " + click.style("certificate", fg="red", bold=True)+
+                                     " or " + click.style("certificate_arn", fg="red", bold=True) + " configured!")
 
+            # Get install account_key to /tmp/account_key.pem
             if account_key_location.startswith('s3://'):
                 bucket, key_name = parse_s3_url(account_key_location)
                 self.zappa.s3_client.download_file(bucket, key_name, '/tmp/account.key')
             else:
                 from shutil import copyfile
                 copyfile(account_key_location, '/tmp/account.key')
-        else:
+
+        # Prepare for Custom SSL
+        elif not lets_encrypt_key and not cert_arn:
             if not cert_location or not cert_key_location or not cert_chain_location:
                 raise ClickException("Can't certify a domain without " +
                                      click.style("certificate, certificate_key and certificate_chain", fg="red", bold=True) + " configured!")
@@ -1410,7 +1416,9 @@ class ZappaCLI(object):
         click.echo("Certifying domain " + click.style(self.domain, fg="green", bold=True) + "..")
 
         # Get cert and update domain.
-        if not cert_location:
+
+        # Let's Encrypt
+        if not cert_location and not cert_arn:
             from letsencrypt import get_cert_and_update_domain, cleanup
             cert_success = get_cert_and_update_domain(
                     self.zappa,
@@ -1429,6 +1437,7 @@ class ZappaCLI(object):
             if clean_up:
                 cleanup()
 
+        # Custom SSL / ACM
         else:
             if not self.zappa.get_domain_name(self.domain):
                 dns_name = self.zappa.create_domain_name(
@@ -1437,6 +1446,7 @@ class ZappaCLI(object):
                     certificate_body,
                     certificate_private_key,
                     certificate_chain,
+                    cert_arn,
                     self.lambda_name,
                     self.api_stage
                 )
@@ -1451,6 +1461,7 @@ class ZappaCLI(object):
                     certificate_body,
                     certificate_private_key,
                     certificate_chain,
+                    cert_arn,
                     self.lambda_name,
                     self.api_stage,
                     self.stage_config.get('route53_enabled', True)

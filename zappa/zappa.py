@@ -1386,22 +1386,32 @@ class Zappa(object):
     def create_domain_name(self,
                            domain_name,
                            certificate_name,
-                           certificate_body,
-                           certificate_private_key,
-                           certificate_chain,
+                           certificate_body=None,
+                           certificate_private_key=None,
+                           certificate_chain=None,
+                           certificate_arn=None,
                            lambda_name,
                            stage):
         """
         Create the API GW domain and returns the resulting dns_name
         """
 
-        agw_response = self.apigateway_client.create_domain_name(
-            domainName=domain_name,
-            certificateName=certificate_name,
-            certificateBody=certificate_body,
-            certificatePrivateKey=certificate_private_key,
-            certificateChain=certificate_chain
-        )
+        # This is a Let's Encrypt or custom certificate
+        if not certificate_arn:
+            agw_response = self.apigateway_client.create_domain_name(
+                domainName=domain_name,
+                certificateName=certificate_name,
+                certificateBody=certificate_body,
+                certificatePrivateKey=certificate_private_key,
+                certificateChain=certificate_chain
+            )
+        # This is an AWS ACM-hosted Certificate
+        else:
+            agw_response = self.apigateway_client.create_domain_name(
+                domainName=domain_name,
+                certificateName=certificate_name,
+                certificateArn=certificate_arn
+            )
 
         api_id = self.get_api_id(lambda_name)
         if not api_id:
@@ -1469,10 +1479,11 @@ class Zappa(object):
 
     def update_domain_name(self,
                            domain_name,
-                           certificate_name,
-                           certificate_body,
-                           certificate_private_key,
-                           certificate_chain,
+                           certificate_name=None,
+                           certificate_body=None,
+                           certificate_private_key=None,
+                           certificate_chain=None,
+                           certificate_arn=None,
                            lambda_name,
                            stage,
                            route53=True):
@@ -1507,6 +1518,7 @@ class Zappa(object):
                            certificate_body,
                            certificate_private_key,
                            certificate_chain,
+                           certificate_arn,
                            lambda_name,
                            stage)
         if route53:
