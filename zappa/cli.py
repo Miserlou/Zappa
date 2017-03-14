@@ -2120,7 +2120,12 @@ class ZappaCLI(object):
 
     def check_venv(self):
         """ Ensure we're inside a virtualenv. """
-        venv = self.zappa.get_current_venv()
+        if self.zappa:
+            venv = self.zappa.get_current_venv()
+        else:
+            # Just for `init`, when we don't have settings yet.
+            temp_zappa = Zappa()
+            venv = temp_zappa.get_current_venv()
         if not venv:
             raise ClickException(
                 click.style("Zappa", bold=True) + " requires an " + click.style("active virtual environment", bold=True, fg="red") + "!\n" +
