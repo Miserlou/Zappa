@@ -53,6 +53,7 @@ CUSTOM_SETTINGS = [
     'delete_local_zip',
     'delete_s3_zip',
     'exclude',
+    'extra_permissions',
     'role_name',
     'touch',
 ]
@@ -206,6 +207,14 @@ class ZappaCLI(object):
             help=("Don't remove certificate files from /tmp during certify."
                   " Dangerous.")
         )
+        cert_parser.add_argument(
+            '--manual', action='store_true',
+            help=("Gets new Let's Encrypt certificates, but prints them to console."
+                "Does not update API Gateway domains.")
+        )
+        cert_parser.add_argument(
+            '-y', '--yes', action='store_true', help='Auto confirm yes.'
+        )
 
         ##
         # Deploy
@@ -315,7 +324,6 @@ class ZappaCLI(object):
             help="Apply a filter pattern to the logs."
         )
 
-
         ##
         # Undeploy
         ##
@@ -342,6 +350,13 @@ class ZappaCLI(object):
         ##
         subparsers.add_parser(
             'update', parents=[env_parser], help='Update deployed application.'
+        )
+
+        ##
+        # Debug
+        ##
+        subparsers.add_parser(
+            'shell', parents=[env_parser], help='A debug shell with a loaded Zappa object.'
         )
 
         argcomplete.autocomplete(parser)
@@ -469,12 +484,12 @@ class ZappaCLI(object):
                 non_http=self.vargs['non_http'],
                 since=self.vargs['since'],
                 filter_pattern=self.vargs['filter'],
-                )
+            )
         elif command == 'undeploy': # pragma: no cover
             self.undeploy(
-                noconfirm=self.vargs['yes'],
+                no_confirm=self.vargs['yes'],
                 remove_logs=self.vargs['remove_logs']
-                )
+            )
         elif command == 'schedule': # pragma: no cover
             self.schedule()
         elif command == 'unschedule': # pragma: no cover
@@ -482,7 +497,13 @@ class ZappaCLI(object):
         elif command == 'status': # pragma: no cover
             self.status(return_json=self.vargs['json'])
         elif command == 'certify': # pragma: no cover
-            self.certify(no_cleanup=self.vargs['no_cleanup'])
+            self.certify(
+                no_cleanup=self.vargs['no_cleanup'],
+                no_confirm=self.vargs['yes'],
+                manual=self.vargs['manual']
+            )
+        elif command == 'shell': # pragma: no cover
+            self.shell()
 
     ##
     # The Commands
@@ -832,12 +853,12 @@ class ZappaCLI(object):
             except SystemExit:
                 os._exit(130)
 
-    def undeploy(self, noconfirm=False, remove_logs=False):
+    def undeploy(self, no_confirm=False, remove_logs=False):
         """
         Tear down an exiting deployment.
         """
 
-        if not noconfirm: # pragma: no cover
+        if not no_confirm: # pragma: no cover
             confirm = raw_input("Are you sure you want to undeploy? [y/n] ")
             if confirm != 'y':
                 return
@@ -1332,16 +1353,27 @@ class ZappaCLI(object):
         click.echo("\nTo learn more, check out our project page on " + click.style("GitHub", bold=True) +
                    " here: " + click.style("https://github.com/Miserlou/Zappa", fg="cyan", bold=True))
         click.echo("and stop by our " + click.style("Slack", bold=True) + " channel here: " +
-                   click.style("http://bit.do/zappa", fg="cyan", bold=True))
+                   click.style("https://slack.zappa.io", fg="cyan", bold=True))
         click.echo("\nEnjoy!,")
         click.echo(" ~ Team " + click.style("Zappa", bold=True) + "!")
 
         return
 
-    def certify(self, no_cleanup=False):
+    def certify(self, no_cleanup=False, no_confirm=True, manual=False):
         """
         Register or update a domain certificate for this env.
         """
+
+        if not self.domain:
+            raise ClickException("Can't certify a domain without " + click.style("domain", fg="red", bold=True) + " configured!")
+
+        if not no_confirm: # pragma: no cover
+            if not manual and self.zappa.get_domain_name(self.domain):
+                click.echo(click.style("Warning!", fg="red", bold=True) + " If you have already certified this domain and are calling certify again, you may incur downtime.")
+                click.echo("You can avoid this downtime by calling certify with " + click.style("--manual", bold=True) + " and rotating your certificate yourself through the AWS console.")
+            confirm = raw_input("Are you sure you want to certify? [y/n] ")
+            if confirm != 'y':
+                return
 
         # Give warning on --no-cleanup
         if no_cleanup:
@@ -1358,29 +1390,35 @@ class ZappaCLI(object):
             raise ClickException("This application " + click.style("isn't deployed yet", fg="red") +
                                  " - did you mean to call " + click.style("deploy", bold=True) + "?")
 
-        # Get install account_key to /tmp/account_key.pem
-        account_key_location = self.stage_config.get('lets_encrypt_key')
-        domain = self.stage_config.get('domain')
 
+        account_key_location = self.stage_config.get('lets_encrypt_key', None)
         cert_location = self.stage_config.get('certificate', None)
         cert_key_location = self.stage_config.get('certificate_key', None)
         cert_chain_location = self.stage_config.get('certificate_chain', None)
+        cert_arn = self.stage_config.get('certificate_arn', None)
 
-        if not domain:
-            raise ClickException("Can't certify a domain without " + click.style("domain", fg="red", bold=True) + " configured!")
+        # These are sensitive
+        certificate_body = None
+        certificate_private_key = None
+        certificate_chain = None
 
-        if not cert_location:
+        # Prepare for custom Let's Encrypt
+        if not cert_location and not cert_arn:
             if not account_key_location:
                 raise ClickException("Can't certify a domain without " + click.style("lets_encrypt_key", fg="red", bold=True) +
-                                     " or " + click.style("certificate", fg="red", bold=True) + " configured!")
+                                     " or " + click.style("certificate", fg="red", bold=True)+
+                                     " or " + click.style("certificate_arn", fg="red", bold=True) + " configured!")
 
+            # Get install account_key to /tmp/account_key.pem
             if account_key_location.startswith('s3://'):
                 bucket, key_name = parse_s3_url(account_key_location)
                 self.zappa.s3_client.download_file(bucket, key_name, '/tmp/account.key')
             else:
                 from shutil import copyfile
                 copyfile(account_key_location, '/tmp/account.key')
-        else:
+
+        # Prepare for Custom SSL
+        elif not account_key_location and not cert_arn:
             if not cert_location or not cert_key_location or not cert_chain_location:
                 raise ClickException("Can't certify a domain without " +
                                      click.style("certificate, certificate_key and certificate_chain", fg="red", bold=True) + " configured!")
@@ -1396,17 +1434,20 @@ class ZappaCLI(object):
                 certificate_chain = f.read()
 
 
-        click.echo("Certifying domain " + click.style(domain, fg="green", bold=True) + "..")
+        click.echo("Certifying domain " + click.style(self.domain, fg="green", bold=True) + "..")
 
         # Get cert and update domain.
-        if not cert_location:
+
+        # Let's Encrypt
+        if not cert_location and not cert_arn:
             from letsencrypt import get_cert_and_update_domain, cleanup
             cert_success = get_cert_and_update_domain(
                     self.zappa,
                     self.api_name,
                     self.api_stage,
-                    domain,
-                    clean_up
+                    self.domain,
+                    clean_up,
+                    manual
                 )
 
             # Deliberately undocumented feature (for now, at least.)
@@ -1417,28 +1458,34 @@ class ZappaCLI(object):
             if clean_up:
                 cleanup()
 
+        # Custom SSL / ACM
         else:
-            if not self.zappa.get_domain_name(domain):
+            if not self.zappa.get_domain_name(self.domain):
                 dns_name = self.zappa.create_domain_name(
-                    domain,
-                    domain + "-Zappa-Cert",
+                    self.domain,
+                    self.domain + "-Zappa-Cert",
                     certificate_body,
                     certificate_private_key,
                     certificate_chain,
+                    cert_arn,
                     self.api_name,
                     self.api_stage
                 )
                 if self.stage_config.get('route53_enabled', True):
-                    self.zappa.update_route53_records(domain, dns_name)
-                print("Created a new domain name. Please note that it can take up to 40 minutes for this domain to be "
+                    self.zappa.update_route53_records(self.domain, dns_name)
+                print("Created a new domain name with supplied certificate. Please note that it can take up to 40 minutes for this domain to be "
                       "created and propagated through AWS, but it requires no further work on your part.")
             else:
                 self.zappa.update_domain_name(
-                    domain,
-                    domain + "-Zappa-Cert",
+                    self.domain,
+                    self.domain + "-Zappa-Cert",
                     certificate_body,
                     certificate_private_key,
-                    certificate_chain
+                    certificate_chain,
+                    cert_arn,
+                    self.api_name,
+                    self.api_stage,
+                    self.stage_config.get('route53_enabled', True)
                 )
 
             cert_success = True
@@ -1449,6 +1496,17 @@ class ZappaCLI(object):
             click.echo(click.style("Failed", fg="red", bold=True) + " to generate or install certificate! :(")
             click.echo("\n==============\n")
             shamelessly_promote()
+
+    ##
+    # Shell
+    ##
+    def shell(self):
+        """
+        Spawn a debug shell.
+        """
+        click.echo(click.style("NOTICE!", fg="yellow", bold=True) + " This is a " + click.style("local", fg="green", bold=True) + " shell, inside a " + click.style("Zappa", bold=True) + " object!")
+        self.zappa.shell()
+        return
 
     ##
     # Utility
@@ -1633,7 +1691,7 @@ class ZappaCLI(object):
         if not os.path.isfile(zs_json) \
             and not os.path.isfile(zs_yaml) \
             and not os.path.isfile(zs_toml):
-            raise ClickException("Please configure a zappa_settings file.")
+            raise ClickException("Please configure a zappa_settings file or call `zappa init`.")
 
         # Prefer JSON
         if os.path.isfile(zs_json):
@@ -1653,7 +1711,7 @@ class ZappaCLI(object):
         if not settings_file:
             settings_file = self.get_json_or_yaml_settings()
         if not os.path.isfile(settings_file):
-            raise ClickException("Please configure your zappa_settings file.")
+            raise ClickException("Please configure your zappa_settings file or call `zappa init`.")
 
         if '.yml' in settings_file:
             with open(settings_file) as yaml_file:

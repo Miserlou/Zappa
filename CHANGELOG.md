@@ -1,5 +1,24 @@
 # Zappa Changelog
 
+## 0.39.0
+* Add `certificate_arn` setting, support for AWS Certificate Manager (#710)
+* Fix zip permissions when building on Windows (#714)
+* Change the active working directory to `/tmp` when using the slim handler so that relative filepaths work. (#711)
+
+## 0.38.1
+* Hotfix for broken Django deploys
+
+## 0.38.0
+* Add confirm to `certify`
+* Add `--manual` to `--certify`
+* Fix `certify` for existing domains
+* Add `extra_permissions` setting
+* Add `shell` command
+
+## 0.37.2
+* Revert to Kappa 0.6.0 #684 and others
+* Add binary support for more HTTP methods, #696
+
 ## 0.37.1
 * Add binary upload support, fix #683
 

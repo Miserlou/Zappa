@@ -181,6 +181,7 @@ class Zappa(object):
         'ANY'
     ]
     role_name = "ZappaLambdaExecution"
+    extra_permissions = None
     assume_policy = ASSUME_POLICY
     attach_policy = ATTACH_POLICY
     cloudwatch_log_levels = ['OFF', 'ERROR', 'INFO']
@@ -534,9 +535,13 @@ class Zappa(object):
                 # Related: https://github.com/Miserlou/Zappa/issues/682
                 os.chmod(os.path.join(root, filename),  0o755)
 
-                # Actually the file into the proper place in the zip
-                zipf.write(os.path.join(root, filename), os.path.join(root.replace(temp_project_path, ''), filename))
-                zipf.external_attr = 0755 << 16L
+                # Actually put the file into the proper place in the zip
+                # Related: https://github.com/Miserlou/Zappa/pull/716
+                zipi = zipfile.ZipInfo(os.path.join(root.replace(temp_project_path, '').lstrip(os.sep), filename))
+                zipi.create_system = 3
+                zipi.external_attr = 0o755 << 16L
+                with open(os.path.join(root, filename), 'rb') as f:
+                    zipf.writestr(zipi, f.read(), compression_method)
 
             if '__init__.py' not in files:
                 tmp_init = os.path.join(temp_project_path, '__init__.py')
@@ -1457,22 +1462,32 @@ class Zappa(object):
     def create_domain_name(self,
                            domain_name,
                            certificate_name,
-                           certificate_body,
-                           certificate_private_key,
-                           certificate_chain,
-                           api_name,
-                           stage):
+                           certificate_body=None,
+                           certificate_private_key=None,
+                           certificate_chain=None,
+                           certificate_arn=None,
+                           api_name=None,
+                           stage=None):
         """
-        Create the API GW domain and returns the resulting dns_name
+        Creates the API GW domain and returns the resulting DNS name.
         """
 
-        agw_response = self.apigateway_client.create_domain_name(
-            domainName=domain_name,
-            certificateName=certificate_name,
-            certificateBody=certificate_body,
-            certificatePrivateKey=certificate_private_key,
-            certificateChain=certificate_chain
-        )
+        # This is a Let's Encrypt or custom certificate
+        if not certificate_arn:
+            agw_response = self.apigateway_client.create_domain_name(
+                domainName=domain_name,
+                certificateName=certificate_name,
+                certificateBody=certificate_body,
+                certificatePrivateKey=certificate_private_key,
+                certificateChain=certificate_chain
+            )
+        # This is an AWS ACM-hosted Certificate
+        else:
+            agw_response = self.apigateway_client.create_domain_name(
+                domainName=domain_name,
+                certificateName=certificate_name,
+                certificateArn=certificate_arn
+            )
 
         api_id = self.get_api_id(api_name)
         if not api_id:
@@ -1499,7 +1514,7 @@ class Zappa(object):
                 'Name': domain_name,
                 'Type': 'A',
                 'AliasTarget': {
-                    'HostedZoneId': 'Z2FDTNDATAQYW2',
+                    'HostedZoneId': 'Z2FDTNDATAQYW2', # This is a magic value that means "CloudFront"
                     'DNSName': dns_name,
                     'EvaluateTargetHealth': False
                 }
@@ -1540,36 +1555,50 @@ class Zappa(object):
 
     def update_domain_name(self,
                            domain_name,
-                           certificate_name,
-                           certificate_body,
-                           certificate_private_key,
-                           certificate_chain):
+                           certificate_name=None,
+                           certificate_body=None,
+                           certificate_private_key=None,
+                           certificate_chain=None,
+                           certificate_arn=None,
+                           api_name=None,
+                           stage=None,
+                           route53=True):
         """
-        Update an IAM server cert and AGW domain name with it.
-        """
-        # Patch operations described here: https://tools.ietf.org/html/rfc6902#section-4
-        # and here: http://boto3.readthedocs.io/en/latest/reference/services/apigateway.html#APIGateway.Client.update_domain_name
 
+        This doesn't quite do what it seems like it should do.
+
+        Unfortunately, there is currently no way to programatically rotate the
+        certificate for a currently deployed domain.
+
+        So, what we can do instead is delete the record of it and then recreate it.
+
+        The problem is that this causes a period of downtime. This could take up to 40 minutes,
+        in theory, but in practice this seems to only take (way) less than a minute, making it
+        at least somewhat acceptable.
+
+        Related issues:     https://github.com/Miserlou/Zappa/issues/590
+                            https://github.com/Miserlou/Zappa/issues/588
+                            https://github.com/Miserlou/Zappa/pull/458
+
+
+        """
 
         print("Updating domain name!")
 
-        new_cert_name = 'Zappa' + str(time.time())
-        create_server_certificate_response = self.iam.create_server_certificate(
-            ServerCertificateName=new_cert_name,
-            CertificateBody=certificate_body,
-            PrivateKey=certificate_private_key,
-            CertificateChain=certificate_chain
-        )
-        update_domain_name_response = self.apigateway_client.update_domain_name(
-            domainName=domain_name,
-            patchOperations=[
-                {
-                    'op': 'replace',
-                    'path': '/certificateName',
-                    'value': new_cert_name,
-                }
-            ]
-        )
+        certificate_name = certificate_name + str(time.time())
+
+        api_gateway_domain = self.apigateway_client.get_domain_name(domainName=domain_name)
+        self.apigateway_client.delete_domain_name(domainName=domain_name)
+        dns_name = self.create_domain_name(domain_name,
+                           certificate_name,
+                           certificate_body,
+                           certificate_private_key,
+                           certificate_chain,
+                           certificate_arn,
+                           api_name,
+                           stage)
+        if route53:
+            self.update_route53_records(domain_name, dns_name)
 
         return
 
@@ -1580,7 +1609,7 @@ class Zappa(object):
         Returns the record entry, else None.
 
         """
-        # make sure api gateway domain is present
+        # Make sure api gateway domain is present
         try:
             self.apigateway_client.get_domain_name(domainName=domain_name)
         except Exception:
@@ -1634,6 +1663,12 @@ class Zappa(object):
         """
         attach_policy_obj = json.loads(self.attach_policy)
         assume_policy_obj = json.loads(self.assume_policy)
+
+        if self.extra_permissions:
+            for permission in self.extra_permissions:
+                attach_policy_obj['Statement'].append(dict(permission))
+            self.attach_policy = json.dumps(attach_policy_obj)
+
         updated = False
 
         # Create the role if needed
@@ -1655,6 +1690,7 @@ class Zappa(object):
         try:
             if policy.policy_document != attach_policy_obj:
                 print("Updating zappa-permissions policy on " + self.role_name + " IAM Role.")
+
                 policy.put(PolicyDocument=self.attach_policy)
                 updated = True
 
@@ -1902,7 +1938,7 @@ class Zappa(object):
                     function,
                     self.boto_session
                 )
-                print("Removed event " + name + ".")
+                print("Removed event " + name + " (" + str(event_source['events']) + ").")
 
     def _clear_policy(self, lambda_name):
         """
@@ -2077,6 +2113,13 @@ class Zappa(object):
     ##
     # Utility
     ##
+
+    def shell(self):
+        """
+        Spawn a PDB shell.
+        """
+        import pdb
+        pdb.set_trace()
 
     def load_credentials(self, boto_session=None, profile_name=None):
         """

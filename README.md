@@ -6,7 +6,6 @@
 
 [![Build Status](https://travis-ci.org/Miserlou/Zappa.svg)](https://travis-ci.org/Miserlou/Zappa)
 [![Coverage](https://img.shields.io/coveralls/Miserlou/Zappa.svg)](https://coveralls.io/github/Miserlou/Zappa)
-[![Requirements Status](https://requires.io/github/Miserlou/Zappa/requirements.svg?branch=master)](https://requires.io/github/Miserlou/Zappa/requirements/?branch=master)
 [![PyPI](https://img.shields.io/pypi/v/Zappa.svg)](https://pypi.python.org/pypi/zappa)
 [![Slack](https://img.shields.io/badge/chat-slack-ff69b4.svg)](https://slack.zappa.io/)
 [![Gun.io](https://img.shields.io/badge/made%20by-gun.io-blue.svg)](https://gun.io/)
@@ -31,7 +30,7 @@
     - [Tailing Logs](#tailing-logs)
     - [Remote Function Invocation](#remote-function-invocation)
     - [Django Management Commands](#django-management-commands)
-    - [Let's Encrypt SSL Domain Certification and Installation](#lets-encrypt-ssl-domain-certification-and-installation)
+    - [SSL Certification](#ssl-certification)
 - [Advanced Settings](#advanced-settings)
     - [YAML Settings](#yaml-settings)
 - [Advanced Usage](#advanced-usage)
@@ -50,6 +49,7 @@
       - [Deploying to a Domain With a Let's Encrypt Certificate (DNS Auth)](#deploying-to-a-domain-with-a-lets-encrypt-certificate-dns-auth)
       - [Deploying to a Domain With a Let's Encrypt Certificate (HTTP Auth)](#deploying-to-a-domain-with-a-lets-encrypt-certificate-http-auth)
       - [Deploying to a Domain With Your Own SSL Certs](#deploying-to-a-domain-with-your-own-ssl-certs)
+      - [Deploying to a Domain With AWS Certificate Manager](#deploying-to-a-domain-with-aws-certificate-manager)
     - [Setting Environment Variables](#setting-environment-variables)
       - [Local Environment Variables](#local-environment-variables)
       - [Remote Environment Variables](#remote-environment-variables)
@@ -231,14 +231,14 @@ See the [example](example/) for more details.
 
 Similarly, you can have your functions execute in response to events that happen in the AWS ecosystem, such as S3 uploads, DynamoDB entries, Kinesis streams, and SNS messages.
 
-In your *zappa_settings.json* file, define your [event sources](http://docs.aws.amazon.com/lambda/latest/dg/invoking-lambda-function.html) and the function you wish to execute. For instance, this will execute `your_module.your_function` in response to new objects in your `my-bucket` S3 bucket. Note that `your_function` must accept `event` and `context` parameters.
+In your *zappa_settings.json* file, define your [event sources](http://docs.aws.amazon.com/lambda/latest/dg/invoking-lambda-function.html) and the function you wish to execute. For instance, this will execute `your_module.process_upload_function` in response to new objects in your `my-bucket` S3 bucket. Note that `process_upload_function` must accept `event` and `context` parameters.
 
 ```javascript
 {
     "production": {
        ...
        "events": [{
-            "function": "your_module.your_function",
+            "function": "your_module.process_upload_function",
             "event_source": {
                   "arn":  "arn:aws:s3:::my-bucket",
                   "events": [
@@ -256,6 +256,27 @@ And then:
     $ zappa schedule production
 
 And now your function will execute every time a new upload appears in your bucket!
+
+To access the key's information in your application context, you'll want `process_upload_function` to look something like this:
+
+```python
+import boto3
+s3_client = boto3.client('s3')
+
+def process_upload_function(event, context):
+    """
+    Process a file upload.
+    """
+
+    # Get the uploaded file's information
+    bucket = event['Records'][0]['s3']['bucket']['name'] # Will be `my-bucket`
+    key = event['Records'][0]['s3']['object']['key'] # Will be the file path of whatever file was uploaded.
+
+    # Get the bytes from S3
+    s3_client.download_file(bucket, key, '/tmp/' + key) # Download this file to writable tmp space.
+    file_bytes = open('/tmp/' + key).read()
+```
+
 
 Similarly, for a [Simple Notification Service](https://aws.amazon.com/sns/) event:
 
@@ -388,19 +409,21 @@ Commands which require direct user input, such as `createsuperuser`, should be [
 
 _(Please note that commands which take over 30 seconds to execute may time-out. See [this related issue](https://github.com/Miserlou/Zappa/issues/205#issuecomment-236391248) for a work-around.)_
 
-#### Let's Encrypt SSL Domain Certification and Installation
+#### SSL Certification
 
-If you want to use Zappa applications on a custom domain or subdomain, you'll need to supply a valid SSL certificate. Fortunately for you, Zappa can automatically create and install free valid SSL certificates using Let's Encrypt!
+If you want to use Zappa applications on a custom domain or subdomain, you'll need to supply a valid SSL certificate.
 
-If your domain is located within an AWS Route 53 Hosted Zone and you've defined `domain` and `lets_encrypt_key` (ex: `openssl genrsa 2048 > account.key`) settings, all you need to do is:
+Zappa gives you three options here: Custom SSL certificates, AWS Certificate Manager-generated certificates, and Let's Encrypt certificates.
+
+If your domain is located within an AWS Route 53 Hosted Zone and you've defined settings for `domain` and either `certificate`, `certificate_arn` or `lets_encrypt_key` (ex: `openssl genrsa 2048 > account.key`), all you need to do is:
 
     $ zappa certify production
 
 And your domain will be verified, certified and registered!
 
-_(Please note that this can take around 45 minutes to take effect the first time your run the command, and around 60 seconds every time after that.)_
+Please note that this can take around 45 minutes to take effect. You can avoid this by using the `certify --manual` and then copying the values presented into the AWS Console.
 
-More detailed instructions are available [in this handy guide](https://github.com/Miserlou/Zappa/blob/master/docs/domain_with_free_ssl_dns.md).
+More detailed instructions are available [in this handy guide](https://github.com/Miserlou/Zappa/blob/master/docs/domain_with_free_ssl_dns.md) and lower down in this README file.
 
 ## Advanced Settings
 
@@ -428,7 +451,8 @@ to change Zappa's behavior. Use these at your own risk!
         "certificate": "my_cert.crt", // SSL certificate file location. Used to manually certify a custom domain
         "certificate_key": "my_key.key", // SSL key file location. Used to manually certify a custom domain
         "certificate_chain": "my_cert_chain.pem", // SSL certificate chain file location. Used to manually certify a custom domain
-        "cloudwatch_log_level": "OFF", // Enables/configures a level of logging for the given staging. Available options: "OFF", "INFO", "ERROR", default "OFF".
+        "certificate_arn": "arn:aws:acm:us-east-1:1234512345:certificate/aaaa-bbb-cccc-dddd", // ACM certificate ARN.
+        "cloudwatch_log_level": "OFF", // Enables/configures a level of logging for the given staging. Available options: "OFF", "INFO", "ERROR", default "OFF". C
         "cloudwatch_data_trace": false, // Logs all data about received events. Default false.
         "cloudwatch_metrics_enabled": false, // Additional metrics for the API Gateway. Default false.
         "cors": true, // Enable Cross-Origin Resource Sharing. Default false. If true, simulates the "Enable CORS" button on the API Gateway console. Can also be a dictionary specifying lists of "allowed_headers", "allowed_methods", and string of "allowed_origin"
@@ -456,6 +480,11 @@ to change Zappa's behavior. Use these at your own risk!
         "exception_handler": "your_module.report_exception", // function that will be invoked in case Zappa sees an unhandled exception raised from your code
         "exclude": ["*.gz", "*.rar"], // A list of regex patterns to exclude from the archive. To exclude boto3 and botocore (available in an older version on Lambda), add "boto3*" and "botocore*".
         "extends": "stage_name", // Duplicate and extend another stage's settings. For example, `dev-asia` could extend from `dev-common` with a different `s3_bucket` value.
+        "extra_permissions": [{ // Attach any extra permissions to this policy. Default None
+            "Effect": "Allow",
+            "Action": ["rekognition:*"], // AWS Service ARN
+            "Resource": "*"
+        }],
         "iam_authorization": true, // optional, use IAM to require request signing. Default false. Note that enabling this will override the authorizer configuration.
         "authorizer": {
             "function": "your_module.your_auth_function", // Local function to run for token validation. For more information about the function see below.
@@ -542,7 +571,7 @@ Similarly, you may want to design your application so that static binary uploads
 
 #### Enabling CORS
 
-The easiest way to enable CORS (Cross-Origin Resource Sharing) for in your Zappa application is to set `cors` to `true` in your Zappa settings file and updating, which is the equivalent of pushing the "Enable CORS" button in the AWS API Gateway console. This is disabled by default, but you may wish to enable it for APIs which are accssed from other domains, etc.
+The easiest way to enable CORS (Cross-Origin Resource Sharing) for in your Zappa application is to set `cors` to `true` in your Zappa settings file and updating, which is the equivalent of pushing the "Enable CORS" button in the AWS API Gateway console. This is disabled by default, but you may wish to enable it for APIs which are accessed from other domains, etc.
 
 You can also simply handle CORS directly in your application. If you do this, you'll need to add `Access-Control-Allow-Origin`, `Access-Control-Allow-Headers`, and `Access-Control-Allow-Methods` to the `method_header_types` key in your `zappa_settings.json`. See further [discussion here](https://github.com/Miserlou/Zappa/issues/41).
 
@@ -592,7 +621,7 @@ You can use the `api_key_required` setting to generate and assign an API key to 
 You can enable IAM-based (v4 signing) authorization on an API by setting the `iam_authorization` setting to `true`. Your API will then require signed requests and access can be controlled via [IAM policy](https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-iam-policy-examples.html). Unsigned requests will receive a 403 response, as will requesters who are not authorized to access the API. Enabling this will override the Authorizer configuration (see below).
 
 ##### API Gateway Authorizers
-If you deploy an API endpoint with Zappa, you can take advantage of [API Gateway Authorizers](http://docs.aws.amazon.com/apigateway/latest/developerguide/use-custom-authorizer.html) to implement a token-based authentication - all you need to do is to provide a function to create the required output, Zappa takes care of the rest. A good start for the function is the [awslabs blueprint example.](https://github.com/awslabs/aws-apigateway-lambda-authorizer-blueprints/blob/master/blueprints/python/api-gateway-authorizer-python.py)
+If you deploy an API endpoint with Zappa, you can take advantage of [API Gateway Authorizers](http://docs.aws.amazon.com/apigateway/latest/developerguide/use-custom-authorizer.html) to implement a token-based authentication - all you need to do is to provide a function to create the required output, Zappa takes care of the rest. A good start for the function is the [AWS Labs blueprint example](https://github.com/awslabs/aws-apigateway-lambda-authorizer-blueprints/blob/master/blueprints/python/api-gateway-authorizer-python.py).
 
 If you are wondering for what you would use an Authorizer, here are some potential use cases:
 
@@ -637,6 +666,14 @@ However, it's now far easier to use Route 53-based DNS authentication, which wil
 4. Set `route53_enabled` to `false` if you plan on using your own DNS provider, and not an AWS Route53 Hosted zone.
 5. Deploy or update your app using Zappa
 6. Run `$ zappa certify` to upload your certificates and register the custom domain name with your API gateway.
+
+##### Deploying to a Domain With AWS Certificate Manager
+
+1. Verify your domain in the AWS Ceriticate Manager console.
+2. In the console, request a certificate for your domain or subdomain (`sub.yourdomain.tld`), or request a wildcard domain (`*.yourdomain.tld`).
+3. Copy the entire ARN of that certificate and place it in the Zappa setting `certificate_arn`.
+4. Set your desired domain in the `domain` setting.
+5. Call `$ zappa certify` to create and associate the API Gateway distribution using that ceritficate.
 
 #### Setting Environment Variables
 
@@ -744,6 +781,22 @@ To manually define the permissions policy of your Zappa execution role, you must
 
 Ongoing discussion about the minimum policy requirements necessary for a Zappa deployment [can be found here](https://github.com/Miserlou/Zappa/issues/244).
 
+If you only need to add a few permissions to the default Zappa execution policy, you can use the `extra_permissions` setting like so:
+
+```javascript
+{
+    "dev": {
+        ...
+        "extra_permissions": [{ // Attach any extra permissions to this policy.
+            "Effect": "Allow",
+            "Action": ["rekognition:*"], // AWS Service ARN
+            "Resource": "*"
+        }]
+    },
+    ...
+}
+```
+
 #### Globally Available Server-less Architectures
 
 
@@ -779,6 +832,7 @@ If Docker is part of your team's CI, testing, or deployments, you may want to ch
 * [Deploy Flask-Ask to AWS Lambda with Zappa (screencast)](https://www.youtube.com/watch?v=mjWV4R2P4ks)
 * [Secure 'Serverless' File Uploads with AWS Lambda, S3, and Zappa](http://blog.stratospark.com/secure-serverless-file-uploads-with-aws-lambda-s3-zappa.html)
 * [First Steps with AWS Lambda, Zappa and Python](https://andrich.blog/2017/02/12/first-steps-with-aws-lambda-zappa-flask-and-python/)
+* [Deploy a Serverless WSGI App using Zappa, CloudFront, RDS, and VPC](https://docs.google.com/presentation/d/1aYeOMgQl4V_fFgT5VNoycdXtob1v6xVUWlyxoTEiTw)
 * _Your guide here?_
 
 ## Zappa in the Press
