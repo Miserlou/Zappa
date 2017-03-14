@@ -512,6 +512,9 @@ class ZappaCLI(object):
         """
         Only build the package
         """
+        # Make sure we're in a venv.
+        self.check_venv()
+
         # force not to delete the local zip
         self.override_stage_config_setting('delete_local_zip', False)
         # Execute the prebuild script
@@ -529,6 +532,9 @@ class ZappaCLI(object):
         and create the API Gateway routes.
 
         """
+
+        # Make sure we're in a venv.
+        self.check_venv()
 
         # Execute the prebuild script
         if self.prebuild_script:
@@ -653,6 +659,9 @@ class ZappaCLI(object):
         """
         Repackage and update the function code.
         """
+
+        # Make sure we're in a venv.
+        self.check_venv()
 
         # Execute the prebuild script
         if self.prebuild_script:
@@ -1157,6 +1166,9 @@ class ZappaCLI(object):
 
         """
 
+        # Make sure we're in a venv.
+        self.check_venv()
+
         # Ensure that we don't already have a zappa_settings file.
         if os.path.isfile(settings_file):
             raise ClickException("This project is " + click.style("already initialized", fg="red", bold=True) + "!")
@@ -1164,12 +1176,6 @@ class ZappaCLI(object):
         # Ensure P2 until Lambda supports it.
         if sys.version_info >= (3,0): # pragma: no cover
             raise ClickException("Zappa curently only works with Python 2, until AWS Lambda adds Python 3 support.")
-
-        # Ensure inside virtualenv.
-        if not ( hasattr(sys, 'prefix') or hasattr(sys, 'real_prefix') or hasattr(sys, 'base_prefix') ): # pragma: no cover
-            raise ClickException(
-                "Zappa must be run inside of a virtual environment!\n"
-                "Learn more about virtual environments here: http://docs.python-guide.org/en/latest/dev/virtualenvs/")
 
         # Explain system.
         click.echo(click.style(u"""\n███████╗ █████╗ ██████╗ ██████╗  █████╗
@@ -2112,6 +2118,13 @@ class ZappaCLI(object):
         )
         return endpoint_url
 
+    def check_venv(self):
+        """ Ensure we're inside a virtualenv. """
+        venv = self.zappa.get_current_venv()
+        if not venv:
+            raise ClickException(
+                click.style("Zappa", bold=True) + " requires an " + click.style("active virtual environment", bold=True, fg="red") + "!\n" +
+                "Learn more about virtual environments here: " + click.style("http://docs.python-guide.org/en/latest/dev/virtualenvs/", bold=False, fg="cyan"))
 
 ####################################################################
 # Main

@@ -555,7 +555,7 @@ Similarly, you can supply a `zappa_settings.toml` file:
 
 #### Keeping The Server Warm
 
-Zappa will automatically set up a regularly occurring execution of your application in order to keep the Lambda function warm. This can be disabled via the 'keep_warm' setting.
+Zappa will automatically set up a regularly occurring execution of your application in order to keep the Lambda function warm. This can be disabled via the `keep_warm` setting.
 
 #### Serving Static Files / Binary Uploads
 

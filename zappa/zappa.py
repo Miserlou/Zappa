@@ -334,8 +334,7 @@ class Zappa(object):
             venv = bin_path[:bin_path.rfind(env_name)] + env_name
             logger.debug('env path = {}'.format(venv))
         else:  # pragma: no cover
-            print("Zappa requires an active virtual environment.")
-            quit()
+            return None
         return venv
 
     def create_lambda_zip(self, prefix='lambda_package', handler_file=None, slim_handler=False,
