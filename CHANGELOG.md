@@ -1,5 +1,10 @@
 # Zappa Changelog
 
+## 0.39.1
+* Fix broken Let's Encrypt trying to use new ACM ARNs
+* Add `apigateway_description` setting, fixes #722
+* More aggressive virtualenvironment checking
+
 ## 0.39.0
 * Add `certificate_arn` setting, support for AWS Certificate Manager (#710)
 * Fix zip permissions when building on Windows (#714)
