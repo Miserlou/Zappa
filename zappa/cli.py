@@ -620,7 +620,9 @@ class ZappaCLI(object):
                                                         self.api_key_required,
                                                         self.iam_authorization,
                                                         self.authorizer,
-                                                        self.cors)
+                                                        self.cors,
+                                                        self.apigateway_description
+                                                        )
 
             self.zappa.update_stack(self.lambda_name, self.s3_bucket_name, wait=True)
 
@@ -752,7 +754,9 @@ class ZappaCLI(object):
                                              self.api_key_required,
                                              self.iam_authorization,
                                              self.authorizer,
-                                             self.cors)
+                                             self.cors,
+                                             self.apigateway_description
+                                             )
             self.zappa.update_stack(self.lambda_name, self.s3_bucket_name, wait=True, update_only=True)
 
             api_id = self.zappa.get_api_id(self.lambda_name)
@@ -1625,6 +1629,7 @@ class ZappaCLI(object):
         self.use_apigateway = self.stage_config.get('use_apigateway', True)
         if self.use_apigateway:
             self.use_apigateway = self.stage_config.get('apigateway_enabled', True)
+        self.apigateway_description = self.stage_config.get('apigateway_description', None)
 
         self.lambda_handler = self.stage_config.get('lambda_handler', 'handler.lambda_handler')
         # DEPRICATED. https://github.com/Miserlou/Zappa/issues/456

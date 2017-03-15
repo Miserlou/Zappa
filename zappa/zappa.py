@@ -821,7 +821,7 @@ class Zappa(object):
     ##
 
     def create_api_gateway_routes(self, lambda_arn, api_name=None, api_key_required=False,
-                                authorization_type='NONE', authorizer=None, cors_options=None):
+                                authorization_type='NONE', authorizer=None, cors_options=None, description=None):
         """
         Create the API Gateway for this Zappa deployment.
 
@@ -830,7 +830,9 @@ class Zappa(object):
 
         restapi = troposphere.apigateway.RestApi('Api')
         restapi.Name = api_name or lambda_arn.split(':')[-1]
-        restapi.Description = 'Created automatically by Zappa.'
+        if not description:
+            description = 'Created automatically by Zappa.'
+        restapi.Description = description
         self.cf_template.add_resource(restapi)
 
         root_id = troposphere.GetAtt(restapi, 'RootResourceId')
@@ -1216,7 +1218,7 @@ class Zappa(object):
             return False
 
     def create_stack_template(self, lambda_arn, lambda_name, api_key_required,
-                              iam_authorization, authorizer, cors_options=None):
+                              iam_authorization, authorizer, cors_options=None, description=None):
         """
         Build the entire CF stack.
         Just used for the API Gateway, but could be expanded in the future.
@@ -1240,7 +1242,7 @@ class Zappa(object):
         self.cf_parameters = {}
 
         restapi = self.create_api_gateway_routes(lambda_arn, lambda_name, api_key_required,
-                                                auth_type, authorizer, cors_options)
+                                                auth_type, authorizer, cors_options, description)
         return self.cf_template
 
     def update_stack(self, name, working_bucket, wait=False, update_only=False):
