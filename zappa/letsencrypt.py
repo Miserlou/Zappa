@@ -71,24 +71,26 @@ def get_cert_and_update_domain(
             if domain:
                 if not zappa_instance.get_domain_name(domain):
                     zappa_instance.create_domain_name(
-                        domain,
-                        domain + "-Zappa-LE-Cert",
-                        certificate_body,
-                        certificate_private_key,
-                        certificate_chain,
-                        lambda_name,
-                        api_stage
+                        domain_name=domain,
+                        certificate_name=domain + "-Zappa-LE-Cert",
+                        certificate_body=certificate_body,
+                        certificate_private_key=certificate_private_key,
+                        certificate_chain=certificate_chain,
+                        certificate_arn=None,
+                        lambda_name=lambda_name,
+                        stage=api_stage
                     )
                     print("Created a new domain name. Please note that it can take up to 40 minutes for this domain to be created and propagated through AWS, but it requires no further work on your part.")
                 else:
                     zappa_instance.update_domain_name(
-                        domain,
-                        domain + "-Zappa-LE-Cert",
-                        certificate_body,
-                        certificate_private_key,
-                        certificate_chain,
-                        lambda_name,
-                        api_stage
+                        domain_name=domain,
+                        certificate_name=domain + "-Zappa-LE-Cert",
+                        certificate_body=certificate_body,
+                        certificate_private_key=certificate_private_key,
+                        certificate_chain=certificate_chain,
+                        certificate_arn=None,
+                        lambda_name=lambda_name,
+                        stage=api_stage
                     )
         else:
             print("Cerificate body:\n")

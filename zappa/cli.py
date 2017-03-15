@@ -1452,14 +1452,14 @@ class ZappaCLI(object):
         else:
             if not self.zappa.get_domain_name(self.domain):
                 dns_name = self.zappa.create_domain_name(
-                    self.domain,
-                    self.domain + "-Zappa-Cert",
-                    certificate_body,
-                    certificate_private_key,
-                    certificate_chain,
-                    cert_arn,
-                    self.lambda_name,
-                    self.api_stage
+                    domain_name=self.domain,
+                    certificate_name=self.domain + "-Zappa-Cert",
+                    certificate_body=certificate_body,
+                    certificate_private_key=certificate_private_key,
+                    certificate_chain=certificate_chain,
+                    certificate_arn=cert_arn,
+                    lambda_name=self.lambda_name,
+                    stage=self.api_stage,
                 )
                 if self.stage_config.get('route53_enabled', True):
                     self.zappa.update_route53_records(self.domain, dns_name)
@@ -1467,15 +1467,15 @@ class ZappaCLI(object):
                       "created and propagated through AWS, but it requires no further work on your part.")
             else:
                 self.zappa.update_domain_name(
-                    self.domain,
-                    self.domain + "-Zappa-Cert",
-                    certificate_body,
-                    certificate_private_key,
-                    certificate_chain,
-                    cert_arn,
-                    self.lambda_name,
-                    self.api_stage,
-                    self.stage_config.get('route53_enabled', True)
+                    domain_name=self.domain,
+                    certificate_name=self.domain + "-Zappa-Cert",
+                    certificate_body=certificate_body,
+                    certificate_private_key=certificate_private_key,
+                    certificate_chain=certificate_chain,
+                    certificate_arn=cert_arn,
+                    lambda_name=self.lambda_name,
+                    stage=self.api_stage,
+                    route53=self.stage_config.get('route53_enabled', True)
                 )
 
             cert_success = True
