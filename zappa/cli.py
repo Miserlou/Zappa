@@ -1650,11 +1650,13 @@ class ZappaCLI(object):
         self.check_environment(self.environment_variables)
         self.authorizer = self.stage_config.get('authorizer', {})
 
+        desired_role_name = self.lambda_name + "-ZappaLambdaExecutionRole"
         self.zappa = Zappa( boto_session=session,
                             profile_name=self.profile_name,
                             aws_region=self.aws_region,
-                            load_credentials=self.load_credentials
-                            )
+                            load_credentials=self.load_credentials,
+                            desired_role_name=desired_role_name
+                        )
 
         for setting in CUSTOM_SETTINGS:
             if setting in self.stage_config:

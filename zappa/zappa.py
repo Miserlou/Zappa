@@ -193,7 +193,14 @@ class Zappa(object):
     boto_session = None
     credentials_arn = None
 
-    def __init__(self, boto_session=None, profile_name=None, aws_region=None, load_credentials=True):
+    def __init__(self,
+            boto_session=None,
+            profile_name=None,
+            aws_region=None,
+            load_credentials=True,
+            desired_role_name=None
+
+        ):
         # Set aws_region to None to use the system's region instead
         if aws_region is None:
             # https://github.com/Miserlou/Zappa/issues/413
@@ -201,6 +208,9 @@ class Zappa(object):
             logger.debug("Set region from boto: %s", self.aws_region)
         else:
             self.aws_region = aws_region
+
+        if desired_role_name:
+            self.role_name = desired_role_name
 
         # Some common invokations, such as DB migrations,
         # can take longer than the default.
