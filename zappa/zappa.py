@@ -334,8 +334,16 @@ class Zappa(object):
             return None
         return venv
 
-    def create_lambda_zip(self, prefix='lambda_package', handler_file=None, slim_handler=False,
-                          minify=True, exclude=None, use_precompiled_packages=True, include=None, venv=None):
+    def create_lambda_zip(  self,
+                            prefix='lambda_package',
+                            handler_file=None,
+                            slim_handler=False,
+                            minify=True,
+                            exclude=None,
+                            use_precompiled_packages=True,
+                            include=None,
+                            venv=None
+                        ):
         """
         Create a Lambda-ready zip file of the current virtualenvironment and working directory.
 
@@ -672,8 +680,17 @@ class Zappa(object):
     # Lambda
     ##
 
-    def create_lambda_function(self, bucket, s3_key, function_name, handler, description="Zappa Deployment",
-                               timeout=30, memory_size=512, publish=True, vpc_config=None):
+    def create_lambda_function( self,
+                                bucket,
+                                s3_key,
+                                function_name,
+                                handler,
+                                description="Zappa Deployment",
+                                timeout=30,
+                                memory_size=512,
+                                publish=True,
+                                vpc_config=None
+                            ):
         """
         Given a bucket and key of a valid Lambda-zip, a function name and a handler, register that Lambda function.
         """
@@ -715,8 +732,16 @@ class Zappa(object):
 
         return response['FunctionArn']
 
-    def update_lambda_configuration(self, lambda_arn, function_name, handler, description="Zappa Deployment",
-                                    timeout=30, memory_size=512, publish=True, vpc_config=None):
+    def update_lambda_configuration(    self,
+                                        lambda_arn,
+                                        function_name,
+                                        handler,
+                                        description="Zappa Deployment",
+                                        timeout=30,
+                                        memory_size=512,
+                                        publish=True,
+                                        vpc_config=None
+                                    ):
         """
         Given an existing function ARN, update the configuration variables.
         """
@@ -740,8 +765,14 @@ class Zappa(object):
 
         return response['FunctionArn']
 
-    def invoke_lambda_function(self, function_name, payload, invocation_type='Event', log_type='Tail',
-                               client_context=None, qualifier=None):
+    def invoke_lambda_function( self,
+                                function_name,
+                                payload,
+                                invocation_type='Event',
+                                log_type='Tail',
+                                client_context=None,
+                                qualifier=None
+                            ):
         """
         Directly invoke a named Lambda function with a payload.
         Returns the response.
@@ -820,8 +851,15 @@ class Zappa(object):
     # API Gateway
     ##
 
-    def create_api_gateway_routes(self, lambda_arn, api_name=None, api_key_required=False,
-                                authorization_type='NONE', authorizer=None, cors_options=None, description=None):
+    def create_api_gateway_routes(  self,
+                                    lambda_arn,
+                                    api_name=None,
+                                    api_key_required=False,
+                                    authorization_type='NONE',
+                                    authorizer=None,
+                                    cors_options=None,
+                                    description=None
+                                ):
         """
         Create the API Gateway for this Zappa deployment.
 
@@ -901,8 +939,15 @@ class Zappa(object):
 
         return authorizer_resource
 
-    def create_and_setup_methods(self, restapi, resource, api_key_required, uri,
-                                 authorization_type, authorizer_resource, depth):
+    def create_and_setup_methods(   self,
+                                    restapi,
+                                    resource,
+                                    api_key_required,
+                                    uri,
+                                    authorization_type,
+                                    authorizer_resource,
+                                    depth
+                                ):
         """
         Set up the methods, integration responses and method responses for a given API Gateway resource.
         """
@@ -997,9 +1042,18 @@ class Zappa(object):
         integration.Uri = uri
         method.Integration = integration
 
-    def deploy_api_gateway(self, api_id, stage_name, stage_description="", description="", cache_cluster_enabled=False,
-                           cache_cluster_size='0.5', variables=None, cloudwatch_log_level='OFF',
-                           cloudwatch_data_trace=False, cloudwatch_metrics_enabled=False):
+    def deploy_api_gateway( self,
+                            api_id,
+                            stage_name,
+                            stage_description="",
+                            description="",
+                            cache_cluster_enabled=False,
+                            cache_cluster_size='0.5',
+                            variables=None,
+                            cloudwatch_log_level='OFF',
+                            cloudwatch_data_trace=False,
+                            cloudwatch_metrics_enabled=False
+                        ):
         """
         Deploy the API Gateway!
 
@@ -1176,8 +1230,13 @@ class Zappa(object):
                     restApiId=api['id']
                 )
 
-    def update_stage_config(self, project_name, stage_name, cloudwatch_log_level, cloudwatch_data_trace,
-                            cloudwatch_metrics_enabled):
+    def update_stage_config(    self,
+                                project_name,
+                                stage_name,
+                                cloudwatch_log_level,
+                                cloudwatch_data_trace,
+                                cloudwatch_metrics_enabled
+                            ):
         """
         Update CloudWatch metrics configuration.
         """
@@ -1217,8 +1276,15 @@ class Zappa(object):
             print('ZappaProject tag not found on {0}, doing nothing'.format(name))
             return False
 
-    def create_stack_template(self, lambda_arn, lambda_name, api_key_required,
-                              iam_authorization, authorizer, cors_options=None, description=None):
+    def create_stack_template(  self,
+                                lambda_arn,
+                                lambda_name,
+                                api_key_required,
+                                iam_authorization,
+                                authorizer,
+                                cors_options=None,
+                                description=None
+                            ):
         """
         Build the entire CF stack.
         Just used for the API Gateway, but could be expanded in the future.

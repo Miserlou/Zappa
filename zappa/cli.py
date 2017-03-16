@@ -614,15 +614,15 @@ class ZappaCLI(object):
         if self.use_apigateway:
 
             # Create and configure the API Gateway
-
-            template = self.zappa.create_stack_template(self.lambda_arn,
-                                                        self.lambda_name,
-                                                        self.api_key_required,
-                                                        self.iam_authorization,
-                                                        self.authorizer,
-                                                        self.cors,
-                                                        self.apigateway_description
-                                                        )
+            template = self.zappa.create_stack_template(
+                                                        lambda_arn=self.lambda_arn,
+                                                        lambda_name=self.lambda_name,
+                                                        api_key_required=self.api_key_required,
+                                                        iam_authorization=self.iam_authorization,
+                                                        authorizer=self.authorizer,
+                                                        cors_options=self.cors,
+                                                        description=self.apigateway_description
+                                                    )
 
             self.zappa.update_stack(self.lambda_name, self.s3_bucket_name, wait=True)
 
@@ -749,14 +749,15 @@ class ZappaCLI(object):
 
         if self.use_apigateway:
 
-            self.zappa.create_stack_template(self.lambda_arn,
-                                             self.lambda_name,
-                                             self.api_key_required,
-                                             self.iam_authorization,
-                                             self.authorizer,
-                                             self.cors,
-                                             self.apigateway_description
-                                             )
+            self.zappa.create_stack_template(
+                                            lambda_arn=self.lambda_arn,
+                                            lambda_name=self.lambda_name,
+                                            api_key_required=self.api_key_required,
+                                            iam_authorization=self.iam_authorization,
+                                            authorizer=self.authorizer,
+                                            cors_options=self.cors,
+                                            description=self.apigateway_description
+                                        )
             self.zappa.update_stack(self.lambda_name, self.s3_bucket_name, wait=True, update_only=True)
 
             api_id = self.zappa.get_api_id(self.lambda_name)
