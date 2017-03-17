@@ -708,24 +708,29 @@ class Zappa(object):
             vpc_config = {}
         if not self.credentials_arn:
             self.get_credentials_arn()
+  
+        # Related: https://github.com/Miserlou/Zappa/issues/613
+        try:
+            response = self.lambda_client.get_function(FunctionName=function_name)
+            return response['Configuration']['FunctionArn']
+        except ClientError:
+          response = self.lambda_client.create_function(
+              FunctionName=function_name,
+              Runtime='python2.7',
+              Role=self.credentials_arn,
+              Handler=handler,
+              Code={
+                  'S3Bucket': bucket,
+                  'S3Key': s3_key,
+              },
+              Description=description,
+              Timeout=timeout,
+              MemorySize=memory_size,
+              Publish=publish,
+              VpcConfig=vpc_config
+          )
 
-        response = self.lambda_client.create_function(
-            FunctionName=function_name,
-            Runtime='python2.7',
-            Role=self.credentials_arn,
-            Handler=handler,
-            Code={
-                'S3Bucket': bucket,
-                'S3Key': s3_key,
-            },
-            Description=description,
-            Timeout=timeout,
-            MemorySize=memory_size,
-            Publish=publish,
-            VpcConfig=vpc_config
-        )
-
-        return response['FunctionArn']
+          return response['FunctionArn']
 
     def update_lambda_function(self, bucket, s3_key, function_name, publish=True):
         """
