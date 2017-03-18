@@ -1749,7 +1749,6 @@ class Zappa(object):
         # http://docs.aws.amazon.com/lambda/latest/dg/lambda-api-permissions-ref.html
         pull_services = ['dynamodb', 'kinesis']
 
-
         # XXX: Not available in Lambda yet.
         # We probably want to execute the latest code.
         # if default:
