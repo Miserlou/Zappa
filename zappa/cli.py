@@ -945,7 +945,8 @@ class ZappaCLI(object):
             )
 
         # Add async SNS
-        if self.stage_config.get('async_enabled', True):
+        if self.stage_config.get('async_source', False) == 'sns' \
+           and self.stage_config.get('async_resources', True):
             self.lambda_arn = self.zappa.get_lambda_function(
                 function_name=self.lambda_name)
             topic_arn = self.zappa.create_async_sns_topic(
