@@ -26,11 +26,10 @@ def create_wsgi_request(event_info,
         Given some event_info via API Gateway,
         create and return a valid WSGI request environ.
         """
-
         method = event_info['httpMethod']
         params = event_info['pathParameters']
         query = event_info['queryStringParameters'] # APIGW won't allow multiple entries, ex ?id=a&id=b
-        headers = event_info['headers']
+        headers = event_info['headers'] or {} # Allow for the AGW console 'Test' button to work (Pull #735)
 
         # Extract remote user from context if Authorizer is enabled
         remote_user = None

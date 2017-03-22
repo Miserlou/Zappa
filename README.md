@@ -817,6 +817,7 @@ If Docker is part of your team's CI, testing, or deployments, you may want to ch
 * [First Steps with AWS Lambda, Zappa and Python](https://andrich.blog/2017/02/12/first-steps-with-aws-lambda-zappa-flask-and-python/)
 * [Deploy a Serverless WSGI App using Zappa, CloudFront, RDS, and VPC](https://docs.google.com/presentation/d/1aYeOMgQl4V_fFgT5VNoycdXtob1v6xVUWlyxoTEiTw0/edit#slide=id.p)
 * [AWS: Deploy Alexa Ask Skills with Flask-Ask and Zappa](https://developer.amazon.com/blogs/post/8e8ad73a-99e9-4c0f-a7b3-60f92287b0bf/New-Alexa-Tutorial-Deploy-Flask-Ask-Skills-to-AWS-Lambda-with-Zappa)
+* [Guide to using Django with Zappa](https://edgarroman.github.io/zappa-django-guide/)
 * _Your guide here?_
 
 ## Zappa in the Press
@@ -854,7 +855,6 @@ Are you using Zappa? Let us know and we'll list your site here!
 * [cookiecutter-mobile-backend](https://github.com/narfman0/cookiecutter-mobile-backend/) - A `cookiecutter` Django project with Zappa and S3 uploads support.
 * [zappa-examples](https://github.com/narfman0/zappa-examples/) - Flask, Django, image uploads, and more!
 * [Zappa Docker Image](https://github.com/danielwhatmuff/zappa) - A Docker image for running Zappa locally, based on Lambda Docker.
-* [zappa-django-example](https://github.com/edgarroman/zappa-django-example) - A complete example for running Django on Zappa.
 * [zappa-dashing](https://github.com/nikos/zappa-dashing) - Monitor your AWS environment (health/metrics) with Zappa and CloudWatch.
 * [s3env](https://github.com/cameronmaske/s3env) - Manipulate a remote Zappa environment variable key/value JSON object file in an S3 bucket through the CLI.
 * [zappa_resize_image_on_fly](https://github.com/wobeng/zappa_resize_image_on_fly) - Resize images on the fly using Flask, Zappa, Pillow, and OpenCV-python.
