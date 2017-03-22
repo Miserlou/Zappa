@@ -7,7 +7,8 @@ from StringIO import StringIO
 from sys import stderr
 from werkzeug import urls
 
-BINARY_METHODS = [  "POST",
+BINARY_METHODS = [
+                    "POST",
                     "PUT",
                     "PATCH",
                     "DELETE",
