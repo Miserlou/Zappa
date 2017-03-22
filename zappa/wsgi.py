@@ -15,11 +15,10 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
         Given some event_info,
         create and return a valid WSGI request environ.
         """
-
         method = event_info['httpMethod']
         params = event_info['pathParameters']
         query = event_info['queryStringParameters']
-        headers = event_info['headers']
+        headers = event_info['headers'] or {}
 
         # Extract remote user from context if Authorizer is enabled
         remote_user = None
