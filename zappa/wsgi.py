@@ -1,24 +1,34 @@
+import base64
 import logging
 
-import base64
 from urllib import urlencode
 from requestlogger import ApacheFormatter
 from StringIO import StringIO
 from sys import stderr
-
 from werkzeug import urls
 
+BINARY_METHODS = [  "POST",
+                    "PUT",
+                    "PATCH",
+                    "DELETE",
+                    "CONNECT",
+                    "OPTIONS"
+                ]
 
-def create_wsgi_request(event_info, server_name='zappa', script_name=None,
-                        trailing_slash=True, binary_support=False):
+def create_wsgi_request(event_info,
+                        server_name='zappa',
+                        script_name=None,
+                        trailing_slash=True,
+                        binary_support=False
+                        ):
         """
-        Given some event_info,
+        Given some event_info via API Gateway,
         create and return a valid WSGI request environ.
         """
 
         method = event_info['httpMethod']
         params = event_info['pathParameters']
-        query = event_info['queryStringParameters']
+        query = event_info['queryStringParameters'] # APIGW won't allow multiple entries, ex ?id=a&id=b
         headers = event_info['headers']
 
         # Extract remote user from context if Authorizer is enabled
@@ -32,7 +42,7 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
         #           https://github.com/Miserlou/Zappa/issues/683
         #           https://github.com/Miserlou/Zappa/issues/696
         #           https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Summary_table
-        if binary_support and (method in ["POST", "PUT", "PATCH", "DELETE", "CONNECT", "OPTIONS"]):
+        if binary_support and (method in BINARY_METHODS):
             if event_info.get('isBase64Encoded', False):
                 encoded_body = event_info['body']
                 body = base64.b64decode(encoded_body)
