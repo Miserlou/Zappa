@@ -700,13 +700,15 @@ class Zappa(object):
                                 memory_size=512,
                                 publish=True,
                                 vpc_config=None,
-                                dead_letter_config={}
+                                dead_letter_config=None
                             ):
         """
         Given a bucket and key of a valid Lambda-zip, a function name and a handler, register that Lambda function.
         """
         if not vpc_config:
             vpc_config = {}
+        if not dead_letter_config:
+            dead_letter_config = {}
         if not self.credentials_arn:
             self.get_credentials_arn()
 

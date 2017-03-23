@@ -1614,7 +1614,6 @@ class ZappaCLI(object):
         # Load environment-specific settings
         self.s3_bucket_name = self.stage_config.get('s3_bucket', "zappa-" + ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(9)))
         self.vpc_config = self.stage_config.get('vpc_config', {})
-        self.dead_letter_config = self.stage_config.get('dead_letter_config', {})
         self.memory_size = self.stage_config.get('memory_size', 512)
         self.app_function = self.stage_config.get('app_function', None)
         self.exception_handler = self.stage_config.get('exception_handler', None)
@@ -1625,6 +1624,8 @@ class ZappaCLI(object):
         self.log_level = self.stage_config.get('log_level', "DEBUG")
         self.domain = self.stage_config.get('domain', None)
         self.timeout_seconds = self.stage_config.get('timeout_seconds', 30)
+        dead_letter_arn = self.stage_config.get('dead_letter_arn', '')
+        self.dead_letter_config = {'TargetArn': dead_letter_arn} if dead_letter_arn else {}
 
         # Provide legacy support for `use_apigateway`, now `apigateway_enabled`.
         # https://github.com/Miserlou/Zappa/issues/490
