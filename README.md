@@ -840,7 +840,8 @@ If Docker is part of your team's CI, testing, or deployments, you may want to ch
 * [LambdaMailer](https://github.com/tryolabs/lambda-mailer) - A server-less endpoint for processing a contact form.
 * [Voter Registration Microservice](https://topics.arlingtonva.us/2016/11/voter-registration-search-microservice/) - Official backup to to the Virginia Department of Elections portal.
 * [FreePoll Online](https://www.freepoll.online) - A simple and awesome say for groups to make decisions.
-* And many more!
+* [PasteOfCode](https://paste.ofcode.org/) - A Zappa-powered paste bin.
+* And many more, including banks, governments, startups, enterprises and schools!
 
 Are you using Zappa? Let us know and we'll list your site here!
 
