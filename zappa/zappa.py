@@ -1992,6 +1992,15 @@ class Zappa(object):
         )
         return topic_arn
 
+    def remove_async_sns_topic(self, lambda_name):
+        topic_name = '%s-zappa-async' % lambda_name
+        removed_arns = []
+        for sub in self.sns_client.list_subscriptions()['Subscriptions']:
+            if topic_name in sub['TopicArn']:
+                self.sns_client.delete_topic(TopicArn=sub['TopicArn'])
+                removed_arns.append(sub['TopicArn'])
+        return removed_arns
+
     ##
     # CloudWatch Logging
     ##
