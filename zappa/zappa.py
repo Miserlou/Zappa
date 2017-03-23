@@ -700,7 +700,7 @@ class Zappa(object):
                                 memory_size=512,
                                 publish=True,
                                 vpc_config=None,
-                                dead_letter_config=None
+                                dead_letter_config={}
                             ):
         """
         Given a bucket and key of a valid Lambda-zip, a function name and a handler, register that Lambda function.
