@@ -2136,7 +2136,7 @@ class ZappaCLI(object):
         return endpoint_url
 
     def check_venv(self):
-        """ Ensure we're inside a virtualenv. """
+        """ Ensure we're inside a virtualenv or conda environment. """
         if self.zappa:
             venv = self.zappa.get_current_venv()
         else:
@@ -2144,9 +2144,20 @@ class ZappaCLI(object):
             temp_zappa = Zappa()
             venv = temp_zappa.get_current_venv()
         if not venv:
-            raise ClickException(
-                click.style("Zappa", bold=True) + " requires an " + click.style("active virtual environment", bold=True, fg="red") + "!\n" +
-                "Learn more about virtual environments here: " + click.style("http://docs.python-guide.org/en/latest/dev/virtualenvs/", bold=False, fg="cyan"))
+            if os.getenv('CONDA_PREFIX', os.getenv('CONDA_ENV_PATH')) is not None:
+                if not self.stage_config.get('conda_mode', False):
+                    raise ClickException(
+                        "You seem to be using a conda environment. Set " + click.style("conda_mode=true", bold=True) + " when using conda.")
+            else:
+                if not self.stage_config.get('conda_mode', False):
+                    raise ClickException(
+                        click.style("Zappa", bold=True) + " requires an " + click.style("active virtual or conda environment", bold=True, fg="red") + "!\n" +
+                        "Learn more about virtual environments here: " + click.style("http://docs.python-guide.org/en/latest/dev/virtualenvs/", bold=False, fg="cyan"))
+                else:
+                    raise ClickException(
+                        click.style("Zappa", bold=True) + "  in conda mode requires an " + click.style("active conda environment", bold=True, fg="red") + "!\n" +
+                        "Learn more about conda environments here: " + click.style("https://conda.io/docs/using/envs.html", bold=False, fg="cyan"))
+
 
 ####################################################################
 # Main

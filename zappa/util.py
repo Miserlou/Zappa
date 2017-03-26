@@ -310,6 +310,9 @@ def check_new_version_available(this_version):
 def call(command, path=None, env_vars=None, raise_on_error=True):
     if not env_vars:
         env_vars = {}
+    #Make sure PATH is forwarded to env_vars
+    if 'PATH' not in env_vars:
+        env_vars['PATH'] = os.getenv('PATH')
     path = sys.prefix if path is None else os.path.abspath(path)
     p = Popen(shlex.split(command), cwd=path, stdout=PIPE, stderr=PIPE, env=env_vars)
     stdout, stderr = p.communicate()
@@ -320,7 +323,7 @@ def call(command, path=None, env_vars=None, raise_on_error=True):
                  "  rc: {4}"
                  .format(path, command, stdout, stderr, rc))
     if raise_on_error and rc != 0:
-        raise CalledProcessError(rc, command, "stdout: {0}\nstderr: {1}".format(stdout, stderr))
+        raise CalledProcessError(rc, command + "\nstdout: {0}\nstderr: {1}".format(stdout, stderr))
     Response = namedtuple('Response', ['stdout', 'stderr', 'rc'])
     return Response(stdout.decode('utf-8'), stderr.decode('utf-8'), int(rc))
 
