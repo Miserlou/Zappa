@@ -1,8 +1,11 @@
+import calendar
 from collections import namedtuple
+import datetime
+import durationpy
 import fnmatch
 from logging import getLogger
 import os
-from os.path import abspath
+import re
 import requests
 import shlex
 import shutil
@@ -76,6 +79,28 @@ def human_size(num, suffix='B'):
             return "{0:3.1f}{1!s}{2!s}".format(num, unit, suffix)
         num /= 1024.0
     return "{0:.1f}{1!s}{2!s}".format(num, 'Yi', suffix)
+
+def string_to_timestamp(timestring):
+    """
+    Accepts a str, returns an int timestamp.
+    """
+
+    ts = None
+
+    # Uses an extended version of Go's duration string.
+    try:
+        delta = durationpy.from_str(timestring);
+        past = datetime.datetime.utcnow() - delta
+        ts = calendar.timegm(past.timetuple())
+        return ts
+    except Exception as e:
+        pass
+
+    if ts:
+        return ts
+    # else:
+    #     print("Unable to parse timestring.")
+    return 0
 
 ##
 # `init` related
@@ -192,6 +217,12 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
 
     # Kappa 0.6.0 requires this nasty hacking,
     # hopefully we can remove at least some of this soon.
+    # Kappa 0.7.0 introduces a whole host over other changes we don't
+    # really want, so we're stuck here for a little while.
+
+    # Related:  https://github.com/Miserlou/Zappa/issues/684
+    #           https://github.com/Miserlou/Zappa/issues/688
+    #           https://github.com/Miserlou/Zappa/commit/3216f7e5149e76921ecdf9451167846b95616313
     if svc == 's3':
         split_arn = lambda_arn.split(':')
         arn_front = ':'.join(split_arn[:-1])
@@ -279,7 +310,7 @@ def check_new_version_available(this_version):
 def call(command, path=None, env_vars=None, raise_on_error=True):
     if not env_vars:
         env_vars = {}
-    path = sys.prefix if path is None else abspath(path)
+    path = sys.prefix if path is None else os.path.abspath(path)
     p = Popen(shlex.split(command), cwd=path, stdout=PIPE, stderr=PIPE, env=env_vars)
     stdout, stderr = p.communicate()
     rc = p.returncode
@@ -292,3 +323,37 @@ def call(command, path=None, env_vars=None, raise_on_error=True):
         raise CalledProcessError(rc, command, "stdout: {0}\nstderr: {1}".format(stdout, stderr))
     Response = namedtuple('Response', ['stdout', 'stderr', 'rc'])
     return Response(stdout.decode('utf-8'), stderr.decode('utf-8'), int(rc))
+
+class InvalidAwsLambdaName(Exception):
+    """Exception: proposed AWS Lambda name is invalid"""
+    pass
+
+
+def validate_name(name, maxlen=80):
+    """Validate name for AWS Lambda function.
+    name: actual name (without `arn:aws:lambda:...:` prefix and without
+        `:$LATEST`, alias or version suffix.
+    maxlen: max allowed length for name without prefix and suffix.
+
+    The value 80 was calculated from prefix with longest known region name
+    and assuming that no alias or version would be longer than `$LATEST`.
+
+    Based on AWS Lambda spec
+    http://docs.aws.amazon.com/lambda/latest/dg/API_CreateFunction.html
+
+    Return: the name
+    Raise: InvalidAwsLambdaName, if the name is invalid.
+    """
+    if not isinstance(name, basestring):
+        msg = "Name must be of type string"
+        raise InvalidAwsLambdaName(msg)
+    if len(name) > maxlen:
+        msg = "Name is longer than {maxlen} characters."
+        raise InvalidAwsLambdaName(msg.format(maxlen=maxlen))
+    if len(name) == 0:
+        msg = "Name must not be empty string."
+        raise InvalidAwsLambdaName(msg)
+    if not re.match("^[a-zA-Z0-9-_]+$", name):
+        msg = "Name can only contain characters from a-z, A-Z, 0-9, _ and -"
+        raise InvalidAwsLambdaName(msg)
+    return name

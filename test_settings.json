@@ -12,7 +12,7 @@
        "delete_local_zip": true,
        "debug": true,
        "parameter_depth": 2,
-       "prebuild_script": "test_settings.prebuild_me",
+       "prebuild_script": "tests.test_app.prebuild_me",
        "events": [
            {
                "function": "tests.test_app.schedule_me",
@@ -57,6 +57,11 @@
     "extendo2": {
        "extends": "extendo",
        "s3_bucket": "lmbda2",
+    },
+    "slim_handler": {
+       "extends": "ttt888",
+       "slim_handler": true,
+       "delete_local_zip": true
     },
     "depricated_remote_env": {
        "s3_bucket": "lmbda",

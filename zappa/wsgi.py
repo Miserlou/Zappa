@@ -1,25 +1,35 @@
+import base64
 import logging
 
-import base64
 from urllib import urlencode
 from requestlogger import ApacheFormatter
 from StringIO import StringIO
 from sys import stderr
-
 from werkzeug import urls
 
+BINARY_METHODS = [
+                    "POST",
+                    "PUT",
+                    "PATCH",
+                    "DELETE",
+                    "CONNECT",
+                    "OPTIONS"
+                ]
 
-def create_wsgi_request(event_info, server_name='zappa', script_name=None,
-                        trailing_slash=True):
+def create_wsgi_request(event_info,
+                        server_name='zappa',
+                        script_name=None,
+                        trailing_slash=True,
+                        binary_support=False
+                        ):
         """
-        Given some event_info,
+        Given some event_info via API Gateway,
         create and return a valid WSGI request environ.
         """
-
         method = event_info['httpMethod']
         params = event_info['pathParameters']
-        query = event_info['queryStringParameters']
-        headers = event_info['headers']
+        query = event_info['queryStringParameters'] # APIGW won't allow multiple entries, ex ?id=a&id=b
+        headers = event_info['headers'] or {} # Allow for the AGW console 'Test' button to work (Pull #735)
 
         # Extract remote user from context if Authorizer is enabled
         remote_user = None
@@ -28,17 +38,22 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
         elif event_info['requestContext'].get('identity'):
             remote_user = event_info['requestContext']['identity'].get('userArn')
 
-
-        # Non-GET data is B64'd through the APIGW.
-        # if method in ["POST", "PUT", "PATCH"]:
-        #     encoded_body = event_info['body']
-        #     body = base64.b64decode(encoded_body)
-        # else:
-
-        body = event_info['body']
-        # Will this generate unicode errors?
-        # Early experiments indicate no, but this still looks unsafe to me.
-        body = str(body)
+        # Related:  https://github.com/Miserlou/Zappa/issues/677
+        #           https://github.com/Miserlou/Zappa/issues/683
+        #           https://github.com/Miserlou/Zappa/issues/696
+        #           https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Summary_table
+        if binary_support and (method in BINARY_METHODS):
+            if event_info.get('isBase64Encoded', False):
+                encoded_body = event_info['body']
+                body = base64.b64decode(encoded_body)
+            else:
+                body = event_info['body']
+                # Will this generate unicode errors?
+                # Early experiments indicate no, but this still looks unsafe to me.
+                body = str(body)
+        else:
+            body = event_info['body']
+            body = str(body)
 
         # Make header names canonical, e.g. content-type => Content-Type
         for header in headers.keys():
@@ -47,25 +62,6 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
                 headers[canonical] = headers.pop(header)
 
         path = urls.url_unquote(event_info['path'])
-
-        # if 'url' in params:
-        #     # new style
-        #     path = '/' + params.get('url') + "/"
-        # else:
-        #     # old style
-        #     path = "/"
-        #     for key in sorted(params.keys()):
-        #         path = path + params[key] + "/"
-
-        #     # This determines if we should return
-        #     # site.com/resource/ : site.com/resource
-        #     # site.com/resource : site.com/resource
-        #     # vs.
-        #     # site.com/resource/ : site.com/resource/
-        #     # site.com/resource : site.com/resource/
-        #     # If no params are present, keep the slash.
-        # if not trailing_slash and params.keys():
-        #     path = path[:-1]
 
         if query:
             query_string = urlencode(query)
