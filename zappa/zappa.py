@@ -405,6 +405,10 @@ class Zappa(object):
                 env_name = f.read()[:-1]
             bin_path = subprocess.check_output(['pyenv', 'which', 'python']).decode('utf-8')
             venv = bin_path[:bin_path.rfind(env_name)] + env_name
+        elif 'CONDA_PREFIX' in os.environ:
+            venv = os.environ['CONDA_PREFIX']
+        elif 'CONDA_ENV_PATH' in os.environ:
+            venv = os.environ['CONDA_ENV_PATH']
         else:  # pragma: no cover
             return None
         return venv
