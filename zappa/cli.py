@@ -1746,6 +1746,9 @@ class ZappaCLI(object):
             inspect.getfile(inspect.currentframe())))
         handler_file = os.sep.join(current_file.split(os.sep)[0:]) + os.sep + 'handler.py'
 
+        conda_mode = self.stage_config.get('conda_mode', False)
+        exclude_conda_packages = self.stage_config.get('exclude_conda_packages',
+                    ['pip','python','readline','sqlite','wheel', 'boto3', 'botocore', 'tk'])  
         # Create the zip file(s)
         if self.stage_config.get('slim_handler', False):
             # Create two zips. One with the application and the other with just the handler.
@@ -1753,19 +1756,23 @@ class ZappaCLI(object):
             self.zip_path = self.zappa.create_lambda_zip(
                 prefix=self.lambda_name,
                 use_precompiled_packages=self.stage_config.get('use_precompiled_packages', True),
-                exclude=self.stage_config.get('exclude', [])
+                exclude=self.stage_config.get('exclude', []),
+                conda_mode=conda_mode,
+                exclude_conda_packages=exclude_conda_packages
             )
 
             # Make sure the normal venv is not included in the handler's zip
             exclude = self.stage_config.get('exclude', [])
-            cur_venv = self.zappa.get_current_venv()
-            exclude.append(cur_venv.split('/')[-1])
+            if not conda_mode:
+                cur_venv = self.zappa.get_current_venv()
+                exclude.append(cur_venv.split('/')[-1])
             self.handler_path = self.zappa.create_lambda_zip(
                 prefix='handler_{0!s}'.format(self.lambda_name),
                 venv=self.zappa.create_handler_venv(),
                 handler_file=handler_file,
                 slim_handler=True,
-                exclude=exclude
+                exclude=exclude,
+                conda_mode=False
             )
         else:
             # Create a single zip that has the handler and application
@@ -1777,7 +1784,9 @@ class ZappaCLI(object):
                     'exclude',
                     # Exclude packages already builtin to the python lambda environment
                     # https://github.com/Miserlou/Zappa/issues/556
-                    ["boto3", "dateutil", "botocore", "s3transfer", "six.py", "jmespath", "concurrent"])
+                    ["boto3", "dateutil", "botocore", "s3transfer", "six.py", "jmespath", "concurrent"]),
+                conda_mode=conda_mode,
+                exclude_conda_packages=exclude_conda_packages
             )
             # Warn if this is too large for Lambda.
             file_stats = os.stat(self.zip_path)
@@ -1927,7 +1936,8 @@ class ZappaCLI(object):
             self.zappa.remove_from_s3(self.zip_path, self.s3_bucket_name)
             if self.stage_config.get('slim_handler', False):
                 # Need to keep the project zip as the slim handler uses it.
-                self.zappa.remove_from_s3(self.handler_path, self.s3_bucket_name)
+                if self.handler_path is not None:
+                    self.zappa.remove_from_s3(self.handler_path, self.s3_bucket_name)
 
 
     def on_exit(self):
@@ -2130,7 +2140,7 @@ class ZappaCLI(object):
         return endpoint_url
 
     def check_venv(self):
-        """ Ensure we're inside a virtualenv. """
+        """ Ensure we're inside a virtualenv or conda environment. """
         if self.zappa:
             venv = self.zappa.get_current_venv()
         else:
@@ -2138,9 +2148,20 @@ class ZappaCLI(object):
             temp_zappa = Zappa()
             venv = temp_zappa.get_current_venv()
         if not venv:
-            raise ClickException(
-                click.style("Zappa", bold=True) + " requires an " + click.style("active virtual environment", bold=True, fg="red") + "!\n" +
-                "Learn more about virtual environments here: " + click.style("http://docs.python-guide.org/en/latest/dev/virtualenvs/", bold=False, fg="cyan"))
+            if os.getenv('CONDA_PREFIX', os.getenv('CONDA_ENV_PATH')) is not None:
+                if not self.stage_config.get('conda_mode', False):
+                    raise ClickException(
+                        "You seem to be using a conda environment. Set " + click.style("conda_mode=true", bold=True) + " when using conda.")
+            else:
+                if not self.stage_config.get('conda_mode', False):
+                    raise ClickException(
+                        click.style("Zappa", bold=True) + " requires an " + click.style("active virtual or conda environment", bold=True, fg="red") + "!\n" +
+                        "Learn more about virtual environments here: " + click.style("http://docs.python-guide.org/en/latest/dev/virtualenvs/", bold=False, fg="cyan"))
+                else:
+                    raise ClickException(
+                        click.style("Zappa", bold=True) + "  in conda mode requires an " + click.style("active conda environment", bold=True, fg="red") + "!\n" +
+                        "Learn more about conda environments here: " + click.style("https://conda.io/docs/using/envs.html", bold=False, fg="cyan"))
+
 
 ####################################################################
 # Main

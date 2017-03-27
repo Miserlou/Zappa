@@ -6,6 +6,14 @@ cache:
   - pip
 install:
   - "pip install setuptools --upgrade; pip install -r test_requirements.txt; pip install -e git+https://github.com/django/django-contrib-comments.git#egg=django-contrib-comments; python setup.py install" 
+  - wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - "$HOME/miniconda/bin/pip install -r test_requirements.txt; $HOME/miniconda/bin/pip install -e git+https://github.com/django/django-contrib-comments.git#egg=django-contrib-comments; $HOME/miniconda/bin/python setup.py install"
+  - hash -r
+  - $HOME/miniconda/bin/conda config --set always_yes yes --set changeps1 no
+  - $HOME/miniconda/bin/conda update -q conda
+  # Useful for debugging any issues with conda
+  - $HOME/miniconda/bin/conda info -a
 # command to run tests
 env:
   - TESTCASE=tests/test_handler.py
@@ -14,6 +22,7 @@ env:
   - TESTCASE=tests/tests.py
 script: 
   - nosetests $TESTCASE --with-coverage --cover-package=zappa --with-timer
+  - unset VIRTUAL_ENV; PATH="$HOME/miniconda/bin:$PATH" CONDA_PREFIX=$HOME/miniconda nosetests $TESTCASE --with-coverage --cover-package=zappa --with-timer
     #  - coverage combine --append
 after_success:
   coveralls
