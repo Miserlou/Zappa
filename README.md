@@ -455,6 +455,7 @@ to change Zappa's behavior. Use these at your own risk!
         "cloudwatch_data_trace": false, // Logs all data about received events. Default false.
         "cloudwatch_metrics_enabled": false, // Additional metrics for the API Gateway. Default false.
         "cors": true, // Enable Cross-Origin Resource Sharing. Default false. If true, simulates the "Enable CORS" button on the API Gateway console. Can also be a dictionary specifying lists of "allowed_headers", "allowed_methods", and string of "allowed_origin"
+        "dead_letter_arn": "arn:aws:<sns/sqs>:::my-topic/queue", // Optional Dead Letter configuration for when Lambda async invoke fails thrice
         "debug": true, // Print Zappa configuration errors tracebacks in the 500. Default true.
         "delete_local_zip": true, // Delete the local zip archive after code updates. Default true.
         "delete_s3_zip": true, // Delete the s3 zip archive. Default true.
@@ -803,6 +804,22 @@ To avoid this, you can file a [service ticket](https://console.aws.amazon.com/su
 #### Using Zappa With Docker
 
 If Docker is part of your team's CI, testing, or deployments, you may want to check out [this handy guide](https://blog.zappa.io/posts/simplified-aws-lambda-deployments-with-docker-and-zappa) on using Zappa with Docker.
+
+#### Dead Letter Queues
+
+If you want to utilise [AWS Lambda's Dead Letter Queue feature](http://docs.aws.amazon.com/lambda/latest/dg/dlq.html>), you can set them in your `zappa_settings.json`:
+
+```javascript
+    {
+        "dev": {
+            ...
+            "dead_letter_arn": "your_sns_or_sqs_arn"
+        },
+        ...
+    }
+```
+
+You must have already created the corresponding SNS/SQS topic/queue, and the Lambda function execution role must have been provisioned with read/publish/sendMessage access to the DLQ resource.
 
 ## Zappa Guides
 
