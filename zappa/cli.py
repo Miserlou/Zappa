@@ -602,6 +602,7 @@ class ZappaCLI(object):
                 handler=self.lambda_handler,
                 description=self.lambda_description,
                 vpc_config=self.vpc_config,
+                dead_letter_config=self.dead_letter_config,
                 timeout=self.timeout_seconds,
                 memory_size=self.memory_size
             )
@@ -1623,6 +1624,8 @@ class ZappaCLI(object):
         self.log_level = self.stage_config.get('log_level', "DEBUG")
         self.domain = self.stage_config.get('domain', None)
         self.timeout_seconds = self.stage_config.get('timeout_seconds', 30)
+        dead_letter_arn = self.stage_config.get('dead_letter_arn', '')
+        self.dead_letter_config = {'TargetArn': dead_letter_arn} if dead_letter_arn else {}
 
         # Provide legacy support for `use_apigateway`, now `apigateway_enabled`.
         # https://github.com/Miserlou/Zappa/issues/490

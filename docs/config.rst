@@ -20,6 +20,7 @@ Stages, such as *dev*, *staging*, and *production* are configured in the *zappa_
                 "zip": "my_app.zip_callback", // After creating the package
                 "post": "my_app.post_callback", // After command has excuted
             },
+            "dead_letter_arn": "arn:aws:<sns/sqs>:::my-topic/queue", // Optional Dead Letter configuration for when Lambda async invoke fails thrice
             "debug": true
             "delete_zip": true
             "domain": "yourapp.yourdomain.com",
