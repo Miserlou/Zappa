@@ -807,17 +807,7 @@ If Docker is part of your team's CI, testing, or deployments, you may want to ch
 
 #### Dead Letter Queues
 
-If you want to utilise [AWS Lambda's Dead Letter Queue feature](http://docs.aws.amazon.com/lambda/latest/dg/dlq.html>), you can set them in your `zappa_settings.json`:
-
-```javascript
-    {
-        "dev": {
-            ...
-            "dead_letter_arn": "your_sns_or_sqs_arn"
-        },
-        ...
-    }
-```
+If you want to utilise [AWS Lambda's Dead Letter Queue feature](http://docs.aws.amazon.com/lambda/latest/dg/dlq.html>) simply add the key `dead_letter_arn`, with the value being the complete ARN to the corresponding SNS topic or SQS queue in your `zappa_settings.json`.
 
 You must have already created the corresponding SNS/SQS topic/queue, and the Lambda function execution role must have been provisioned with read/publish/sendMessage access to the DLQ resource.
 
