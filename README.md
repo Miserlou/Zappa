@@ -472,7 +472,7 @@ Using SNS also requires setting the following settings in your `zappa_settings`:
   "dev": {
     ..
       "async_source": "sns", // Source of async tasks. Defaults to "lambda"
-      "async_resounces": true, // Create the SNS topic to use. Defaults to true.
+      "async_resources": true, // Create the SNS topic to use. Defaults to true.
     ..
     }
 }
@@ -515,7 +515,7 @@ to change Zappa's behavior. Use these at your own risk!
         "assume_policy": "my_assume_policy.json", // optional, IAM assume policy JSON file
         "attach_policy": "my_attach_policy.json", // optional, IAM attach policy JSON file
         "async_source": "sns", // Source of async tasks. Defaults to "lambda"
-        "async_resounces": true, // Create the SNS topic to use. Defaults to true.
+        "async_resources": true, // Create the SNS topic to use. Defaults to true.
         "aws_region": "aws-region-name", // optional, uses region set in profile or environment variables if not set here,
         "binary_support": true, // Enable automatic MIME-type based response encoding through API Gateway. Default true.
         "callbacks": { // Call custom functions during the local Zappa deployment/update process
