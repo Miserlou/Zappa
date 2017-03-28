@@ -57,7 +57,10 @@ class LambdaAsyncResponse(object):
     """
     def __init__(self, **kwargs):
         """ """
-        self.client = LAMBDA_CLIENT
+        if kwargs.get('boto_session'):
+            self.client = kwargs.get('boto_session').client('lambda')
+        else:
+            self.client = LAMBDA_CLIENT
 
     def send(self, task_path, args, kwargs):
         """
@@ -92,11 +95,19 @@ class SnsAsyncResponse(LambdaAsyncResponse):
     Serialise the func path and arguments
     """
     def __init__(self, **kwargs):
-        self.client = SNS_CLIENT
+
+        if kwargs.get('boto_session'):
+            self.client = kwargs.get('boto_session').client('sns')
+        else:
+            self.client = SNS_CLIENT
+
         if kwargs.get('arn'):
             self.arn = kwargs.get('arn')
         else:
-            sts_client = STS_CLIENT
+            if kwargs.get('boto_session'):
+                sts_client = kwargs.get('boto_session').client('sts')
+            else:
+                sts_client = STS_CLIENT
             AWS_ACCOUNT_ID = sts_client.get_caller_identity()['Account']
             self.arn = 'arn:aws:sns:{region}:{account}:{topic_name}'.format(
                                     region=AWS_REGION,

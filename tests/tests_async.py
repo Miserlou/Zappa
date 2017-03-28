@@ -1,5 +1,6 @@
 # -*- coding: utf8 -*-
 import base64
+import boto3
 import collections
 import json
 from contextlib import nested
@@ -62,10 +63,13 @@ class TestZappa(unittest.TestCase):
         self.assertFalse(False)
 
     def test_nofails_classes(self):
+
+        boto_session = boto3.Session(profile_name=profile_name, region_name=os.environ['AWS_DEFAULT_REGION'])
+
         a = AsyncException()
-        l = LambdaAsyncResponse()
+        l = LambdaAsyncResponse(boto_session=boto_session)
         # s = SnsAsyncResponse()
-        s = SnsAsyncResponse(arn="arn:abc:def")
+        s = SnsAsyncResponse(arn="arn:abc:def", boto_session=boto_session)
 
     def test_nofails_funcs(self):
         funk = _import_and_get_task("tests.test_app.schedule_me")
