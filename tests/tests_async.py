@@ -64,7 +64,7 @@ class TestZappa(unittest.TestCase):
 
     def test_nofails_classes(self):
 
-        boto_session = boto3.Session(profile_name=profile_name, region_name=os.environ['AWS_DEFAULT_REGION'])
+        boto_session = boto3.Session(region_name=os.environ['AWS_DEFAULT_REGION'])
 
         a = AsyncException()
         l = LambdaAsyncResponse(boto_session=boto_session)
