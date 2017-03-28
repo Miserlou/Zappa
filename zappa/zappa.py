@@ -1188,7 +1188,7 @@ class Zappa(object):
                     'op': 'add'
                     'path': '/apiStages',
                     'value': '{}:{}'.format(api_id, stage_name)
-                },
+                }
             ]
         )
 
@@ -1197,7 +1197,7 @@ class Zappa(object):
         Add api stage to an existing custom domain
         """
         print("Adding API base path mapping to custom domain..")
-        response = client.create_base_path_mapping(
+        self.apigateway_client.create_base_path_mapping(
             domainName=apigateway_custom_domain_name,
             basePath=apigateway_custom_domain_base_path,
             restApiId=api_id,
