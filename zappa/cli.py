@@ -1653,6 +1653,8 @@ class ZappaCLI(object):
         self.api_key_required = self.stage_config.get('api_key_required', False)
         self.api_key = self.stage_config.get('api_key')
         self.usage_plan_id = self.stage_config.get('usage_plan_id', None)
+        self.apigateway_custom_domain = self.stage_config.get('apigateway_custom_domain', None)
+        self.apigateway_custom_domain_base_path = self.stage_config.get('apigateway_custom_domain_base_path', None)
         self.iam_authorization = self.stage_config.get('iam_authorization', False)
         self.cors = self.stage_config.get("cors", None)
         self.lambda_description = self.stage_config.get('lambda_description', "Zappa Deployment")
