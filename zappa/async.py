@@ -8,10 +8,6 @@ from zappa.async import task
 @task(service='sns')
 def my_async_func(*args, **kwargs):
     dosomething()
-
-res = my_async_func.async(*args, **kwargs)
-if res.sent:
-    print('It was dispatched! Who knows what the function result will be!')
 ```
 
 For SNS, you can also pass an `arn` argument to task() which will specify which SNS path to send it to.
@@ -215,11 +211,6 @@ def task(service='lambda', **task_kwargs):
     Serialises and dispatches the task to SNS.
     Lambda subscribes to SNS topic and gets this message
     Lambda routes the message to the same function
-    Example:
-        @task(service='sns')
-        def my_async_func(*args, **kwargs):
-            dosomething()
-        my_async_func.async(*args, **kwargs)
     """
     def _invoker(func, task_path):
         """ """

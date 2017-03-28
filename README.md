@@ -228,91 +228,6 @@ And now your scheduled event rules are deleted.
 
 See the [example](example/) for more details.
 
-#### Executing in Response to AWS Events
-
-Similarly, you can have your functions execute in response to events that happen in the AWS ecosystem, such as S3 uploads, DynamoDB entries, Kinesis streams, and SNS messages.
-
-In your *zappa_settings.json* file, define your [event sources](http://docs.aws.amazon.com/lambda/latest/dg/invoking-lambda-function.html) and the function you wish to execute. For instance, this will execute `your_module.process_upload_function` in response to new objects in your `my-bucket` S3 bucket. Note that `process_upload_function` must accept `event` and `context` parameters.
-
-```javascript
-{
-    "production": {
-       ...
-       "events": [{
-            "function": "your_module.process_upload_function",
-            "event_source": {
-                  "arn":  "arn:aws:s3:::my-bucket",
-                  "events": [
-                    "s3:ObjectCreated:*" // Supported event types: http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html#supported-notification-event-types
-                  ]
-               }
-            }],
-       ...
-    }
-}
-```
-
-And then:
-
-    $ zappa schedule production
-
-And now your function will execute every time a new upload appears in your bucket!
-
-To access the key's information in your application context, you'll want `process_upload_function` to look something like this:
-
-```python
-import boto3
-s3_client = boto3.client('s3')
-
-def process_upload_function(event, context):
-    """
-    Process a file upload.
-    """
-
-    # Get the uploaded file's information
-    bucket = event['Records'][0]['s3']['bucket']['name'] # Will be `my-bucket`
-    key = event['Records'][0]['s3']['object']['key'] # Will be the file path of whatever file was uploaded.
-
-    # Get the bytes from S3
-    s3_client.download_file(bucket, key, '/tmp/' + key) # Download this file to writable tmp space.
-    file_bytes = open('/tmp/' + key).read()
-```
-
-
-Similarly, for a [Simple Notification Service](https://aws.amazon.com/sns/) event:
-
-```javascript
-        "events": [
-            {
-                "function": "your_module.your_function",
-                "event_source": {
-                    "arn":  "arn:aws:sns:::your-event-topic-arn",
-                    "events": [
-                        "sns:Publish"
-                    ]
-                }
-            }
-        ]
-```
-
-[DynamoDB](http://docs.aws.amazon.com/lambda/latest/dg/with-ddb.html) and [Kinesis](http://docs.aws.amazon.com/lambda/latest/dg/with-kinesis.html) are slightly different as it is not event based but pulling from a stream:
-
-```javascript
-       "events": [
-           {
-               "function": "replication.replicate_records",
-               "event_source": {
-                    "arn":  "arn:aws:dynamodb:us-east-1:1234554:table/YourTable/stream/2016-05-11T00:00:00.000",
-                    "starting_position": "TRIM_HORIZON", // Supported values: TRIM_HORIZON, LATEST
-                    "batch_size": 50, // Max: 1000
-                    "enabled": true // Default is false
-               }
-           }
-       ]
-```
-
-You can find more [example event sources here](http://docs.aws.amazon.com/lambda/latest/dg/eventsources.html).
-
 #### Undeploy
 
 If you need to remove the API Gateway and Lambda function that you have previously published, you can simply:
@@ -426,6 +341,160 @@ Please note that this can take around 45 minutes to take effect. You can avoid t
 
 More detailed instructions are available [in this handy guide](https://github.com/Miserlou/Zappa/blob/master/docs/domain_with_free_ssl_dns.md) and lower down in this README file.
 
+## Executing in Response to AWS Events
+
+Similarly, you can have your functions execute in response to events that happen in the AWS ecosystem, such as S3 uploads, DynamoDB entries, Kinesis streams, and SNS messages.
+
+In your *zappa_settings.json* file, define your [event sources](http://docs.aws.amazon.com/lambda/latest/dg/invoking-lambda-function.html) and the function you wish to execute. For instance, this will execute `your_module.process_upload_function` in response to new objects in your `my-bucket` S3 bucket. Note that `process_upload_function` must accept `event` and `context` parameters.
+
+```javascript
+{
+    "production": {
+       ...
+       "events": [{
+            "function": "your_module.process_upload_function",
+            "event_source": {
+                  "arn":  "arn:aws:s3:::my-bucket",
+                  "events": [
+                    "s3:ObjectCreated:*" // Supported event types: http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html#supported-notification-event-types
+                  ]
+               }
+            }],
+       ...
+    }
+}
+```
+
+And then:
+
+    $ zappa schedule production
+
+And now your function will execute every time a new upload appears in your bucket!
+
+To access the key's information in your application context, you'll want `process_upload_function` to look something like this:
+
+```python
+import boto3
+s3_client = boto3.client('s3')
+
+def process_upload_function(event, context):
+    """
+    Process a file upload.
+    """
+
+    # Get the uploaded file's information
+    bucket = event['Records'][0]['s3']['bucket']['name'] # Will be `my-bucket`
+    key = event['Records'][0]['s3']['object']['key'] # Will be the file path of whatever file was uploaded.
+
+    # Get the bytes from S3
+    s3_client.download_file(bucket, key, '/tmp/' + key) # Download this file to writable tmp space.
+    file_bytes = open('/tmp/' + key).read()
+```
+
+Similarly, for a [Simple Notification Service](https://aws.amazon.com/sns/) event:
+
+```javascript
+        "events": [
+            {
+                "function": "your_module.your_function",
+                "event_source": {
+                    "arn":  "arn:aws:sns:::your-event-topic-arn",
+                    "events": [
+                        "sns:Publish"
+                    ]
+                }
+            }
+        ]
+```
+
+[DynamoDB](http://docs.aws.amazon.com/lambda/latest/dg/with-ddb.html) and [Kinesis](http://docs.aws.amazon.com/lambda/latest/dg/with-kinesis.html) are slightly different as it is not event based but pulling from a stream:
+
+```javascript
+       "events": [
+           {
+               "function": "replication.replicate_records",
+               "event_source": {
+                    "arn":  "arn:aws:dynamodb:us-east-1:1234554:table/YourTable/stream/2016-05-11T00:00:00.000",
+                    "starting_position": "TRIM_HORIZON", // Supported values: TRIM_HORIZON, LATEST
+                    "batch_size": 50, // Max: 1000
+                    "enabled": true // Default is false
+               }
+           }
+       ]
+```
+
+You can find more [example event sources here](http://docs.aws.amazon.com/lambda/latest/dg/eventsources.html).
+
+## Asynchronous Task Execution
+
+Zappa also now offers the ability to seamlessly execute functions asyncronously in a completely seperate AWS Lambda instance!
+
+For example, if you have a Flask API for ordering a pie, you can call your `bake` function seamlessly in a completely seperate Lambda instance by using the `zappa.async.task` decorator like so:
+
+```python
+import flask
+from zappa.async import task
+
+@task()
+def make_pie():
+    """ This takes a long time! """
+    ingredients = get_ingredients()
+    pie = bake(ingredients)
+    deliver(pie)
+
+@flask.route('/api/order/pie')
+def order_pie():
+    """ This returns immediately! """
+    make_pie()
+    return "Your pie is being made!"
+
+```
+
+And that's it! Your API response will return immediately, while the `make_pie` function executes in a completely different Lambda instance.
+
+### Different Task Source Services
+
+By default, this feature uses direct AWS Lambda invocation. You can instead use AWS Simple Notification Service as the task event source by passing in a `service` argument to the decorator, like so:
+
+```
+@task(service='sns')
+```
+
+Using SNS also requires setting the following settings in your `zappa_settings`:
+
+```javascript
+{
+  "dev":{
+    ..
+      "async_source": "sns", // Source of async tasks. Defaults to "lambda"
+      "async_resounces": true, // Create the SNS topic to use. Defaults to true.
+    ..
+    }
+}
+```
+
+### Direct invocation
+
+This will automatically create and subscribe to the SNS topic the code will use when you call the `zappa schedule` command.
+
+You can also use this functionality without a decorator by passing your function to `zappa.async.run`, like so:
+
+```python
+from zappa.async import run
+run(your_function, args, kwargs) # Using Lambda
+run(your_function, args, kwargs, service='sns') # Using SNS
+
+```
+
+### Restrictions
+
+The following restrictions to this feature apply:
+* Function must have a clean import path -- i.e. no closures, lambdas, or methods.
+* `args` and `kwargs `must be JSON-serializable.
+* The JSON-serialized arguments must be within the size limits for Lambda (128K) or SNS (256K) events.
+
+All of this code is still backwards-compatible with non-Lambda environments - it simply executes in a blocking fashion and returns the result.
+
 ## Advanced Settings
 
 There are other settings that you can define in your local settings
@@ -440,6 +509,8 @@ to change Zappa's behavior. Use these at your own risk!
         "apigateway_description": "My funky application!", // Define a custom description for the API Gateway console. Default None.
         "assume_policy": "my_assume_policy.json", // optional, IAM assume policy JSON file
         "attach_policy": "my_attach_policy.json", // optional, IAM attach policy JSON file
+        "async_source": "sns", // Source of async tasks. Defaults to "lambda"
+        "async_resounces": true, // Create the SNS topic to use. Defaults to true.
         "aws_region": "aws-region-name", // optional, uses region set in profile or environment variables if not set here,
         "binary_support": true, // Enable automatic MIME-type based response encoding through API Gateway. Default true.
         "callbacks": { // Call custom functions during the local Zappa deployment/update process
