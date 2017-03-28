@@ -64,10 +64,10 @@ class LambdaAsyncResponse(object):
         Create the message object and pass it to the actual sender.
         """
         message = {
-            'task_path': task_path,
-            'args': args,
-            'kwargs': kwargs
-        }
+                'task_path': task_path,
+                'args': args,
+                'kwargs': kwargs
+            }
         self._send(message)
         return self
 
@@ -143,9 +143,9 @@ def _get_func_task_path(func):
     """
     module_path = inspect.getmodule(func).__name__
     task_path = '{module_path}.{func_name}'.format(
-        module_path=module_path,
-        func_name=func.__name__
-    )
+                                        module_path=module_path,
+                                        func_name=func.__name__
+                                    )
 
 
 def route_lambda_task(event, context):
@@ -156,8 +156,9 @@ def route_lambda_task(event, context):
     message = event
     func = _import_and_get_task(message['task_path'])
     return func(
-        *message['args'], **message['kwargs']
-    )
+            *message['args'],
+            **message['kwargs']
+        )
 
 
 def route_sns_task(event, context):
@@ -167,12 +168,13 @@ def route_sns_task(event, context):
     """
     record = event['Records'][0]
     message = json.loads(
-        record['Sns']['Message']
-    )
+            record['Sns']['Message']
+        )
     func = _import_and_get_task(message['task_path'])
     return func(
-        *message['args'], **message['kwargs']
-    )
+            *message['args'],
+            **message['kwargs']
+        )
 
 
 def run(func, args=[], kwargs={}, service='lambda', **task_kwargs):
@@ -201,16 +203,19 @@ def task(service='lambda', **task_kwargs):
             dosomething()
         my_async_func.async(*args, **kwargs)
     """
-    def _delay(func, task_path):
-        def _delay_inner(*args, **kwargs):
+    def _invoker(func, task_path):
+        """ """
+        def _invoker_inner(*args, **kwargs):
+            """ """
             if service in ASYNC_CLASSES:
                 return ASYNC_CLASSES[service](**task_kwargs).send(task_path, args, kwargs)
             return func(*args, **kwargs)
-        return _delay_inner
+        return _invoker_inner
 
     def _wrap(func):
+        """ """
         task_path = _get_func_task_path(func)
-        func.async = _delay(func, task_path)
+        func.async = _invoker(func, task_path)
         return func
 
     return _wrap
