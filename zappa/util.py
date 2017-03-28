@@ -156,6 +156,14 @@ def detect_flask_apps():
     return matches
 
 ##
+# Async Tasks
+##
+
+def get_topic_name(self, lambda_name):
+    """ Topic name generation """
+    return '%s-zappa-async' % lambda_name
+
+##
 # Event sources / Kappa
 ##
 

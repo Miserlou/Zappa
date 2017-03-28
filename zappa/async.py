@@ -1,12 +1,8 @@
-import os
-import json
-import importlib
-import inspect
-import boto3
-
-
 """
+Zappa Async Tasks
+
 Example:
+```
 from zappa.async import task
 
 @task(service='sns')
@@ -16,31 +12,57 @@ def my_async_func(*args, **kwargs):
 res = my_async_func.async(*args, **kwargs)
 if res.sent:
     print('It was dispatched! Who knows what the function result will be!')
+```
 
-For sns, you can also pass an `arn` argument to task() which will specify which SNS path to send it to.
+For SNS, you can also pass an `arn` argument to task() which will specify which SNS path to send it to.
 
-Without service='sns', the default service is 'lambda' which will call the method in an asynchronous
+Without `service='sns'`, the default service is 'lambda' which will call the method in an asynchronous
 lambda call.
 
 The following restrictions apply:
-* func must have a clean import path -- i.e. no closures, lambdas, or methods.
-* args and kwargs must be json-serializable.
-* The json-serialized form must be within the size limits for Lambda (128K) or SNS (256K) events.
+* function must have a clean import path -- i.e. no closures, lambdas, or methods.
+* args and kwargs must be JSON-serializable.
+* The JSON-serialized form must be within the size limits for Lambda (128K) or SNS (256K) events.
 
 """
 
+import os
+import json
+import importlib
+import inspect
+import boto3
+
+from util import get_topic_name
 
 AWS_REGION = os.environ.get('AWS_REGION')
 AWS_LAMBDA_FUNCTION_NAME = os.environ.get('AWS_LAMBDA_FUNCTION_NAME')
 
+# Declare these here so they're kept warm.
+LAMBDA_CLIENT = boto3.client('lambda')
+SNS_CLIENT = boto3.client('sns')
+STS_CLIENT = boto3.client('sts')
+
+##
+# Response and Exception classes
+##
+
 class AsyncException(Exception):
+    """ Simple exception class for async tasks. """
     pass
 
 class LambdaAsyncResponse(object):
+    """
+    Base Response Dispatcher class
+    Can be used directly or subclassed if the method to send the message is changed.
+    """
     def __init__(self, **kwargs):
-        self.client = boto3.client('lambda')
+        """ """
+        self.client = LAMBDA_CLIENT
 
     def send(self, task_path, args, kwargs):
+        """
+        Create the message object and pass it to the actual sender.
+        """
         message = {
             'task_path': task_path,
             'args': args,
@@ -50,17 +72,19 @@ class LambdaAsyncResponse(object):
         return self
 
     def _send(self, message):
+        """
+        Given a message, directly invoke the lamdba function for this task.
+        """
         message['command'] = 'zappa.async.route_lambda_task'
         payload = json.dumps(message).encode('utf-8')
         if len(payload) > 128000:
             raise AsyncException("Payload too large for async Lambda call")
         self.response = self.client.invoke(
-            FunctionName=AWS_LAMBDA_FUNCTION_NAME,
-            InvocationType='Event', #makes the call async
-            Payload=payload)
-
+                                    FunctionName=AWS_LAMBDA_FUNCTION_NAME,
+                                    InvocationType='Event', #makes the call async
+                                    Payload=payload
+                                )
         self.sent = (response.get('StatusCode', 0) == 202)
-
 
 class SnsAsyncResponse(LambdaAsyncResponse):
     """
@@ -68,26 +92,34 @@ class SnsAsyncResponse(LambdaAsyncResponse):
     Serialise the func path and arguments
     """
     def __init__(self, **kwargs):
-        self.client = boto3.client('sns')
+        self.client = SNS_CLIENT
         if kwargs.get('arn'):
             self.arn = kwargs.get('arn')
         else:
-            stsclient = boto3.client('sts')
-            AWS_ACCOUNT_ID = stsclient.get_caller_identity()['Account']
-            self.arn = 'arn:aws:sns:{region}:{account}:{lambda_name}-zappa-async'.format(
-                region=AWS_REGION, account=AWS_ACCOUNT_ID,
-                lambda_name=AWS_LAMBDA_FUNCTION_NAME
-            )
+            sts_client = STS_CLIENT
+            AWS_ACCOUNT_ID = sts_client.get_caller_identity()['Account']
+            self.arn = 'arn:aws:sns:{region}:{account}:{topic_name}'.format(
+                                    region=AWS_REGION,
+                                    account=AWS_ACCOUNT_ID,
+                                    topic_name=get_topic_name(AWS_LAMBDA_FUNCTION_NAME)
+                                )
 
     def _send(self, message):
+        """
+        Given a message, publish to this topic.
+        """
         payload = json.dumps(message)
         if len(payload) > 256000:
             raise AsyncException("Payload too large for SNS")
         self.response = client.publish(
-            TargetArn=self.arn, Message=payload
-        )
+                                TargetArn=self.arn,
+                                Message=payload
+                            )
         self.sent = self.response.get('MessageId')
 
+##
+# Aync routers and utility functions
+##
 
 ASYNC_CLASSES = {
     'lambda': LambdaAsyncResponse,
@@ -106,6 +138,9 @@ def _import_and_get_task(task_path):
 
 
 def _get_func_task_path(func):
+    """
+    Format the modular task path for a function via inspection.
+    """
     module_path = inspect.getmodule(func).__name__
     task_path = '{module_path}.{func_name}'.format(
         module_path=module_path,

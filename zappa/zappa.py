@@ -26,7 +26,7 @@ from setuptools import find_packages
 from tqdm import tqdm
 
 # Zappa imports
-from util import copytree, add_event_source, remove_event_source, human_size
+from util import copytree, add_event_source, remove_event_source, human_size, get_topic_name
 
 ##
 # Logging Config
@@ -1712,6 +1712,31 @@ class Zappa(object):
 
         return self.credentials_arn, updated
 
+    def _clear_policy(self, lambda_name):
+        """
+        Remove obsolete policy statements to prevent policy from bloating over the limit after repeated updates.
+        """
+        try:
+            policy_response = self.lambda_client.get_policy(
+                FunctionName=lambda_name
+            )
+            if policy_response['ResponseMetadata']['HTTPStatusCode'] == 200:
+                statement = json.loads(policy_response['Policy'])['Statement']
+                for s in statement:
+                    delete_response = self.lambda_client.remove_permission(
+                        FunctionName=lambda_name,
+                        StatementId=s['Sid']
+                    )
+                    if delete_response['ResponseMetadata']['HTTPStatusCode'] != 204:
+                        logger.error('Failed to delete an obsolete policy statement: {}'.format())
+            else:
+                logger.debug('Failed to load Lambda function policy: {}'.format(policy_response))
+        except ClientError as e:
+            if e.message.find('ResourceNotFoundException') > -1:
+                logger.debug('No policy found, must be first run.')
+            else:
+                logger.error('Unexpected client error {}'.format(e.message))
+
     ##
     # CloudWatch Events
     ##
@@ -1942,33 +1967,15 @@ class Zappa(object):
                 )
                 print("Removed event " + name + " (" + str(event_source['events']) + ").")
 
-    def _clear_policy(self, lambda_name):
-        """
-        Remove obsolete policy statements to prevent policy from bloating over the limit after repeated updates.
-        """
-        try:
-            policy_response = self.lambda_client.get_policy(
-                FunctionName=lambda_name
-            )
-            if policy_response['ResponseMetadata']['HTTPStatusCode'] == 200:
-                statement = json.loads(policy_response['Policy'])['Statement']
-                for s in statement:
-                    delete_response = self.lambda_client.remove_permission(
-                        FunctionName=lambda_name,
-                        StatementId=s['Sid']
-                    )
-                    if delete_response['ResponseMetadata']['HTTPStatusCode'] != 204:
-                        logger.error('Failed to delete an obsolete policy statement: {}'.format())
-            else:
-                logger.debug('Failed to load Lambda function policy: {}'.format(policy_response))
-        except ClientError as e:
-            if e.message.find('ResourceNotFoundException') > -1:
-                logger.debug('No policy found, must be first run.')
-            else:
-                logger.error('Unexpected client error {}'.format(e.message))
+    ###
+    # Async / SNS
+    ##
 
     def create_async_sns_topic(self, lambda_name, lambda_arn):
-        topic_name = '%s-zappa-async' % lambda_name
+        """
+        Create the SNS-based async topic.
+        """
+        topic_name = get_topic_name(lambda_name)
         # Create SNS topic
         topic_arn = self.sns_client.create_topic(
             Name=topic_name)['TopicArn']
@@ -1997,7 +2004,10 @@ class Zappa(object):
         return topic_arn
 
     def remove_async_sns_topic(self, lambda_name):
-        topic_name = '%s-zappa-async' % lambda_name
+        """
+        Remove the async SNS topic.
+        """
+        topic_name = get_topic_name(lambda_name)
         removed_arns = []
         for sub in self.sns_client.list_subscriptions()['Subscriptions']:
             if topic_name in sub['TopicArn']:
