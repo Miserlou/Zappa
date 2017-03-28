@@ -945,8 +945,8 @@ class ZappaCLI(object):
                 events=events
             )
 
-        # Add async SNS
-        if self.stage_config.get('async_source', False) == 'sns' \
+        # Add async tasks SNS
+        if self.stage_config.get('async_source', None) == 'sns' \
            and self.stage_config.get('async_resources', True):
             self.lambda_arn = self.zappa.get_lambda_function(
                 function_name=self.lambda_name)
@@ -985,8 +985,8 @@ class ZappaCLI(object):
             events=events,
             )
 
-        # Remove async SNS
-        if self.stage_config.get('async_source', False) == 'sns' \
+        # Remove async task SNS
+        if self.stage_config.get('async_source', None) == 'sns' \
            and self.stage_config.get('async_resources', True):
             removed_arns = self.zappa.remove_async_sns_topic(self.lambda_name)
             click.echo('SNS Topic removed: %s' % ', '.join(removed_arns))
