@@ -405,6 +405,7 @@ class Zappa(object):
         if not slim_handler:
             # Slim handler does not take the project files.
             if minify:
+                # Related: https://github.com/Miserlou/Zappa/issues/744
                 excludes = ZIP_EXCLUDES + exclude + [venv]
                 copytree(cwd, temp_project_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
             else:
