@@ -1192,7 +1192,7 @@ class Zappa(object):
             ]
         )
 
-    def add_api_stage_to_custom_domain(apigateway_custom_domain_name=self.apigateway_custom_domain_name, apigateway_custom_domain_base_path=self.apigateway_custom_domain_base_path, api_id=api_id, stage_name=self.api_stage):
+    def add_api_stage_to_custom_domain(self, apigateway_custom_domain_name=self.apigateway_custom_domain_name, apigateway_custom_domain_base_path=self.apigateway_custom_domain_base_path, api_id=api_id, stage_name=self.api_stage):
         """
         Add api stage to an existing custom domain
         """
