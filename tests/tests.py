@@ -168,7 +168,7 @@ class TestZappa(unittest.TestCase):
         lambda_arn = 'arn:aws:lambda:us-east-1:12345:function:helloworld'
 
         # No auth at all
-        z.create_stack_template(lambda_arn, 'helloworld', False, {}, False, None)
+        z.create_stack_template(lambda_arn, 'helloworld', False, False, None)
         parsable_template = json.loads(z.cf_template.to_json())
         self.assertEqual("NONE", parsable_template["Resources"]["GET0"]["Properties"]["AuthorizationType"])
         self.assertEqual("NONE", parsable_template["Resources"]["GET1"]["Properties"]["AuthorizationType"])
@@ -176,7 +176,7 @@ class TestZappa(unittest.TestCase):
         self.assertEqual(False, parsable_template["Resources"]["GET1"]["Properties"]["ApiKeyRequired"])
 
         # IAM auth
-        z.create_stack_template(lambda_arn, 'helloworld', False, {}, True, None)
+        z.create_stack_template(lambda_arn, 'helloworld', False, True, None)
         parsable_template = json.loads(z.cf_template.to_json())
         self.assertEqual("AWS_IAM", parsable_template["Resources"]["GET0"]["Properties"]["AuthorizationType"])
         self.assertEqual("AWS_IAM", parsable_template["Resources"]["GET1"]["Properties"]["AuthorizationType"])
@@ -184,7 +184,7 @@ class TestZappa(unittest.TestCase):
         self.assertEqual(False, parsable_template["Resources"]["GET1"]["Properties"]["ApiKeyRequired"])
 
         # CORS with auth
-        z.create_stack_template(lambda_arn, 'helloworld', False, {}, True, None, True)
+        z.create_stack_template(lambda_arn, 'helloworld', False, True, None, True)
         parsable_template = json.loads(z.cf_template.to_json())
         self.assertEqual("AWS_IAM", parsable_template["Resources"]["GET0"]["Properties"]["AuthorizationType"])
         self.assertEqual("AWS_IAM", parsable_template["Resources"]["GET1"]["Properties"]["AuthorizationType"])
@@ -202,7 +202,7 @@ class TestZappa(unittest.TestCase):
         self.assertEqual(False, parsable_template["Resources"]["GET1"]["Properties"]["ApiKeyRequired"])
 
         # API Key auth
-        z.create_stack_template(lambda_arn, 'helloworld', True, {}, True, None)
+        z.create_stack_template(lambda_arn, 'helloworld', True, True, None)
         parsable_template = json.loads(z.cf_template.to_json())
         self.assertEqual("AWS_IAM", parsable_template["Resources"]["GET0"]["Properties"]["AuthorizationType"])
         self.assertEqual("AWS_IAM", parsable_template["Resources"]["GET1"]["Properties"]["AuthorizationType"])
@@ -216,7 +216,7 @@ class TestZappa(unittest.TestCase):
             "token_header": "Authorization",
             "validation_expression": "xxx"
         }
-        z.create_stack_template(lambda_arn, 'helloworld', False, {}, True, authorizer)
+        z.create_stack_template(lambda_arn, 'helloworld', False, True, authorizer)
         parsable_template = json.loads(z.cf_template.to_json())
         self.assertEqual("AWS_IAM", parsable_template["Resources"]["GET0"]["Properties"]["AuthorizationType"])
         self.assertEqual("AWS_IAM", parsable_template["Resources"]["GET1"]["Properties"]["AuthorizationType"])
@@ -225,7 +225,7 @@ class TestZappa(unittest.TestCase):
 
         # Authorizer with validation expression
         invocations_uri = 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/' + lambda_arn + '/invocations'
-        z.create_stack_template(lambda_arn, 'helloworld', False, {}, False, authorizer)
+        z.create_stack_template(lambda_arn, 'helloworld', False, False, authorizer)
         parsable_template = json.loads(z.cf_template.to_json())
         self.assertEqual("CUSTOM", parsable_template["Resources"]["GET0"]["Properties"]["AuthorizationType"])
         self.assertEqual("CUSTOM", parsable_template["Resources"]["GET1"]["Properties"]["AuthorizationType"])
@@ -238,7 +238,7 @@ class TestZappa(unittest.TestCase):
 
         # Authorizer without validation expression
         authorizer.pop('validation_expression', None)
-        z.create_stack_template(lambda_arn, 'helloworld', False, {}, False, authorizer)
+        z.create_stack_template(lambda_arn, 'helloworld', False, False, authorizer)
         parsable_template = json.loads(z.cf_template.to_json())
         self.assertEqual("CUSTOM", parsable_template["Resources"]["GET0"]["Properties"]["AuthorizationType"])
         self.assertEqual("CUSTOM", parsable_template["Resources"]["GET1"]["Properties"]["AuthorizationType"])
@@ -250,7 +250,7 @@ class TestZappa(unittest.TestCase):
         authorizer = {
             "arn": "arn:aws:lambda:us-east-1:123456789012:function:my-function",
         }
-        z.create_stack_template(lambda_arn, 'helloworld', False, {}, False, authorizer)
+        z.create_stack_template(lambda_arn, 'helloworld', False, False, authorizer)
         parsable_template = json.loads(z.cf_template.to_json())
         self.assertEqual('arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:123456789012:function:my-function/invocations', parsable_template["Resources"]["Authorizer"]["Properties"]["AuthorizerUri"])
 
@@ -539,6 +539,51 @@ class TestZappa(unittest.TestCase):
             u'stageVariables': None,
             u'path': u'/',
             }
+
+        environ = create_wsgi_request(event, trailing_slash=False)
+        response_tuple = collections.namedtuple('Response', ['status_code', 'content'])
+        response = response_tuple(200, 'hello')
+
+
+    def test_wsgi_from_apigateway_testbutton(self):
+        """
+        API Gateway resources have a "test bolt" button on methods.
+        This button sends some empty dicts as 'null' instead of '{}'.
+        """
+        event = {
+            "resource": "/",
+            "path": "/",
+            "httpMethod": "GET",
+            "headers": None,
+            "queryStringParameters": None,
+            "pathParameters": None,
+            "stageVariables": None,
+            "requestContext":{
+                "accountId": "0123456",
+                "resourceId": "qwertyasdf",
+                "stage": "test-invoke-stage",
+                "requestId": "test-invoke-request",
+                "identity":{
+                    "cognitoIdentityPoolId": None,
+                    "accountId": "0123456",
+                    "cognitoIdentityId": None,
+                    "caller": "MYCALLERID",
+                    "apiKey": "test-invoke-api-key",
+                    "sourceIp": "test-invoke-source-ip",
+                    "accessKey": "MYACCESSKEY",
+                    "cognitoAuthenticationType": None,
+                    "cognitoAuthenticationProvider": None,
+                    "userArn": "arn:aws:iam::fooo:user/my.username",
+                    "userAgent": "Apache-HttpClient/4.5.x (Java/1.8.0_112)",
+                    "user": "MYCALLERID"
+                },
+                "resourcePath": "/",
+                "httpMethod": "GET",
+                "apiId": "myappid"
+            },
+            "body": None,
+            "isBase64Encoded": False
+        }
 
         environ = create_wsgi_request(event, trailing_slash=False)
         response_tuple = collections.namedtuple('Response', ['status_code', 'content'])
@@ -1034,6 +1079,7 @@ class TestZappa(unittest.TestCase):
 
         try:
             zappa_cli = ZappaCLI()
+            zappa_cli.domain = "test.example.com"
             try:
                 zappa_cli.certify(no_cleanup=True)
             except AttributeError:
@@ -1060,6 +1106,9 @@ class TestZappa(unittest.TestCase):
                 def create_domain_name(self, *args, **kw):
                     self.calls.append(("create_domain_name", args, kw))
 
+                def update_route53_records(self, *args, **kw):
+                    self.calls.append(("update_route53_records", args, kw))
+
                 def update_domain_name(self, *args, **kw):
                     self.calls.append(("update_domain_name", args, kw))
 
@@ -1070,6 +1119,8 @@ class TestZappa(unittest.TestCase):
             zappa_cli.zappa.function_versions = ["$LATEST"]
             zappa_cli.api_stage = "stage"
             zappa_cli.zappa_settings = {"stage": {}}
+            zappa_cli.api_stage = "stage"
+            zappa_cli.domain = "test.example.com"
 
             try:
                 zappa_cli.certify()
@@ -1135,8 +1186,9 @@ class TestZappa(unittest.TestCase):
             })
             sys.stdout.truncate(0)
             zappa_cli.certify(no_cleanup=True)
-            self.assertEquals(len(zappa_cli.zappa.calls), 1)
+            self.assertEquals(len(zappa_cli.zappa.calls), 2)
             self.assertTrue(zappa_cli.zappa.calls[0][0] == "create_domain_name")
+            self.assertTrue(zappa_cli.zappa.calls[1][0] == "update_route53_records")
             log_output = sys.stdout.getvalue()
             self.assertIn("Created a new domain name", log_output)
 
@@ -1148,6 +1200,19 @@ class TestZappa(unittest.TestCase):
             self.assertTrue(zappa_cli.zappa.calls[0][0] == "update_domain_name")
             log_output = sys.stdout.getvalue()
             self.assertNotIn("Created a new domain name", log_output)
+
+            # Test creating domain without Route53
+            zappa_cli.zappa_settings["stage"].update({
+                "route53_enabled": False,
+            })
+            zappa_cli.zappa.calls = []
+            zappa_cli.zappa.domain_names["test.example.com"] = ""
+            sys.stdout.truncate(0)
+            zappa_cli.certify(no_cleanup=True)
+            self.assertEquals(len(zappa_cli.zappa.calls), 1)
+            self.assertTrue(zappa_cli.zappa.calls[0][0] == "create_domain_name")
+            log_output = sys.stdout.getvalue()
+            self.assertIn("Created a new domain name", log_output)
         finally:
             sys.stdout = old_stdout
 

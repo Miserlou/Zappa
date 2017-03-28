@@ -9,6 +9,7 @@ import json
 import inspect
 import collections
 import zipfile
+import base64
 
 import boto3
 import sys
@@ -32,8 +33,6 @@ except ImportError as e:  # pragma: no cover
 logging.basicConfig()
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-
-ERROR_CODES = [400, 401, 403, 404, 500]
 
 
 class WSGIException(Exception):
@@ -118,14 +117,19 @@ class LambdaHandler(object):
             if project_zip_path:
                 self.load_remote_project_zip(project_zip_path)
 
-            # Django gets special treatment.
-            if not self.settings.DJANGO_SETTINGS:
+            # This is a non-WSGI application
+            if not hasattr(self.settings, 'APP_MODULE') and not hasattr(self.settings, 'DJANGO_SETTINGS'):
+                self.app_module = None
+                wsgi_app_function = None
+            # This is probably a normal WSGI app
+            elif not self.settings.DJANGO_SETTINGS:
                 # The app module
                 self.app_module = importlib.import_module(self.settings.APP_MODULE)
 
                 # The application
                 wsgi_app_function = getattr(self.app_module, self.settings.APP_FUNCTION)
                 self.trailing_slash = False
+            # Django gets special treatment.
             else:
 
                 try:  # Support both for tests
@@ -164,6 +168,10 @@ class LambdaHandler(object):
 
         # Add to project path
         sys.path.insert(0, project_folder)
+        
+        # Change working directory to project folder
+        # Related: https://github.com/Miserlou/Zappa/issues/702
+        os.chdir(project_folder)
         return True
 
     def load_remote_settings(self, remote_bucket, remote_file):
@@ -414,12 +422,6 @@ class LambdaHandler(object):
 
             # This is a normal HTTP request
             if event.get('httpMethod', None):
-                # If we just want to inspect this,
-                # return this event instead of processing the request
-                # https://your_api.aws-api.com/?event_echo=true
-                # event_echo = getattr(settings, "EVENT_ECHO", True)
-                # if event_echo and 'event_echo' in event['params'].values():
-                #     return {'Content': str(event) + '\n' + str(context), 'Status': 200}
 
                 if settings.DOMAIN:
                     # If we're on a domain, we operate normally
@@ -435,7 +437,8 @@ class LambdaHandler(object):
                 environ = create_wsgi_request(
                     event,
                     script_name=script_name,
-                    trailing_slash=self.trailing_slash
+                    trailing_slash=self.trailing_slash,
+                    binary_support=settings.BINARY_SUPPORT
                 )
 
                 # We are always on https on Lambda, so tell our wsgi app that.
@@ -451,36 +454,20 @@ class LambdaHandler(object):
                 zappa_returndict = dict()
 
                 if response.data:
-                    zappa_returndict['body'] = response.data
+                    if settings.BINARY_SUPPORT:
+                        if not response.mimetype.startswith("text/") \
+                            or response.mimetype != "application/json":
+                                zappa_returndict['body'] = base64.b64encode(response.data)
+                                zappa_returndict["isBase64Encoded"] = "true"
+                        else:
+                            zappa_returndict['body'] = response.data
+                    else:
+                        zappa_returndict['body'] = response.data
 
                 zappa_returndict['statusCode'] = response.status_code
                 zappa_returndict['headers'] = {}
                 for key, value in response.headers:
                     zappa_returndict['headers'][key] = value
-
-                # To ensure correct status codes, we need to
-                # pack the response as a deterministic B64 string and raise it
-                # as an error to match our APIGW regex.
-                # The DOCTYPE ensures that the page still renders in the browser.
-                exception = None  # this variable never used
-                # if response.status_code in ERROR_CODES:
-                #     content = collections.OrderedDict()
-                #     content['http_status'] = response.status_code
-                #     content['content'] = base64.b64encode(response.data.encode('utf-8'))
-                #     exception = json.dumps(content)
-                # # Internal are changed to become relative redirects
-                # # so they still work for apps on raw APIGW and on a domain.
-                # elif 300 <= response.status_code < 400 and hasattr(response, 'Location'):
-                #     # Location is by default relative on Flask. Location is by default
-                #     # absolute on Werkzeug. We can set autocorrect_location_header on
-                #     # the response to False, but it doesn't work. We have to manually
-                #     # remove the host part.
-                #     location = response.location
-                #     hostname = 'https://' + environ['HTTP_HOST']
-                #     if location.startswith(hostname):
-                #         exception = location[len(hostname):]
-                #     else:
-                #         exception = location
 
                 # Calculate the total response time,
                 # and log it in the Common Log format.

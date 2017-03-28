@@ -1,0 +1,13 @@
+{
+    "status_code": 200,
+    "data": {
+        "RuleNames": [
+            "zappa-ttt888-tests.test_app.schedule_me",
+            "zappa-ttt888-zappa-keep-warm-handler.keep_warm_callback"
+        ],
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200,
+            "RequestId": "afe859ba-28f4-11e6-aa28-4d9f2eb25de5"
+        }
+    }
+}

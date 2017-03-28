@@ -1,5 +1,52 @@
 # Zappa Changelog
 
+## 0.39.1
+* Fix broken Let's Encrypt trying to use new ACM ARNs
+* Add `apigateway_description` setting, fixes #722
+* More aggressive virtualenvironment checking
+
+## 0.39.0
+* Add `certificate_arn` setting, support for AWS Certificate Manager (#710)
+* Fix zip permissions when building on Windows (#714)
+* Change the active working directory to `/tmp` when using the slim handler so that relative filepaths work. (#711)
+
+## 0.38.1
+* Hotfix for broken Django deploys
+
+## 0.38.0
+* Add confirm to `certify`
+* Add `--manual` to `--certify`
+* Fix `certify` for existing domains
+* Add `extra_permissions` setting
+* Add `shell` command
+
+## 0.37.2
+* Revert to Kappa 0.6.0 #684 and others
+* Add binary support for more HTTP methods, #696
+
+## 0.37.1
+* Add binary upload support, fix #683
+
+## 0.37.0
+* Add support for custom, non-Let's Encrypt certificates, thanks to Benjamin Congdon
+* Change default permissions to allow executable binaries, #682
+* Fix binary support for Django POST, #677
+
+## 0.36.1
+* Remove Kappa 0.6 specific hack
+* Bring back '-' substitution
+
+## 0.36.0
+* Add automatic support for serving binary files! Via @wobeng, closes #481
+* Fixes `rollback` default back to 1 from 0, #673
+* Ensure correct chmodding during package creation, #484
+* Update regions that Zappa supports, #667
+* Validate function names based on actual gateway rules #521
+* Fix unschedule events with trimmed names #662
+* Fix a few places where `extends` wasn't respecting `stage_config`, #655
+* Begin to remove some dead code
+* Dependency bumps
+
 ## 0.35.2
 * Adds `--non-http` to `tail`
 
