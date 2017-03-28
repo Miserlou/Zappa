@@ -20,6 +20,12 @@ The following restrictions apply:
 * args and kwargs must be JSON-serializable.
 * The JSON-serialized form must be within the size limits for Lambda (128K) or SNS (256K) events.
 
+Discussion of this comes from:
+    https://github.com/Miserlou/Zappa/issues/61
+    https://github.com/Miserlou/Zappa/issues/603
+    https://github.com/Miserlou/Zappa/pull/694
+    https://github.com/Miserlou/Zappa/pull/732
+
 """
 
 import os
