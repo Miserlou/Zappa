@@ -237,11 +237,11 @@ class Zappa(object):
         self.iam = self.boto_session.resource('iam')
         self.cloudwatch = self.boto_session.client('cloudwatch')
         self.route53 = self.boto_session.client('route53')
+        self.sns_client = self.boto_session.client('sns')
         self.cf_client = self.boto_session.client('cloudformation')
         self.cf_template = troposphere.Template()
         self.cf_api_resources = []
         self.cf_parameters = {}
-
 
     def cache_param(self, value):
         '''Returns a troposphere Ref to a value cached as a parameter.'''
@@ -1966,6 +1966,44 @@ class Zappa(object):
                 logger.debug('No policy found, must be first run.')
             else:
                 logger.error('Unexpected client error {}'.format(e.message))
+
+    def create_async_sns_topic(self, lambda_name, lambda_arn):
+        topic_name = '%s-zappa-async' % lambda_name
+        # Create SNS topic
+        topic_arn = self.sns_client.create_topic(
+            Name=topic_name)['TopicArn']
+        # Create subscription
+        self.sns_client.subscribe(
+            TopicArn=topic_arn,
+            Protocol='lambda',
+            Endpoint=lambda_arn
+        )
+        # Add Lambda permission for SNS to invoke function
+        self.create_event_permission(
+            lambda_name=lambda_name,
+            principal='sns.amazonaws.com',
+            source_arn=topic_arn
+        )
+        # Add rule for SNS topic as a event source
+        add_event_source(
+            event_source={
+                "arn": topic_arn,
+                "events": ["sns:Publish"]
+            },
+            lambda_arn=lambda_arn,
+            target_function="zappa.async.route_task",
+            boto_session=self.boto_session
+        )
+        return topic_arn
+
+    def remove_async_sns_topic(self, lambda_name):
+        topic_name = '%s-zappa-async' % lambda_name
+        removed_arns = []
+        for sub in self.sns_client.list_subscriptions()['Subscriptions']:
+            if topic_name in sub['TopicArn']:
+                self.sns_client.delete_topic(TopicArn=sub['TopicArn'])
+                removed_arns.append(sub['TopicArn'])
+        return removed_arns
 
     ##
     # CloudWatch Logging

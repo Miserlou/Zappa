@@ -943,8 +943,18 @@ class ZappaCLI(object):
                 lambda_arn=function_response['Configuration']['FunctionArn'],
                 lambda_name=self.lambda_name,
                 events=events
-                )
+            )
 
+        # Add async SNS
+        if self.stage_config.get('async_source', False) == 'sns' \
+           and self.stage_config.get('async_resources', True):
+            self.lambda_arn = self.zappa.get_lambda_function(
+                function_name=self.lambda_name)
+            topic_arn = self.zappa.create_async_sns_topic(
+                lambda_name=self.lambda_name,
+                lambda_arn=self.lambda_arn
+            )
+            click.echo('SNS Topic created: %s' % topic_arn)
 
     def unschedule(self):
         """
@@ -974,6 +984,12 @@ class ZappaCLI(object):
             lambda_arn=function_arn,
             events=events,
             )
+
+        # Remove async SNS
+        if self.stage_config.get('async_source', False) == 'sns' \
+           and self.stage_config.get('async_resources', True):
+            removed_arns = self.zappa.remove_async_sns_topic(self.lambda_name)
+            click.echo('SNS Topic removed: %s' % ', '.join(removed_arns))
 
 
     def invoke(self, function_name, raw_python=False, command=None):
