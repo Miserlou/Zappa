@@ -31,6 +31,7 @@ import json
 import importlib
 import inspect
 import boto3
+import botocore
 
 from util import get_topic_name
 
@@ -38,9 +39,15 @@ AWS_REGION = os.environ.get('AWS_REGION')
 AWS_LAMBDA_FUNCTION_NAME = os.environ.get('AWS_LAMBDA_FUNCTION_NAME')
 
 # Declare these here so they're kept warm.
-LAMBDA_CLIENT = boto3.client('lambda')
-SNS_CLIENT = boto3.client('sns')
-STS_CLIENT = boto3.client('sts')
+try:
+    LAMBDA_CLIENT = boto3.client('lambda')
+    SNS_CLIENT = boto3.client('sns')
+    STS_CLIENT = boto3.client('sts')
+except botocore.exceptions.NoRegionError as e:
+    # This can happen while testing on Travis, but it's taken care  of
+    # during class initialization.
+    pass
+
 
 ##
 # Response and Exception classes
