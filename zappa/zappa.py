@@ -1185,7 +1185,7 @@ class Zappa(object):
             usagePlanId=usage_plan_id,
             patchOperations=[
                 {
-                    'op': 'add'
+                    'op': 'add',
                     'path': '/apiStages',
                     'value': '{}:{}'.format(api_id, stage_name)
                 }
