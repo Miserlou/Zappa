@@ -32,8 +32,8 @@
     - [SSL Certification](#ssl-certification)
 - [Executing in Response to AWS Events](#executing-in-response-to-aws-events)
 - [Asynchronous Task Execution](#asynchronous-task-execution)
-  - [Different Task Source Services](#different-task-source-services)
-  - [Direct invocation](#direct-invocation)
+  - [Task Sources](#task-sources)
+  - [Direct Invocation](#direct-invocation)
   - [Restrictions](#restrictions)
 - [Advanced Settings](#advanced-settings)
     - [YAML Settings](#yaml-settings)
@@ -457,11 +457,11 @@ def order_pie():
 
 And that's it! Your API response will return immediately, while the `make_pie` function executes in a completely different Lambda instance.
 
-### Different Task Source Services
+### Task Sources
 
 By default, this feature uses direct AWS Lambda invocation. You can instead use AWS Simple Notification Service as the task event source by passing in a `service` argument to the decorator, like so:
 
-```
+```python
 @task(service='sns')
 ```
 
@@ -469,7 +469,7 @@ Using SNS also requires setting the following settings in your `zappa_settings`:
 
 ```javascript
 {
-  "dev":{
+  "dev": {
     ..
       "async_source": "sns", // Source of async tasks. Defaults to "lambda"
       "async_resounces": true, // Create the SNS topic to use. Defaults to true.
@@ -478,7 +478,7 @@ Using SNS also requires setting the following settings in your `zappa_settings`:
 }
 ```
 
-### Direct invocation
+### Direct Invocation
 
 This will automatically create and subscribe to the SNS topic the code will use when you call the `zappa schedule` command.
 
@@ -486,9 +486,9 @@ You can also use this functionality without a decorator by passing your function
 
 ```python
 from zappa.async import run
+
 run(your_function, args, kwargs) # Using Lambda
 run(your_function, args, kwargs, service='sns') # Using SNS
-
 ```
 
 ### Restrictions
