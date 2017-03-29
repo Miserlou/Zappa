@@ -432,7 +432,7 @@ You can find more [example event sources here](http://docs.aws.amazon.com/lambda
 
 ## Asynchronous Task Execution
 
-Zappa also now offers the ability to seamlessly execute functions asyncronously in a completely seperate AWS Lambda instance!
+Zappa also now offers the ability to seamlessly execute functions asynchronously in a completely separate AWS Lambda instance!
 
 For example, if you have a Flask API for ordering a pie, you can call your `bake` function seamlessly in a completely seperate Lambda instance by using the `zappa.async.task` decorator like so:
 
