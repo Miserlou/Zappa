@@ -7,7 +7,6 @@ def hello_world(environ, start_response):
         subject = escape(parameters['subject'][0])
     else:
         subject = 'World'
-    schedule_me()
     start_response('200 OK', [('Content-Type', 'text/html')])
     return ['''Hello {subject!s}
     Hello {subject!s}!
