@@ -38,15 +38,15 @@ import traceback
 
 from util import get_topic_name
 
-AWS_REGION = os.environ.get('AWS_REGION')
-AWS_LAMBDA_FUNCTION_NAME = os.environ.get('AWS_LAMBDA_FUNCTION_NAME')
+AWS_REGION = os.environ.get('AWS_REGION') # Set via CLI env var packaging
+AWS_LAMBDA_FUNCTION_NAME = os.environ.get('AWS_LAMBDA_FUNCTION_NAME') # Set by AWS
 
 # Declare these here so they're kept warm.
 try:
     LAMBDA_CLIENT = boto3.client('lambda')
     SNS_CLIENT = boto3.client('sns')
     STS_CLIENT = boto3.client('sts')
-except botocore.exceptions.NoRegionError as e:
+except botocore.exceptions.NoRegionError as e: # pragma: no cover
     # This can happen while testing on Travis, but it's taken care  of
     # during class initialization.
     pass
@@ -56,7 +56,7 @@ except botocore.exceptions.NoRegionError as e:
 # Response and Exception classes
 ##
 
-class AsyncException(Exception):
+class AsyncException(Exception): # pragma: no cover
     """ Simple exception class for async tasks. """
     pass
 
@@ -69,7 +69,7 @@ class LambdaAsyncResponse(object):
         """ """
         if kwargs.get('boto_session'):
             self.client = kwargs.get('boto_session').client('lambda')
-        else:
+        else: # pragma: no cover
             self.client = LAMBDA_CLIENT
 
     def send(self, task_path, args, kwargs):
@@ -90,7 +90,7 @@ class LambdaAsyncResponse(object):
         """
         message['command'] = 'zappa.async.route_lambda_task'
         payload = json.dumps(message).encode('utf-8')
-        if len(payload) > 128000:
+        if len(payload) > 128000: # pragma: no cover
             raise AsyncException("Payload too large for async Lambda call")
         self.response = self.client.invoke(
                                     FunctionName=AWS_LAMBDA_FUNCTION_NAME,
@@ -108,7 +108,7 @@ class SnsAsyncResponse(LambdaAsyncResponse):
 
         if kwargs.get('boto_session'):
             self.client = kwargs.get('boto_session').client('sns')
-        else:
+        else: # pragma: no cover
             self.client = SNS_CLIENT
 
         if kwargs.get('arn'):
@@ -131,7 +131,7 @@ class SnsAsyncResponse(LambdaAsyncResponse):
         """
         message['command'] = 'zappa.async.route_sns_task'
         payload = json.dumps(message).encode('utf-8')
-        if len(payload) > 256000:
+        if len(payload) > 256000: # pragma: no cover
             raise AsyncException("Payload too large for SNS")
         self.response = self.client.publish(
                                 TargetArn=self.arn,
@@ -275,5 +275,3 @@ def is_from_router():
                 return True
 
     return False
-
-
