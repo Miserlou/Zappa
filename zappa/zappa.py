@@ -405,8 +405,15 @@ class Zappa(object):
         if not slim_handler:
             # Slim handler does not take the project files.
             if minify:
+                excludes = ZIP_EXCLUDES + exclude
                 # Related: https://github.com/Miserlou/Zappa/issues/744
-                excludes = ZIP_EXCLUDES + exclude + [split_venv[-1]]
+                # Exclude the venv dir if it's inside the project dir (cwd)
+                # Note that this would fail if the venv were nested inside a 
+                # dir with the same name (e.g. cwd/venv_name/venv_name)
+                # But why would someone do that?
+                if venv.startswith(cwd):
+                    excludes.append(split_venv[-1])
+
                 copytree(cwd, temp_project_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
             else:
                 copytree(cwd, temp_project_path, symlinks=False)
