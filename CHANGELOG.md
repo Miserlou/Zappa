@@ -1,5 +1,13 @@
 # Zappa Changelog
 
+## 0.40.0
+* Add Async Task Support! Lots of tickets and PRs related, including #61, #603, #694 and #732.
+* More info here: https://blog.zappa.io/posts/zappa-introduces-seamless-asynchronous-task-execution
+* Fix Django non-WSGI function initialization, #748
+* Add support for AWS Lambda Dead Letter Queue, #740
+* Fix API Gateway test button (the bolt button), #735
+* Switch to using per-lambda-name (project-stage) rather than a single default LambdaExecutionRole
+
 ## 0.39.1
 * Fix broken Let's Encrypt trying to use new ACM ARNs
 * Add `apigateway_description` setting, fixes #722
