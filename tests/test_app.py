@@ -1,3 +1,4 @@
+from zappa.async import task
 from cgi import parse_qs, escape
 
 def hello_world(environ, start_response):
@@ -6,12 +7,14 @@ def hello_world(environ, start_response):
         subject = escape(parameters['subject'][0])
     else:
         subject = 'World'
+    schedule_me()
     start_response('200 OK', [('Content-Type', 'text/html')])
     return ['''Hello {subject!s}
     Hello {subject!s}!
 
 '''.format(**{'subject': subject})]
 
+@task
 def schedule_me():
     return "Hello!"
 
