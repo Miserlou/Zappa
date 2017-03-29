@@ -28,12 +28,13 @@ Discussion of this comes from:
 
 """
 
-import os
-import json
-import importlib
-import inspect
 import boto3
 import botocore
+import importlib
+import inspect
+import json
+import os
+import traceback
 
 from util import get_topic_name
 
@@ -128,7 +129,8 @@ class SnsAsyncResponse(LambdaAsyncResponse):
         """
         Given a message, publish to this topic.
         """
-        payload = json.dumps(message)
+        message['command'] = 'zappa.async.route_sns_task'
+        payload = json.dumps(message).encode('utf-8')
         if len(payload) > 256000:
             raise AsyncException("Payload too large for SNS")
         self.response = self.client.publish(
@@ -138,7 +140,7 @@ class SnsAsyncResponse(LambdaAsyncResponse):
         self.sent = self.response.get('MessageId')
 
 ##
-# Aync routers and utility functions
+# Aync Routers
 ##
 
 ASYNC_CLASSES = {
@@ -146,36 +148,13 @@ ASYNC_CLASSES = {
     'sns': SnsAsyncResponse,
 }
 
-def _import_and_get_task(task_path):
-    """
-    Given a modular path to a function, import that module
-    and return the function.
-    """
-    module, function = task_path.rsplit('.', 1)
-    app_module = importlib.import_module(module)
-    app_function = getattr(app_module, function)
-    return app_function
-
-
-def _get_func_task_path(func):
-    """
-    Format the modular task path for a function via inspection.
-    """
-    module_path = inspect.getmodule(func).__name__
-    task_path = '{module_path}.{func_name}'.format(
-                                        module_path=module_path,
-                                        func_name=func.__name__
-                                    )
-    return task_path
-
-
 def route_lambda_task(event, context):
     """
     Deserialises the message from event passed to zappa.handler.run_function
     imports the function, calls the function with args
     """
     message = event
-    func = _import_and_get_task(message['task_path'])
+    func = import_and_get_task(message['task_path'])
     return func(
             *message['args'],
             **message['kwargs']
@@ -191,47 +170,110 @@ def route_sns_task(event, context):
     message = json.loads(
             record['Sns']['Message']
         )
-    func = _import_and_get_task(message['task_path'])
+    func = import_and_get_task(message['task_path'])
     return func(
             *message['args'],
             **message['kwargs']
         )
 
+##
+# Execution interfaces and classes
+##
 
 def run(func, args=[], kwargs={}, service='lambda', **task_kwargs):
     """
     Instead of decorating a function with @task, you can just run it directly.
     If you were going to do func(*args, **kwargs), then you will call this:
+
     import zappa.async.run
     zappa.async.run(func, args, kwargs)
+
     If you want to use SNS, then do:
+
     zappa.async.run(func, args, kwargs, service='sns')
+
     and other arguments are similar to @task
     """
-    task_path = _get_func_task_path(func)
+    task_path = get_func_task_path(func)
     return ASYNC_CLASSES[service](**task_kwargs).send(task_path, args, kwargs)
 
 
-def task(service='lambda', **task_kwargs):
+# Handy:
+# http://stackoverflow.com/questions/10294014/python-decorator-best-practice-using-a-class-vs-a-function
+class task(object):
     """
     Async task decorator for a function.
     Serialises and dispatches the task to SNS.
     Lambda subscribes to SNS topic and gets this message
     Lambda routes the message to the same function
     """
-    def _invoker(func, task_path):
-        """ """
-        def _invoker_inner(*args, **kwargs):
-            """ """
-            if service in ASYNC_CLASSES:
-                return ASYNC_CLASSES[service](**task_kwargs).send(task_path, args, kwargs)
-            return func(*args, **kwargs)
-        return _invoker_inner
+    def __init__(self, func):
+        self.func = func
+        self.service = "lambda"
 
-    def _wrap(func):
-        """ """
-        task_path = _get_func_task_path(func)
-        func.async = _invoker(func, task_path)
-        return func
+    def __call__(self, *args, **kwargs):
+        """
+        Get the function path and, if invoked from the main Lambda code, send the message.
 
-    return _wrap
+        If it's local, or invoked directly, simply execute it now.
+        """
+
+        task_path = get_func_task_path(self.func)
+        routed = is_from_router(self.func)
+
+        if (self.service in ASYNC_CLASSES) and (AWS_LAMBDA_FUNCTION_NAME) and (not routed):
+            send_result = ASYNC_CLASSES[self.service]().send(task_path, args, kwargs)
+            return send_result
+        else:
+            return self.func(*args, **kwargs)
+
+class task_sns(task):
+    """
+    SNS-based task dispatcher.
+    """
+    def __init__(self, func):
+        self.func = func
+        self.service = "sns"
+
+##
+# Utility Functions
+##
+
+def import_and_get_task(task_path):
+    """
+    Given a modular path to a function, import that module
+    and return the function.
+    """
+    module, function = task_path.rsplit('.', 1)
+    app_module = importlib.import_module(module)
+    app_function = getattr(app_module, function)
+    return app_function
+
+
+def get_func_task_path(func):
+    """
+    Format the modular task path for a function via inspection.
+    """
+    module_path = inspect.getmodule(func).__name__
+    task_path = '{module_path}.{func_name}'.format(
+                                        module_path=module_path,
+                                        func_name=func.__name__
+                                    )
+    return task_path
+
+def is_from_router(self):
+    """
+    Detect if this stack is being executed from the router
+    """
+
+    tb = traceback.extract_stack()
+    for line in tb:
+        for item in line:
+            if 'route_lambda_task' in line:
+                return True
+            if 'route_sns_task' in line:
+                return True
+
+    return False
+
+

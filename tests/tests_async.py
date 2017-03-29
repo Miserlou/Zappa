@@ -24,12 +24,13 @@ from lambda_packages import lambda_packages
 
 
 from zappa.async import AsyncException, LambdaAsyncResponse, SnsAsyncResponse
-from zappa.async import _import_and_get_task, \
-                        _get_func_task_path, \
+from zappa.async import import_and_get_task, \
+                        get_func_task_path, \
                         route_lambda_task, \
                         route_sns_task, \
                         run, \
-                        task
+                        task, \
+                        is_from_router
 
 from zappa.cli import ZappaCLI, shamelessly_promote
 from zappa.zappa import Zappa, \
@@ -72,8 +73,9 @@ class TestZappa(unittest.TestCase):
         s = SnsAsyncResponse(arn="arn:abc:def", boto_session=boto_session)
 
     def test_nofails_funcs(self):
-        funk = _import_and_get_task("tests.test_app.schedule_me")
-        _get_func_task_path(funk)
+        funk = import_and_get_task("tests.test_app.schedule_me")
+        get_func_task_path(funk)
+        is_from_router()
 
     ##
     # Functional tests

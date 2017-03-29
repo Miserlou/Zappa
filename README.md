@@ -440,7 +440,7 @@ For example, if you have a Flask API for ordering a pie, you can call your `bake
 import flask
 from zappa.async import task
 
-@task()
+@task
 def make_pie():
     """ This takes a long time! """
     ingredients = get_ingredients()
@@ -459,10 +459,11 @@ And that's it! Your API response will return immediately, while the `make_pie` f
 
 ### Task Sources
 
-By default, this feature uses direct AWS Lambda invocation. You can instead use AWS Simple Notification Service as the task event source by passing in a `service` argument to the decorator, like so:
+By default, this feature uses direct AWS Lambda invocation. You can instead use AWS Simple Notification Service as the task event source by passing using the `task_sns` decorator, like so:
 
 ```python
-@task(service='sns')
+from zappa.async import task_sns
+@task_sns
 ```
 
 Using SNS also requires setting the following settings in your `zappa_settings`:
