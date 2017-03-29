@@ -96,7 +96,7 @@ class LambdaAsyncResponse(object):
                                     InvocationType='Event', #makes the call async
                                     Payload=payload
                                 )
-        self.sent = (response.get('StatusCode', 0) == 202)
+        self.sent = (self.response.get('StatusCode', 0) == 202)
 
 class SnsAsyncResponse(LambdaAsyncResponse):
     """
@@ -131,7 +131,7 @@ class SnsAsyncResponse(LambdaAsyncResponse):
         payload = json.dumps(message)
         if len(payload) > 256000:
             raise AsyncException("Payload too large for SNS")
-        self.response = client.publish(
+        self.response = self.client.publish(
                                 TargetArn=self.arn,
                                 Message=payload
                             )
@@ -166,6 +166,7 @@ def _get_func_task_path(func):
                                         module_path=module_path,
                                         func_name=func.__name__
                                     )
+    return task_path
 
 
 def route_lambda_task(event, context):
