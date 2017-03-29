@@ -219,7 +219,7 @@ class task(object):
         """
 
         task_path = get_func_task_path(self.func)
-        routed = is_from_router(self.func)
+        routed = is_from_router()
 
         if (self.service in ASYNC_CLASSES) and (AWS_LAMBDA_FUNCTION_NAME) and (not routed):
             send_result = ASYNC_CLASSES[self.service]().send(task_path, args, kwargs)
@@ -261,7 +261,7 @@ def get_func_task_path(func):
                                     )
     return task_path
 
-def is_from_router(self):
+def is_from_router():
     """
     Detect if this stack is being executed from the router
     """
