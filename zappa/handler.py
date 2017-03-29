@@ -118,6 +118,7 @@ class LambdaHandler(object):
                 self.load_remote_project_zip(project_zip_path)
 
             # This is a non-WSGI application
+            # https://github.com/Miserlou/Zappa/pull/748
             if not hasattr(self.settings, 'APP_MODULE') and not self.settings.DJANGO_SETTINGS:
                 self.app_module = None
                 wsgi_app_function = None
