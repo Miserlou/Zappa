@@ -166,6 +166,7 @@ def _get_func_task_path(func):
                                         module_path=module_path,
                                         func_name=func.__name__
                                     )
+    return task_path
 
 
 def route_lambda_task(event, context):
