@@ -30,6 +30,7 @@ Discussion of this comes from:
 
 import boto3
 import botocore
+from functools import update_wrapper
 import importlib
 import inspect
 import json
@@ -215,6 +216,7 @@ class task(object):
     def __init__(self, func):
         self.func = func
         self.service = "lambda"
+        update_wrapper(self, func)
 
     def __call__(self, *args, **kwargs):
         """
