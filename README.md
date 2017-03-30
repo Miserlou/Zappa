@@ -437,8 +437,9 @@ Zappa also now offers the ability to seamlessly execute functions asynchronously
 For example, if you have a Flask API for ordering a pie, you can call your `bake` function seamlessly in a completely seperate Lambda instance by using the `zappa.async.task` decorator like so:
 
 ```python
-import flask
+from flask import Flask
 from zappa.async import task
+app = Flask(__name__)
 
 @task
 def make_pie():
@@ -447,7 +448,7 @@ def make_pie():
     pie = bake(ingredients)
     deliver(pie)
 
-@flask.route('/api/order/pie')
+@app.route('/api/order/pie')
 def order_pie():
     """ This returns immediately! """
     make_pie()
