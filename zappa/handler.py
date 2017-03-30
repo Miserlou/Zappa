@@ -1,18 +1,19 @@
 from __future__ import unicode_literals
 
+import base64
+import collections
 import datetime
 import importlib
-import logging
-import traceback
-import os
-import json
 import inspect
-import collections
+import json
+import logging
+import os
+import sys
+import traceback
+import types
 import zipfile
-import base64
 
 import boto3
-import sys
 from werkzeug.wrappers import Response
 
 # This file may be copied into a project's root,
@@ -277,7 +278,12 @@ class LambdaHandler(object):
         Given a function and event context,
         detect signature and execute, returning any result.
         """
-        args, varargs, keywords, defaults = inspect.getargspec(app_function)
+        if not callable(app_function):
+            raise RuntimeError("Function passed to run is not callable")
+        if isinstance(app_function, types.InstanceType):
+            args, varargs, keywords, defaults = inspect.getargspec(app_function.__call__)
+        else:
+            args, varargs, keywords, defaults = inspect.getargspec(app_function)
         num_args = len(args)
         if num_args == 0:
             result = app_function(event, context) if varargs else app_function()
