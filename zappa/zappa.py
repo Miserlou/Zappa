@@ -194,13 +194,13 @@ class Zappa(object):
     credentials_arn = None
 
     def __init__(self,
-            boto_session=None,
-            profile_name=None,
-            aws_region=None,
-            load_credentials=True,
-            desired_role_name=None
+                 boto_session=None,
+                 profile_name=None,
+                 aws_region=None,
+                 load_credentials=True,
+                 desired_role_name=None
 
-        ):
+                 ):
         # Set aws_region to None to use the system's region instead
         if aws_region is None:
             # https://github.com/Miserlou/Zappa/issues/413
@@ -363,16 +363,16 @@ class Zappa(object):
         for version in untagged_versions:
             self.lambda_client.delete_function(FunctionName=lambda_name, Qualifier=version)
 
-    def create_lambda_zip(  self,
-                            prefix='lambda_package',
-                            handler_file=None,
-                            slim_handler=False,
-                            minify=True,
-                            exclude=None,
-                            use_precompiled_packages=True,
-                            include=None,
-                            venv=None
-                        ):
+    def create_lambda_zip(self,
+                          prefix='lambda_package',
+                          handler_file=None,
+                          slim_handler=False,
+                          minify=True,
+                          exclude=None,
+                          use_precompiled_packages=True,
+                          include=None,
+                          venv=None
+                          ):
 
         """
         Create a Lambda-ready zip file of the current virtualenvironment and working directory.
@@ -550,7 +550,7 @@ class Zappa(object):
                 # Make sure that the files are all correctly chmodded
                 # Related: https://github.com/Miserlou/Zappa/issues/484
                 # Related: https://github.com/Miserlou/Zappa/issues/682
-                os.chmod(os.path.join(root, filename),  0o755)
+                os.chmod(os.path.join(root, filename), 0o755)
 
                 # Actually put the file into the proper place in the zip
                 # Related: https://github.com/Miserlou/Zappa/pull/716
@@ -563,7 +563,7 @@ class Zappa(object):
             if '__init__.py' not in files:
                 tmp_init = os.path.join(temp_project_path, '__init__.py')
                 open(tmp_init, 'a').close()
-                os.chmod(tmp_init,  0o755)
+                os.chmod(tmp_init, 0o755)
                 zipf.write(tmp_init,
                            os.path.join(root.replace(temp_project_path, ''),
                                         os.path.join(root.replace(temp_project_path, ''), '__init__.py')))
@@ -713,18 +713,18 @@ class Zappa(object):
     # Lambda
     ##
 
-    def create_lambda_function( self,
-                                bucket,
-                                s3_key,
-                                function_name,
-                                handler,
-                                description="Zappa Deployment",
-                                timeout=30,
-                                memory_size=512,
-                                publish=True,
-                                vpc_config=None,
-                                dead_letter_config=None
-                            ):
+    def create_lambda_function(self,
+                               bucket,
+                               s3_key,
+                               function_name,
+                               handler,
+                               description="Zappa Deployment",
+                               timeout=30,
+                               memory_size=512,
+                               publish=True,
+                               vpc_config=None,
+                               dead_letter_config=None
+                               ):
         """
         Given a bucket and key of a valid Lambda-zip, a function name and a handler, register that Lambda function.
         """
@@ -769,15 +769,15 @@ class Zappa(object):
 
         return response['FunctionArn']
 
-    def update_lambda_configuration(    self,
-                                        lambda_arn,
-                                        function_name,
-                                        handler,
-                                        description="Zappa Deployment",
-                                        timeout=30,
-                                        memory_size=512,
-                                        publish=True,
-                                        vpc_config=None
+    def update_lambda_configuration(self,
+                                    lambda_arn,
+                                    function_name,
+                                    handler,
+                                    description="Zappa Deployment",
+                                    timeout=30,
+                                    memory_size=512,
+                                    publish=True,
+                                    vpc_config=None
                                     ):
         """
         Given an existing function ARN, update the configuration variables.
@@ -789,6 +789,13 @@ class Zappa(object):
         if not self.credentials_arn:
             self.get_credentials_arn()
 
+        previous_config_response = self.lambda_client.get_function_configuration(
+            FunctionName=function_name
+        )
+        try:
+            del previous_config_response["Environment"]["Error"]
+        except KeyError as err:
+            pass
         response = self.lambda_client.update_function_configuration(
             FunctionName=function_name,
             Runtime='python2.7',
@@ -797,19 +804,22 @@ class Zappa(object):
             Description=description,
             Timeout=timeout,
             MemorySize=memory_size,
-            VpcConfig=vpc_config
+            VpcConfig=vpc_config,
+            Environment=previous_config_response["Environment"],
+            DeadLetterConfig=previous_config_response["DeadLetterConfig"],
+            KMSKeyArn=previous_config_response["KMSKeyArn"]
         )
 
         return response['FunctionArn']
 
-    def invoke_lambda_function( self,
-                                function_name,
-                                payload,
-                                invocation_type='Event',
-                                log_type='Tail',
-                                client_context=None,
-                                qualifier=None
-                            ):
+    def invoke_lambda_function(self,
+                               function_name,
+                               payload,
+                               invocation_type='Event',
+                               log_type='Tail',
+                               client_context=None,
+                               qualifier=None
+                               ):
         """
         Directly invoke a named Lambda function with a payload.
         Returns the response.
@@ -890,15 +900,15 @@ class Zappa(object):
     # API Gateway
     ##
 
-    def create_api_gateway_routes(  self,
-                                    lambda_arn,
-                                    api_name=None,
-                                    api_key_required=False,
-                                    authorization_type='NONE',
-                                    authorizer=None,
-                                    cors_options=None,
-                                    description=None
-                                ):
+    def create_api_gateway_routes(self,
+                                  lambda_arn,
+                                  api_name=None,
+                                  api_key_required=False,
+                                  authorization_type='NONE',
+                                  authorizer=None,
+                                  cors_options=None,
+                                  description=None
+                                  ):
 
         """
         Create the API Gateway for this Zappa deployment.
@@ -944,7 +954,7 @@ class Zappa(object):
         self.cf_template.add_resource(resource)
 
         self.create_and_setup_methods(restapi, resource, api_key_required, invocations_uri,
-                                       authorization_type, authorizer_resource, 1)  # pragma: no cover
+                                      authorization_type, authorizer_resource, 1)  # pragma: no cover
 
         if cors_options is not None:
             self.create_and_setup_cors(restapi, resource, invocations_uri, 1, cors_options)  # pragma: no cover
@@ -980,15 +990,15 @@ class Zappa(object):
 
         return authorizer_resource
 
-    def create_and_setup_methods(   self,
-                                    restapi,
-                                    resource,
-                                    api_key_required,
-                                    uri,
-                                    authorization_type,
-                                    authorizer_resource,
-                                    depth
-                                ):
+    def create_and_setup_methods(self,
+                                 restapi,
+                                 resource,
+                                 api_key_required,
+                                 uri,
+                                 authorization_type,
+                                 authorizer_resource,
+                                 depth
+                                 ):
         """
         Set up the methods, integration responses and method responses for a given API Gateway resource.
         """
@@ -1083,18 +1093,18 @@ class Zappa(object):
         integration.Uri = uri
         method.Integration = integration
 
-    def deploy_api_gateway( self,
-                            api_id,
-                            stage_name,
-                            stage_description="",
-                            description="",
-                            cache_cluster_enabled=False,
-                            cache_cluster_size='0.5',
-                            variables=None,
-                            cloudwatch_log_level='OFF',
-                            cloudwatch_data_trace=False,
-                            cloudwatch_metrics_enabled=False
-                        ):
+    def deploy_api_gateway(self,
+                           api_id,
+                           stage_name,
+                           stage_description="",
+                           description="",
+                           cache_cluster_enabled=False,
+                           cache_cluster_size='0.5',
+                           variables=None,
+                           cloudwatch_log_level='OFF',
+                           cloudwatch_data_trace=False,
+                           cloudwatch_metrics_enabled=False
+                           ):
         """
         Deploy the API Gateway!
 
@@ -1178,22 +1188,22 @@ class Zappa(object):
         return len(remaining_stages_response["item"])
 
     def add_binary_support(self, api_id):
-            """
-            Add binary support
-            """
-            response = self.apigateway_client.get_rest_api(
-                restApiId=api_id
+        """
+        Add binary support
+        """
+        response = self.apigateway_client.get_rest_api(
+            restApiId=api_id
+        )
+        if "binaryMediaTypes" not in response or "*/*" not in response["binaryMediaTypes"]:
+            self.apigateway_client.update_rest_api(
+                restApiId=api_id,
+                patchOperations=[
+                    {
+                        'op': "add",
+                        'path': '/binaryMediaTypes/*~1*'
+                    }
+                ]
             )
-            if "binaryMediaTypes" not in response or "*/*" not in response["binaryMediaTypes"]:
-                self.apigateway_client.update_rest_api(
-                    restApiId=api_id,
-                    patchOperations=[
-                        {
-                            'op': "add",
-                            'path': '/binaryMediaTypes/*~1*'
-                        }
-                    ]
-                )
 
     def remove_binary_support(self, api_id):
         """
@@ -1322,12 +1332,12 @@ class Zappa(object):
                         restApiId=api['id']
                     )
 
-    def update_stage_config(    self,
-                                project_name,
-                                stage_name,
-                                cloudwatch_log_level,
-                                cloudwatch_data_trace,
-                                cloudwatch_metrics_enabled
+    def update_stage_config(self,
+                            project_name,
+                            stage_name,
+                            cloudwatch_log_level,
+                            cloudwatch_data_trace,
+                            cloudwatch_metrics_enabled
                             ):
         """
         Update CloudWatch metrics configuration.
@@ -1368,16 +1378,15 @@ class Zappa(object):
             print('ZappaProject tag not found on {0}, doing nothing'.format(name))
             return False
 
-
-    def create_stack_template(  self,
-                                lambda_arn,
-                                api_name,
-                                api_key_required,
-                                iam_authorization,
-                                authorizer,
-                                cors_options=None,
-                                description=None
-                            ):
+    def create_stack_template(self,
+                              lambda_arn,
+                              api_name,
+                              api_key_required,
+                              iam_authorization,
+                              authorizer,
+                              cors_options=None,
+                              description=None
+                              ):
 
         """
         Build the entire CF stack.
@@ -1401,9 +1410,8 @@ class Zappa(object):
         self.cf_api_resources = []
         self.cf_parameters = {}
 
-
         restapi = self.create_api_gateway_routes(lambda_arn, api_name, api_key_required,
-                                                auth_type, authorizer, cors_options, description)
+                                                 auth_type, authorizer, cors_options, description)
 
         return self.cf_template
 
@@ -1598,7 +1606,7 @@ class Zappa(object):
                 'Name': domain_name,
                 'Type': 'A',
                 'AliasTarget': {
-                    'HostedZoneId': 'Z2FDTNDATAQYW2', # This is a magic value that means "CloudFront"
+                    'HostedZoneId': 'Z2FDTNDATAQYW2',  # This is a magic value that means "CloudFront"
                     'DNSName': dns_name,
                     'EvaluateTargetHealth': False
                 }
@@ -1674,13 +1682,13 @@ class Zappa(object):
         api_gateway_domain = self.apigateway_client.get_domain_name(domainName=domain_name)
         self.apigateway_client.delete_domain_name(domainName=domain_name)
         dns_name = self.create_domain_name(domain_name,
-                           certificate_name,
-                           certificate_body,
-                           certificate_private_key,
-                           certificate_chain,
-                           certificate_arn,
-                           api_name,
-                           stage)
+                                           certificate_name,
+                                           certificate_body,
+                                           certificate_private_key,
+                                           certificate_chain,
+                                           certificate_arn,
+                                           api_name,
+                                           stage)
         if route53:
             self.update_route53_records(domain_name, dns_name)
 
