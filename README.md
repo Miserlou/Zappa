@@ -23,7 +23,6 @@
     - [Updates](#updates)
     - [Rollback](#rollback)
     - [Scheduling](#scheduling)
-    - [Executing in Response to AWS Events](#executing-in-response-to-aws-events)
     - [Undeploy](#undeploy)
     - [Package](#package)
     - [Status](#status)
@@ -31,6 +30,11 @@
     - [Remote Function Invocation](#remote-function-invocation)
     - [Django Management Commands](#django-management-commands)
     - [SSL Certification](#ssl-certification)
+- [Executing in Response to AWS Events](#executing-in-response-to-aws-events)
+- [Asynchronous Task Execution](#asynchronous-task-execution)
+  - [Task Sources](#task-sources)
+  - [Direct Invocation](#direct-invocation)
+  - [Restrictions](#restrictions)
 - [Advanced Settings](#advanced-settings)
     - [YAML Settings](#yaml-settings)
 - [Advanced Usage](#advanced-usage)
@@ -58,6 +62,7 @@
     - [Globally Available Server-less Architectures](#globally-available-server-less-architectures)
     - [Raising AWS Service Limits](#raising-aws-service-limits)
     - [Using Zappa With Docker](#using-zappa-with-docker)
+    - [Dead Letter Queues](#dead-letter-queues)
 - [Zappa Guides](#zappa-guides)
 - [Zappa in the Press](#zappa-in-the-press)
 - [Sites Using Zappa](#sites-using-zappa)
@@ -76,10 +81,10 @@
   <a href="https://htmlpreview.github.io/?https://raw.githubusercontent.com/Miserlou/Talks/master/serverless-sf/big.quickstart.html"><img src="http://i.imgur.com/c23kDNT.png?1" alt="Zappa Slides"/></a>
 </p>
 <p align="center">
-  <i>In a hurry? Click to see <a href="https://htmlpreview.github.io/?https://raw.githubusercontent.com/Miserlou/Talks/master/serverless-sf/big.quickstart.html">slides from Serverless SF</a>!</i>
+  <i>In a hurry? Click to see <a href="https://htmlpreview.github.io/?https://raw.githubusercontent.com/Miserlou/Talks/master/serverless-sf/big.quickstart.html">(now slightly out-dated) slides from Serverless SF</a>!</i>
 </p>
 
-**Zappa** makes it super easy to deploy all Python WSGI applications on AWS Lambda + API Gateway. Think of it as "serverless" web hosting for your Python web apps. That means **infinite scaling**, **zero downtime**, **zero maintenance** - and at a fraction of the cost of your current deployments!
+**Zappa** makes it super easy to build and deploy all Python WSGI applications on AWS Lambda + API Gateway. Think of it as "serverless" web hosting for your Python apps. That means **infinite scaling**, **zero downtime**, **zero maintenance** - and at a fraction of the cost of your current deployments!
 
 If you've got a Python web app (including Django and Flask apps), it's as easy as:
 
@@ -101,7 +106,9 @@ Better still, with Zappa you only pay for the milliseconds of server time that y
 
 It's great for deploying serverless microservices with frameworks like Flask and Bottle, and for hosting larger web apps and CMSes with Django. Or, you can use any WSGI-compatible app you like! You **probably don't need to change your existing applications** to use it, and you're not locked into using it.
 
-And finally, Zappa is **super easy to use**. You can deploy your application with a single command out of the box.
+Zappa also lets you build hybrid event-driven applications that can scale to **trillions of events** a year with **no additional effort** on your part! You also get **free SSL certificates**, **global app deployment**, **API access management**, **automatic security policy generation**, **precompiled C-extensions**, **auto keep-warms**, **oversized Lambda packages**, and **many other exclusive features**!
+
+And finally, Zappa is **super easy to use**. You can deploy your application with a single command out of the box!
 
 __Awesome!__
 
@@ -111,7 +118,7 @@ __Awesome!__
 
 ## Installation and Configuration
 
-_Before you begin, make sure you have a valid AWS account and your [AWS credentials file](https://blogs.aws.amazon.com/security/post/Tx3D6U6WSFGOK2H/A-New-and-Standardized-Way-to-Manage-Credentials-in-the-AWS-SDKs) is properly installed._
+_Before you begin, make sure you are running Python 2.7 and you have a valid AWS account and your [AWS credentials file](https://blogs.aws.amazon.com/security/post/Tx3D6U6WSFGOK2H/A-New-and-Standardized-Way-to-Manage-Credentials-in-the-AWS-SDKs) is properly installed._
 
 **Zappa** can easily be installed through pip, like so:
 
@@ -227,91 +234,6 @@ And now your scheduled event rules are deleted.
 
 See the [example](example/) for more details.
 
-#### Executing in Response to AWS Events
-
-Similarly, you can have your functions execute in response to events that happen in the AWS ecosystem, such as S3 uploads, DynamoDB entries, Kinesis streams, and SNS messages.
-
-In your *zappa_settings.json* file, define your [event sources](http://docs.aws.amazon.com/lambda/latest/dg/invoking-lambda-function.html) and the function you wish to execute. For instance, this will execute `your_module.process_upload_function` in response to new objects in your `my-bucket` S3 bucket. Note that `process_upload_function` must accept `event` and `context` parameters.
-
-```javascript
-{
-    "production": {
-       ...
-       "events": [{
-            "function": "your_module.process_upload_function",
-            "event_source": {
-                  "arn":  "arn:aws:s3:::my-bucket",
-                  "events": [
-                    "s3:ObjectCreated:*" // Supported event types: http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html#supported-notification-event-types
-                  ]
-               }
-            }],
-       ...
-    }
-}
-```
-
-And then:
-
-    $ zappa schedule production
-
-And now your function will execute every time a new upload appears in your bucket!
-
-To access the key's information in your application context, you'll want `process_upload_function` to look something like this:
-
-```python
-import boto3
-s3_client = boto3.client('s3')
-
-def process_upload_function(event, context):
-    """
-    Process a file upload.
-    """
-
-    # Get the uploaded file's information
-    bucket = event['Records'][0]['s3']['bucket']['name'] # Will be `my-bucket`
-    key = event['Records'][0]['s3']['object']['key'] # Will be the file path of whatever file was uploaded.
-
-    # Get the bytes from S3
-    s3_client.download_file(bucket, key, '/tmp/' + key) # Download this file to writable tmp space.
-    file_bytes = open('/tmp/' + key).read()
-```
-
-
-Similarly, for a [Simple Notification Service](https://aws.amazon.com/sns/) event:
-
-```javascript
-        "events": [
-            {
-                "function": "your_module.your_function",
-                "event_source": {
-                    "arn":  "arn:aws:sns:::your-event-topic-arn",
-                    "events": [
-                        "sns:Publish"
-                    ]
-                }
-            }
-        ]
-```
-
-[DynamoDB](http://docs.aws.amazon.com/lambda/latest/dg/with-ddb.html) and [Kinesis](http://docs.aws.amazon.com/lambda/latest/dg/with-kinesis.html) are slightly different as it is not event based but pulling from a stream:
-
-```javascript
-       "events": [
-           {
-               "function": "replication.replicate_records",
-               "event_source": {
-                    "arn":  "arn:aws:dynamodb:us-east-1:1234554:table/YourTable/stream/2016-05-11T00:00:00.000",
-                    "starting_position": "TRIM_HORIZON", // Supported values: TRIM_HORIZON, LATEST
-                    "batch_size": 50, // Max: 1000
-                    "enabled": true // Default is false
-               }
-           }
-       ]
-```
-
-You can find more [example event sources here](http://docs.aws.amazon.com/lambda/latest/dg/eventsources.html).
-
 #### Undeploy
 
 If you need to remove the API Gateway and Lambda function that you have previously published, you can simply:
@@ -425,6 +347,164 @@ Please note that this can take around 45 minutes to take effect. You can avoid t
 
 More detailed instructions are available [in this handy guide](https://github.com/Miserlou/Zappa/blob/master/docs/domain_with_free_ssl_dns.md) and lower down in this README file.
 
+## Executing in Response to AWS Events
+
+Similarly, you can have your functions execute in response to events that happen in the AWS ecosystem, such as S3 uploads, DynamoDB entries, Kinesis streams, and SNS messages.
+
+In your *zappa_settings.json* file, define your [event sources](http://docs.aws.amazon.com/lambda/latest/dg/invoking-lambda-function.html) and the function you wish to execute. For instance, this will execute `your_module.process_upload_function` in response to new objects in your `my-bucket` S3 bucket. Note that `process_upload_function` must accept `event` and `context` parameters.
+
+```javascript
+{
+    "production": {
+       ...
+       "events": [{
+            "function": "your_module.process_upload_function",
+            "event_source": {
+                  "arn":  "arn:aws:s3:::my-bucket",
+                  "events": [
+                    "s3:ObjectCreated:*" // Supported event types: http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html#supported-notification-event-types
+                  ]
+               }
+            }],
+       ...
+    }
+}
+```
+
+And then:
+
+    $ zappa schedule production
+
+And now your function will execute every time a new upload appears in your bucket!
+
+To access the key's information in your application context, you'll want `process_upload_function` to look something like this:
+
+```python
+import boto3
+s3_client = boto3.client('s3')
+
+def process_upload_function(event, context):
+    """
+    Process a file upload.
+    """
+
+    # Get the uploaded file's information
+    bucket = event['Records'][0]['s3']['bucket']['name'] # Will be `my-bucket`
+    key = event['Records'][0]['s3']['object']['key'] # Will be the file path of whatever file was uploaded.
+
+    # Get the bytes from S3
+    s3_client.download_file(bucket, key, '/tmp/' + key) # Download this file to writable tmp space.
+    file_bytes = open('/tmp/' + key).read()
+```
+
+Similarly, for a [Simple Notification Service](https://aws.amazon.com/sns/) event:
+
+```javascript
+        "events": [
+            {
+                "function": "your_module.your_function",
+                "event_source": {
+                    "arn":  "arn:aws:sns:::your-event-topic-arn",
+                    "events": [
+                        "sns:Publish"
+                    ]
+                }
+            }
+        ]
+```
+
+[DynamoDB](http://docs.aws.amazon.com/lambda/latest/dg/with-ddb.html) and [Kinesis](http://docs.aws.amazon.com/lambda/latest/dg/with-kinesis.html) are slightly different as it is not event based but pulling from a stream:
+
+```javascript
+       "events": [
+           {
+               "function": "replication.replicate_records",
+               "event_source": {
+                    "arn":  "arn:aws:dynamodb:us-east-1:1234554:table/YourTable/stream/2016-05-11T00:00:00.000",
+                    "starting_position": "TRIM_HORIZON", // Supported values: TRIM_HORIZON, LATEST
+                    "batch_size": 50, // Max: 1000
+                    "enabled": true // Default is false
+               }
+           }
+       ]
+```
+
+You can find more [example event sources here](http://docs.aws.amazon.com/lambda/latest/dg/eventsources.html).
+
+## Asynchronous Task Execution
+
+Zappa also now offers the ability to seamlessly execute functions asynchronously in a completely separate AWS Lambda instance!
+
+For example, if you have a Flask API for ordering a pie, you can call your `bake` function seamlessly in a completely seperate Lambda instance by using the `zappa.async.task` decorator like so:
+
+```python
+import flask
+from zappa.async import task
+
+@task
+def make_pie():
+    """ This takes a long time! """
+    ingredients = get_ingredients()
+    pie = bake(ingredients)
+    deliver(pie)
+
+@flask.route('/api/order/pie')
+def order_pie():
+    """ This returns immediately! """
+    make_pie()
+    return "Your pie is being made!"
+
+```
+
+And that's it! Your API response will return immediately, while the `make_pie` function executes in a completely different Lambda instance.
+
+### Task Sources
+
+By default, this feature uses direct AWS Lambda invocation. You can instead use AWS Simple Notification Service as the task event source by using the `task_sns` decorator, like so:
+
+```python
+from zappa.async import task_sns
+@task_sns
+```
+
+Using SNS also requires setting the following settings in your `zappa_settings`:
+
+```javascript
+{
+  "dev": {
+    ..
+      "async_source": "sns", // Source of async tasks. Defaults to "lambda"
+      "async_resources": true, // Create the SNS topic to use. Defaults to true.
+    ..
+    }
+}
+```
+
+This will automatically create and subscribe to the SNS topic the code will use when you call the `zappa schedule` command.
+
+Using SNS will also return a message ID in case you need to track your invocations.
+
+### Direct Invocation
+
+You can also use this functionality without a decorator by passing your function to `zappa.async.run`, like so:
+
+```python
+from zappa.async import run
+
+run(your_function, args, kwargs) # Using Lambda
+run(your_function, args, kwargs, service='sns') # Using SNS
+```
+
+### Restrictions
+
+The following restrictions to this feature apply:
+
+* Functions must have a clean import path -- i.e. no closures, lambdas, or methods.
+* `args` and `kwargs` must be JSON-serializable.
+* The JSON-serialized arguments must be within the size limits for Lambda (128K) or SNS (256K) events.
+
+All of this code is still backwards-compatible with non-Lambda environments - it simply executes in a blocking fashion and returns the result.
+
 ## Advanced Settings
 
 There are other settings that you can define in your local settings
@@ -437,8 +517,11 @@ to change Zappa's behavior. Use these at your own risk!
         "api_key_required": false, // enable securing API Gateway endpoints with x-api-key header (default False)
         "api_key": "your_api_key_id", // optional, use an existing API key. The option "api_key_required" must be true to apply
         "apigateway_enabled": true, // Set to false if you don't want to create an API Gateway resource. Default true.
+        "apigateway_description": "My funky application!", // Define a custom description for the API Gateway console. Default None.
         "assume_policy": "my_assume_policy.json", // optional, IAM assume policy JSON file
         "attach_policy": "my_attach_policy.json", // optional, IAM attach policy JSON file
+        "async_source": "sns", // Source of async tasks. Defaults to "lambda"
+        "async_resources": true, // Create the SNS topic to use. Defaults to true.
         "aws_region": "aws-region-name", // optional, uses region set in profile or environment variables if not set here,
         "binary_support": true, // Enable automatic MIME-type based response encoding through API Gateway. Default true.
         "callbacks": { // Call custom functions during the local Zappa deployment/update process
@@ -456,6 +539,7 @@ to change Zappa's behavior. Use these at your own risk!
         "cloudwatch_data_trace": false, // Logs all data about received events. Default false.
         "cloudwatch_metrics_enabled": false, // Additional metrics for the API Gateway. Default false.
         "cors": true, // Enable Cross-Origin Resource Sharing. Default false. If true, simulates the "Enable CORS" button on the API Gateway console. Can also be a dictionary specifying lists of "allowed_headers", "allowed_methods", and string of "allowed_origin"
+        "dead_letter_arn": "arn:aws:<sns/sqs>:::my-topic/queue", // Optional Dead Letter configuration for when Lambda async invoke fails thrice
         "debug": true, // Print Zappa configuration errors tracebacks in the 500. Default true.
         "delete_local_zip": true, // Delete the local zip archive after code updates. Default true.
         "delete_s3_zip": true, // Delete the s3 zip archive. Default true.
@@ -557,7 +641,7 @@ Similarly, you can supply a `zappa_settings.toml` file:
 
 #### Keeping The Server Warm
 
-Zappa will automatically set up a regularly occurring execution of your application in order to keep the Lambda function warm. This can be disabled via the 'keep_warm' setting.
+Zappa will automatically set up a regularly occurring execution of your application in order to keep the Lambda function warm. This can be disabled via the `keep_warm` setting.
 
 #### Serving Static Files / Binary Uploads
 
@@ -571,9 +655,9 @@ Similarly, you may want to design your application so that static binary uploads
 
 #### Enabling CORS
 
-The easiest way to enable CORS (Cross-Origin Resource Sharing) for in your Zappa application is to set `cors` to `true` in your Zappa settings file and updating, which is the equivalent of pushing the "Enable CORS" button in the AWS API Gateway console. This is disabled by default, but you may wish to enable it for APIs which are accessed from other domains, etc.
+The simplest way to enable CORS (Cross-Origin Resource Sharing) for in your Zappa application is to set `cors` to `true` in your Zappa settings file and updating, which is the equivalent of pushing the "Enable CORS" button in the AWS API Gateway console. This is disabled by default, but you may wish to enable it for APIs which are accessed from other domains, etc. It may also conflict with `binary_support`, so you should set that to `false` in your settings.
 
-You can also simply handle CORS directly in your application. If you do this, you'll need to add `Access-Control-Allow-Origin`, `Access-Control-Allow-Headers`, and `Access-Control-Allow-Methods` to the `method_header_types` key in your `zappa_settings.json`. See further [discussion here](https://github.com/Miserlou/Zappa/issues/41).
+You can also simply handle CORS directly in your application. Your web framework will probably have an extention to do this, such as [django-cors-headers](https://github.com/ottoyiu/django-cors-headers) or [Flask-CORS](https://github.com/corydolphin/flask-cors). Using these will make your code more portable.
 
 #### Large Projects
 
@@ -821,6 +905,12 @@ To avoid this, you can file a [service ticket](https://console.aws.amazon.com/su
 
 If Docker is part of your team's CI, testing, or deployments, you may want to check out [this handy guide](https://blog.zappa.io/posts/simplified-aws-lambda-deployments-with-docker-and-zappa) on using Zappa with Docker.
 
+#### Dead Letter Queues
+
+If you want to utilise [AWS Lambda's Dead Letter Queue feature](http://docs.aws.amazon.com/lambda/latest/dg/dlq.html) simply add the key `dead_letter_arn`, with the value being the complete ARN to the corresponding SNS topic or SQS queue in your `zappa_settings.json`.
+
+You must have already created the corresponding SNS/SQS topic/queue, and the Lambda function execution role must have been provisioned with read/publish/sendMessage access to the DLQ resource.
+
 ## Zappa Guides
 
 * [Django-Zappa tutorial (screencast)](https://www.youtube.com/watch?v=plUrbPN0xc8&feature=youtu.be).
@@ -832,7 +922,9 @@ If Docker is part of your team's CI, testing, or deployments, you may want to ch
 * [Deploy Flask-Ask to AWS Lambda with Zappa (screencast)](https://www.youtube.com/watch?v=mjWV4R2P4ks)
 * [Secure 'Serverless' File Uploads with AWS Lambda, S3, and Zappa](http://blog.stratospark.com/secure-serverless-file-uploads-with-aws-lambda-s3-zappa.html)
 * [First Steps with AWS Lambda, Zappa and Python](https://andrich.blog/2017/02/12/first-steps-with-aws-lambda-zappa-flask-and-python/)
-* [Deploy a Serverless WSGI App using Zappa, CloudFront, RDS, and VPC](https://docs.google.com/presentation/d/1aYeOMgQl4V_fFgT5VNoycdXtob1v6xVUWlyxoTEiTw)
+* [Deploy a Serverless WSGI App using Zappa, CloudFront, RDS, and VPC](https://docs.google.com/presentation/d/1aYeOMgQl4V_fFgT5VNoycdXtob1v6xVUWlyxoTEiTw0/edit#slide=id.p)
+* [AWS: Deploy Alexa Ask Skills with Flask-Ask and Zappa](https://developer.amazon.com/blogs/post/8e8ad73a-99e9-4c0f-a7b3-60f92287b0bf/New-Alexa-Tutorial-Deploy-Flask-Ask-Skills-to-AWS-Lambda-with-Zappa)
+* [Guide to using Django with Zappa](https://edgarroman.github.io/zappa-django-guide/)
 * _Your guide here?_
 
 ## Zappa in the Press
@@ -855,7 +947,8 @@ If Docker is part of your team's CI, testing, or deployments, you may want to ch
 * [LambdaMailer](https://github.com/tryolabs/lambda-mailer) - A server-less endpoint for processing a contact form.
 * [Voter Registration Microservice](https://topics.arlingtonva.us/2016/11/voter-registration-search-microservice/) - Official backup to to the Virginia Department of Elections portal.
 * [FreePoll Online](https://www.freepoll.online) - A simple and awesome say for groups to make decisions.
-* And many more!
+* [PasteOfCode](https://paste.ofcode.org/) - A Zappa-powered paste bin.
+* And many more, including banks, governments, startups, enterprises and schools!
 
 Are you using Zappa? Let us know and we'll list your site here!
 
@@ -870,7 +963,6 @@ Are you using Zappa? Let us know and we'll list your site here!
 * [cookiecutter-mobile-backend](https://github.com/narfman0/cookiecutter-mobile-backend/) - A `cookiecutter` Django project with Zappa and S3 uploads support.
 * [zappa-examples](https://github.com/narfman0/zappa-examples/) - Flask, Django, image uploads, and more!
 * [Zappa Docker Image](https://github.com/danielwhatmuff/zappa) - A Docker image for running Zappa locally, based on Lambda Docker.
-* [zappa-django-example](https://github.com/edgarroman/zappa-django-example) - A complete example for running Django on Zappa.
 * [zappa-dashing](https://github.com/nikos/zappa-dashing) - Monitor your AWS environment (health/metrics) with Zappa and CloudWatch.
 * [s3env](https://github.com/cameronmaske/s3env) - Manipulate a remote Zappa environment variable key/value JSON object file in an S3 bucket through the CLI.
 * [zappa_resize_image_on_fly](https://github.com/wobeng/zappa_resize_image_on_fly) - Resize images on the fly using Flask, Zappa, Pillow, and OpenCV-python.

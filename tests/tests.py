@@ -544,6 +544,51 @@ class TestZappa(unittest.TestCase):
         response_tuple = collections.namedtuple('Response', ['status_code', 'content'])
         response = response_tuple(200, 'hello')
 
+
+    def test_wsgi_from_apigateway_testbutton(self):
+        """
+        API Gateway resources have a "test bolt" button on methods.
+        This button sends some empty dicts as 'null' instead of '{}'.
+        """
+        event = {
+            "resource": "/",
+            "path": "/",
+            "httpMethod": "GET",
+            "headers": None,
+            "queryStringParameters": None,
+            "pathParameters": None,
+            "stageVariables": None,
+            "requestContext":{
+                "accountId": "0123456",
+                "resourceId": "qwertyasdf",
+                "stage": "test-invoke-stage",
+                "requestId": "test-invoke-request",
+                "identity":{
+                    "cognitoIdentityPoolId": None,
+                    "accountId": "0123456",
+                    "cognitoIdentityId": None,
+                    "caller": "MYCALLERID",
+                    "apiKey": "test-invoke-api-key",
+                    "sourceIp": "test-invoke-source-ip",
+                    "accessKey": "MYACCESSKEY",
+                    "cognitoAuthenticationType": None,
+                    "cognitoAuthenticationProvider": None,
+                    "userArn": "arn:aws:iam::fooo:user/my.username",
+                    "userAgent": "Apache-HttpClient/4.5.x (Java/1.8.0_112)",
+                    "user": "MYCALLERID"
+                },
+                "resourcePath": "/",
+                "httpMethod": "GET",
+                "apiId": "myappid"
+            },
+            "body": None,
+            "isBase64Encoded": False
+        }
+
+        environ = create_wsgi_request(event, trailing_slash=False)
+        response_tuple = collections.namedtuple('Response', ['status_code', 'content'])
+        response = response_tuple(200, 'hello')
+
     ##
     # Handler
     ##

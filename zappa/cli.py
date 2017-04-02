@@ -513,6 +513,9 @@ class ZappaCLI(object):
         """
         Only build the package
         """
+        # Make sure we're in a venv.
+        self.check_venv()
+
         # force not to delete the local zip
         self.override_stage_config_setting('delete_local_zip', False)
         # Execute the prebuild script
@@ -530,6 +533,9 @@ class ZappaCLI(object):
         and create the API Gateway routes.
 
         """
+
+        # Make sure we're in a venv.
+        self.check_venv()
 
         # Execute the prebuild script
         if self.prebuild_script:
@@ -597,6 +603,7 @@ class ZappaCLI(object):
                 handler=self.lambda_handler,
                 description=self.lambda_description,
                 vpc_config=self.vpc_config,
+                dead_letter_config=self.dead_letter_config,
                 timeout=self.timeout_seconds,
                 memory_size=self.memory_size
             )
@@ -610,12 +617,16 @@ class ZappaCLI(object):
 
             # Create and configure the API Gateway
 
-            template = self.zappa.create_stack_template(self.lambda_arn,
-                                                        self.api_name,
-                                                        self.api_key_required,
-                                                        self.iam_authorization,
-                                                        self.authorizer,
-                                                        self.cors)
+
+            template = self.zappa.create_stack_template(
+                                                        lambda_arn=self.lambda_arn,
+                                                        api_name=self.api_name,
+                                                        api_key_required=self.api_key_required,
+                                                        iam_authorization=self.iam_authorization,
+                                                        authorizer=self.authorizer,
+                                                        cors_options=self.cors,
+                                                        description=self.apigateway_description
+                                                    )
 
             self.zappa.update_stack(self.api_name, self.s3_bucket_name, wait=True)
 
@@ -660,6 +671,9 @@ class ZappaCLI(object):
         """
         Repackage and update the function code.
         """
+
+        # Make sure we're in a venv.
+        self.check_venv()
 
         # Execute the prebuild script
         if self.prebuild_script:
@@ -748,16 +762,17 @@ class ZappaCLI(object):
 
         if self.use_apigateway:
 
-            self.zappa.create_stack_template(self.lambda_arn,
-                                             self.api_name,
-                                             self.api_key_required,
-                                             self.iam_authorization,
-                                             self.authorizer,
-                                             self.cors)
-            self.zappa.update_stack(self.api_name, self.s3_bucket_name, wait=True, update_only=True)
-
+            self.zappa.create_stack_template(
+                                            lambda_arn=self.lambda_arn,
+                                            api_name=self.api_name,
+                                            api_key_required=self.api_key_required,
+                                            iam_authorization=self.iam_authorization,
+                                            authorizer=self.authorizer,
+                                            cors_options=self.cors,
+                                            description=self.apigateway_description
+                                        )
             api_id = self.zappa.get_api_id(self.api_name)
-
+            self.zappa.update_stack(self.api_name, self.s3_bucket_name, wait=True, update_only=True)
 
             # update binary support
             if self.binary_support:
@@ -944,8 +959,18 @@ class ZappaCLI(object):
                 lambda_arn=function_response['Configuration']['FunctionArn'],
                 lambda_name=self.lambda_name,
                 events=events
-                )
+            )
 
+        # Add async tasks SNS
+        if self.stage_config.get('async_source', None) == 'sns' \
+           and self.stage_config.get('async_resources', True):
+            self.lambda_arn = self.zappa.get_lambda_function(
+                function_name=self.lambda_name)
+            topic_arn = self.zappa.create_async_sns_topic(
+                lambda_name=self.lambda_name,
+                lambda_arn=self.lambda_arn
+            )
+            click.echo('SNS Topic created: %s' % topic_arn)
 
     def unschedule(self):
         """
@@ -975,6 +1000,12 @@ class ZappaCLI(object):
             lambda_arn=function_arn,
             events=events,
             )
+
+        # Remove async task SNS
+        if self.stage_config.get('async_source', None) == 'sns' \
+           and self.stage_config.get('async_resources', True):
+            removed_arns = self.zappa.remove_async_sns_topic(self.lambda_name)
+            click.echo('SNS Topic removed: %s' % ', '.join(removed_arns))
 
 
     def invoke(self, function_name, raw_python=False, command=None):
@@ -1173,6 +1204,9 @@ class ZappaCLI(object):
 
         """
 
+        # Make sure we're in a venv.
+        self.check_venv()
+
         # Ensure that we don't already have a zappa_settings file.
         if os.path.isfile(settings_file):
             raise ClickException("This project is " + click.style("already initialized", fg="red", bold=True) + "!")
@@ -1180,12 +1214,6 @@ class ZappaCLI(object):
         # Ensure P2 until Lambda supports it.
         if sys.version_info >= (3,0): # pragma: no cover
             raise ClickException("Zappa curently only works with Python 2, until AWS Lambda adds Python 3 support.")
-
-        # Ensure inside virtualenv.
-        if not ( hasattr(sys, 'prefix') or hasattr(sys, 'real_prefix') or hasattr(sys, 'base_prefix') ): # pragma: no cover
-            raise ClickException(
-                "Zappa must be run inside of a virtual environment!\n"
-                "Learn more about virtual environments here: http://docs.python-guide.org/en/latest/dev/virtualenvs/")
 
         # Explain system.
         click.echo(click.style(u"""\n███████╗ █████╗ ██████╗ ██████╗  █████╗
@@ -1462,14 +1490,16 @@ class ZappaCLI(object):
         else:
             if not self.zappa.get_domain_name(self.domain):
                 dns_name = self.zappa.create_domain_name(
-                    self.domain,
-                    self.domain + "-Zappa-Cert",
-                    certificate_body,
-                    certificate_private_key,
-                    certificate_chain,
-                    cert_arn,
-                    self.api_name,
-                    self.api_stage
+
+                    domain_name=self.domain,
+                    certificate_name=self.domain + "-Zappa-Cert",
+                    certificate_body=certificate_body,
+                    certificate_private_key=certificate_private_key,
+                    certificate_chain=certificate_chain,
+                    certificate_arn=cert_arn,
+                    api_name=self.api_name,
+                    stage=self.api_stage,
+
                 )
                 if self.stage_config.get('route53_enabled', True):
                     self.zappa.update_route53_records(self.domain, dns_name)
@@ -1477,15 +1507,15 @@ class ZappaCLI(object):
                       "created and propagated through AWS, but it requires no further work on your part.")
             else:
                 self.zappa.update_domain_name(
-                    self.domain,
-                    self.domain + "-Zappa-Cert",
-                    certificate_body,
-                    certificate_private_key,
-                    certificate_chain,
-                    cert_arn,
-                    self.api_name,
-                    self.api_stage,
-                    self.stage_config.get('route53_enabled', True)
+                    domain_name=self.domain,
+                    certificate_name=self.domain + "-Zappa-Cert",
+                    certificate_body=certificate_body,
+                    certificate_private_key=certificate_private_key,
+                    certificate_chain=certificate_chain,
+                    certificate_arn=cert_arn,
+                    api_name=self.api_name,
+                    stage=self.api_stage,
+                    route53=self.stage_config.get('route53_enabled', True)
                 )
 
             cert_success = True
@@ -1628,6 +1658,8 @@ class ZappaCLI(object):
         self.log_level = self.stage_config.get('log_level', "DEBUG")
         self.domain = self.stage_config.get('domain', None)
         self.timeout_seconds = self.stage_config.get('timeout_seconds', 30)
+        dead_letter_arn = self.stage_config.get('dead_letter_arn', '')
+        self.dead_letter_config = {'TargetArn': dead_letter_arn} if dead_letter_arn else {}
 
         # Provide legacy support for `use_apigateway`, now `apigateway_enabled`.
         # https://github.com/Miserlou/Zappa/issues/490
@@ -1635,6 +1667,7 @@ class ZappaCLI(object):
         self.use_apigateway = self.stage_config.get('use_apigateway', True)
         if self.use_apigateway:
             self.use_apigateway = self.stage_config.get('apigateway_enabled', True)
+        self.apigateway_description = self.stage_config.get('apigateway_description', None)
 
         self.lambda_handler = self.stage_config.get('lambda_handler', 'handler.lambda_handler')
         # DEPRICATED. https://github.com/Miserlou/Zappa/issues/456
@@ -1655,11 +1688,13 @@ class ZappaCLI(object):
         self.check_environment(self.environment_variables)
         self.authorizer = self.stage_config.get('authorizer', {})
 
+        desired_role_name = self.lambda_name + "-ZappaLambdaExecutionRole"
         self.zappa = Zappa( boto_session=session,
                             profile_name=self.profile_name,
                             aws_region=self.aws_region,
-                            load_credentials=self.load_credentials
-                            )
+                            load_credentials=self.load_credentials,
+                            desired_role_name=desired_role_name
+                        )
 
         for setting in CUSTOM_SETTINGS:
             if setting in self.stage_config:
@@ -1847,7 +1882,7 @@ class ZappaCLI(object):
             # https://github.com/Miserlou/Zappa/issues/604
             try:
                 env_dict = dict((k.encode('ascii'), v) for (k, v) in env_dict.items())
-            except Exception: # pragma: nocover
+            except Exception: # pragma: no cover
                     raise ValueError("Environment variable keys must not be unicode.")
 
             settings_s = settings_s + "ENVIRONMENT_VARIABLES={0}\n".format(
@@ -2129,6 +2164,18 @@ class ZappaCLI(object):
         )
         return endpoint_url
 
+    def check_venv(self):
+        """ Ensure we're inside a virtualenv. """
+        if self.zappa:
+            venv = self.zappa.get_current_venv()
+        else:
+            # Just for `init`, when we don't have settings yet.
+            temp_zappa = Zappa()
+            venv = temp_zappa.get_current_venv()
+        if not venv:
+            raise ClickException(
+                click.style("Zappa", bold=True) + " requires an " + click.style("active virtual environment", bold=True, fg="red") + "!\n" +
+                "Learn more about virtual environments here: " + click.style("http://docs.python-guide.org/en/latest/dev/virtualenvs/", bold=False, fg="cyan"))
 
 ####################################################################
 # Main
