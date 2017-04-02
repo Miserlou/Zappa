@@ -1475,7 +1475,8 @@ class ZappaCLI(object):
                     self.api_stage,
                     self.domain,
                     clean_up,
-                    manual
+                    manual,
+                    route53_enabled=self.stage_config.get('route53_enabled', True)
                 )
 
             # Deliberately undocumented feature (for now, at least.)

@@ -47,6 +47,7 @@ def get_cert_and_update_domain(
                                 domain=None,
                                 clean_up=True,
                                 manual=False,
+                                route53_enabled=True
                             ):
     """
     Main cert installer path.
@@ -81,7 +82,8 @@ def get_cert_and_update_domain(
                         stage=api_stage
                     )
                     print("Created a new domain name. Please note that it can take up to 40 minutes for this domain to be created and propagated through AWS, but it requires no further work on your part.")
-                    zappa_instance.update_route53_records(domain, dns_name)
+                    if route53_enabled:
+                        zappa_instance.update_route53_records(domain, dns_name)
                 else:
                     zappa_instance.update_domain_name(
                         domain_name=domain,
