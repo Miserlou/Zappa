@@ -1,0 +1,40 @@
+{
+  "status_code": 200,
+  "data": {
+    "CodeSha256": "codehash",
+    "CodeSize": 22213824,
+    "Description": "Zappa Deployment",
+    "Environment": {
+      "Variables": {
+        "Key1": "Key2"
+      }
+    },
+    "FunctionArn": "some-function-arn",
+    "FunctionName": "some-function-name",
+    "Handler": "handler.lambda_handler",
+    "LastModified": "2017-04-02T22:38:23.754+0000",
+    "MemorySize": 1536,
+    "ResponseMetadata": {
+      "HTTPHeaders": {
+        "connection": "keep-alive",
+        "content-length": "669",
+        "content-type": "application/json",
+        "date": "Sun, 02 Apr 2017 22:41:02 GMT",
+        "x-amzn-requestid": "asdfasd"
+      },
+      "HTTPStatusCode": 200,
+      "RequestId": "asdfasd",
+      "RetryAttempts": 0
+    },
+    "Role": "",
+    "Runtime": "python2.7",
+    "Timeout": 300,
+    "Version": "$LATEST",
+    "VpcConfig": {
+      "SecurityGroupIds": [],
+      "SubnetIds": []
+    }
+  }
+}
+
+
