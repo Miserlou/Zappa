@@ -796,19 +796,33 @@ class Zappa(object):
             del previous_config_response["Environment"]["Error"]
         except KeyError as err:
             pass
-        response = self.lambda_client.update_function_configuration(
-            FunctionName=function_name,
-            Runtime='python2.7',
-            Role=self.credentials_arn,
-            Handler=handler,
-            Description=description,
-            Timeout=timeout,
-            MemorySize=memory_size,
-            VpcConfig=vpc_config,
-            Environment=previous_config_response["Environment"],
-            DeadLetterConfig=previous_config_response["DeadLetterConfig"],
-            KMSKeyArn=previous_config_response["KMSKeyArn"]
-        )
+
+        updated_dict = {
+            "FunctionName": function_name,
+            "Runtime": 'python2.7',
+            "Role": self.credentials_arn,
+            "Handler": handler,
+            "Description": description,
+            "Timeout": timeout,
+            "MemorySize": memory_size,
+            "VpcConfig": vpc_config,
+        }
+
+        if "Environment" in previous_config_response:
+            if "Error" in previous_config_response["Environment"]:
+                del previous_config_response["Environment"]["Error"]
+            if previous_config_response["Environment"]:
+                updated_dict.update({"Environment": previous_config_response["Environment"]})
+
+        if "DeadLetterConfig" in previous_config_response:
+            if previous_config_response["DeadLetterConfig"]:
+                updated_dict.update({"DeadLetterConfig": previous_config_response["DeadLetterConfig"]})
+
+        if "KMSKeyArn" in previous_config_response:
+            if previous_config_response["KMSKeyArn"]:
+                updated_dict.update({"KMSKeyArn": previous_config_response["KMSKeyArn"]})
+
+        response = self.lambda_client.update_function_configuration(**updated_dict)
 
         return response['FunctionArn']
 
