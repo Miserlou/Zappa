@@ -30,7 +30,7 @@ from zappa.letsencrypt import get_cert_and_update_domain, create_domain_key, cre
 from zappa.util import (detect_django_settings, copytree, detect_flask_apps,
                         add_event_source, remove_event_source,
                         get_event_source_status, parse_s3_url, human_size, string_to_timestamp,
-                        validate_name, InvalidAwsLambdaName)
+                        validate_name, InvalidAwsLambdaName, contains_python_files_or_subdirs)
 from zappa.wsgi import create_wsgi_request, common_log
 from zappa.zappa import Zappa, ASSUME_POLICY, ATTACH_POLICY
 
@@ -1472,6 +1472,18 @@ USE_TZ = True
                 with self.assertRaises(InvalidAwsLambdaName) as exc:
                     validate_name(value)
 
+    def test_contains_python_files_or_subdirs(self):
+        files = ['foo.py']
+        dirs = []
+        self.assertTrue(contains_python_files_or_subdirs(dirs, files))
+
+        files = []
+        dirs = ['subfolder']
+        self.assertTrue(contains_python_files_or_subdirs(dirs, files))
+
+        files = ['somefile.txt']
+        dirs = []
+        self.assertFalse(contains_python_files_or_subdirs(dirs, files))
 
 
 if __name__ == '__main__':

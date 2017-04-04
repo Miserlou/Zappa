@@ -341,3 +341,10 @@ def validate_name(name, maxlen=80):
         msg = "Name can only contain characters from a-z, A-Z, 0-9, _ and -"
         raise InvalidAwsLambdaName(msg)
     return name
+
+
+def contains_python_files_or_subdirs(dirs, files):
+    """
+    checks if len of dirs greater 0 or if there are any files ending on .py or .pyc in files
+    """
+    return len(dirs) > 0 or len([filename for filename in files if filename.endswith('.py') or filename.endswith('.pyc')]) > 0
