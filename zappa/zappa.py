@@ -344,6 +344,9 @@ class Zappa(object):
             return None
         return venv
 
+    def contains_python_files_or_subdirs(self, filename, dirs, files):
+        return len(dirs) > 0 or len([filename for filename in files if filename.endswith('.py') or filename.endswith('.pyc')]) > 0
+
     def create_lambda_zip(  self,
                             prefix='lambda_package',
                             handler_file=None,
@@ -538,7 +541,7 @@ class Zappa(object):
                 with open(os.path.join(root, filename), 'rb') as f:
                     zipf.writestr(zipi, f.read(), compression_method)
 
-            if '__init__.py' not in files:
+            if '__init__.py' not in files and self.contains_python_files_or_subdirs(filename, dirs, files):
                 tmp_init = os.path.join(temp_project_path, '__init__.py')
                 open(tmp_init, 'a').close()
                 os.chmod(tmp_init,  0o755)
