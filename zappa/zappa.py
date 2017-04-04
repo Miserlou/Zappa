@@ -26,7 +26,7 @@ from setuptools import find_packages
 from tqdm import tqdm
 
 # Zappa imports
-from util import copytree, add_event_source, remove_event_source, human_size, get_topic_name
+from util import copytree, add_event_source, remove_event_source, human_size, get_topic_name, contains_python_files_or_subdirs
 
 ##
 # Logging Config
@@ -344,10 +344,6 @@ class Zappa(object):
             return None
         return venv
 
-    @staticmethod
-    def contains_python_files_or_subdirs(dirs, files):
-        return len(dirs) > 0 or len([filename for filename in files if filename.endswith('.py') or filename.endswith('.pyc')]) > 0
-
     def create_lambda_zip(  self,
                             prefix='lambda_package',
                             handler_file=None,
@@ -542,7 +538,10 @@ class Zappa(object):
                 with open(os.path.join(root, filename), 'rb') as f:
                     zipf.writestr(zipi, f.read(), compression_method)
 
-            if '__init__.py' not in files and self.contains_python_files_or_subdirs(dirs, files):
+            # Create python init file if it does not exist
+            # Only do that if there are sub folders or python files
+            # Related: https://github.com/Miserlou/Zappa/issues/766
+            if '__init__.py' not in files and contains_python_files_or_subdirs(dirs, files):
                 tmp_init = os.path.join(temp_project_path, '__init__.py')
                 open(tmp_init, 'a').close()
                 os.chmod(tmp_init,  0o755)
