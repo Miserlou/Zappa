@@ -30,6 +30,7 @@ Discussion of this comes from:
 
 import boto3
 import botocore
+from functools import update_wrapper
 import importlib
 import inspect
 import json
@@ -154,12 +155,7 @@ def route_lambda_task(event, context):
     imports the function, calls the function with args
     """
     message = event
-    func = import_and_get_task(message['task_path'])
-    return func(
-            *message['args'],
-            **message['kwargs']
-        )
-
+    return run_message(message)
 
 def route_sns_task(event, context):
     """
@@ -170,8 +166,17 @@ def route_sns_task(event, context):
     message = json.loads(
             record['Sns']['Message']
         )
+    return run_message(message)
+
+def run_message(message):
     func = import_and_get_task(message['task_path'])
-    return func(
+    if hasattr(func, 'sync'):
+        return func.sync(
+            *message['args'],
+            **message['kwargs']
+        )
+    else:
+        return func(
             *message['args'],
             **message['kwargs']
         )
@@ -200,40 +205,30 @@ def run(func, args=[], kwargs={}, service='lambda', **task_kwargs):
 
 # Handy:
 # http://stackoverflow.com/questions/10294014/python-decorator-best-practice-using-a-class-vs-a-function
-class task(object):
-    """
-    Async task decorator for a function.
-    Serialises and dispatches the task to SNS.
-    Lambda subscribes to SNS topic and gets this message
-    Lambda routes the message to the same function
-    """
-    def __init__(self, func):
-        self.func = func
-        self.service = "lambda"
+# However, this needs to pass inspect.getargspec() in handler.py which does not take classes
+def task(func, service='lambda'):
+    task_path = get_func_task_path(func)
 
-    def __call__(self, *args, **kwargs):
-        """
-        Get the function path and, if invoked from the main Lambda code, send the message.
-
-        If it's local, or invoked directly, simply execute it now.
-        """
-
-        task_path = get_func_task_path(self.func)
-        routed = is_from_router()
-
-        if (self.service in ASYNC_CLASSES) and (AWS_LAMBDA_FUNCTION_NAME) and (not routed):
-            send_result = ASYNC_CLASSES[self.service]().send(task_path, args, kwargs)
+    def _run_async(*args, **kwargs):
+        if (service in ASYNC_CLASSES) and (AWS_LAMBDA_FUNCTION_NAME):
+            send_result = ASYNC_CLASSES[service]().send(task_path, args, kwargs)
             return send_result
         else:
-            return self.func(*args, **kwargs)
+            return func(*args, **kwargs)
 
-class task_sns(task):
+    update_wrapper(_run_async, func)
+
+    _run_async.service = service
+    _run_async.sync = func
+
+    return _run_async
+
+
+def task_sns(func):
     """
     SNS-based task dispatcher.
     """
-    def __init__(self, func):
-        self.func = func
-        self.service = "sns"
+    return task(func, service='sns')
 
 ##
 # Utility Functions
@@ -260,18 +255,3 @@ def get_func_task_path(func):
                                         func_name=func.__name__
                                     )
     return task_path
-
-def is_from_router():
-    """
-    Detect if this stack is being executed from the router
-    """
-
-    tb = traceback.extract_stack()
-    for line in tb:
-        for item in line:
-            if 'route_lambda_task' in line:
-                return True
-            if 'route_sns_task' in line:
-                return True
-
-    return False
