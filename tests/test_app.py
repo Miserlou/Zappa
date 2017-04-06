@@ -18,7 +18,7 @@ def schedule_me():
 
 @task
 def async_me(arg1, **kwargs):
-    return "run async when on lambda %s" % arg1
+    return "run async when on lambda %s%s" % (arg1, kwargs.get('foo',''))
 
 def callback(self):
     print("this is a callback")

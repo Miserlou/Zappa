@@ -189,6 +189,24 @@ class TestZappa(unittest.TestCase):
                 }
         lh.handler(event, None)
 
+        # Test command for async event
+        event = {
+                    u'account': u'72333333333',
+                    u'region': u'us-east-1',
+                    u'detail': {},
+                    u'command': u'zappa.async.route_lambda_task',
+                    u'task_path': u'tests.test_app.async_me',
+                    u'args': [u'xxx'],
+                    u'kwargs': {},
+                    u'source': u'aws.events',
+                    u'version': u'0',
+                    u'time': u'2016-05-10T21:05:39Z',
+                    u'id': u'0d6a6db0-d5e7-4755-93a0-750a8bf49d55',
+                }
+        self.assertEqual('run async when on lambda xxx', lh.handler(event, None))
+        event[u'kwargs'] = {'foo': 'bar'}
+        self.assertEqual('run async when on lambda xxxbar', lh.handler(event, None))
+
         # Test raw_command event
         event = {
                     u'account': u'72333333333',
