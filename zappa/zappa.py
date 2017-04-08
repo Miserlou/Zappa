@@ -324,7 +324,9 @@ class Zappa(object):
 
         return ve_path
 
-    def get_current_venv(self):
+    # staticmethod as per https://github.com/Miserlou/Zappa/issues/780
+    @staticmethod
+    def get_current_venv():
         """
         Returns the path to the current virtualenv
         """
