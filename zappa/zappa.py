@@ -228,7 +228,8 @@ class Zappa(object):
         if load_credentials:
             self.load_credentials(boto_session, profile_name)
 
-        self.s3_client = self.boto_session.client('s3')
+        from botocore.config import Config
+        self.s3_client = self.boto_session.client('s3', config=Config(signature_version='s3v4'))
         self.lambda_client = self.boto_session.client('lambda', config=long_config)
         self.events_client = self.boto_session.client('events')
         self.apigateway_client = self.boto_session.client('apigateway')
