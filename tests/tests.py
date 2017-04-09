@@ -890,7 +890,33 @@ class TestZappa(unittest.TestCase):
         zappa_cli.api_stage = 'ttt888'
         self.assertRaises(ValueError, zappa_cli.load_settings, 'tests/test_bad_environment_vars.json')
 
-    def test_cli_init(self):
+    @mock.patch('botocore.session.Session.full_config', new_callable=mock.PropertyMock)
+    def test_cli_init(self, mock_config):
+
+        # Coverage for all profile detection paths
+        mock_config.side_effect = [
+            { 'profiles' : { 'default' : { 'region' : 'us-east-1'} } },
+            { 'profiles' : { 'default' : { 'region' : 'us-east-1'} } },
+            { 'profiles' : {
+                'default' : {
+                    'region' : 'us-east-1'
+                },
+                'another' : {
+                    'region' : 'us-east-1'
+                }
+            } },
+            { 'profiles' : {
+                'default' : {
+                    'region' : 'us-east-1'
+                },
+                'another' : {
+                    'region' : 'us-east-1'
+                }
+            } },
+            { 'profiles': {} },
+            { 'profiles': {} },
+            { 'profiles' : { 'default' : { 'region' : 'us-east-1'} } },
+        ]
 
         if os.path.isfile('zappa_settings.json'):
             os.remove('zappa_settings.json')
@@ -898,7 +924,7 @@ class TestZappa(unittest.TestCase):
         # Test directly
         zappa_cli = ZappaCLI()
         # Via http://stackoverflow.com/questions/2617057/how-to-supply-stdin-files-and-environment-variable-inputs-to-python-unit-tests
-        inputs = ['dev', 'lmbda', 'test_settings', 'y', '']
+        inputs = ['dev', 'y', 'lmbda', 'test_settings', 'y', '']
 
         def test_for(inputs):
             input_generator = (i for i in inputs)
@@ -909,9 +935,9 @@ class TestZappa(unittest.TestCase):
                 os.remove('zappa_settings.json')
 
         test_for(inputs)
-        test_for(['dev', 'lmbda', 'test_settings', 'n', ''])
-        test_for(['dev', 'lmbda', 'test_settings', '', ''])
-        test_for(['dev', 'lmbda', 'test_settings', 'p', ''])
+        test_for(['dev', 'n', 'lmbda', 'test_settings', 'n', ''])
+        test_for(['dev', 'default', 'lmbda', 'test_settings', '', ''])
+        test_for(['dev', 'another', 'lmbda', 'test_settings', 'p', ''])
         test_for(['dev', 'lmbda', 'test_settings', 'y', ''])
         test_for(['dev', 'lmbda', 'test_settings', 'p', 'n'])
 
