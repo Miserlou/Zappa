@@ -58,6 +58,8 @@ CUSTOM_SETTINGS = [
     'touch',
 ]
 
+BOTO3_CONFIG_DOCS_URL = 'https://boto3.readthedocs.io/en/latest/guide/quickstart.html#configuration'
+
 ##
 # Main Input Processing
 ##
@@ -1223,7 +1225,56 @@ class ZappaCLI(object):
                 self.check_stage_name(env)
                 break
             except ValueError:
-                click.echo(click.style("Environment names must match a-zA-Z0-9_", fg='red'))
+                click.echo(click.style("Environment names must match a-zA-Z0-9_", fg="red"))
+
+        # Detect AWS profiles and regions
+        # If anyone knows a more straightforward way to easily detect and parse AWS profiles I'm happy to change this, feels like a hack
+        session = botocore.session.Session()
+        config  = session.full_config
+        profiles = config.get("profiles", {})
+        profile_names = profiles.keys()
+
+        click.echo("\nAWS Lambda and API Gateway are only available in certain regions. "\
+                   "Let's check to make sure you have a profile set up in one that will work.")
+
+        if not profile_names:
+            profile_name, profile = None, None
+            click.echo("\nWe couldn't find an AWS profile to use. Before using Zappa, you'll need to set one up. See here for more info: {}"
+                       .format(click.style(BOTO3_CONFIG_DOCS_URL, fg="blue", underline=True)))
+        elif len(profile_names) == 1:
+            default_profile = profile_names[0]
+            while True:
+                use_default_profile = raw_input("\nWe only found one profile: {}. "\
+                                                "Is this okay? (default 'y') [y/n]: "
+                                                .format(default_profile)) or "y"
+                if use_default_profile.lower() in ["y", "yes", "p", "primary"]:
+                    profile_name = default_profile
+                    profile = profiles[default_profile]
+                    break
+                if use_default_profile.lower() in ["n", "no"]:
+                    profile_name, profile = None, None
+                    break
+        else:
+            if "default" in profile_names:
+                default_profile = [p for p in profile_names if p == "default"][0]
+            else:
+                default_profile = profile_names[0]
+
+            while True:
+                profile_name = raw_input("We found the following profiles: {}, and {}. "\
+                                         "Which would you like us to use? (default '{}'): "
+                                         .format(
+                                             ', '.join(profile_names[:-1]),
+                                             profile_names[-1],
+                                             default_profile
+                                         )) or default_profile
+                if profile_name in profiles:
+                    profile = profiles[profile_name]
+                    break
+                else:
+                    click.echo("\nPlease enter a valid name for your AWS profile.")
+
+        profile_region = profile.get("region") if profile else None
 
         # Create Bucket
         click.echo("\nYour Zappa deployments will need to be uploaded to a " + click.style("private S3 bucket", bold=True)  + ".")
@@ -1288,7 +1339,7 @@ class ZappaCLI(object):
         click.echo("If you are using Zappa for the first time, you probably don't want to do this!")
         global_deployment = False
         while True:
-            global_type = raw_input("Would you like to deploy this application to " + click.style("globally", bold=True)  + "? (default 'n') [y/n/(p)rimary]: ")
+            global_type = raw_input("Would you like to deploy this application " + click.style("globally", bold=True)  + "? (default 'n') [y/n/(p)rimary]: ")
             if not global_type:
                 break
             if global_type.lower() in ["y", "yes", "p", "primary"]:
@@ -1305,7 +1356,6 @@ class ZappaCLI(object):
             else:
                 envs = [{env + '_' + region.replace('-', '_'): { 'aws_region': region}} for region in regions]
         else:
-            region = None # assume system default
             envs = [{env: {}}]
 
         zappa_settings = {}
@@ -1324,8 +1374,14 @@ class ZappaCLI(object):
                     's3_bucket': env_bucket,
                 }
             }
+
+            if profile_name:
+                env_zappa_settings[env_name]['profile_name'] = profile_name
+
             if env_dict.has_key('aws_region'):
                 env_zappa_settings[env_name]['aws_region'] = env_dict.get('aws_region')
+            elif profile_region:
+                env_zappa_settings[env_name]['aws_region'] = profile_region
 
             zappa_settings.update(env_zappa_settings)
 
