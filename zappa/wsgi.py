@@ -70,7 +70,9 @@ def create_wsgi_request(event_info,
 
         x_forwarded_for = headers.get('X-Forwarded-For', '')
         if ',' in x_forwarded_for:
-            remote_addr = x_forwarded_for.split(', ')[0]
+            # The last one is the cloudfront proxy ip. The second to last is the real client ip.
+            # Everything else is user supplied and untrustworthy.
+            remote_addr = x_forwarded_for.split(', ')[-2]
         else:
             remote_addr = '127.0.0.1'
 
@@ -81,10 +83,10 @@ def create_wsgi_request(event_info,
             'REQUEST_METHOD': method,
             'SCRIPT_NAME': str(script_name) if script_name else '',
             'SERVER_NAME': str(server_name),
-            'SERVER_PORT': str('80'),
+            'SERVER_PORT': headers.get('X-Forwarded-Port', '80'),
             'SERVER_PROTOCOL': str('HTTP/1.1'),
             'wsgi.version': (1, 0),
-            'wsgi.url_scheme': str('http'),
+            'wsgi.url_scheme': headers.get('X-Forwarded-Proto', 'http'),
             'wsgi.input': body,
             'wsgi.errors': stderr,
             'wsgi.multiprocess': False,
