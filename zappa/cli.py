@@ -1244,7 +1244,7 @@ class ZappaCLI(object):
         elif len(profile_names) == 1:
             profile_name = profile_names[0]
             profile = profiles[profile_name]
-            click.echo("Using profile {}".format(click.style(profile_name, bold=True)))
+            click.echo("Okay, using profile {}!".format(click.style(profile_name, bold=True)))
         else:
             if "default" in profile_names:
                 default_profile = [p for p in profile_names if p == "default"][0]
