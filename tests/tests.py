@@ -906,7 +906,7 @@ class TestZappa(unittest.TestCase):
                 }
             } },
             { 'profiles' : {
-                'default' : {
+                'radical' : {
                     'region' : 'us-east-1'
                 },
                 'another' : {
@@ -924,7 +924,7 @@ class TestZappa(unittest.TestCase):
         # Test directly
         zappa_cli = ZappaCLI()
         # Via http://stackoverflow.com/questions/2617057/how-to-supply-stdin-files-and-environment-variable-inputs-to-python-unit-tests
-        inputs = ['dev', 'y', 'lmbda', 'test_settings', 'y', '']
+        inputs = ['dev', 'lmbda', 'test_settings', 'y', '']
 
         def test_for(inputs):
             input_generator = (i for i in inputs)
@@ -935,9 +935,9 @@ class TestZappa(unittest.TestCase):
                 os.remove('zappa_settings.json')
 
         test_for(inputs)
-        test_for(['dev', 'n', 'lmbda', 'test_settings', 'n', ''])
+        test_for(['dev', 'lmbda', 'test_settings', 'n', ''])
         test_for(['dev', 'default', 'lmbda', 'test_settings', '', ''])
-        test_for(['dev', 'another', 'lmbda', 'test_settings', 'p', ''])
+        test_for(['dev', 'radical', 'lmbda', 'test_settings', 'p', ''])
         test_for(['dev', 'lmbda', 'test_settings', 'y', ''])
         test_for(['dev', 'lmbda', 'test_settings', 'p', 'n'])
 

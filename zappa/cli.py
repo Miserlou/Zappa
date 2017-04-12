@@ -1239,21 +1239,12 @@ class ZappaCLI(object):
 
         if not profile_names:
             profile_name, profile = None, None
-            click.echo("\nWe couldn't find an AWS profile to use. Before using Zappa, you'll need to set one up. See here for more info: {}"
+            click.echo("We couldn't find an AWS profile to use. Before using Zappa, you'll need to set one up. See here for more info: {}"
                        .format(click.style(BOTO3_CONFIG_DOCS_URL, fg="blue", underline=True)))
         elif len(profile_names) == 1:
-            default_profile = profile_names[0]
-            while True:
-                use_default_profile = raw_input("\nWe only found one profile: {}. "\
-                                                "Is this okay? (default 'y') [y/n]: "
-                                                .format(default_profile)) or "y"
-                if use_default_profile.lower() in ["y", "yes", "p", "primary"]:
-                    profile_name = default_profile
-                    profile = profiles[default_profile]
-                    break
-                if use_default_profile.lower() in ["n", "no"]:
-                    profile_name, profile = None, None
-                    break
+            profile_name = profile_names[0]
+            profile = profiles[profile_name]
+            click.echo("Using profile {}".format(click.style(profile_name, bold=True)))
         else:
             if "default" in profile_names:
                 default_profile = [p for p in profile_names if p == "default"][0]
@@ -1272,7 +1263,7 @@ class ZappaCLI(object):
                     profile = profiles[profile_name]
                     break
                 else:
-                    click.echo("\nPlease enter a valid name for your AWS profile.")
+                    click.echo("Please enter a valid name for your AWS profile.")
 
         profile_region = profile.get("region") if profile else None
 
