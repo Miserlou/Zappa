@@ -117,6 +117,20 @@ class LambdaHandler(object):
             if project_zip_path:
                 self.load_remote_project_zip(project_zip_path)
 
+
+            # Load compliled library to the PythonPath
+            # https://github.com/Miserlou/Zappa/issues/776
+            if self.settings.INCLUDE:
+                try:
+                    from ctypes import cdll, util
+                    for library in self.settings.INCLUDE:
+                        try:
+                            cdll.LoadLibrary(os.path.join(os.getcwd(), library))
+                        except OSError:
+                            print "Failed to find library...right filename?"
+                except ImportError:
+                    print "Failed to import cytpes library"
+
             # This is a non-WSGI application
             # https://github.com/Miserlou/Zappa/pull/748
             if not hasattr(self.settings, 'APP_MODULE') and not self.settings.DJANGO_SETTINGS:
@@ -169,7 +183,7 @@ class LambdaHandler(object):
 
         # Add to project path
         sys.path.insert(0, project_folder)
-        
+
         # Change working directory to project folder
         # Related: https://github.com/Miserlou/Zappa/issues/702
         os.chdir(project_folder)
