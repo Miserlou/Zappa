@@ -120,7 +120,8 @@ class LambdaHandler(object):
 
             # Load compliled library to the PythonPath
             # https://github.com/Miserlou/Zappa/issues/776
-            if self.settings.INCLUDE:
+            included_libraries = getattr(self.settings, 'INCLUDE', None)
+            if included_libraries:
                 try:
                     from ctypes import cdll, util
                     for library in self.settings.INCLUDE:
