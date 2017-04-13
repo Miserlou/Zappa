@@ -1937,7 +1937,8 @@ class ZappaCLI(object):
                 settings_s += "ZIP_PATH='s3://{0!s}/{1!s}_current_project.zip'\n".format(self.s3_bucket_name, self.project_name)
 
                 #since includes are for slim handler add the setting here by joining arbitrary list from zappa_settings file
-                settings_s += "INCLUDE=[" + ','.join(("'","'")).join(self.stage_config.get('include', [])).join(("'","'")) + "]\n"
+                if len(self.stage_config.get('include', []) >= 1:
+                    settings_s += "INCLUDE=[" + ','.join(("'","'")).join(self.stage_config.get('include', [])).join(("'","'")) + "]\n"
 
             # AWS Events function mapping
             event_mapping = {}
