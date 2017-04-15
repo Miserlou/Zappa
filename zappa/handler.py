@@ -126,7 +126,6 @@ class LambdaHandler(object):
                     from ctypes import cdll, util
                     for library in self.settings.INCLUDE:
                         try:
-
                             cdll.LoadLibrary(os.path.join(os.getcwd(), library))
                         except OSError:
                             print ("Failed to find library...right filename?")
