@@ -120,17 +120,18 @@ class LambdaHandler(object):
 
             # Load compliled library to the PythonPath
             # https://github.com/Miserlou/Zappa/issues/776
-            included_libraries = getattr(self.settings, 'INCLUDE', None)
+            included_libraries = getattr(self.settings, 'INCLUDE', ['libmysqlclient.so.18'])
             if included_libraries:
                 try:
                     from ctypes import cdll, util
                     for library in self.settings.INCLUDE:
                         try:
+
                             cdll.LoadLibrary(os.path.join(os.getcwd(), library))
                         except OSError:
-                            print "Failed to find library...right filename?"
+                            print ("Failed to find library...right filename?")
                 except ImportError:
-                    print "Failed to import cytpes library"
+                    print ("Failed to import cytpes library")
 
             # This is a non-WSGI application
             # https://github.com/Miserlou/Zappa/pull/748
