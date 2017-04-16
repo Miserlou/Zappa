@@ -569,6 +569,7 @@ to change Zappa's behavior. Use these at your own risk!
             "Resource": "*"
         }],
         "iam_authorization": true, // optional, use IAM to require request signing. Default false. Note that enabling this will override the authorizer configuration.
+        "include": ["your_special_library_to_load_at_handler_init"], // load special libraries into PYTHONPATH at handler init that certain modules cannot find on path
         "authorizer": {
             "function": "your_module.your_auth_function", // Local function to run for token validation. For more information about the function see below.
             "arn": "arn:aws:lambda:<region>:<account_id>:function:<function_name>", // Existing Lambda function to run for token validation.

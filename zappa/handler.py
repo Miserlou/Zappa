@@ -117,6 +117,23 @@ class LambdaHandler(object):
             if project_zip_path:
                 self.load_remote_project_zip(project_zip_path)
 
+
+            # Load compliled library to the PythonPath
+            # checks if we are the slim_handler since this is not needed otherwise
+            # https://github.com/Miserlou/Zappa/issues/776
+            is_slim_handler = getattr(self.settings, 'SLIM_HANDLER', False)
+            if is_slim_handler:
+                included_libraries = getattr(self.settings, 'INCLUDE', ['libmysqlclient.so.18'])
+                try:
+                    from ctypes import cdll, util
+                    for library in included_libraries:
+                        try:
+                            cdll.LoadLibrary(os.path.join(os.getcwd(), library))
+                        except OSError:
+                            print ("Failed to find library...right filename?")
+                except ImportError:
+                    print ("Failed to import cytpes library")
+
             # This is a non-WSGI application
             # https://github.com/Miserlou/Zappa/pull/748
             if not hasattr(self.settings, 'APP_MODULE') and not self.settings.DJANGO_SETTINGS:
@@ -169,7 +186,7 @@ class LambdaHandler(object):
 
         # Add to project path
         sys.path.insert(0, project_folder)
-        
+
         # Change working directory to project folder
         # Related: https://github.com/Miserlou/Zappa/issues/702
         os.chdir(project_folder)
