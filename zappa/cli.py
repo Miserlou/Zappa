@@ -1941,8 +1941,9 @@ class ZappaCLI(object):
                 # https://github.com/Miserlou/Zappa/issues/776
                 settings_s += "SLIM_HANDLER=True\n"
 
-                if len(self.stage_config.get('include', [])) >= 1:
-                    settings_s += "INCLUDE=[" + ','.join(("'","'")).join(self.stage_config.get('include', [])).join(("'","'")) + "]\n"
+                include = self.stage_config.get('include', [])
+                if len(include) >= 1:
+                    settings_s += "INCLUDE=" = str(include) + '\n'
 
             # AWS Events function mapping
             event_mapping = {}
