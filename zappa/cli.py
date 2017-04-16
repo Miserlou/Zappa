@@ -1943,7 +1943,7 @@ class ZappaCLI(object):
 
                 include = self.stage_config.get('include', [])
                 if len(include) >= 1:
-                    settings_s += "INCLUDE=" = str(include) + '\n'
+                    settings_s += "INCLUDE=" + str(include) + '\n'
 
             # AWS Events function mapping
             event_mapping = {}
