@@ -36,7 +36,7 @@ from zappa.util import (detect_django_settings, copytree, detect_flask_apps,
                         add_event_source, remove_event_source,
                         get_event_source_status, parse_s3_url, human_size, string_to_timestamp,
                         validate_name, InvalidAwsLambdaName, contains_python_files_or_subdirs,
-                        get_venv_from_python_version
+                        get_venv_from_python_version)
 from zappa.wsgi import create_wsgi_request, common_log
 from zappa.zappa import Zappa, ASSUME_POLICY, ATTACH_POLICY
 
