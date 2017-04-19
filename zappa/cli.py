@@ -644,12 +644,18 @@ class ZappaCLI(object):
             endpoint_url = self.deploy_api_gateway(api_id)
             deployment_string = deployment_string + ": {}".format(endpoint_url)
 
-            # Create/link API key
+            # Create/link API key and add to existing usage plan if specified
             if self.api_key_required:
                 if self.api_key is None:
                     self.zappa.create_api_key(api_id=api_id, stage_name=self.api_stage)
                 else:
                     self.zappa.add_api_stage_to_api_key(api_key=self.api_key, api_id=api_id, stage_name=self.api_stage)
+                    if self.usage_plan_id is not None:
+                        self.zappa.add_api_stage_to_usage_plan(usage_plan_id=self.usage_plan_id, api_id=api_id, stage_name=self.api_stage)
+
+            # Add a base path mapping to an existing API gateway custom domain
+            if self.apigateway_custom_domain is not None and self.apigateway_custom_domain_base_path is not None:
+                self.zappa.add_api_stage_to_custom_domain(apigateway_custom_domain=self.apigateway_custom_domain, apigateway_custom_domain_base_path=self.apigateway_custom_domain_base_path, api_id=api_id, stage_name=self.api_stage)
 
             if self.stage_config.get('touch', True):
                 requests.get(endpoint_url)
@@ -1716,6 +1722,9 @@ class ZappaCLI(object):
         self.binary_support = self.stage_config.get('binary_support', True)
         self.api_key_required = self.stage_config.get('api_key_required', False)
         self.api_key = self.stage_config.get('api_key')
+        self.usage_plan_id = self.stage_config.get('usage_plan_id', None)
+        self.apigateway_custom_domain = self.stage_config.get('apigateway_custom_domain', None)
+        self.apigateway_custom_domain_base_path = self.stage_config.get('apigateway_custom_domain_base_path', None)
         self.iam_authorization = self.stage_config.get('iam_authorization', False)
         self.cors = self.stage_config.get("cors", None)
         self.lambda_description = self.stage_config.get('lambda_description', "Zappa Deployment")

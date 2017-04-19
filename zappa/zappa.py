@@ -1192,6 +1192,34 @@ class Zappa(object):
                 apiKey="{}".format(api_key['id'])
             )
 
+    def add_api_stage_to_usage_plan(self, usage_plan_id, api_id, stage_name):
+        """
+        Add api stage to an existing usage plan
+        """
+        print("Adding API to usage plan..")
+        self.apigateway_client.update_usage_plan(
+            usagePlanId=usage_plan_id,
+            patchOperations=[
+                {
+                    'op': 'add',
+                    'path': '/apiStages',
+                    'value': '{}:{}'.format(api_id, stage_name)
+                }
+            ]
+        )
+
+    def add_api_stage_to_custom_domain(self, apigateway_custom_domain_name=self.apigateway_custom_domain_name, apigateway_custom_domain_base_path=self.apigateway_custom_domain_base_path, api_id=api_id, stage_name=self.api_stage):
+        """
+        Add api stage to an existing custom domain
+        """
+        print("Adding API base path mapping to custom domain..")
+        self.apigateway_client.create_base_path_mapping(
+            domainName=apigateway_custom_domain_name,
+            basePath=apigateway_custom_domain_base_path,
+            restApiId=api_id,
+            stage=stage_name
+        )
+
     def add_api_stage_to_api_key(self, api_key, api_id, stage_name):
         """
         Add api stage to Api key

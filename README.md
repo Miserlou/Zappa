@@ -53,6 +53,7 @@
       - [Deploying to a Domain With a Let's Encrypt Certificate (HTTP Auth)](#deploying-to-a-domain-with-a-lets-encrypt-certificate-http-auth)
       - [Deploying to a Domain With Your Own SSL Certs](#deploying-to-a-domain-with-your-own-ssl-certs)
       - [Deploying to a Domain With AWS Certificate Manager](#deploying-to-a-domain-with-aws-certificate-manager)
+      - [Deploying to a Domain With An Existing API Gateway Custom Domain](#deploying-to-a-domain-with-an-existing-api-gateway-custom-domain)
     - [Setting Environment Variables](#setting-environment-variables)
       - [Local Environment Variables](#local-environment-variables)
       - [Remote Environment Variables](#remote-environment-variables)
@@ -517,6 +518,8 @@ to change Zappa's behavior. Use these at your own risk!
         "api_key": "your_api_key_id", // optional, use an existing API key. The option "api_key_required" must be true to apply
         "apigateway_enabled": true, // Set to false if you don't want to create an API Gateway resource. Default true.
         "apigateway_description": "My funky application!", // Define a custom description for the API Gateway console. Default None.
+        "apigateway_custom_domain": "your_apigateway_custom_domain", // optional, add API stge to an existing API Gateway Custom Domain. Default None.
+        "apigateway_custom_domain_base_path": "your_apigateway_custom_domain_base_path", // Required if using apigateway_custom_domain. Base path mapping to use for the API Gateway Custom Domain. May be left blank. Default None. The option "apigateway_custom_domain" must be set to apply
         "assume_policy": "my_assume_policy.json", // optional, IAM assume policy JSON file
         "attach_policy": "my_attach_policy.json", // optional, IAM attach policy JSON file
         "async_source": "sns", // Source of async tasks. Defaults to "lambda"
@@ -597,6 +600,7 @@ to change Zappa's behavior. Use these at your own risk!
         "settings_file": "~/Projects/MyApp/settings/dev_settings.py", // Server side settings file location,
         "timeout_seconds": 30, // Maximum lifespan for the Lambda function (default 30, max 300.)
         "touch": false, // GET the production URL upon initial deployment (default True)
+        "usage_plan_id": "your_usage_plan_id", // optional, use an existing API Gateway usage plan. The option "api_key_required" must be true to apply
         "use_precompiled_packages": true, // If possible, use C-extension packages which have been pre-compiled for AWS Lambda. Default true.
         "vpc_config": { // Optional VPC configuration for Lambda function
             "SubnetIds": [ "subnet-12345678" ], // Note: not all availability zones support Lambda!
@@ -682,7 +686,9 @@ The file's contents should then be sourced in e.g. ~/.bashrc.
 
 ##### API Key
 
-You can use the `api_key_required` setting to generate and assign an API key to all the routes of your API Gateway. After redeployment, you can then pass the provided key as a header called `x-api-key` to access the restricted endpoints. Without the `x-api-key` header, you will receive a 403. You'll also need to manually associate this API key with your usage plan in the AWS console. [More information on API keys in the API Gateway](http://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-api-keys.html).
+You can use the `api_key_required` setting to generate and assign an API key to all the routes of your API Gateway. After redeployment, you can then pass the provided key as a header called `x-api-key` to access the restricted endpoints. Without the `x-api-key` header, you will receive a 403. 
+
+You can use the `usage_plan_id` setting to associate your API stage with an existing usage plan. If you don't specify this setting you'll need to manually associate this API key with your usage plan in the AWS console. [More information on API keys in the API Gateway](http://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-api-keys.html).
 
 ##### IAM Policy
 
@@ -742,6 +748,13 @@ However, it's now far easier to use Route 53-based DNS authentication, which wil
 3. Copy the entire ARN of that certificate and place it in the Zappa setting `certificate_arn`.
 4. Set your desired domain in the `domain` setting.
 5. Call `$ zappa certify` to create and associate the API Gateway distribution using that ceritficate.
+
+##### Deploying to a Domain With An Existing API Gateway Custom Domain
+
+1. Create a Custom Domain Name using the API Gateway Console, you can follow [this guide](http://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-custom-domains.html#how-to-custom-domains-console)
+2. Set your domain name and desired base path mapping in the `apigateway_custom_domain` and `apigateway_custom_domain_base_path` settings. Read about base path mappings in these [docs](http://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-custom-domains.html#how-to-custom-domains-mapping-console)
+3. Call `$ zappa deploy` to deploy your API and attach it to the custom domain
+4. Once your Route53 entry created in step 1. has propagated, the API will be available at your custom domain.
 
 #### Setting Environment Variables
 
