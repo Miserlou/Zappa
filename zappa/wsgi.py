@@ -1,11 +1,19 @@
 import base64
 import logging
+import sys
 
-from urllib import urlencode
 from requestlogger import ApacheFormatter
-from StringIO import StringIO
 from sys import stderr
 from werkzeug import urls
+
+# The joy of version splintering.
+if sys.version_info[0] < 3:
+    from StringIO import StringIO
+    from urllib import urlencode
+else:
+    from io import StringIO
+    from urllib.parse import urlencode
+
 
 BINARY_METHODS = [
                     "POST",
