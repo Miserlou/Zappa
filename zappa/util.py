@@ -8,6 +8,7 @@ import re
 import requests
 import shutil
 import stat
+import sys
 import urlparse
 
 ##
@@ -154,6 +155,12 @@ def detect_flask_apps():
                     matches.append(app_module)
 
     return matches
+
+def get_runtime_from_python_version():
+    if sys.version_info[0] < 3:
+        return 'python2.7'
+    else:
+        return 'python3.6'
 
 ##
 # Async Tasks

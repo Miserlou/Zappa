@@ -43,7 +43,8 @@ from datetime import datetime,timedelta
 from zappa import Zappa, logger, API_GATEWAY_REGIONS
 from util import (check_new_version_available, detect_django_settings,
                   detect_flask_apps, parse_s3_url, human_size,
-                  validate_name, InvalidAwsLambdaName)
+                  validate_name, InvalidAwsLambdaName,
+                  get_runtime_from_python_version)
 
 
 CUSTOM_SETTINGS = [
@@ -607,7 +608,8 @@ class ZappaCLI(object):
                 vpc_config=self.vpc_config,
                 dead_letter_config=self.dead_letter_config,
                 timeout=self.timeout_seconds,
-                memory_size=self.memory_size
+                memory_size=self.memory_size,
+                runtime=self.runtime
             )
 
         # Schedule events for this deployment
@@ -733,19 +735,25 @@ class ZappaCLI(object):
         # Register the Lambda function with that zip as the source
         # You'll also need to define the path to your lambda_handler code.
         self.lambda_arn = self.zappa.update_lambda_function(
-            self.s3_bucket_name, handler_file, self.lambda_name)
+                                        self.s3_bucket_name,
+                                        handler_file,
+                                        self.lambda_name
+                                    )
 
         # Remove the uploaded zip from S3, because it is now registered..
         self.remove_uploaded_zip()
 
         # Update the configuration, in case there are changes.
-        self.lambda_arn = self.zappa.update_lambda_configuration(lambda_arn=self.lambda_arn,
-                                                       function_name=self.lambda_name,
-                                                       handler=self.lambda_handler,
-                                                       description=self.lambda_description,
-                                                       vpc_config=self.vpc_config,
-                                                       timeout=self.timeout_seconds,
-                                                       memory_size=self.memory_size)
+        self.lambda_arn = self.zappa.update_lambda_configuration(
+                                                        lambda_arn=self.lambda_arn,
+                                                        function_name=self.lambda_name,
+                                                        handler=self.lambda_handler,
+                                                        description=self.lambda_description,
+                                                        vpc_config=self.vpc_config,
+                                                        timeout=self.timeout_seconds,
+                                                        memory_size=self.memory_size,
+                                                        runtime=self.runtime
+                                                    )
 
         # Finally, delete the local copy our zip package
         if self.stage_config.get('delete_local_zip', True):
@@ -1716,6 +1724,7 @@ class ZappaCLI(object):
         self.environment_variables = self.stage_config.get('environment_variables', {})
         self.check_environment(self.environment_variables)
         self.authorizer = self.stage_config.get('authorizer', {})
+        self.runtime = self.stage_config.get('runtime', get_runtime_from_python_version())
 
         desired_role_name = self.lambda_name + "-ZappaLambdaExecutionRole"
         self.zappa = Zappa( boto_session=session,

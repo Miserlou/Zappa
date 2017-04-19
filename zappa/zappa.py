@@ -701,12 +701,13 @@ class Zappa(object):
                                 s3_key,
                                 function_name,
                                 handler,
-                                description="Zappa Deployment",
+                                description='Zappa Deployment',
                                 timeout=30,
                                 memory_size=512,
                                 publish=True,
                                 vpc_config=None,
-                                dead_letter_config=None
+                                dead_letter_config=None,
+                                runtime='python2.7'
                             ):
         """
         Given a bucket and key of a valid Lambda-zip, a function name and a handler, register that Lambda function.
@@ -720,7 +721,7 @@ class Zappa(object):
 
         response = self.lambda_client.create_function(
             FunctionName=function_name,
-            Runtime='python2.7',
+            Runtime=runtime,
             Role=self.credentials_arn,
             Handler=handler,
             Code={
@@ -756,11 +757,12 @@ class Zappa(object):
                                         lambda_arn,
                                         function_name,
                                         handler,
-                                        description="Zappa Deployment",
+                                        description='Zappa Deployment',
                                         timeout=30,
                                         memory_size=512,
                                         publish=True,
-                                        vpc_config=None
+                                        vpc_config=None,
+                                        runtime='python2.7'
                                     ):
         """
         Given an existing function ARN, update the configuration variables.
@@ -774,7 +776,7 @@ class Zappa(object):
 
         response = self.lambda_client.update_function_configuration(
             FunctionName=function_name,
-            Runtime='python2.7',
+            Runtime=runtime,
             Role=self.credentials_arn,
             Handler=handler,
             Description=description,
