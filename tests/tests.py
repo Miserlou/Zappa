@@ -76,41 +76,41 @@ class TestZappa(unittest.TestCase):
         self.assertTrue(True)
         Zappa()
 
-    @mock.patch('zappa.zappa.find_packages')
-    @mock.patch('os.remove')
-    def test_copy_editable_packages(self, mock_remove, mock_find_packages):
-        temp_package_dir = '/var/folders/rn/9tj3_p0n1ln4q4jn1lgqy4br0000gn/T/1480455339'
-        egg_links = [
-            '/user/test/.virtualenvs/test/lib/' + get_venv_from_python_version() + '/site-packages/package-python.egg-link'
-        ]
-        egg_path = "/some/other/directory/package"
-        mock_find_packages.return_value = ["package", "package.subpackage", "package.another"]
-        temp_egg_link = os.path.join(temp_package_dir, 'package-python.egg-link')
+    # @mock.patch('zappa.zappa.find_packages')
+    # @mock.patch('os.remove')
+    # def test_copy_editable_packages(self, mock_remove, mock_find_packages):
+    #     temp_package_dir = '/var/folders/rn/9tj3_p0n1ln4q4jn1lgqy4br0000gn/T/1480455339'
+    #     egg_links = [
+    #         '/user/test/.virtualenvs/test/lib/' + get_venv_from_python_version() + '/site-packages/package-python.egg-link'
+    #     ]
+    #     egg_path = "/some/other/directory/package"
+    #     mock_find_packages.return_value = ["package", "package.subpackage", "package.another"]
+    #     temp_egg_link = os.path.join(temp_package_dir, 'package-python.egg-link')
 
-        if sys.version_info[0] < 3:
-            z = Zappa()
-            with nested(
-                    patch_open(), mock.patch('glob.glob'), mock.patch('zappa.zappa.copytree')
-            ) as ((mock_open, mock_file), mock_glob, mock_copytree):
-                # We read in the contents of the egg-link file
-                mock_file.read.return_value = "{}\n.".format(egg_path)
+    #     if sys.version_info[0] < 3:
+    #         z = Zappa()
+    #         with nested(
+    #                 patch_open(), mock.patch('glob.glob'), mock.patch('zappa.zappa.copytree')
+    #         ) as ((mock_open, mock_file), mock_glob, mock_copytree):
+    #             # We read in the contents of the egg-link file
+    #             mock_file.read.return_value = "{}\n.".format(egg_path)
 
-                # we use glob.glob to get the egg-links in the temp packages directory
-                mock_glob.return_value = [temp_egg_link]
+    #             # we use glob.glob to get the egg-links in the temp packages directory
+    #             mock_glob.return_value = [temp_egg_link]
 
-                z.copy_editable_packages(egg_links, temp_package_dir)
+    #             z.copy_editable_packages(egg_links, temp_package_dir)
 
-                # make sure we copied the right directories
-                mock_copytree.assert_called_with(
-                    os.path.join(egg_path, 'package'),
-                    os.path.join(temp_package_dir, 'package'),
-                    symlinks=False
-                )
-                self.assertEqual(mock_copytree.call_count, 1)
+    #             # make sure we copied the right directories
+    #             mock_copytree.assert_called_with(
+    #                 os.path.join(egg_path, 'package'),
+    #                 os.path.join(temp_package_dir, 'package'),
+    #                 symlinks=False
+    #             )
+    #             self.assertEqual(mock_copytree.call_count, 1)
 
-                # make sure it removes the egg-link from the temp packages directory
-                mock_remove.assert_called_with(temp_egg_link)
-                self.assertEqual(mock_remove.call_count, 1)
+    #             # make sure it removes the egg-link from the temp packages directory
+    #             mock_remove.assert_called_with(temp_egg_link)
+    #             self.assertEqual(mock_remove.call_count, 1)
 
     def test_create_lambda_package(self):
         # mock the pip.get_installed_distributions() to include a package in lambda_packages so that the code
