@@ -11,6 +11,7 @@ Deploy arbitrary Python programs as serverless Zappa applications.
 from __future__ import unicode_literals
 from __future__ import division
 from past.builtins import basestring
+from builtins import input, bytes
 
 import argcomplete
 import argparse
@@ -408,7 +409,7 @@ class ZappaCLI(object):
                 # If there's only one environment defined in the settings,
                 # use that as the default.
                 if len(self.zappa_settings.keys()) == 1:
-                    environments.append(self.zappa_settings.keys()[0])
+                    environments.append(list(self.zappa_settings.keys())[0])
                 else:
                     parser.error("Please supply an environment to interact with.")
             else:
@@ -871,7 +872,7 @@ class ZappaCLI(object):
         """
 
         if not no_confirm: # pragma: no cover
-            confirm = raw_input("Are you sure you want to undeploy? [y/n] ")
+            confirm = input("Are you sure you want to undeploy? [y/n] ")
             if confirm != 'y':
                 return
 
@@ -1196,7 +1197,7 @@ class ZappaCLI(object):
         Initialize a new Zappa project by creating a new zappa_settings.json in a guided process.
 
         This should probably be broken up into few separate componants once it's stable.
-        Testing these raw_inputs requires monkeypatching with mock, which isn't pretty.
+        Testing these inputs requires monkeypatching with mock, which isn't pretty.
 
         """
 
@@ -1206,10 +1207,6 @@ class ZappaCLI(object):
         # Ensure that we don't already have a zappa_settings file.
         if os.path.isfile(settings_file):
             raise ClickException("This project is " + click.style("already initialized", fg="red", bold=True) + "!")
-
-        # Ensure P2 until Lambda supports it.
-        if sys.version_info >= (3,0): # pragma: no cover
-            raise ClickException("Zappa curently only works with Python 2, until AWS Lambda adds Python 3 support.")
 
         # Explain system.
         click.echo(click.style(u"""\n███████╗ █████╗ ██████╗ ██████╗  █████╗
@@ -1230,7 +1227,7 @@ class ZappaCLI(object):
             click.echo("Your Zappa configuration can support multiple production environments, like '" +
                        click.style("dev", bold=True)  + "', '" + click.style("staging", bold=True)  + "', and '" +
                        click.style("production", bold=True)  + "'.")
-            env = raw_input("What do you want to call this environment (default 'dev'): ") or "dev"
+            env = input("What do you want to call this environment (default 'dev'): ") or "dev"
             try:
                 self.check_stage_name(env)
                 break
@@ -1262,7 +1259,7 @@ class ZappaCLI(object):
                 default_profile = profile_names[0]
 
             while True:
-                profile_name = raw_input("We found the following profiles: {}, and {}. "\
+                profile_name = input("We found the following profiles: {}, and {}. "\
                                          "Which would you like us to use? (default '{}'): "
                                          .format(
                                              ', '.join(profile_names[:-1]),
@@ -1281,7 +1278,7 @@ class ZappaCLI(object):
         click.echo("\nYour Zappa deployments will need to be uploaded to a " + click.style("private S3 bucket", bold=True)  + ".")
         click.echo("If you don't have a bucket yet, we'll create one for you too.")
         default_bucket = "zappa-" + ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(9))
-        bucket = raw_input("What do you want call your bucket? (default '%s'): " % default_bucket) or default_bucket
+        bucket = input("What do you want call your bucket? (default '%s'): " % default_bucket) or default_bucket
 
         # Detect Django/Flask
         try: # pragma: no cover
@@ -1307,10 +1304,10 @@ class ZappaCLI(object):
             while django_settings in [None, '']:
                 if matches:
                     click.echo("We discovered: " + click.style(', '.join('{}'.format(i) for v, i in enumerate(matches)), bold=True))
-                    django_settings = raw_input("Where are your project's settings? (default '%s'): " % matches[0]) or matches[0]
+                    django_settings = input("Where are your project's settings? (default '%s'): " % matches[0]) or matches[0]
                 else:
                     click.echo("(This will likely be something like 'your_project.settings')")
-                    django_settings = raw_input("Where are your project's settings?: ")
+                    django_settings = input("Where are your project's settings?: ")
             django_settings = django_settings.replace("'", "")
             django_settings = django_settings.replace('"', "")
         else:
@@ -1324,9 +1321,9 @@ class ZappaCLI(object):
             while app_function in [None, '']:
                 if matches:
                     click.echo("We discovered: " + click.style(', '.join('{}'.format(i) for v, i in enumerate(matches)), bold=True))
-                    app_function = raw_input("Where is your app's function? (default '%s'): " % matches[0]) or matches[0]
+                    app_function = input("Where is your app's function? (default '%s'): " % matches[0]) or matches[0]
                 else:
-                    app_function = raw_input("Where is your app's function?: ")
+                    app_function = input("Where is your app's function?: ")
             app_function = app_function.replace("'", "")
             app_function = app_function.replace('"', "")
 
@@ -1340,7 +1337,7 @@ class ZappaCLI(object):
         click.echo("If you are using Zappa for the first time, you probably don't want to do this!")
         global_deployment = False
         while True:
-            global_type = raw_input("Would you like to deploy this application " + click.style("globally", bold=True)  + "? (default 'n') [y/n/(p)rimary]: ")
+            global_type = input("Would you like to deploy this application " + click.style("globally", bold=True)  + "? (default 'n') [y/n/(p)rimary]: ")
             if not global_type:
                 break
             if global_type.lower() in ["y", "yes", "p", "primary"]:
@@ -1397,7 +1394,7 @@ class ZappaCLI(object):
         click.echo("\nOkay, here's your " + click.style("zappa_settings.js", bold=True) + ":\n")
         click.echo(click.style(zappa_settings_json, fg="yellow", bold=False))
 
-        confirm = raw_input("\nDoes this look " + click.style("okay", bold=True, fg="green")  + "? (default 'y') [y/n]: ") or 'yes'
+        confirm = input("\nDoes this look " + click.style("okay", bold=True, fg="green")  + "? (default 'y') [y/n]: ") or 'yes'
         if confirm[0] not in ['y', 'Y', 'yes', 'YES']:
             click.echo("" + click.style("Sorry", bold=True, fg='red') + " to hear that! Please init again.")
             return
@@ -1440,7 +1437,7 @@ class ZappaCLI(object):
             if not manual and self.zappa.get_domain_name(self.domain):
                 click.echo(click.style("Warning!", fg="red", bold=True) + " If you have already certified this domain and are calling certify again, you may incur downtime.")
                 click.echo("You can avoid this downtime by calling certify with " + click.style("--manual", bold=True) + " and rotating your certificate yourself through the AWS console.")
-            confirm = raw_input("Are you sure you want to certify? [y/n] ")
+            confirm = input("Are you sure you want to certify? [y/n] ")
             if confirm != 'y':
                 return
 
@@ -1981,7 +1978,7 @@ class ZappaCLI(object):
             # Lambda requires a specific chmod
             temp_settings = tempfile.NamedTemporaryFile(delete=False)
             os.chmod(temp_settings.name, 0o644)
-            temp_settings.write(settings_s)
+            temp_settings.write(bytes(settings_s, "utf-8"))
             temp_settings.close()
             lambda_zip.write(temp_settings.name, 'zappa_settings.py')
             os.remove(temp_settings.name)

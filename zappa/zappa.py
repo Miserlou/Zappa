@@ -1348,7 +1348,7 @@ class Zappa(object):
         capabilities = []
 
         template = name + '-template-' + str(int(time.time())) + '.json'
-        with open(template, 'w') as out:
+        with open(template, 'wb') as out:
             out.write(self.cf_template.to_json(indent=None, separators=(',',':')))
 
         self.upload_to_s3(template, working_bucket)

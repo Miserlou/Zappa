@@ -115,7 +115,7 @@ class TestZappa(unittest.TestCase):
         # mock the pip.get_installed_distributions() to include a package in lambda_packages so that the code
         # for zipping pre-compiled packages gets called
         mock_named_tuple = collections.namedtuple('mock_named_tuple', ['project_name', 'location'])
-        mock_return_val = [mock_named_tuple(lambda_packages.keys()[0], '/path')]  # choose name of 1st package in lambda_packages
+        mock_return_val = [mock_named_tuple(list(lambda_packages.keys())[0], '/path')]  # choose name of 1st package in lambda_packages
         with mock.patch('pip.get_installed_distributions', return_value=mock_return_val):
             z = Zappa()
             path = z.create_lambda_zip(handler_file=os.path.realpath(__file__))
@@ -935,12 +935,9 @@ class TestZappa(unittest.TestCase):
 
         def test_for(inputs):
             input_generator = (i for i in inputs)
-            if sys.version_info[0] < 3:
-                bi = '__builtin__'
-            else:
-                bi = 'builtins'
+            bi = 'builtins.input'
 
-            with mock.patch(bi + '.raw_input', lambda prompt: next(input_generator)):
+            with mock.patch(bi, lambda prompt: next(input_generator)):
                 zappa_cli.init()
 
             if os.path.isfile('zappa_settings.json'):
@@ -956,11 +953,8 @@ class TestZappa(unittest.TestCase):
 
         # Test via handle()
         input_generator = (i for i in inputs)
-        if sys.version_info[0] < 3:
-            bi = '__builtin__'
-        else:
-            bi = 'builtins'
-        with mock.patch(bi + '.raw_input', lambda prompt: next(input_generator)):
+        bi = 'builtins.input'
+        with mock.patch(bi, lambda prompt: next(input_generator)):
             zappa_cli = ZappaCLI()
             argv = ['init']
             zappa_cli.handle(argv)
