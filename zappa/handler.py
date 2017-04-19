@@ -1,18 +1,19 @@
 from __future__ import unicode_literals
 
+import base64
+import boto3
+import collections
 import datetime
 import importlib
-import logging
-import traceback
-import os
-import json
 import inspect
-import collections
-import zipfile
-import base64
-
-import boto3
+import json
+import logging
+import os
 import sys
+import traceback
+import zipfile
+
+from builtins import str
 from werkzeug.wrappers import Response
 
 # This file may be copied into a project's root,
