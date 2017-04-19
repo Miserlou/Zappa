@@ -1182,7 +1182,7 @@ class ZappaCLI(object):
         """
 
         non_strings = []
-        for k,v in environment.iteritems():
+        for (k,v) in environment.items():
             if not isinstance(v, basestring):
                 non_strings.append(k)
         if non_strings:

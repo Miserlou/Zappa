@@ -18,6 +18,7 @@ import troposphere
 import troposphere.apigateway
 import zipfile
 
+from builtins import int
 from botocore.exceptions import ClientError
 from distutils.dir_util import copy_tree
 from io import BytesIO
@@ -536,7 +537,7 @@ class Zappa(object):
                 # Related: https://github.com/Miserlou/Zappa/pull/716
                 zipi = zipfile.ZipInfo(os.path.join(root.replace(temp_project_path, '').lstrip(os.sep), filename))
                 zipi.create_system = 3
-                zipi.external_attr = 0o755 << 16 # Is this P2/P3 functional?
+                zipi.external_attr = 0o755 << int(16) # Is this P2/P3 functional?
                 with open(os.path.join(root, filename), 'rb') as f:
                     zipf.writestr(zipi, f.read(), compression_method)
 
