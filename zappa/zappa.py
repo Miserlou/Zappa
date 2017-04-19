@@ -1748,7 +1748,7 @@ class Zappa(object):
             else:
                 logger.debug('Failed to load Lambda function policy: {}'.format(policy_response))
         except ClientError as e:
-            if e.message.find('ResourceNotFoundException') > -1:
+            if e.args[0].find('ResourceNotFoundException') > -1:
                 logger.debug('No policy found, must be first run.')
             else:
                 logger.error('Unexpected client error {}'.format(e.message))
