@@ -217,7 +217,7 @@ class LambdaHandler(object):
             return
 
         try:
-            content = remote_env_object['Body'].read().decode('utf-8')
+            content = remote_env_object['Body'].read()
         except Exception as e:  # pragma: no cover
             # catch everything aws might decide to raise
             print('Exception while reading remote settings file.', e)
