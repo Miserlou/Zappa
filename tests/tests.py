@@ -2,9 +2,7 @@
 import base64
 import collections
 import json
-from contextlib import nested
 
-from cStringIO import StringIO as OldStringIO
 from io import BytesIO, StringIO
 import flask
 import mock
@@ -17,6 +15,10 @@ import unittest
 import shutil
 import sys
 import tempfile
+
+if sys.version_info[0] < 3:
+    from contextlib import nested
+    from cStringIO import StringIO as OldStringIO
 
 from click.exceptions import ClickException
 from lambda_packages import lambda_packages
@@ -81,29 +83,30 @@ class TestZappa(unittest.TestCase):
         mock_find_packages.return_value = ["package", "package.subpackage", "package.another"]
         temp_egg_link = os.path.join(temp_package_dir, 'package-python.egg-link')
 
-        z = Zappa()
-        with nested(
-                patch_open(), mock.patch('glob.glob'), mock.patch('zappa.zappa.copytree')
-        ) as ((mock_open, mock_file), mock_glob, mock_copytree):
-            # We read in the contents of the egg-link file
-            mock_file.read.return_value = "{}\n.".format(egg_path)
+        if sys.version_info[0] < 3:
+            z = Zappa()
+            with nested(
+                    patch_open(), mock.patch('glob.glob'), mock.patch('zappa.zappa.copytree')
+            ) as ((mock_open, mock_file), mock_glob, mock_copytree):
+                # We read in the contents of the egg-link file
+                mock_file.read.return_value = "{}\n.".format(egg_path)
 
-            # we use glob.glob to get the egg-links in the temp packages directory
-            mock_glob.return_value = [temp_egg_link]
+                # we use glob.glob to get the egg-links in the temp packages directory
+                mock_glob.return_value = [temp_egg_link]
 
-            z.copy_editable_packages(egg_links, temp_package_dir)
+                z.copy_editable_packages(egg_links, temp_package_dir)
 
-            # make sure we copied the right directories
-            mock_copytree.assert_called_with(
-                os.path.join(egg_path, 'package'),
-                os.path.join(temp_package_dir, 'package'),
-                symlinks=False
-            )
-            self.assertEqual(mock_copytree.call_count, 1)
+                # make sure we copied the right directories
+                mock_copytree.assert_called_with(
+                    os.path.join(egg_path, 'package'),
+                    os.path.join(temp_package_dir, 'package'),
+                    symlinks=False
+                )
+                self.assertEqual(mock_copytree.call_count, 1)
 
-            # make sure it removes the egg-link from the temp packages directory
-            mock_remove.assert_called_with(temp_egg_link)
-            self.assertEqual(mock_remove.call_count, 1)
+                # make sure it removes the egg-link from the temp packages directory
+                mock_remove.assert_called_with(temp_egg_link)
+                self.assertEqual(mock_remove.call_count, 1)
 
     def test_create_lambda_package(self):
         # mock the pip.get_installed_distributions() to include a package in lambda_packages so that the code
@@ -1101,7 +1104,8 @@ class TestZappa(unittest.TestCase):
         * Calls Zappa correctly for creates vs. updates.
         """
         old_stdout = sys.stderr
-        sys.stdout = OldStringIO() # print() barfs on io.* types.
+        if sys.version_info[0] < 3:
+            sys.stdout = OldStringIO() # print() barfs on io.* types.
 
         try:
             zappa_cli = ZappaCLI()

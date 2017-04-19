@@ -40,8 +40,8 @@ import zipfile
 from click.exceptions import ClickException
 from dateutil import parser
 from datetime import datetime,timedelta
-from zappa import Zappa, logger, API_GATEWAY_REGIONS
-from util import (check_new_version_available, detect_django_settings,
+from .zappa import Zappa, logger, API_GATEWAY_REGIONS
+from .util import (check_new_version_available, detect_django_settings,
                   detect_flask_apps, parse_s3_url, human_size,
                   validate_name, InvalidAwsLambdaName,
                   get_runtime_from_python_version)

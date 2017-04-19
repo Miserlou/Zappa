@@ -26,7 +26,7 @@ from setuptools import find_packages
 from tqdm import tqdm
 
 # Zappa imports
-from util import copytree, add_event_source, remove_event_source, human_size, get_topic_name, contains_python_files_or_subdirs
+from .util import copytree, add_event_source, remove_event_source, human_size, get_topic_name, contains_python_files_or_subdirs
 
 ##
 # Logging Config
@@ -536,7 +536,7 @@ class Zappa(object):
                 # Related: https://github.com/Miserlou/Zappa/pull/716
                 zipi = zipfile.ZipInfo(os.path.join(root.replace(temp_project_path, '').lstrip(os.sep), filename))
                 zipi.create_system = 3
-                zipi.external_attr = 0o755 << 16L
+                zipi.external_attr = 0o755 << 16 # Is this P2/P3 functional?
                 with open(os.path.join(root, filename), 'rb') as f:
                     zipf.writestr(zipi, f.read(), compression_method)
 
@@ -579,7 +579,7 @@ class Zappa(object):
             for f in data['releases'][version]:
                 if f['filename'].endswith('cp27mu-manylinux1_x86_64.whl'):
                     return f['url']
-        except Exception, e: # pragma: no cover
+        except Exception as e: # pragma: no cover
             return None
         return None
 

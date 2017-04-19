@@ -3,9 +3,7 @@ import base64
 import boto3
 import collections
 import json
-from contextlib import nested
 
-from cStringIO import StringIO as OldStringIO
 from io import BytesIO, StringIO
 import flask
 import mock

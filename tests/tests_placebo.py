@@ -2,7 +2,6 @@
 import base64
 import collections
 import json
-from contextlib import nested
 
 import mock
 import os
