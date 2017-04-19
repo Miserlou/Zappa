@@ -30,6 +30,7 @@ Discussion of this comes from:
 
 import boto3
 import botocore
+from functools import update_wrapper
 import importlib
 import inspect
 import json
@@ -154,12 +155,7 @@ def route_lambda_task(event, context):
     imports the function, calls the function with args
     """
     message = event
-    func = import_and_get_task(message['task_path'])
-    return func(
-            *message['args'],
-            **message['kwargs']
-        )
-
+    return run_message(message)
 
 def route_sns_task(event, context):
     """
@@ -170,11 +166,21 @@ def route_sns_task(event, context):
     message = json.loads(
             record['Sns']['Message']
         )
+    return run_message(message)
+
+def run_message(message):
     func = import_and_get_task(message['task_path'])
-    return func(
+    if hasattr(func, 'sync'):
+        return func.sync(
             *message['args'],
             **message['kwargs']
         )
+    else:
+        return func(
+            *message['args'],
+            **message['kwargs']
+        )
+
 
 ##
 # Execution interfaces and classes
@@ -210,6 +216,7 @@ class task(object):
     def __init__(self, func):
         self.func = func
         self.service = "lambda"
+        update_wrapper(self, func)
 
     def __call__(self, *args, **kwargs):
         """
@@ -219,13 +226,15 @@ class task(object):
         """
 
         task_path = get_func_task_path(self.func)
-        routed = is_from_router()
 
-        if (self.service in ASYNC_CLASSES) and (AWS_LAMBDA_FUNCTION_NAME) and (not routed):
+        if (self.service in ASYNC_CLASSES) and (AWS_LAMBDA_FUNCTION_NAME):
             send_result = ASYNC_CLASSES[self.service]().send(task_path, args, kwargs)
             return send_result
         else:
             return self.func(*args, **kwargs)
+
+    def sync(self, *args, **kwargs):
+        return self.func(*args, **kwargs)
 
 class task_sns(task):
     """
@@ -260,18 +269,3 @@ def get_func_task_path(func):
                                         func_name=func.__name__
                                     )
     return task_path
-
-def is_from_router():
-    """
-    Detect if this stack is being executed from the router
-    """
-
-    tb = traceback.extract_stack()
-    for line in tb:
-        for item in line:
-            if 'route_lambda_task' in line:
-                return True
-            if 'route_sns_task' in line:
-                return True
-
-    return False
