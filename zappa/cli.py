@@ -1239,7 +1239,7 @@ class ZappaCLI(object):
         session = botocore.session.Session()
         config  = session.full_config
         profiles = config.get("profiles", {})
-        profile_names = profiles.keys()
+        profile_names = list(profiles.keys())
 
         click.echo("\nAWS Lambda and API Gateway are only available in certain regions. "\
                    "Let's check to make sure you have a profile set up in one that will work.")
@@ -1360,7 +1360,7 @@ class ZappaCLI(object):
         for each_env in envs:
 
             # Honestly, this could be cleaner.
-            env_name = each_env.keys()[0]
+            env_name = list(each_env.keys())[0]
             env_dict = each_env[env_name]
 
             env_bucket = bucket
@@ -1376,7 +1376,7 @@ class ZappaCLI(object):
             if profile_name:
                 env_zappa_settings[env_name]['profile_name'] = profile_name
 
-            if env_dict.has_key('aws_region'):
+            if 'aws_region' in env_dict:
                 env_zappa_settings[env_name]['aws_region'] = env_dict.get('aws_region')
             elif profile_region:
                 env_zappa_settings[env_name]['aws_region'] = profile_region
