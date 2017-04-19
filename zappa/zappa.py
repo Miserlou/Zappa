@@ -1751,7 +1751,7 @@ class Zappa(object):
             if e.args[0].find('ResourceNotFoundException') > -1:
                 logger.debug('No policy found, must be first run.')
             else:
-                logger.error('Unexpected client error {}'.format(e.message))
+                logger.error('Unexpected client error {}'.format(e.args[0]))
 
     ##
     # CloudWatch Events
