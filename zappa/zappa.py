@@ -27,12 +27,12 @@ from setuptools import find_packages
 from tqdm import tqdm
 
 # Zappa imports
-from .util import   copytree,
-                    add_event_source,
-                    remove_event_source,
-                    human_size,
-                    get_topic_name,
-                    contains_python_files_or_subdirs,
+from .util import   copytree, \
+                    add_event_source, \
+                    remove_event_source, \
+                    human_size, \
+                    get_topic_name, \
+                    contains_python_files_or_subdirs, \
                     get_venv_from_python_version
 
 ##
