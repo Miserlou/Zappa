@@ -74,7 +74,10 @@ class LambdaHandler(object):
     def __new__(cls, settings_name="zappa_settings", session=None):
         """Singleton instance to avoid repeat setup"""
         if LambdaHandler.__instance is None:
-            LambdaHandler.__instance = object.__new__(cls, settings_name, session)
+            if sys.version_info[0] < 3:
+                LambdaHandler.__instance = object.__new__(cls, settings_name, session)
+            else:
+                LambdaHandler.__instance = object.__new__(cls)
         return LambdaHandler.__instance
 
     def __init__(self, settings_name="zappa_settings", session=None):

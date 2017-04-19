@@ -21,7 +21,7 @@ import zipfile
 from builtins import int
 from botocore.exceptions import ClientError
 from distutils.dir_util import copy_tree
-from io import BytesIO
+from io import BytesIO, open
 from lambda_packages import lambda_packages
 from setuptools import find_packages
 from tqdm import tqdm
@@ -267,8 +267,9 @@ class Zappa(object):
     # Packaging
     ##
     def copy_editable_packages(self, egg_links, temp_package_path):
+        """ """
         for egg_link in egg_links:
-            with open(egg_link) as df:
+            with open(egg_link, 'rb') as df:
                 egg_path = df.read().decode('utf-8').splitlines()[0].strip()
                 pkgs = set([x.split(".")[0] for x in find_packages(egg_path, exclude=['test', 'tests'])])
                 for pkg in pkgs:
