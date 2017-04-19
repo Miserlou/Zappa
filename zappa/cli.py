@@ -46,7 +46,7 @@ from .zappa import Zappa, logger, API_GATEWAY_REGIONS
 from .util import (check_new_version_available, detect_django_settings,
                   detect_flask_apps, parse_s3_url, human_size,
                   validate_name, InvalidAwsLambdaName,
-                  get_runtime_from_python_version)
+                  get_runtime_from_python_version, string_to_timestamp)
 
 
 CUSTOM_SETTINGS = [
@@ -838,8 +838,6 @@ class ZappaCLI(object):
         """
 
         try:
-
-            from util import string_to_timestamp
             since_stamp = string_to_timestamp(since)
 
             last_since = since_stamp
