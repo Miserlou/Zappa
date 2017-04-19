@@ -388,7 +388,7 @@ class Zappa(object):
                 parts.append(tail)
                 (path, tail) = os.path.split(path)
             parts.append(os.path.join(path, tail))
-            return map(os.path.normpath, parts)[::-1]
+            return list(map(os.path.normpath, parts))[::-1]
         split_venv = splitpath(venv)
         split_cwd = splitpath(cwd)
 
@@ -2222,21 +2222,6 @@ class Zappa(object):
 
         if self.boto_session.region_name not in API_GATEWAY_REGIONS:
             print("Warning! AWS API Gateway may not be available in this AWS Region!")
-
-    @staticmethod
-    def selection_pattern(status_code):
-        """
-        Generate a regex to match a given status code in a response.
-        """
-        pattern = ''
-
-        if status_code in ['301', '302']:
-            pattern = 'https://.*|/.*'
-        elif status_code != '200':
-            pattern = '\{"http_status": ' + str(status_code) + '.*'
-            pattern = pattern.replace('+', r"\+")
-
-        return pattern
 
     @staticmethod
     def service_from_arn(arn):

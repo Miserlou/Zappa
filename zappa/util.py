@@ -9,7 +9,12 @@ import requests
 import shutil
 import stat
 import sys
-import urlparse
+
+from past.builtins import basestring
+if sys.version_info[0] < 3:
+    from urlparse import urlparse
+else:
+    from urllib.parse import urlparse
 
 ##
 # Settings / Packaging
@@ -59,7 +64,7 @@ def parse_s3_url(url):
     bucket = ''
     path = ''
     if url:
-        result = urlparse.urlparse(url)
+        result = urlparse(url)
         bucket = result.netloc
         path = result.path.strip('/')
     return bucket, path

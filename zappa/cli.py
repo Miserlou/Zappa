@@ -10,6 +10,7 @@ Deploy arbitrary Python programs as serverless Zappa applications.
 
 from __future__ import unicode_literals
 from __future__ import division
+from past.builtins import basestring
 
 import argcomplete
 import argparse
