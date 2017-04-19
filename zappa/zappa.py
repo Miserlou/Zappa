@@ -18,7 +18,7 @@ import troposphere
 import troposphere.apigateway
 import zipfile
 
-from builtins import int
+from builtins import int, bytes
 from botocore.exceptions import ClientError
 from distutils.dir_util import copy_tree
 from io import BytesIO, open
@@ -1349,7 +1349,7 @@ class Zappa(object):
 
         template = name + '-template-' + str(int(time.time())) + '.json'
         with open(template, 'wb') as out:
-            out.write(self.cf_template.to_json(indent=None, separators=(',',':')))
+            out.write(bytes(self.cf_template.to_json(indent=None, separators=(',',':')), "utf-8")
 
         self.upload_to_s3(template, working_bucket)
 
