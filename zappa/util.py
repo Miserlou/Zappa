@@ -161,7 +161,12 @@ def detect_flask_apps():
 
     return matches
 
+def get_venv_from_python_version():
+    return 'python' + str(sys.version_info[0]) + '.' + str(sys.version_info[1])
+
 def get_runtime_from_python_version():
+    """
+    """
     if sys.version_info[0] < 3:
         return 'python2.7'
     else:

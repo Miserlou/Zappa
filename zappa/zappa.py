@@ -27,7 +27,13 @@ from setuptools import find_packages
 from tqdm import tqdm
 
 # Zappa imports
-from .util import copytree, add_event_source, remove_event_source, human_size, get_topic_name, contains_python_files_or_subdirs
+from .util import   copytree,
+                    add_event_source,
+                    remove_event_source,
+                    human_size,
+                    get_topic_name,
+                    contains_python_files_or_subdirs,
+                    get_venv_from_python_version
 
 ##
 # Logging Config
@@ -304,8 +310,8 @@ class Zappa(object):
             current_site_packages_dir = os.path.join(current_venv, 'Lib', 'site-packages')
             venv_site_packages_dir = os.path.join(ve_path, 'Lib', 'site-packages')
         else:
-            current_site_packages_dir = os.path.join(current_venv, 'lib', 'python2.7', 'site-packages')
-            venv_site_packages_dir = os.path.join(ve_path, 'lib', 'python2.7', 'site-packages')
+            current_site_packages_dir = os.path.join(current_venv, 'lib', get_venv_from_python_version(), 'site-packages')
+            venv_site_packages_dir = os.path.join(ve_path, 'lib', get_venv_from_python_version(), 'site-packages')
 
         if not os.path.isdir(venv_site_packages_dir):
             os.makedirs(venv_site_packages_dir)
@@ -426,7 +432,7 @@ class Zappa(object):
         if os.sys.platform == 'win32':
             site_packages = os.path.join(venv, 'Lib', 'site-packages')
         else:
-            site_packages = os.path.join(venv, 'lib', 'python2.7', 'site-packages')
+            site_packages = os.path.join(venv, 'lib', get_venv_from_python_version(), 'site-packages')
         egg_links.extend(glob.glob(os.path.join(site_packages, '*.egg-link')))
 
         if minify:
@@ -437,7 +443,7 @@ class Zappa(object):
             copytree(site_packages, temp_package_path, symlinks=False)
 
         # We may have 64-bin specific packages too.
-        site_packages_64 = os.path.join(venv, 'lib64', 'python2.7', 'site-packages')
+        site_packages_64 = os.path.join(venv, 'lib64', get_venv_from_python_version(), 'site-packages')
         if os.path.exists(site_packages_64):
             egg_links.extend(glob.glob(os.path.join(site_packages_64, '*.egg-link')))
             if minify:
