@@ -1916,7 +1916,7 @@ class Zappa(object):
             if error_code == 'AccessDeniedException':
                 raise
             else:
-                logger.debug('No target found for this rule: {} {}'.format(rule_name, e.message))
+                logger.debug('No target found for this rule: {} {}'.format(rule_name, e.args[0]))
                 return
 
         if 'Targets' in targets and targets['Targets']:
