@@ -2063,7 +2063,8 @@ class Zappa(object):
                 interleaved=True, # Does this actually improve performance?
                 **extra_args
             )
-            events += response['events']
+            if response and 'events' in response:
+                events += response['events']
 
         return sorted(events, key=lambda k: k['timestamp'])
 
