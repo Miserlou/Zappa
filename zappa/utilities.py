@@ -5,11 +5,16 @@ import fnmatch
 import json
 import os
 import re
-import requests
 import shutil
 import stat
 import sys
-import urlparse
+
+from past.builtins import basestring
+
+if sys.version_info[0] < 3:
+    from urlparse import urlparse
+else:
+    from urllib.parse import urlparse
 
 ##
 # Settings / Packaging
@@ -59,7 +64,7 @@ def parse_s3_url(url):
     bucket = ''
     path = ''
     if url:
-        result = urlparse.urlparse(url)
+        result = urlparse(url)
         bucket = result.netloc
         path = result.path.strip('/')
     return bucket, path
@@ -156,7 +161,12 @@ def detect_flask_apps():
 
     return matches
 
+def get_venv_from_python_version():
+    return 'python' + str(sys.version_info[0]) + '.' + str(sys.version_info[1])
+
 def get_runtime_from_python_version():
+    """
+    """
     if sys.version_info[0] < 3:
         return 'python2.7'
     else:
@@ -304,6 +314,7 @@ def check_new_version_available(this_version):
     Returns True is updateable, else False.
 
     """
+    import requests
 
     pypi_url = 'https://pypi.python.org/pypi/Zappa/json'
     resp = requests.get(pypi_url, timeout=1.5)

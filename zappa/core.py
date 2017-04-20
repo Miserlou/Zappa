@@ -18,15 +18,22 @@ import troposphere
 import troposphere.apigateway
 import zipfile
 
+from builtins import int, bytes
 from botocore.exceptions import ClientError
 from distutils.dir_util import copy_tree
-from io import BytesIO
+from io import BytesIO, open
 from lambda_packages import lambda_packages
 from setuptools import find_packages
 from tqdm import tqdm
 
 # Zappa imports
-from util import copytree, add_event_source, remove_event_source, human_size, get_topic_name, contains_python_files_or_subdirs
+from .utilities import (copytree,
+                    add_event_source,
+                    remove_event_source,
+                    human_size,
+                    get_topic_name,
+                    contains_python_files_or_subdirs,
+                    get_venv_from_python_version)
 
 ##
 # Logging Config
@@ -260,8 +267,9 @@ class Zappa(object):
     # Packaging
     ##
     def copy_editable_packages(self, egg_links, temp_package_path):
+        """ """
         for egg_link in egg_links:
-            with open(egg_link) as df:
+            with open(egg_link, 'rb') as df:
                 egg_path = df.read().decode('utf-8').splitlines()[0].strip()
                 pkgs = set([x.split(".")[0] for x in find_packages(egg_path, exclude=['test', 'tests'])])
                 for pkg in pkgs:
@@ -303,8 +311,8 @@ class Zappa(object):
             current_site_packages_dir = os.path.join(current_venv, 'Lib', 'site-packages')
             venv_site_packages_dir = os.path.join(ve_path, 'Lib', 'site-packages')
         else:
-            current_site_packages_dir = os.path.join(current_venv, 'lib', 'python2.7', 'site-packages')
-            venv_site_packages_dir = os.path.join(ve_path, 'lib', 'python2.7', 'site-packages')
+            current_site_packages_dir = os.path.join(current_venv, 'lib', get_venv_from_python_version(), 'site-packages')
+            venv_site_packages_dir = os.path.join(ve_path, 'lib', get_venv_from_python_version(), 'site-packages')
 
         if not os.path.isdir(venv_site_packages_dir):
             os.makedirs(venv_site_packages_dir)
@@ -387,7 +395,7 @@ class Zappa(object):
                 parts.append(tail)
                 (path, tail) = os.path.split(path)
             parts.append(os.path.join(path, tail))
-            return map(os.path.normpath, parts)[::-1]
+            return list(map(os.path.normpath, parts))[::-1]
         split_venv = splitpath(venv)
         split_cwd = splitpath(cwd)
 
@@ -425,7 +433,7 @@ class Zappa(object):
         if os.sys.platform == 'win32':
             site_packages = os.path.join(venv, 'Lib', 'site-packages')
         else:
-            site_packages = os.path.join(venv, 'lib', 'python2.7', 'site-packages')
+            site_packages = os.path.join(venv, 'lib', get_venv_from_python_version(), 'site-packages')
         egg_links.extend(glob.glob(os.path.join(site_packages, '*.egg-link')))
 
         if minify:
@@ -436,7 +444,7 @@ class Zappa(object):
             copytree(site_packages, temp_package_path, symlinks=False)
 
         # We may have 64-bin specific packages too.
-        site_packages_64 = os.path.join(venv, 'lib64', 'python2.7', 'site-packages')
+        site_packages_64 = os.path.join(venv, 'lib64', get_venv_from_python_version(), 'site-packages')
         if os.path.exists(site_packages_64):
             egg_links.extend(glob.glob(os.path.join(site_packages_64, '*.egg-link')))
             if minify:
@@ -536,7 +544,7 @@ class Zappa(object):
                 # Related: https://github.com/Miserlou/Zappa/pull/716
                 zipi = zipfile.ZipInfo(os.path.join(root.replace(temp_project_path, '').lstrip(os.sep), filename))
                 zipi.create_system = 3
-                zipi.external_attr = 0o755 << 16L
+                zipi.external_attr = 0o755 << int(16) # Is this P2/P3 functional?
                 with open(os.path.join(root, filename), 'rb') as f:
                     zipf.writestr(zipi, f.read(), compression_method)
 
@@ -579,7 +587,7 @@ class Zappa(object):
             for f in data['releases'][version]:
                 if f['filename'].endswith('cp27mu-manylinux1_x86_64.whl'):
                     return f['url']
-        except Exception, e: # pragma: no cover
+        except Exception as e: # pragma: no cover
             return None
         return None
 
@@ -1340,8 +1348,8 @@ class Zappa(object):
         capabilities = []
 
         template = name + '-template-' + str(int(time.time())) + '.json'
-        with open(template, 'w') as out:
-            out.write(self.cf_template.to_json(indent=None, separators=(',',':')))
+        with open(template, 'wb') as out:
+            out.write(bytes(self.cf_template.to_json(indent=None, separators=(',',':')), "utf-8"))
 
         self.upload_to_s3(template, working_bucket)
 
@@ -1740,10 +1748,10 @@ class Zappa(object):
             else:
                 logger.debug('Failed to load Lambda function policy: {}'.format(policy_response))
         except ClientError as e:
-            if e.message.find('ResourceNotFoundException') > -1:
+            if e.args[0].find('ResourceNotFoundException') > -1:
                 logger.debug('No policy found, must be first run.')
             else:
-                logger.error('Unexpected client error {}'.format(e.message))
+                logger.error('Unexpected client error {}'.format(e.args[0]))
 
     ##
     # CloudWatch Events
@@ -1908,7 +1916,7 @@ class Zappa(object):
             if error_code == 'AccessDeniedException':
                 raise
             else:
-                logger.debug('No target found for this rule: {} {}'.format(rule_name, e.message))
+                logger.debug('No target found for this rule: {} {}'.format(rule_name, e.args[0]))
                 return
 
         if 'Targets' in targets and targets['Targets']:
@@ -2222,21 +2230,6 @@ class Zappa(object):
 
         if self.boto_session.region_name not in API_GATEWAY_REGIONS:
             print("Warning! AWS API Gateway may not be available in this AWS Region!")
-
-    @staticmethod
-    def selection_pattern(status_code):
-        """
-        Generate a regex to match a given status code in a response.
-        """
-        pattern = ''
-
-        if status_code in ['301', '302']:
-            pattern = 'https://.*|/.*'
-        elif status_code != '200':
-            pattern = '\{"http_status": ' + str(status_code) + '.*'
-            pattern = pattern.replace('+', r"\+")
-
-        return pattern
 
     @staticmethod
     def service_from_arn(arn):
