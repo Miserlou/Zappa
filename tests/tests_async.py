@@ -31,7 +31,7 @@ from zappa.async import import_and_get_task, \
                         is_from_router
 
 from zappa.cli import ZappaCLI, shamelessly_promote
-from zappa.zappa import Zappa, \
+from zappa.core import Zappa, \
                         ASSUME_POLICY, \
                         ATTACH_POLICY
 

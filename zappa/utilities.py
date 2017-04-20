@@ -5,12 +5,12 @@ import fnmatch
 import json
 import os
 import re
-import requests
 import shutil
 import stat
 import sys
 
 from past.builtins import basestring
+
 if sys.version_info[0] < 3:
     from urlparse import urlparse
 else:
@@ -314,6 +314,7 @@ def check_new_version_available(this_version):
     Returns True is updateable, else False.
 
     """
+    import requests
 
     pypi_url = 'https://pypi.python.org/pypi/Zappa/json'
     resp = requests.get(pypi_url, timeout=1.5)

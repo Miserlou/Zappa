@@ -19,15 +19,14 @@ from werkzeug.wrappers import Response
 # This file may be copied into a project's root,
 # so handle both scenarios.
 try:
-    from zappa.cli import ZappaCLI
     from zappa.middleware import ZappaWSGIMiddleware
     from zappa.wsgi import create_wsgi_request, common_log
-    from zappa.util import parse_s3_url
+    from zappa.utilities import parse_s3_url
 except ImportError as e:  # pragma: no cover
-    from .cli import ZappaCLI
     from .middleware import ZappaWSGIMiddleware
     from .wsgi import create_wsgi_request, common_log
-    from .util import parse_s3_url
+    from .utilities import parse_s3_url
+
 
 # Set up logging
 logging.basicConfig()
@@ -77,6 +76,7 @@ class LambdaHandler(object):
             if sys.version_info[0] < 3:
                 LambdaHandler.__instance = object.__new__(cls, settings_name, session)
             else:
+                print("Instancing..")
                 LambdaHandler.__instance = object.__new__(cls)
         return LambdaHandler.__instance
 
@@ -314,13 +314,13 @@ class LambdaHandler(object):
         """
         Call 'certify' locally.
         """
-        import boto3
-        session = boto3.Session()
+        # import boto3
+        # session = boto3.Session()
 
-        z_cli = ZappaCLI()
-        z_cli.api_stage = self.settings.API_STAGE
-        z_cli.load_settings(session=session)
-        z_cli.certify()
+        # z_cli = ZappaCLI()
+        # z_cli.api_stage = self.settings.API_STAGE
+        # z_cli.load_settings(session=session)
+        # z_cli.certify()
 
         return
 
@@ -478,7 +478,7 @@ class LambdaHandler(object):
                     if settings.BINARY_SUPPORT:
                         if not response.mimetype.startswith("text/") \
                             or response.mimetype != "application/json":
-                                zappa_returndict['body'] = base64.b64encode(response.data)
+                                zappa_returndict['body'] = base64.b64encode(response.data).decode('utf-8')
                                 zappa_returndict["isBase64Encoded"] = "true"
                         else:
                             zappa_returndict['body'] = response.data
@@ -520,7 +520,7 @@ class LambdaHandler(object):
             body = {'message': message}
             if settings.DEBUG:  # only include traceback if debug is on.
                 body['traceback'] = traceback.format_exception(*exc_info)  # traceback as a list for readability.
-            content['body'] = json.dumps(body, sort_keys=True, indent=4).encode('utf-8')
+            content['body'] = json.dumps(str(body), sort_keys=True, indent=4)
             return content
 
 

@@ -32,13 +32,13 @@ from zappa.cli import ZappaCLI, shamelessly_promote
 from zappa.ext.django_zappa import get_django_wsgi
 from zappa.handler import LambdaHandler, lambda_handler
 from zappa.letsencrypt import get_cert_and_update_domain, create_domain_key, create_domain_csr, create_chained_certificate, get_cert, cleanup, parse_account_key, parse_csr, sign_certificate, encode_certificate, register_account, verify_challenge
-from zappa.util import (detect_django_settings, copytree, detect_flask_apps,
+from zappa.utilities import (detect_django_settings, copytree, detect_flask_apps,
                         add_event_source, remove_event_source,
                         get_event_source_status, parse_s3_url, human_size, string_to_timestamp,
                         validate_name, InvalidAwsLambdaName, contains_python_files_or_subdirs,
                         get_venv_from_python_version)
 from zappa.wsgi import create_wsgi_request, common_log
-from zappa.zappa import Zappa, ASSUME_POLICY, ATTACH_POLICY
+from zappa.core import Zappa, ASSUME_POLICY, ATTACH_POLICY
 
 def random_string(length):
     return ''.join(random.choice(string.printable) for _ in range(length))
