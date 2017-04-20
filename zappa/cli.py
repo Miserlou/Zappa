@@ -10,6 +10,7 @@ Deploy arbitrary Python programs as serverless Zappa applications.
 
 from __future__ import unicode_literals
 from __future__ import division
+from __future__ import absolute_import
 from past.builtins import basestring
 from builtins import input, bytes
 
@@ -41,8 +42,8 @@ import zipfile
 
 from click.exceptions import ClickException
 from dateutil import parser
-from datetime import datetime,timedelta
-from .zappa import Zappa, logger, API_GATEWAY_REGIONS
+from datetime import datetime, timedelta
+from zappa import Zappa, logger, API_GATEWAY_REGIONS
 from .util import (check_new_version_available, detect_django_settings,
                   detect_flask_apps, parse_s3_url, human_size,
                   validate_name, InvalidAwsLambdaName,

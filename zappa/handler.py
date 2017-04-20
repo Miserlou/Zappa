@@ -29,7 +29,6 @@ except ImportError as e:  # pragma: no cover
     from .wsgi import create_wsgi_request, common_log
     from .util import parse_s3_url
 
-
 # Set up logging
 logging.basicConfig()
 logger = logging.getLogger()

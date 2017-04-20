@@ -27,7 +27,7 @@ from setuptools import find_packages
 from tqdm import tqdm
 
 # Zappa imports
-from .util import   copytree, \
+from util import   copytree, \
                     add_event_source, \
                     remove_event_source, \
                     human_size, \
