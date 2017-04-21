@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 import base64
 import logging
+import six
 import sys
 
 from requestlogger import ApacheFormatter
@@ -10,12 +11,9 @@ from werkzeug import urls
 
 # The joy of version splintering.
 if sys.version_info[0] < 3:
-    from StringIO import StringIO
     from urllib import urlencode
 else:
-    from io import StringIO
     from urllib.parse import urlencode
-
 
 BINARY_METHODS = [
                     "POST",
@@ -109,7 +107,7 @@ def create_wsgi_request(event_info,
             if 'Content-Type' in headers:
                 environ['CONTENT_TYPE'] = headers['Content-Type']
 
-            environ['wsgi.input'] = StringIO(body)
+            environ['wsgi.input'] = six.BytesIO(body)
             if body:
                 environ['CONTENT_LENGTH'] = str(len(body))
             else:
