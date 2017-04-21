@@ -1,5 +1,16 @@
 # Zappa Changelog
 
+## 0.41.0
+* Add Python3 Support! #793, #6
+* Deprecate `lets_encrypt_expression`
+* Refactor a bunch of stuff to work with Python3 package restrictions >:[
+* #776 fix for libmysqlclient.so.18 error when using `slim_handler`
+* add profile and region detection to init - thanks @pdpol
+* #774 Wsgi environment improvements (Fix untrustworthy remote_addr)
+* Only create `__init__.py` file if there are python files or sub dirs in the folder
+* Update docs to reflect lambda name prepended to role_name
+* Guard log responses (thanks @scoates)
+
 ## 0.40.0
 * Add Async Task Support! Lots of tickets and PRs related, including #61, #603, #694 and #732.
 * More info here: https://blog.zappa.io/posts/zappa-introduces-seamless-asynchronous-task-execution
