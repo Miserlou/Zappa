@@ -110,8 +110,6 @@ def create_wsgi_request(event_info,
 
             if body and (sys.version_info[0] < 3):
                 body = body.encode("utf-8")
-            else:
-                body = None
 
             environ['wsgi.input'] = six.BytesIO(body)
             if body:
