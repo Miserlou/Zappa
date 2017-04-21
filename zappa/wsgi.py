@@ -5,6 +5,7 @@ import logging
 import six
 import sys
 
+from builtins import bytes
 from requestlogger import ApacheFormatter
 from sys import stderr
 from werkzeug import urls
@@ -58,10 +59,10 @@ def create_wsgi_request(event_info,
                 body = event_info['body']
                 # Will this generate unicode errors?
                 # Early experiments indicate no, but this still looks unsafe to me.
-                body = str(body)
+                # body = str(body)
         else:
             body = event_info['body']
-            body = str(body)
+            # body = str(body)
 
         # Make header names canonical, e.g. content-type => Content-Type
         for header in headers.keys():
@@ -106,6 +107,11 @@ def create_wsgi_request(event_info,
         if method in ["POST", "PUT", "PATCH"]:
             if 'Content-Type' in headers:
                 environ['CONTENT_TYPE'] = headers['Content-Type']
+
+            if body:
+                body = body.encode("utf-8")
+            else:
+                body = None
 
             environ['wsgi.input'] = six.BytesIO(body)
             if body:
