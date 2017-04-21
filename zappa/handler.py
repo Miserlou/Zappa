@@ -310,20 +310,6 @@ class LambdaHandler(object):
                                "2 arguments or varargs.")
         return result
 
-    def update_certificate(self):
-        """
-        Call 'certify' locally.
-        """
-        # import boto3
-        # session = boto3.Session()
-
-        # z_cli = ZappaCLI()
-        # z_cli.api_stage = self.settings.API_STAGE
-        # z_cli.load_settings(session=session)
-        # z_cli.certify()
-
-        return
-
     def get_function_for_aws_event(self, record):
         """
         Get the associated function to execute for a triggered AWS event
@@ -532,11 +518,3 @@ def keep_warm_callback(event, context):
     """Method is triggered by the CloudWatch event scheduled when keep_warm setting is set to true."""
     lambda_handler(event={}, context=context)  # overriding event with an empty one so that web app initialization will
     # be triggered.
-
-
-def certify_callback(event, context):
-    """
-    Load our LH settings and update our cert.
-    """
-    lh = LambdaHandler()
-    return lh.update_certificate()

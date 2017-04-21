@@ -924,22 +924,6 @@ class ZappaCLI(object):
                            'expression': keep_warm_rate,
                            'description': 'Zappa Keep Warm - {}'.format(self.lambda_name)})
 
-
-        if self.stage_config.get('lets_encrypt_expression'):
-
-            function_response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name)
-            conf = function_response['Configuration']
-            timeout = conf['Timeout']
-
-            if timeout < 60:
-                click.echo(click.style("Unable to schedule certificate autorenewer!", fg="red", bold=True) +
-                           " Please redeploy with a " + click.style("timeout_seconds", bold=True) + " greater than 60!")
-            else:
-                events.append({'name': 'zappa-le-certify',
-                               'function': 'handler.certify_callback',
-                               'expression': self.stage_config.get('lets_encrypt_expression'),
-                               'description': 'Zappa LE Certificate Renewer - {}'.format(self.lambda_name)})
-
         if events:
             try:
                 function_response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name)
