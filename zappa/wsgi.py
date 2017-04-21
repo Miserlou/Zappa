@@ -57,12 +57,11 @@ def create_wsgi_request(event_info,
                 body = base64.b64decode(encoded_body)
             else:
                 body = event_info['body']
-                # Will this generate unicode errors?
-                # Early experiments indicate no, but this still looks unsafe to me.
-                # body = str(body)
         else:
             body = event_info['body']
-            # body = str(body)
+
+        if body and isinstance(body, six.string_types):
+            body = body.encode("utf-8")
 
         # Make header names canonical, e.g. content-type => Content-Type
         for header in headers.keys():
@@ -108,9 +107,7 @@ def create_wsgi_request(event_info,
             if 'Content-Type' in headers:
                 environ['CONTENT_TYPE'] = headers['Content-Type']
 
-            if body and (sys.version_info[0] < 3):
-                body = body.encode("utf-8")
-
+            # This must be Bytes or None
             environ['wsgi.input'] = six.BytesIO(body)
             if body:
                 environ['CONTENT_LENGTH'] = str(len(body))
