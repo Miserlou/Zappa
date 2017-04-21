@@ -108,7 +108,7 @@ def create_wsgi_request(event_info,
             if 'Content-Type' in headers:
                 environ['CONTENT_TYPE'] = headers['Content-Type']
 
-            if body:
+            if body and (sys.version_info[0] < 3):
                 body = body.encode("utf-8")
             else:
                 body = None
