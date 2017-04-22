@@ -1711,7 +1711,8 @@ class ZappaCLI(object):
                             profile_name=self.profile_name,
                             aws_region=self.aws_region,
                             load_credentials=self.load_credentials,
-                            desired_role_name=desired_role_name
+                            desired_role_name=desired_role_name,
+                            runtime=self.runtime
                         )
 
         for setting in CUSTOM_SETTINGS:
