@@ -2211,7 +2211,7 @@ class ZappaCLI(object):
         except ImportError: # pragma: no cover
             raise ClickException(
                 "You have tried to reference the module " + click.style(module_path, bold=True) +
-                "when importing " + click.style(item, bold=True) + ", but this module cannot be " +
+                " when importing " + click.style(item, bold=True) + ", but this module cannot be " +
                 "imported. Please check for typos and ensure that this module is reachable.")
 
         try:
@@ -2219,7 +2219,7 @@ class ZappaCLI(object):
         except AttributeError: # pragma: no cover
             raise ClickException(
                 "You have tried to reference the function " + click.style(function_path, bold=True) +
-                "when importing " + click.style(item, bold=True) + ", but this function cannot be " +
+                " when importing " + click.style(item, bold=True) + ", but this function cannot be " +
                 "imported. Please check for typos and ensure that this function is reachable.")
 
     def deploy_api_gateway(self, api_id):
