@@ -14,7 +14,7 @@ ttt888:
   events:
   - function: tests.test_app.schedule_me
     expression: rate(1 minute)
-  - function: test.test_app.method
+  - function: tests.test_app.method
     event_source:
       arn: arn:aws:sns:::1
       events:
