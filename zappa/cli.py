@@ -2205,13 +2205,22 @@ class ZappaCLI(object):
                            " You may have a namespace collision with " + click.style(item, bold=True) +
                            "! You may want to rename that file.")
 
+        module_path, function_path = item.rsplit('.', 1)
         try:
-            importlib.import_module(item)
+            module = importlib.import_module(module_path)
         except ImportError: # pragma: no cover
             raise ClickException(
-                "You have tried to reference the function " + click.style(item, bold=True) + 
-                ", but this function cannot be imported. Please check for typos and ensure " +
-                "that this function is reachable.")
+                "You have tried to reference the module " + click.style(module_path, bold=True) +
+                "when importing " + click.style(item, bold=True) + ", but this module cannot be " +
+                "imported. Please check for typos and ensure that this module is reachable.")
+
+        try:
+            getattr(module, function_path)
+        except AttributeError: # pragma: no cover
+            raise ClickException(
+                "You have tried to reference the function " + click.style(function_path, bold=True) +
+                "when importing " + click.style(item, bold=True) + ", but this function cannot be " +
+                "imported. Please check for typos and ensure that this function is reachable.")
 
     def deploy_api_gateway(self, api_id):
         cache_cluster_enabled = self.stage_config.get('cache_cluster_enabled', False)
