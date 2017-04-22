@@ -912,6 +912,8 @@ class ZappaCLI(object):
                 return
 
         for event in events:
+            if event.get('name') == 'zappa-keep-warm':
+                continue
             self.function_sanity_check(event.get('function'))
 
         if self.stage_config.get('keep_warm', True):
