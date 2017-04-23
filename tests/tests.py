@@ -1528,6 +1528,15 @@ USE_TZ = True
         dirs = []
         self.assertFalse(contains_python_files_or_subdirs(dirs, files))
 
+    def test_exclude_py_removal(self):
+        zappa_cli = ZappaCLI()
+        zappa_cli.api_stage = 'exclude_py_removal'
+        zappa_cli.load_settings('test_settings.json')
+        zappa_cli.create_package()
+
+        with zipfile.ZipFile(zappa_cli.zip_path) as lambda_zip:
+            self.assertIn('tests/test_app.py', lambda_zip.namelist())
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -88,5 +88,9 @@
       "delete_local_zip": true,
       "use_precompiled_packages": false,
       "delete_s3_zip": false
+    },
+    "exclude_py_removal": {
+      "extends": "ttt888",
+      "exclude_py_removal": "test_app"
     }
 }
