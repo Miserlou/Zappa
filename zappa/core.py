@@ -362,7 +362,8 @@ class Zappa(object):
                             exclude=None,
                             use_precompiled_packages=True,
                             include=None,
-                            venv=None
+                            venv=None,
+                            exclude_py_removal=None
                         ):
         """
         Create a Lambda-ready zip file of the current virtualenvironment and working directory.
@@ -384,6 +385,10 @@ class Zappa(object):
         # Files that should be excluded from the zip
         if exclude is None:
             exclude = list()
+
+        # .py Files that should be included even if a .pyc/.pyo file exists
+        if exclude_py_removal is None:
+            exclude_py_removal = list()
 
         # Exclude the zip itself
         exclude.append(zip_path)
@@ -522,7 +527,8 @@ class Zappa(object):
                 # If there is a .pyc file in this package,
                 # we can skip the python source code as we'll just
                 # use the compiled bytecode anyway..
-                if filename[-3:] == '.py' and root[-10:] != 'migrations':
+                # (Unless it's included in exclude_py_removal)
+                if filename[-3:] == '.py' and root[-10:] != 'migrations' and filename[:-3] not in exclude_py_removal:
                     abs_filname = os.path.join(root, filename)
                     abs_pyc_filename = abs_filname + 'c'
                     if os.path.isfile(abs_pyc_filename):

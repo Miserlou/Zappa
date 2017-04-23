@@ -562,6 +562,7 @@ to change Zappa's behavior. Use these at your own risk!
         ],
         "exception_handler": "your_module.report_exception", // function that will be invoked in case Zappa sees an unhandled exception raised from your code
         "exclude": ["*.gz", "*.rar"], // A list of regex patterns to exclude from the archive. To exclude boto3 and botocore (available in an older version on Lambda), add "boto3*" and "botocore*".
+        "exclude_py_removal": [], // A list of files for which to include the .py version of the lambda zip file even if a .pyc/.pyo version of the file exists
         "extends": "stage_name", // Duplicate and extend another stage's settings. For example, `dev-asia` could extend from `dev-common` with a different `s3_bucket` value.
         "extra_permissions": [{ // Attach any extra permissions to this policy. Default None
             "Effect": "Allow",

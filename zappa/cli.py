@@ -1806,7 +1806,8 @@ class ZappaCLI(object):
             self.zip_path = self.zappa.create_lambda_zip(
                 prefix=self.lambda_name,
                 use_precompiled_packages=self.stage_config.get('use_precompiled_packages', True),
-                exclude=self.stage_config.get('exclude', [])
+                exclude=self.stage_config.get('exclude', []),
+                exclude_py_removal=self.stage_config.get('exclude_py_removal')
             )
 
             # Make sure the normal venv is not included in the handler's zip
@@ -1818,7 +1819,8 @@ class ZappaCLI(object):
                 venv=self.zappa.create_handler_venv(),
                 handler_file=handler_file,
                 slim_handler=True,
-                exclude=exclude
+                exclude=exclude,
+                exclude_py_removal=self.stage_config.get('exclude_py_removal')
             )
         else:
 
@@ -1853,7 +1855,8 @@ class ZappaCLI(object):
                 prefix=self.lambda_name,
                 handler_file=handler_file,
                 use_precompiled_packages=self.stage_config.get('use_precompiled_packages', True),
-                exclude=exclude
+                exclude=exclude,
+                exclude_py_removal=self.stage_config.get('exclude_py_removal')
             )
 
             # Warn if this is too large for Lambda.
