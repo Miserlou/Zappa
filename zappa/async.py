@@ -207,6 +207,12 @@ def run(func, args=[], kwargs={}, service='lambda', **task_kwargs):
 # http://stackoverflow.com/questions/10294014/python-decorator-best-practice-using-a-class-vs-a-function
 # However, this needs to pass inspect.getargspec() in handler.py which does not take classes
 def task(func, service='lambda'):
+    """
+    Async task decorator for a function.
+    Serialises and dispatches the task to SNS.
+    Lambda subscribes to SNS topic and gets this message
+    Lambda routes the message to the same function
+    """
     task_path = get_func_task_path(func)
 
     def _run_async(*args, **kwargs):
