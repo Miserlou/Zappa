@@ -2,6 +2,7 @@
 import unittest
 import base58
 import json
+import sys
 
 from werkzeug.wrappers import Response
 from werkzeug.http import parse_cookie
@@ -43,9 +44,12 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
         self.assertEqual(x, 1)
 
     def test_wsgi_middleware_uglystring(self):
-        ugly_string = unicode("˝ÓÔÒÚÆ☃ЗИЙКЛМФХЦЧШ차를 타고 온 펲시맨(╯°□°）╯︵ ┻━┻)"
-                              "לֹהִים, אֵת הַשָּׁמַיִם, וְאֵת הָt͔̦h̞̲e̢̤ ͍̬̲͖f̴̘͕̣è͖ẹ̥̩l͖͔͚i͓͚̦͠n͖͍̗͓̳̮g͍ ̨ 𝕢𝕦𝕚𝕔𝕜 𝕓𝕣𝕠𝕨",
-                              encoding='utf8')
+        if sys.version_info[0] < 3:
+            ugly_string = unicode("˝ÓÔÒÚÆ☃ЗИЙКЛМФХЦЧШ차를 타고 온 펲시맨(╯°□°）╯︵ ┻━┻)"
+                                  "לֹהִים, אֵת הַשָּׁמַיִם, וְאֵת הָt͔̦h̞̲e̢̤ ͍̬̲͖f̴̘͕̣è͖ẹ̥̩l͖͔͚i͓͚̦͠n͖͍̗͓̳̮g͍ ̨ 𝕢𝕦𝕚𝕔𝕜 𝕓𝕣𝕠𝕨",
+                                  encoding='utf8')
+        else:
+            ugly_string = "˝ÓÔÒÚÆ☃ЗИЙКЛМФХЦЧШ차를 타고 온 펲시맨(╯°□°）╯︵ ┻━┻)"
 
         # Pass some unicode through the middleware body
         def simple_app(environ, start_response):

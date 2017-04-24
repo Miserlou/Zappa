@@ -3,9 +3,7 @@ import base64
 import boto3
 import collections
 import json
-from contextlib import nested
 
-from cStringIO import StringIO as OldStringIO
 from io import BytesIO, StringIO
 import flask
 import mock
@@ -32,7 +30,7 @@ from zappa.async import import_and_get_task, \
                         task
 
 from zappa.cli import ZappaCLI, shamelessly_promote
-from zappa.zappa import Zappa, \
+from zappa.core import Zappa, \
                         ASSUME_POLICY, \
                         ATTACH_POLICY
 
