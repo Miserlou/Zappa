@@ -123,8 +123,8 @@ class TestZappa(unittest.TestCase):
             self.assertTrue(os.path.isfile(path))
             os.remove(path)
 
-    def test_get_manylinux(self):
-        z = Zappa()
+    def test_get_manylinux_python27(self):
+        z = Zappa(runtime='python2.7')
         self.assertNotEqual(z.get_manylinux_wheel('pandas'), None)
         self.assertEqual(z.get_manylinux_wheel('derpderpderpderp'), None)
 
@@ -132,6 +132,21 @@ class TestZappa(unittest.TestCase):
         # for zipping pre-compiled packages gets called
         mock_named_tuple = collections.namedtuple('mock_named_tuple', ['project_name', 'location'])
         mock_return_val = [mock_named_tuple('pandas', '/path')]
+        with mock.patch('pip.get_installed_distributions', return_value=mock_return_val):
+            z = Zappa()
+            path = z.create_lambda_zip(handler_file=os.path.realpath(__file__))
+            self.assertTrue(os.path.isfile(path))
+            os.remove(path)
+
+    def test_get_manylinux_python36(self):
+        z = Zappa(runtime='python3.6')
+        self.assertNotEqual(z.get_manylinux_wheel('psycopg2'), None)
+        self.assertEqual(z.get_manylinux_wheel('derpderpderpderp'), None)
+
+        # mock the pip.get_installed_distributions() to include a package in manylinux so that the code
+        # for zipping pre-compiled packages gets called
+        mock_named_tuple = collections.namedtuple('mock_named_tuple', ['project_name', 'location'])
+        mock_return_val = [mock_named_tuple('psycopg2', '/path')]
         with mock.patch('pip.get_installed_distributions', return_value=mock_return_val):
             z = Zappa()
             path = z.create_lambda_zip(handler_file=os.path.realpath(__file__))
@@ -898,6 +913,12 @@ class TestZappa(unittest.TestCase):
         zappa_cli = ZappaCLI()
         zappa_cli.api_stage = 'ttt888'
         self.assertRaises(ValueError, zappa_cli.load_settings, 'tests/test_bad_environment_vars.json')
+
+    def test_function_sanity_check(self):
+        zappa_cli = ZappaCLI()
+        self.assertRaises(ClickException, zappa_cli.function_sanity_check, 'not_a_module.foo')
+        self.assertRaises(ClickException, zappa_cli.function_sanity_check, 'tests.test_app.not_a_function')
+        self.assertRaises(ClickException, zappa_cli.load_settings, 'test/test_bad_module_paths.json')
 
     # @mock.patch('botocore.session.Session.full_config', new_callable=mock.PropertyMock)
     # def test_cli_init(self, mock_config):

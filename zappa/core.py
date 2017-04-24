@@ -205,8 +205,8 @@ class Zappa(object):
             profile_name=None,
             aws_region=None,
             load_credentials=True,
-            desired_role_name=None
-
+            desired_role_name=None,
+            runtime='python2.7'
         ):
         # Set aws_region to None to use the system's region instead
         if aws_region is None:
@@ -218,6 +218,14 @@ class Zappa(object):
 
         if desired_role_name:
             self.role_name = desired_role_name
+
+        self.runtime = runtime
+
+        if self.runtime == 'python2.7':
+            self.manylinux_wheel_file_suffix = 'cp27mu-manylinux1_x86_64.whl'
+        else:
+            self.manylinux_wheel_file_suffix = 'cp36m-manylinux1_x86_64.whl'
+
 
         # Some common invokations, such as DB migrations,
         # can take longer than the default.
@@ -585,7 +593,7 @@ class Zappa(object):
             data = res.json()
             version = data['info']['version']
             for f in data['releases'][version]:
-                if f['filename'].endswith('cp27mu-manylinux1_x86_64.whl'):
+                if f['filename'].endswith(self.manylinux_wheel_file_suffix):
                     return f['url']
         except Exception as e: # pragma: no cover
             return None

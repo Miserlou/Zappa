@@ -912,7 +912,9 @@ class ZappaCLI(object):
                 return
 
         for event in events:
-            self.collision_warning(event.get('function'))
+            if event.get('name') == 'zappa-keep-warm':
+                continue
+            self.function_sanity_check(event.get('function'))
 
         if self.stage_config.get('keep_warm', True):
             if not events:
@@ -1711,7 +1713,8 @@ class ZappaCLI(object):
                             profile_name=self.profile_name,
                             aws_region=self.aws_region,
                             load_credentials=self.load_credentials,
-                            desired_role_name=desired_role_name
+                            desired_role_name=desired_role_name,
+                            runtime=self.runtime
                         )
 
         for setting in CUSTOM_SETTINGS:
@@ -1724,11 +1727,14 @@ class ZappaCLI(object):
                 setattr(self.zappa, setting, setting_val)
 
         if self.app_function:
-            self.collision_warning(self.app_function)
+            self.function_sanity_check(self.app_function)
             if self.app_function[-3:] == '.py':
                 click.echo(click.style("Warning!", fg="red", bold=True) +
                            " Your app_function is pointing to a " + click.style("file and not a function", bold=True) +
                            "! It should probably be something like 'my_file.app', not 'my_file.py'!")
+
+        if self.exception_handler:
+            self.function_sanity_check(self.exception_handler)
 
         return self.zappa
 
@@ -2184,12 +2190,13 @@ class ZappaCLI(object):
         prebuild_function = getattr(module_, pb_func)
         prebuild_function()  # Call the function
 
-    def collision_warning(self, item):
+    def function_sanity_check(self, item):
         """
         Given a string, print a warning if this could
-        collide with a Zappa core package module.
+        collide with a Zappa core package module, or if the
+        given function could not be correctly imported.
 
-        Use for app functions and events.
+        Use for app functions, event functions, and exception handlers.
         """
 
         namespace_collisions = [
@@ -2200,6 +2207,23 @@ class ZappaCLI(object):
                 click.echo(click.style("Warning!", fg="red", bold=True) +
                            " You may have a namespace collision with " + click.style(item, bold=True) +
                            "! You may want to rename that file.")
+
+        module_path, function_path = item.rsplit('.', 1)
+        try:
+            module = importlib.import_module(module_path)
+        except ImportError: # pragma: no cover
+            raise ClickException(
+                "You have tried to reference the module " + click.style(module_path, bold=True) +
+                " when importing " + click.style(item, bold=True) + ", but this module cannot be " +
+                "imported. Please check for typos and ensure that this module is reachable.")
+
+        try:
+            getattr(module, function_path)
+        except AttributeError: # pragma: no cover
+            raise ClickException(
+                "You have tried to reference the function " + click.style(function_path, bold=True) +
+                " when importing " + click.style(item, bold=True) + ", but this function cannot be " +
+                "imported. Please check for typos and ensure that this function is reachable.")
 
     def deploy_api_gateway(self, api_id):
         cache_cluster_enabled = self.stage_config.get('cache_cluster_enabled', False)
