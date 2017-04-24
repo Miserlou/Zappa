@@ -169,6 +169,11 @@ def route_sns_task(event, context):
     return run_message(message)
 
 def run_message(message):
+    """
+    Runs a function defined by a message object with keys:
+    'task_path', 'args', and 'kwargs' used by lambda routing
+    and a 'command' in handler.py
+    """
     func = import_and_get_task(message['task_path'])
     if hasattr(func, 'sync'):
         return func.sync(
