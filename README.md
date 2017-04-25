@@ -446,7 +446,8 @@ to change Zappa's behavior. Use these at your own risk!
         "vpc_config": { // Optional VPC configuration for Lambda function
             "SubnetIds": [ "subnet-12345678" ], // Note: not all availability zones support Lambda!
             "SecurityGroupIds": [ "sg-12345678" ]
-        }
+        },
+        "aws_kms_key_arn": "your_aws_kms_key_arn", // Your AWS KMS Key ARN
     }
 }
 ```

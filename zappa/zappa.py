@@ -640,8 +640,6 @@ class Zappa(object):
         if not environment_variables:
             environment_variables = {}
 
-        print('aws_kms_key_arn: {}'.format(aws_kms_key_arn))
-
         response = self.lambda_client.create_function(
             FunctionName=function_name,
             Runtime='python2.7',
@@ -683,8 +681,6 @@ class Zappa(object):
         Given an existing function ARN, update the configuration variables.
         """
         print("Updating Lambda function configuration..")
-
-        print('aws_kms_key_arn: {}'.format(aws_kms_key_arn))
 
         if not vpc_config:
             vpc_config = {}
