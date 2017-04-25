@@ -914,12 +914,6 @@ class TestZappa(unittest.TestCase):
         zappa_cli.api_stage = 'ttt888'
         self.assertRaises(ValueError, zappa_cli.load_settings, 'tests/test_bad_environment_vars.json')
 
-    def test_function_sanity_check(self):
-        zappa_cli = ZappaCLI()
-        self.assertRaises(ClickException, zappa_cli.function_sanity_check, 'not_a_module.foo')
-        self.assertRaises(ClickException, zappa_cli.function_sanity_check, 'tests.test_app.not_a_function')
-        self.assertRaises(ClickException, zappa_cli.load_settings, 'test/test_bad_module_paths.json')
-
     # @mock.patch('botocore.session.Session.full_config', new_callable=mock.PropertyMock)
     # def test_cli_init(self, mock_config):
 

@@ -21,5 +21,3 @@ def callback(self):
 def prebuild_me():
     print("this is a prebuild script")
 
-def method():
-    print("this is a method")
