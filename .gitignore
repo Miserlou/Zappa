@@ -75,4 +75,3 @@ target/
 tests/zappa_settings.json
 tests/example_template_outputs
 
-dump.rdb
