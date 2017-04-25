@@ -629,7 +629,7 @@ class Zappa(object):
     ##
 
     def create_lambda_function(self, bucket, s3_key, function_name, handler, description="Zappa Deployment",
-                               timeout=30, memory_size=512, publish=True, vpc_config=None, environment_variables=None):
+                               timeout=30, memory_size=512, publish=True, vpc_config=None, environment_variables=None, aws_kms_key_arn=None):
         """
         Given a bucket and key of a valid Lambda-zip, a function name and a handler, register that Lambda function.
         """
@@ -639,6 +639,8 @@ class Zappa(object):
             self.get_credentials_arn()
         if not environment_variables:
             environment_variables = {}
+
+        print('aws_kms_key_arn: {}'.format(aws_kms_key_arn))
 
         response = self.lambda_client.create_function(
             FunctionName=function_name,
@@ -654,7 +656,8 @@ class Zappa(object):
             MemorySize=memory_size,
             Publish=publish,
             VpcConfig=vpc_config,
-            Environment={'Variables': environment_variables}
+            Environment={'Variables': environment_variables},
+            KMSKeyArn=aws_kms_key_arn
         )
 
         return response['FunctionArn']
@@ -675,11 +678,13 @@ class Zappa(object):
         return response['FunctionArn']
 
     def update_lambda_configuration(self, lambda_arn, function_name, handler, description="Zappa Deployment",
-                                    timeout=30, memory_size=512, publish=True, vpc_config=None, environment_variables=None):
+                                    timeout=30, memory_size=512, publish=True, vpc_config=None, environment_variables=None, aws_kms_key_arn=None):
         """
         Given an existing function ARN, update the configuration variables.
         """
         print("Updating Lambda function configuration..")
+
+        print('aws_kms_key_arn: {}'.format(aws_kms_key_arn))
 
         if not vpc_config:
             vpc_config = {}
@@ -697,7 +702,8 @@ class Zappa(object):
             Timeout=timeout,
             MemorySize=memory_size,
             VpcConfig=vpc_config,
-            Environment={'Variables': environment_variables}
+            Environment={'Variables': environment_variables},
+            KMSKeyArn=aws_kms_key_arn
         )
 
         return response['FunctionArn']

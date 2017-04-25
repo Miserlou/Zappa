@@ -106,6 +106,7 @@ class ZappaCLI(object):
     exception_handler = None
     environment_variables = None
     authorizer = None
+    aws_kms_key_arn = None
 
     stage_name_env_pattern = re.compile('^[a-zA-Z0-9_]+$')
 
@@ -488,7 +489,8 @@ class ZappaCLI(object):
                                                        vpc_config=self.vpc_config,
                                                        timeout=self.timeout_seconds,
                                                        memory_size=self.memory_size,
-                                                       environment_variables=self.environment_variables)
+                                                       environment_variables=self.environment_variables,
+                                                       aws_kms_key_arn=self.aws_kms_key_arn)
 
         # Schedule events for this deployment
         self.schedule()
@@ -602,7 +604,8 @@ class ZappaCLI(object):
                                                        vpc_config=self.vpc_config,
                                                        timeout=self.timeout_seconds,
                                                        memory_size=self.memory_size,
-                                                       environment_variables=self.environment_variables)
+                                                       environment_variables=self.environment_variables,
+                                                       aws_kms_key_arn=self.aws_kms_key_arn)
 
         # Finally, delete the local copy our zip package
         if self.stage_config.get('delete_local_zip', True):
@@ -1453,6 +1456,7 @@ class ZappaCLI(object):
         self.environment_variables = self.stage_config.get('environment_variables', {})
         self.check_environment(self.environment_variables)
         self.authorizer = self.stage_config.get('authorizer', {})
+        self.aws_kms_key_arn = self.stage_config.get('aws_kms_key_arn', '')
 
         self.zappa = Zappa( boto_session=session,
                             profile_name=self.profile_name,
