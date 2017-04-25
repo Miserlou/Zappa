@@ -224,16 +224,23 @@ class ZappaCLI(object):
         ##
         # Deploy
         ##
-        subparsers.add_parser(
+        deploy_parser = subparsers.add_parser(
             'deploy', parents=[env_parser], help='Deploy application.'
         )
-        subparsers.add_parser('init', help='Initialize Zappa app.')
+
+        ##
+        # Init
+        ##
+        init_parser = subparsers.add_parser('init', help='Initialize Zappa app.')
 
         ##
         # Package
         ##
         package_parser = subparsers.add_parser(
             'package', parents=[env_parser], help='Build the application zip package locally.'
+        )
+        package_parser.add_argument(
+            '-o', '--output', help='Name of file to output the package to.'
         )
 
         ##
@@ -451,7 +458,7 @@ class ZappaCLI(object):
         if command == 'deploy': # pragma: no cover
             self.deploy()
         if command == 'package': # pragma: no cover
-            self.package()
+            self.package(self.vargs['output'])
         elif command == 'update': # pragma: no cover
             self.update()
         elif command == 'rollback': # pragma: no cover
@@ -514,7 +521,7 @@ class ZappaCLI(object):
     # The Commands
     ##
 
-    def package(self):
+    def package(self, output=None):
         """
         Only build the package
         """
@@ -527,7 +534,7 @@ class ZappaCLI(object):
         if self.prebuild_script:
             self.execute_prebuild_script()
         # Create the Lambda Zip
-        self.create_package()
+        self.create_package(output)
         self.callback('zip')
         size = human_size(os.path.getsize(self.zip_path))
         click.echo(click.style("Package created", fg="green", bold=True) + ": " + click.style(self.zip_path, bold=True) + " (" + size + ")")
@@ -1791,7 +1798,7 @@ class ZappaCLI(object):
                 except ValueError: # pragma: no cover
                     raise ValueError("Unable to load the Zappa settings JSON. It may be malformed.")
 
-    def create_package(self):
+    def create_package(self, output=None):
         """
         Ensure that the package can be properly configured,
         and then create it.
@@ -1824,7 +1831,8 @@ class ZappaCLI(object):
                 venv=self.zappa.create_handler_venv(),
                 handler_file=handler_file,
                 slim_handler=True,
-                exclude=exclude
+                exclude=exclude,
+                output=output
             )
         else:
 
@@ -1859,7 +1867,8 @@ class ZappaCLI(object):
                 prefix=self.lambda_name,
                 handler_file=handler_file,
                 use_precompiled_packages=self.stage_config.get('use_precompiled_packages', True),
-                exclude=exclude
+                exclude=exclude,
+                output=output
             )
 
             # Warn if this is too large for Lambda.

@@ -370,7 +370,8 @@ class Zappa(object):
                             exclude=None,
                             use_precompiled_packages=True,
                             include=None,
-                            venv=None
+                            venv=None,
+                            output=None
                         ):
         """
         Create a Lambda-ready zip file of the current virtualenvironment and working directory.
@@ -386,7 +387,10 @@ class Zappa(object):
             venv = self.get_current_venv()
 
         cwd = os.getcwd()
-        zip_fname = prefix + '-' + str(int(time.time())) + '.zip'
+        if not output:
+            zip_fname = prefix + '-' + str(int(time.time())) + '.zip'
+        else:
+            zip_fname = output
         zip_path = os.path.join(cwd, zip_fname)
 
         # Files that should be excluded from the zip

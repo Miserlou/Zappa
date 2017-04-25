@@ -264,6 +264,10 @@ If you have a `zip` callback in your `callbacks` setting, this will also be invo
 }
 ```
 
+You can also specify the output filename of the package with `-o`:
+
+    $ zappa package production -o my_awesome_package.zip
+
 #### Status
 
 If you need to see the status of your deployment and event schedules, simply use the `status` command.
