@@ -25,6 +25,7 @@
     - [Scheduling](#scheduling)
     - [Undeploy](#undeploy)
     - [Package](#package)
+    - [Template](#template)
     - [Status](#status)
     - [Tailing Logs](#tailing-logs)
     - [Remote Function Invocation](#remote-function-invocation)
@@ -267,6 +268,16 @@ If you have a `zip` callback in your `callbacks` setting, this will also be invo
 You can also specify the output filename of the package with `-o`:
 
     $ zappa package production -o my_awesome_package.zip
+
+#### Template
+
+Similarly, if you only want the API Gateway CloudFormation template, for use the `template` command:
+
+    $ zappa template production --l your-lambda-arn -r your-role-arn
+
+Note that you must supply your own Lambda ARN and Role ARNs in this case, as they may not have been created for you.
+
+You can use get the JSON output directly with `--json`, and specify the output file with `--output`.
 
 #### Status
 
