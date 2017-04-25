@@ -1479,6 +1479,21 @@ USE_TZ = True
             # cleanup
             os.remove(zappa_cli.zip_path)
 
+    def test_package_output(self):
+
+        for delete_local_zip in [True]:
+            zappa_cli = ZappaCLI()
+            if delete_local_zip:
+                zappa_cli.api_stage = 'build_package_only_delete_local_zip_true'
+            zappa_cli.load_settings('test_settings.json')
+            zappa_cli.package(output="oh-boy.zip")
+            zappa_cli.on_exit()  # simulate the command exits
+            # the zip should never be removed
+            self.assertEqual(os.path.isfile(zappa_cli.zip_path), True)
+
+            # cleanup
+            os.remove(zappa_cli.zip_path)
+
     def test_flask_logging_bug(self):
         """
         This checks whether Flask can write errors sanely.
