@@ -1,5 +1,13 @@
 # Zappa Changelog
 
+## 0.41.1
+* Add `template` command
+* Add `--json` in more places
+* Add `--output` to package
+* Support for manylinux wheels Python 3.6 package downloading #803
+from nikbora
+* Fix PyEnv exit code #799
+
 ## 0.41.0
 * Add Python3 Support! #793, #6
 * Deprecate `lets_encrypt_expression`
