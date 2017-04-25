@@ -932,11 +932,22 @@ class Zappa(object):
                 restapi, lambda_uri, authorizer
             )
 
-        self.create_and_setup_methods(restapi, root_id, api_key_required, invocations_uri,
-                                      authorization_type, authorizer_resource, 0)
+        self.create_and_setup_methods(  restapi,
+                                        root_id,
+                                        api_key_required,
+                                        invocations_uri,
+                                        authorization_type,
+                                        authorizer_resource,
+                                        0
+                                        )
 
         if cors_options is not None:
-            self.create_and_setup_cors(restapi, root_id, invocations_uri, 0, cors_options)
+            self.create_and_setup_cors( restapi,
+                                        root_id,
+                                        invocations_uri,
+                                        0,
+                                        cors_option
+                                    )
 
         resource = troposphere.apigateway.Resource('ResourceAnyPathSlashed')
         self.cf_api_resources.append(resource.title)
@@ -945,11 +956,22 @@ class Zappa(object):
         resource.PathPart = "{proxy+}"
         self.cf_template.add_resource(resource)
 
-        self.create_and_setup_methods(restapi, resource, api_key_required, invocations_uri,
-                                      authorization_type, authorizer_resource, 1)  # pragma: no cover
+        self.create_and_setup_methods(  restapi,
+                                        resource,
+                                        api_key_required,
+                                        invocations_uri,
+                                        authorization_type,
+                                        authorizer_resource,
+                                        1
+                                    )  # pragma: no cover
 
         if cors_options is not None:
-            self.create_and_setup_cors(restapi, resource, invocations_uri, 1, cors_options)  # pragma: no cover
+            self.create_and_setup_cors( restapi,
+                                        resource,
+                                        invocations_uri,
+                                        1,
+                                        cors_options
+                                    )  # pragma: no cover
         return restapi
 
     def create_authorizer(self, restapi, uri, authorizer):
@@ -981,7 +1003,8 @@ class Zappa(object):
 
         return authorizer_resource
 
-    def create_and_setup_methods(   self,
+    def create_and_setup_methods(
+                                    self,
                                     restapi,
                                     resource,
                                     api_key_required,
@@ -1349,8 +1372,15 @@ class Zappa(object):
         self.cf_api_resources = []
         self.cf_parameters = {}
 
-        restapi = self.create_api_gateway_routes(lambda_arn, lambda_name, api_key_required,
-                                                auth_type, authorizer, cors_options, description)
+        restapi = self.create_api_gateway_routes(
+                                            lambda_arn,
+                                            api_name=lambda_name,
+                                            api_key_required=api_key_required,
+                                            authorization_type=auth_type,
+                                            authorizer=authorizer,
+                                            cors_options=cors_options,
+                                            description=description
+                                        )
         return self.cf_template
 
     def update_stack(self, name, working_bucket, wait=False, update_only=False):

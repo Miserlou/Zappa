@@ -244,6 +244,22 @@ class ZappaCLI(object):
         )
 
         ##
+        # Template
+        ##
+        template_parser = subparsers.add_parser(
+            'template', parents=[env_parser], help='Create a CloudFormation template for this API Gateway.'
+        )
+        template_parser.add_argument(
+            '-l', '--lambda-arn', required=True, help='ARN of the Lambda function to template to.'
+        )
+        template_parser.add_argument(
+            '-r', '--role-arn', required=True, help='ARN of the Role to template with.'
+        )
+        template_parser.add_argument(
+            '-o', '--output', help='Name of file to output the template to.'
+        )
+
+        ##
         # Invocation
         ##
         invoke_parser = subparsers.add_parser(
@@ -459,6 +475,8 @@ class ZappaCLI(object):
             self.deploy()
         if command == 'package': # pragma: no cover
             self.package(self.vargs['output'])
+        if command == 'template': # pragma: no cover
+            self.template(self.vargs['lambda_arn'], self.vargs['role_arn'], output=self.vargs['output'])
         elif command == 'update': # pragma: no cover
             self.update()
         elif command == 'rollback': # pragma: no cover
@@ -538,6 +556,39 @@ class ZappaCLI(object):
         self.callback('zip')
         size = human_size(os.path.getsize(self.zip_path))
         click.echo(click.style("Package created", fg="green", bold=True) + ": " + click.style(self.zip_path, bold=True) + " (" + size + ")")
+
+    def template(self, lambda_arn, role_arn, output=None):
+        """
+        Only build the template file.
+        """
+
+        if not lambda_arn:
+            raise ClickException("Lambda ARN is required to template.")
+
+        if not role_arn:
+            raise ClickException("Role ARN is required to template.")
+
+        self.zappa.credentials_arn = role_arn
+
+        # Create the template!
+        template = self.zappa.create_stack_template(
+                                            lambda_arn=lambda_arn,
+                                            lambda_name=self.lambda_name,
+                                            api_key_required=self.api_key_required,
+                                            iam_authorization=self.iam_authorization,
+                                            authorizer=self.authorizer,
+                                            cors_options=self.cors,
+                                            description=self.apigateway_description
+                                        )
+
+        if not output:
+            template_file = self.lambda_name + '-template-' + str(int(time.time())) + '.json'
+        else:
+            template_file = output
+        with open(template_file, 'wb') as out:
+            out.write(bytes(template.to_json(indent=None, separators=(',',':')), "utf-8"))
+
+        click.echo(click.style("Template created", fg="green", bold=True) + ": " + click.style(template_file, bold=True))
 
     def deploy(self):
         """
