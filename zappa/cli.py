@@ -109,7 +109,7 @@ class ZappaCLI(object):
     exception_handler = None
     environment_variables = None
     authorizer = None
-    aws_kms_key_arn = None
+    aws_kms_key_arn = ''
 
     stage_name_env_pattern = re.compile('^[a-zA-Z0-9_]+$')
 
