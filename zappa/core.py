@@ -946,7 +946,7 @@ class Zappa(object):
                                         root_id,
                                         invocations_uri,
                                         0,
-                                        cors_option
+                                        cors_options
                                     )
 
         resource = troposphere.apigateway.Resource('ResourceAnyPathSlashed')
