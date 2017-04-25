@@ -1,10 +1,20 @@
+import calendar
+import datetime
+import durationpy
 import fnmatch
 import json
 import os
-import requests
+import re
 import shutil
 import stat
-import urlparse
+import sys
+
+from past.builtins import basestring
+
+if sys.version_info[0] < 3:
+    from urlparse import urlparse
+else:
+    from urllib.parse import urlparse
 
 ##
 # Settings / Packaging
@@ -54,10 +64,42 @@ def parse_s3_url(url):
     bucket = ''
     path = ''
     if url:
-        result = urlparse.urlparse(url)
+        result = urlparse(url)
         bucket = result.netloc
         path = result.path.strip('/')
     return bucket, path
+
+def human_size(num, suffix='B'):
+    """
+    Convert bytes length to a human-readable version
+    """
+    for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
+        if abs(num) < 1024.0:
+            return "{0:3.1f}{1!s}{2!s}".format(num, unit, suffix)
+        num /= 1024.0
+    return "{0:.1f}{1!s}{2!s}".format(num, 'Yi', suffix)
+
+def string_to_timestamp(timestring):
+    """
+    Accepts a str, returns an int timestamp.
+    """
+
+    ts = None
+
+    # Uses an extended version of Go's duration string.
+    try:
+        delta = durationpy.from_str(timestring);
+        past = datetime.datetime.utcnow() - delta
+        ts = calendar.timegm(past.timetuple())
+        return ts
+    except Exception as e:
+        pass
+
+    if ts:
+        return ts
+    # else:
+    #     print("Unable to parse timestring.")
+    return 0
 
 ##
 # `init` related
@@ -119,6 +161,25 @@ def detect_flask_apps():
 
     return matches
 
+def get_venv_from_python_version():
+    return 'python' + str(sys.version_info[0]) + '.' + str(sys.version_info[1])
+
+def get_runtime_from_python_version():
+    """
+    """
+    if sys.version_info[0] < 3:
+        return 'python2.7'
+    else:
+        return 'python3.6'
+
+##
+# Async Tasks
+##
+
+def get_topic_name(lambda_name):
+    """ Topic name generation """
+    return '%s-zappa-async' % lambda_name
+
 ##
 # Event sources / Kappa
 ##
@@ -178,6 +239,12 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
 
     # Kappa 0.6.0 requires this nasty hacking,
     # hopefully we can remove at least some of this soon.
+    # Kappa 0.7.0 introduces a whole host over other changes we don't
+    # really want, so we're stuck here for a little while.
+
+    # Related:  https://github.com/Miserlou/Zappa/issues/684
+    #           https://github.com/Miserlou/Zappa/issues/688
+    #           https://github.com/Miserlou/Zappa/commit/3216f7e5149e76921ecdf9451167846b95616313
     if svc == 's3':
         split_arn = lambda_arn.split(':')
         arn_front = ':'.join(split_arn[:-1])
@@ -247,6 +314,7 @@ def check_new_version_available(this_version):
     Returns True is updateable, else False.
 
     """
+    import requests
 
     pypi_url = 'https://pypi.python.org/pypi/Zappa/json'
     resp = requests.get(pypi_url, timeout=1.5)
@@ -256,3 +324,45 @@ def check_new_version_available(this_version):
         return True
     else:
         return False
+
+
+class InvalidAwsLambdaName(Exception):
+    """Exception: proposed AWS Lambda name is invalid"""
+    pass
+
+
+def validate_name(name, maxlen=80):
+    """Validate name for AWS Lambda function.
+    name: actual name (without `arn:aws:lambda:...:` prefix and without
+        `:$LATEST`, alias or version suffix.
+    maxlen: max allowed length for name without prefix and suffix.
+
+    The value 80 was calculated from prefix with longest known region name
+    and assuming that no alias or version would be longer than `$LATEST`.
+
+    Based on AWS Lambda spec
+    http://docs.aws.amazon.com/lambda/latest/dg/API_CreateFunction.html
+
+    Return: the name
+    Raise: InvalidAwsLambdaName, if the name is invalid.
+    """
+    if not isinstance(name, basestring):
+        msg = "Name must be of type string"
+        raise InvalidAwsLambdaName(msg)
+    if len(name) > maxlen:
+        msg = "Name is longer than {maxlen} characters."
+        raise InvalidAwsLambdaName(msg.format(maxlen=maxlen))
+    if len(name) == 0:
+        msg = "Name must not be empty string."
+        raise InvalidAwsLambdaName(msg)
+    if not re.match("^[a-zA-Z0-9-_]+$", name):
+        msg = "Name can only contain characters from a-z, A-Z, 0-9, _ and -"
+        raise InvalidAwsLambdaName(msg)
+    return name
+
+
+def contains_python_files_or_subdirs(dirs, files):
+    """
+    checks if len of dirs greater 0 or if there are any files ending on .py or .pyc in files
+    """
+    return len(dirs) > 0 or len([filename for filename in files if filename.endswith('.py') or filename.endswith('.pyc')]) > 0

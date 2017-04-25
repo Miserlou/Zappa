@@ -1,24 +1,44 @@
-import logging
+from __future__ import unicode_literals
 
 import base64
-from urllib import urlencode
-from requestlogger import ApacheFormatter
-from StringIO import StringIO
+import logging
+import six
+import sys
 
+from builtins import bytes
+from requestlogger import ApacheFormatter
+from sys import stderr
 from werkzeug import urls
 
+# The joy of version splintering.
+if sys.version_info[0] < 3:
+    from urllib import urlencode
+else:
+    from urllib.parse import urlencode
 
-def create_wsgi_request(event_info, server_name='zappa', script_name=None,
-                        trailing_slash=True):
+BINARY_METHODS = [
+                    "POST",
+                    "PUT",
+                    "PATCH",
+                    "DELETE",
+                    "CONNECT",
+                    "OPTIONS"
+                ]
+
+def create_wsgi_request(event_info,
+                        server_name='zappa',
+                        script_name=None,
+                        trailing_slash=True,
+                        binary_support=False
+                        ):
         """
-        Given some event_info,
+        Given some event_info via API Gateway,
         create and return a valid WSGI request environ.
         """
-
         method = event_info['httpMethod']
         params = event_info['pathParameters']
-        query = event_info['queryStringParameters']
-        headers = event_info['headers']
+        query = event_info['queryStringParameters'] # APIGW won't allow multiple entries, ex ?id=a&id=b
+        headers = event_info['headers'] or {} # Allow for the AGW console 'Test' button to work (Pull #735)
 
         # Extract remote user from context if Authorizer is enabled
         remote_user = None
@@ -27,17 +47,21 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
         elif event_info['requestContext'].get('identity'):
             remote_user = event_info['requestContext']['identity'].get('userArn')
 
+        # Related:  https://github.com/Miserlou/Zappa/issues/677
+        #           https://github.com/Miserlou/Zappa/issues/683
+        #           https://github.com/Miserlou/Zappa/issues/696
+        #           https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Summary_table
+        if binary_support and (method in BINARY_METHODS):
+            if event_info.get('isBase64Encoded', False):
+                encoded_body = event_info['body']
+                body = base64.b64decode(encoded_body)
+            else:
+                body = event_info['body']
+        else:
+            body = event_info['body']
 
-        # Non-GET data is B64'd through the APIGW.
-        # if method in ["POST", "PUT", "PATCH"]:
-        #     encoded_body = event_info['body']
-        #     body = base64.b64decode(encoded_body)
-        # else:
-
-        body = event_info['body']
-        # Will this generate unicode errors?
-        # Early experiments indicate no, but this still looks unsafe to me.
-        body = str(body)
+        if body and isinstance(body, six.string_types):
+            body = body.encode("utf-8")
 
         # Make header names canonical, e.g. content-type => Content-Type
         for header in headers.keys():
@@ -47,25 +71,6 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
 
         path = urls.url_unquote(event_info['path'])
 
-        # if 'url' in params:
-        #     # new style
-        #     path = '/' + params.get('url') + "/"
-        # else:
-        #     # old style
-        #     path = "/"
-        #     for key in sorted(params.keys()):
-        #         path = path + params[key] + "/"
-
-        #     # This determines if we should return
-        #     # site.com/resource/ : site.com/resource
-        #     # site.com/resource : site.com/resource
-        #     # vs.
-        #     # site.com/resource/ : site.com/resource/
-        #     # site.com/resource : site.com/resource/
-        #     # If no params are present, keep the slash.
-        # if not trailing_slash and params.keys():
-        #     path = path[:-1]
-
         if query:
             query_string = urlencode(query)
         else:
@@ -73,7 +78,9 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
 
         x_forwarded_for = headers.get('X-Forwarded-For', '')
         if ',' in x_forwarded_for:
-            remote_addr = x_forwarded_for.split(', ')[0]
+            # The last one is the cloudfront proxy ip. The second to last is the real client ip.
+            # Everything else is user supplied and untrustworthy.
+            remote_addr = x_forwarded_for.split(', ')[-2]
         else:
             remote_addr = '127.0.0.1'
 
@@ -84,12 +91,12 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
             'REQUEST_METHOD': method,
             'SCRIPT_NAME': str(script_name) if script_name else '',
             'SERVER_NAME': str(server_name),
-            'SERVER_PORT': str('80'),
+            'SERVER_PORT': headers.get('X-Forwarded-Port', '80'),
             'SERVER_PROTOCOL': str('HTTP/1.1'),
             'wsgi.version': (1, 0),
-            'wsgi.url_scheme': str('http'),
+            'wsgi.url_scheme': headers.get('X-Forwarded-Proto', 'http'),
             'wsgi.input': body,
-            'wsgi.errors': str(''),
+            'wsgi.errors': stderr,
             'wsgi.multiprocess': False,
             'wsgi.multithread': False,
             'wsgi.run_once': False,
@@ -100,7 +107,8 @@ def create_wsgi_request(event_info, server_name='zappa', script_name=None,
             if 'Content-Type' in headers:
                 environ['CONTENT_TYPE'] = headers['Content-Type']
 
-            environ['wsgi.input'] = StringIO(body)
+            # This must be Bytes or None
+            environ['wsgi.input'] = six.BytesIO(body)
             if body:
                 environ['CONTENT_LENGTH'] = str(len(body))
             else:

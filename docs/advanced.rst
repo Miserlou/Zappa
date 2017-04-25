@@ -167,3 +167,20 @@ Now in your application you can use:
 
     import os
     db_string = os.environ.get('DB_CONNECTION_STRING')
+
+Linking to a Dead Letter Queue
+==============================
+
+If you want to utilise `AWS Lambda's Dead Letter Queue feature <http://docs.aws.amazon.com/lambda/latest/dg/dlq.html>`_, you can set them in your ``zappa_settings.json``:
+
+::
+ 
+    {
+        "dev": {
+            ...
+            "dead_letter_arn": "your_sns_or_sqs_arn"
+        },
+        ...
+    }
+
+You must have already created the corresponding SNS/SQS topic/queue, and the Lambda function execution role must have been provisioned with read/publish/sendMessage access to the DLQ resource.

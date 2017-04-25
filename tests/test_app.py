@@ -18,3 +18,8 @@ def schedule_me():
 def callback(self):
     print("this is a callback")
 
+def prebuild_me():
+    print("this is a prebuild script")
+
+def method():
+    print("this is a method")

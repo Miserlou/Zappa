@@ -18,10 +18,6 @@
 1.
 2.
 3.
-4.
-
-## Context
-<!--- How has this bug affected you? What were you trying to accomplish? -->
 
 ## Your Environment
 <!--- Include as many relevant details about the environment you experienced the bug in -->

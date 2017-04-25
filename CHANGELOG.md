@@ -1,5 +1,100 @@
 # Zappa Changelog
 
+## 0.41.0
+* Add Python3 Support! #793, #6
+* Deprecate `lets_encrypt_expression`
+* Refactor a bunch of stuff to work with Python3 package restrictions >:[
+* #776 fix for libmysqlclient.so.18 error when using `slim_handler`
+* add profile and region detection to init - thanks @pdpol
+* #774 Wsgi environment improvements (Fix untrustworthy remote_addr)
+* Only create `__init__.py` file if there are python files or sub dirs in the folder
+* Update docs to reflect lambda name prepended to role_name
+* Guard log responses (thanks @scoates)
+
+## 0.40.0
+* Add Async Task Support! Lots of tickets and PRs related, including #61, #603, #694 and #732.
+* More info here: https://blog.zappa.io/posts/zappa-introduces-seamless-asynchronous-task-execution
+* Fix Django non-WSGI function initialization, #748
+* Add support for AWS Lambda Dead Letter Queue, #740
+* Fix API Gateway test button (the bolt button), #735
+* Switch to using per-lambda-name (project-stage) rather than a single default LambdaExecutionRole
+
+## 0.39.1
+* Fix broken Let's Encrypt trying to use new ACM ARNs
+* Add `apigateway_description` setting, fixes #722
+* More aggressive virtualenvironment checking
+
+## 0.39.0
+* Add `certificate_arn` setting, support for AWS Certificate Manager (#710)
+* Fix zip permissions when building on Windows (#714)
+* Change the active working directory to `/tmp` when using the slim handler so that relative filepaths work. (#711)
+
+## 0.38.1
+* Hotfix for broken Django deploys
+
+## 0.38.0
+* Add confirm to `certify`
+* Add `--manual` to `--certify`
+* Fix `certify` for existing domains
+* Add `extra_permissions` setting
+* Add `shell` command
+
+## 0.37.2
+* Revert to Kappa 0.6.0 #684 and others
+* Add binary support for more HTTP methods, #696
+
+## 0.37.1
+* Add binary upload support, fix #683
+
+## 0.37.0
+* Add support for custom, non-Let's Encrypt certificates, thanks to Benjamin Congdon
+* Change default permissions to allow executable binaries, #682
+* Fix binary support for Django POST, #677
+
+## 0.36.1
+* Remove Kappa 0.6 specific hack
+* Bring back '-' substitution
+
+## 0.36.0
+* Add automatic support for serving binary files! Via @wobeng, closes #481
+* Fixes `rollback` default back to 1 from 0, #673
+* Ensure correct chmodding during package creation, #484
+* Update regions that Zappa supports, #667
+* Validate function names based on actual gateway rules #521
+* Fix unschedule events with trimmed names #662
+* Fix a few places where `extends` wasn't respecting `stage_config`, #655
+* Begin to remove some dead code
+* Dependency bumps
+
+## 0.35.2
+* Adds `--non-http` to `tail`
+
+## 0.35.1
+* Fix 64bit `lambda-packages` (#645)
+* Fix wheel packages (#642)
+
+## 0.35.0
+* Replace ZappaCookie with Set-Cookie permutation! :D (#636)
+* Bump `lambda-packages` version
+* Fix installed_packages_name_set (#637)
+* Add `slim_handler` (#548)
+* Various small requirements bumps and other fixes.
+
+## 0.34.0
+* Adds `--since` and `--filter` to `tail`
+* Fixes `unschedule` command when used with specific stage
+
+## 0.33.0
+* Adds `package` command
+* Forbids the use of unicode environment variable keys
+* Initialize wsgi.errors to sys.stderr (was '')
+* Accept `AWS_SESSION_TOKEN` when executing via an IAM role (#589)
+* Set `REMOTE_USER` even when using `iam_authorization`
+* Rename `lets_encrypt_schedule` to `lets_encrypt_expression` (#571)
+* Messages in `tail` are now sequential
+* Bump version requirements, update README
+* Various other small changes
+
 ## 0.32.1
 * File `tail` broken in CLI refactor
 
