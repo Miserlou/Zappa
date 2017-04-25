@@ -738,6 +738,8 @@ class Zappa(object):
             self.get_credentials_arn()
         if not environment_variables:
             environment_variables = {}
+        if not aws_kms_key_arn:
+            aws_kms_key_arn = ''
 
         response = self.lambda_client.create_function(
             FunctionName=function_name,
@@ -799,6 +801,8 @@ class Zappa(object):
             self.get_credentials_arn()
         if not environment_variables:
             environment_variables = {}
+        if not aws_kms_key_arn:
+            aws_kms_key_arn = ''
 
         response = self.lambda_client.update_function_configuration(
             FunctionName=function_name,
