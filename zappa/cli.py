@@ -191,6 +191,13 @@ class ZappaCLI(object):
         parser.add_argument(
             '-s', '--settings_file', help='The path to a Zappa settings file.'
         )
+        #
+        # https://github.com/Miserlou/Zappa/issues/407
+        # Moved when 'template' command added.
+        # Fuck Terraform.
+        parser.add_argument(
+            '-j', '--json', help='Make the output of this command be machine readable.'
+        )
 
         env_parser = argparse.ArgumentParser(add_help=False)
         group = env_parser.add_mutually_exclusive_group()
@@ -258,6 +265,10 @@ class ZappaCLI(object):
         template_parser.add_argument(
             '-o', '--output', help='Name of file to output the template to.'
         )
+        template_parser.add_argument(
+            '--json', action='store_true',
+            help='Returns template to CLI in JSON format.'
+        )  # https://github.com/Miserlou/Zappa/issues/407
 
         ##
         # Invocation
@@ -320,10 +331,6 @@ class ZappaCLI(object):
             'status', parents=[env_parser],
             help='Show deployment status and event schedules.'
         )
-        status_parser.add_argument(
-            '--json', action='store_true',
-            help='Returns status in JSON format.'
-        )  # https://github.com/Miserlou/Zappa/issues/407
 
         ##
         # Log Tailing
@@ -455,8 +462,9 @@ class ZappaCLI(object):
         self.api_stage = environment
 
         if command not in ['status', 'manage']:
-            click.echo("Calling " + click.style(command, fg="green", bold=True) + " for environment " +
-                       click.style(self.api_stage, bold=True) + ".." )
+            if not self.vargs['json']:
+                click.echo("Calling " + click.style(command, fg="green", bold=True) + " for environment " +
+                           click.style(self.api_stage, bold=True) + ".." )
 
         # Explicity define the app function.
         if self.vargs['app_function'] is not None:
@@ -476,7 +484,11 @@ class ZappaCLI(object):
         if command == 'package': # pragma: no cover
             self.package(self.vargs['output'])
         if command == 'template': # pragma: no cover
-            self.template(self.vargs['lambda_arn'], self.vargs['role_arn'], output=self.vargs['output'])
+            self.template(      self.vargs['lambda_arn'],
+                                self.vargs['role_arn'],
+                                output=self.vargs['output'],
+                                json=self.vargs['json']
+                            )
         elif command == 'update': # pragma: no cover
             self.update()
         elif command == 'rollback': # pragma: no cover
@@ -557,7 +569,7 @@ class ZappaCLI(object):
         size = human_size(os.path.getsize(self.zip_path))
         click.echo(click.style("Package created", fg="green", bold=True) + ": " + click.style(self.zip_path, bold=True) + " (" + size + ")")
 
-    def template(self, lambda_arn, role_arn, output=None):
+    def template(self, lambda_arn, role_arn, output=None, json=False):
         """
         Only build the template file.
         """
@@ -588,7 +600,11 @@ class ZappaCLI(object):
         with open(template_file, 'wb') as out:
             out.write(bytes(template.to_json(indent=None, separators=(',',':')), "utf-8"))
 
-        click.echo(click.style("Template created", fg="green", bold=True) + ": " + click.style(template_file, bold=True))
+        if not json:
+            click.echo(click.style("Template created", fg="green", bold=True) + ": " + click.style(template_file, bold=True))
+        else:
+            with open(template_file, 'r') as out:
+                print(out.read())
 
     def deploy(self):
         """
