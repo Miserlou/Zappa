@@ -185,26 +185,31 @@ class ZappaCLI(object):
             version=pkg_resources.get_distribution("zappa").version,
             help='Print the zappa version'
         )
-        parser.add_argument(
+
+
+        env_parser = argparse.ArgumentParser(add_help=False)
+        me_group = env_parser.add_mutually_exclusive_group()
+        all_help = ('Execute this command for all of our defined '
+                    'Zappa environments.')
+        me_group.add_argument('--all', action='store_true', help=all_help)
+        me_group.add_argument('command_env', nargs='?')
+
+        group = env_parser.add_argument_group()
+        group.add_argument(
             '-a', '--app_function', help='The WSGI application function.'
         )
-        parser.add_argument(
+        group.add_argument(
             '-s', '--settings_file', help='The path to a Zappa settings file.'
         )
-        #
+        group.add_argument(
+            '-q', '--quiet', action='store_true', help='Silence all output.'
+        )
         # https://github.com/Miserlou/Zappa/issues/407
         # Moved when 'template' command added.
         # Fuck Terraform.
-        parser.add_argument(
-            '-j', '--json', help='Make the output of this command be machine readable.'
+        group.add_argument(
+            '-j', '--json', action='store_true', help='Make the output of this command be machine readable.'
         )
-
-        env_parser = argparse.ArgumentParser(add_help=False)
-        group = env_parser.add_mutually_exclusive_group()
-        all_help = ('Execute this command for all of our defined '
-                    'Zappa environments.')
-        group.add_argument('--all', action='store_true', help=all_help)
-        group.add_argument('command_env', nargs='?')
 
         ##
         # Certify
@@ -265,10 +270,6 @@ class ZappaCLI(object):
         template_parser.add_argument(
             '-o', '--output', help='Name of file to output the template to.'
         )
-        template_parser.add_argument(
-            '--json', action='store_true',
-            help='Returns template to CLI in JSON format.'
-        )  # https://github.com/Miserlou/Zappa/issues/407
 
         ##
         # Invocation
@@ -413,6 +414,10 @@ class ZappaCLI(object):
             self.command_env = self.vargs.get('command_env')
 
         self.command = args.command
+
+
+        if self.vargs.get('quiet'):
+            self.silence()
 
         # We don't have any settings yet, so make those first!
         # (Settings-based interactions will fail
@@ -2303,6 +2308,14 @@ class ZappaCLI(object):
             raise ClickException(
                 click.style("Zappa", bold=True) + " requires an " + click.style("active virtual environment", bold=True, fg="red") + "!\n" +
                 "Learn more about virtual environments here: " + click.style("http://docs.python-guide.org/en/latest/dev/virtualenvs/", bold=False, fg="cyan"))
+
+    def silence(self):
+        """
+        Route all stdout to null.
+        """
+
+        sys.stdout = open(os.devnull, 'w')
+        sys.stderr = open(os.devnull, 'w')
 
 ####################################################################
 # Main
