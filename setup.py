@@ -5,6 +5,11 @@ from setuptools import setup
 # Set external files
 try:
     from pypandoc import convert
+    # expects an installed pypandoc: pip install pypandoc
+    from pypandoc.pandoc_download import download_pandoc
+    # see the documentation how to customize the installation path
+    # but be aware that you then need to include it in the `PATH`
+    download_pandoc()
     README = convert('README.md', 'rst')
 except ImportError:
     README = open(os.path.join(os.path.dirname(__file__), 'README.md')).read()

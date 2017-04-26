@@ -12,6 +12,8 @@ __pycache__/
 # Distribution / packaging
 .Python
 env/
+venv/
+.venv/
 build/
 develop-eggs/
 dist/
@@ -77,3 +79,9 @@ target/
 *~
 tests/zappa_settings.json
 tests/example_template_outputs
+
+# VS Code stuff
+.vscode
+
+# Pandoc temporary files
+pandoc*
