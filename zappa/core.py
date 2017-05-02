@@ -485,7 +485,12 @@ class Zappa(object):
             # First, try lambda packages
             for name, details in lambda_packages.items():
                 if name.lower() in installed_packages_name_set:
-                    tar = tarfile.open(details['path'], mode="r:gz")
+
+                    # Packages can be compiled for different runtimes
+                    if not details.has_key(self.runtime):
+                        continue
+
+                    tar = tarfile.open(details[self.runtime]['path'], mode="r:gz")
                     for member in tar.getmembers():
                         # If we can, trash the local version.
                         if member.isdir():
