@@ -732,7 +732,9 @@ class Zappa(object):
                                 publish=True,
                                 vpc_config=None,
                                 dead_letter_config=None,
-                                runtime='python2.7'
+                                runtime='python2.7',
+                                environment_variables=None,
+                                aws_kms_key_arn=None
                             ):
         """
         Given a bucket and key of a valid Lambda-zip, a function name and a handler, register that Lambda function.
@@ -743,6 +745,10 @@ class Zappa(object):
             dead_letter_config = {}
         if not self.credentials_arn:
             self.get_credentials_arn()
+        if not environment_variables:
+            environment_variables = {}
+        if not aws_kms_key_arn:
+            aws_kms_key_arn = ''
 
         response = self.lambda_client.create_function(
             FunctionName=function_name,
@@ -758,7 +764,9 @@ class Zappa(object):
             MemorySize=memory_size,
             Publish=publish,
             VpcConfig=vpc_config,
-            DeadLetterConfig=dead_letter_config
+            DeadLetterConfig=dead_letter_config,
+            Environment={'Variables': environment_variables},
+            KMSKeyArn=aws_kms_key_arn
         )
 
         return response['FunctionArn']
@@ -787,7 +795,9 @@ class Zappa(object):
                                         memory_size=512,
                                         publish=True,
                                         vpc_config=None,
-                                        runtime='python2.7'
+                                        runtime='python2.7',
+                                        environment_variables=None, 
+                                        aws_kms_key_arn=None
                                     ):
         """
         Given an existing function ARN, update the configuration variables.
@@ -798,6 +808,10 @@ class Zappa(object):
             vpc_config = {}
         if not self.credentials_arn:
             self.get_credentials_arn()
+        if not environment_variables:
+            environment_variables = {}
+        if not aws_kms_key_arn:
+            aws_kms_key_arn = ''
 
         response = self.lambda_client.update_function_configuration(
             FunctionName=function_name,
@@ -807,7 +821,9 @@ class Zappa(object):
             Description=description,
             Timeout=timeout,
             MemorySize=memory_size,
-            VpcConfig=vpc_config
+            VpcConfig=vpc_config,
+            Environment={'Variables': environment_variables},
+            KMSKeyArn=aws_kms_key_arn
         )
 
         return response['FunctionArn']

@@ -109,6 +109,7 @@ class ZappaCLI(object):
     exception_handler = None
     environment_variables = None
     authorizer = None
+    aws_kms_key_arn = ''
 
     stage_name_env_pattern = re.compile('^[a-zA-Z0-9_]+$')
 
@@ -690,7 +691,9 @@ class ZappaCLI(object):
                 dead_letter_config=self.dead_letter_config,
                 timeout=self.timeout_seconds,
                 memory_size=self.memory_size,
-                runtime=self.runtime
+                runtime=self.runtime,
+                environment_variables=self.environment_variables,
+                aws_kms_key_arn=self.aws_kms_key_arn
             )
 
         # Schedule events for this deployment
@@ -833,7 +836,9 @@ class ZappaCLI(object):
                                                         vpc_config=self.vpc_config,
                                                         timeout=self.timeout_seconds,
                                                         memory_size=self.memory_size,
-                                                        runtime=self.runtime
+                                                        runtime=self.runtime,
+                                                        environment_variables=self.environment_variables,
+                                                        aws_kms_key_arn=self.aws_kms_key_arn
                                                     )
 
         # Finally, delete the local copy our zip package
@@ -1784,6 +1789,7 @@ class ZappaCLI(object):
         self.check_environment(self.environment_variables)
         self.authorizer = self.stage_config.get('authorizer', {})
         self.runtime = self.stage_config.get('runtime', get_runtime_from_python_version())
+        self.aws_kms_key_arn = self.stage_config.get('aws_kms_key_arn', '')
 
         desired_role_name = self.lambda_name + "-ZappaLambdaExecutionRole"
         self.zappa = Zappa( boto_session=session,
