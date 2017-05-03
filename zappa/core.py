@@ -487,7 +487,7 @@ class Zappa(object):
                 if name.lower() in installed_packages_name_set:
 
                     # Packages can be compiled for different runtimes
-                    if not details.has_key(self.runtime):
+                    if not self.runtime in details:
                         continue
 
                     tar = tarfile.open(details[self.runtime]['path'], mode="r:gz")
@@ -796,7 +796,7 @@ class Zappa(object):
                                         publish=True,
                                         vpc_config=None,
                                         runtime='python2.7',
-                                        environment_variables=None, 
+                                        environment_variables=None,
                                         aws_kms_key_arn=None
                                     ):
         """
