@@ -54,7 +54,7 @@ class TestZappa(unittest.TestCase):
         z = Zappa(session)
         zip_path = z.create_lambda_zip(minify=False)
         res = z.upload_to_s3(zip_path, bucket_name)
-        # os.remove(zip_path)
+        os.remove(zip_path)
         self.assertTrue(res)
         s3 = session.resource('s3')
 
