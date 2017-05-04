@@ -20,6 +20,8 @@ Before you submit this PR, please make sure that you meet these criteria:
 
 * Did you **make sure this code actually works on Lambda**, as well as locally?
 
+* Did you test this code with both **Python 2.7** and **Python 3.6**? 
+
 If so, awesome! If not, please try to fix those issues before submitting your Pull Request.
 
 Thank you for your contribution!

@@ -36,7 +36,7 @@ import json
 import os
 import traceback
 
-from util import get_topic_name
+from .utilities import get_topic_name
 
 AWS_REGION = os.environ.get('AWS_REGION') # Set via CLI env var packaging
 AWS_LAMBDA_FUNCTION_NAME = os.environ.get('AWS_LAMBDA_FUNCTION_NAME') # Set by AWS
