@@ -474,7 +474,7 @@ class ZappaCLI(object):
                            click.style(self.api_stage, bold=True) + ".." )
 
         # Explicity define the app function.
-        if self.vargs['app_function'] is not None:
+        if self.vargs.get("app_function") is not None:
             self.app_function = self.vargs['app_function']
 
         # Load our settings, based on api_stage.
