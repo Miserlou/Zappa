@@ -1,13 +1,14 @@
 import os
 import sys
 from setuptools import setup
+from io import open
 
 # Set external files
 try:
     from pypandoc import convert
     README = convert('README.md', 'rst')
 except ImportError:
-    README = open(os.path.join(os.path.dirname(__file__), 'README.md')).read()
+    README = open(os.path.join(os.path.dirname(__file__), 'README.md'), 'r', encoding="utf-8").read()
 
 with open(os.path.join(os.path.dirname(__file__), 'requirements.txt')) as f:
     required = f.read().splitlines()
