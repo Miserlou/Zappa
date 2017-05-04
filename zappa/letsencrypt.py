@@ -331,7 +331,7 @@ def sign_certificate():
     """
     Get the new certificate.
     Returns the signed bytes.
-
+    
     """
     LOGGER.info("Signing certificate...")
     proc = subprocess.Popen(
