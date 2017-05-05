@@ -345,18 +345,18 @@ class LambdaHandler(object):
 
         # This is the result of a keep alive, recertify
         # or scheduled event.
-        if event.get('detail-type') == u'Scheduled Event':
+        if 'source' in event:
+            if event.get('detail-type') == u'Scheduled Event':
+                whole_function = event['resources'][0].split('/')[-1].split('-')[-1]
 
-            whole_function = event['resources'][0].split('/')[-1].split('-')[-1]
+                # This is a scheduled function.
+                if '.' in whole_function:
+                    app_function = self.import_module_and_get_function(whole_function)
 
-            # This is a scheduled function.
-            if '.' in whole_function:
-                app_function = self.import_module_and_get_function(whole_function)
-
-                # Execute the function!
-                return self.run_function(app_function, event, context)
-
-            # Else, let this execute as it were.
+                    # Execute the function!
+                    return self.run_function(app_function, event, context)
+            else:
+                # Else, let this execute as it were.
 
         # This is a direct command invocation.
         elif event.get('command', None):

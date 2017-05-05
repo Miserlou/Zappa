@@ -1846,6 +1846,7 @@ class Zappa(object):
         for event in events:
             function = event['function']
             expression = event.get('expression', None)
+            pattern = event.get('pattern')
             event_source = event.get('event_source', None)
             name = self.get_scheduled_event_name(event, function, lambda_name)
             description = event.get('description', function)
@@ -1857,14 +1858,19 @@ class Zappa(object):
             if not self.credentials_arn:
                 self.get_credentials_arn()
 
-            if expression:
-                rule_response = self.events_client.put_rule(
-                    Name=name,
-                    ScheduleExpression=expression,
-                    State='ENABLED',
-                    Description=description,
-                    RoleArn=self.credentials_arn
-                )
+            if expression or pattern:
+                kwargs = {
+                    'Name': name,
+                    'State': 'ENABLED',
+                    'Description': description,
+                    'RoleArn': self.credentials_arn
+                }
+                if expression:
+                    kwargs['ScheduleExpression'] = expression
+                if pattern:
+                    kwargs['EventPattern'] = pattern
+
+                rule_response = self.events_client.put_rule(**kwargs)
 
                 if 'RuleArn' in rule_response:
                     logger.debug('Rule created. ARN {}'.format(rule_response['RuleArn']))
