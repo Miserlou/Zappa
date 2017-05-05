@@ -1572,7 +1572,7 @@ class ZappaCLI(object):
 
         # Let's Encrypt
         if not cert_location and not cert_arn:
-            from letsencrypt import get_cert_and_update_domain, cleanup
+            from zappa.letsencrypt import get_cert_and_update_domain, cleanup
             cert_success = get_cert_and_update_domain(
                     self.zappa,
                     self.lambda_name,
