@@ -1,5 +1,11 @@
 # Zappa Changelog
 
+## 0.41.2
+* Support for new `lambda-packages` format (Python3 support)
+* Fix `setup.py` on Windows Python3
+* Fix #818 - python3 import for LE
+* Support AWS-specific environment variables (with KMS)
+
 ## 0.41.1
 * Add `template` command
 * Add `--json` in more places
