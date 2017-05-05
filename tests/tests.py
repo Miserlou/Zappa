@@ -125,7 +125,7 @@ class TestZappa(unittest.TestCase):
 
     def test_get_manylinux_python27(self):
         z = Zappa(runtime='python2.7')
-        self.assertNotEqual(z.get_manylinux_wheel('pandas'), None)
+        self.assertNotEqual(z.get_manylinux_wheel('cffi'), None)
         self.assertEqual(z.get_manylinux_wheel('derpderpderpderp'), None)
 
         # mock the pip.get_installed_distributions() to include a package in manylinux so that the code
