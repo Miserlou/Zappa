@@ -343,6 +343,7 @@ class TestZappa(unittest.TestCase):
         zappa_cli.api_stage = 'ttt888'
         zappa_cli.load_settings('test_settings.json', session)
         zappa_cli.api_stage = 'devor'
+        zappa_cli.api_name = 'baby-flask-devor'
         zappa_cli.lambda_name = 'baby-flask-devor'
         zappa_cli.zappa.credentials_arn = 'arn:aws:iam::12345:role/ZappaLambdaExecution'
         resp = zappa_cli.status()

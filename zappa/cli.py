@@ -87,6 +87,7 @@ class ZappaCLI(object):
 
     # Specific settings
     api_stage = None
+    api_name = None
     app_function = None
     aws_region = None
     debug = None
@@ -473,12 +474,12 @@ class ZappaCLI(object):
                            click.style(self.api_stage, bold=True) + ".." )
 
         # Explicity define the app function.
-        if self.vargs['app_function'] is not None:
+        if self.vargs.get("app_function") is not None:
             self.app_function = self.vargs['app_function']
 
         # Load our settings, based on api_stage.
         try:
-            self.load_settings(self.vargs['settings_file'])
+            self.load_settings(self.vargs.get('settings_file', 'zappa_settings.json'))
         except ValueError as e:
             print("Error: {}".format(e.message))
             sys.exit(-1)
@@ -591,7 +592,7 @@ class ZappaCLI(object):
         # Create the template!
         template = self.zappa.create_stack_template(
                                             lambda_arn=lambda_arn,
-                                            lambda_name=self.lambda_name,
+                                            api_name=self.lambda_name,
                                             api_key_required=self.api_key_required,
                                             iam_authorization=self.iam_authorization,
                                             authorizer=self.authorizer,
@@ -704,9 +705,11 @@ class ZappaCLI(object):
         if self.use_apigateway:
 
             # Create and configure the API Gateway
+
+
             template = self.zappa.create_stack_template(
                                                         lambda_arn=self.lambda_arn,
-                                                        lambda_name=self.lambda_name,
+                                                        api_name=self.api_name,
                                                         api_key_required=self.api_key_required,
                                                         iam_authorization=self.iam_authorization,
                                                         authorizer=self.authorizer,
@@ -714,15 +717,21 @@ class ZappaCLI(object):
                                                         description=self.apigateway_description
                                                     )
 
-            self.zappa.update_stack(self.lambda_name, self.s3_bucket_name, wait=True)
+            self.zappa.update_stack(self.api_name, self.s3_bucket_name, wait=True)
 
-            api_id = self.zappa.get_api_id(self.lambda_name)
+
+            # Deploy the API!
+            api_id = self.zappa.get_api_id(self.api_name)
+
+            # deleting unused api deployments
+            self.zappa.delete_unused_api_deployments(api_id)
 
             # Add binary support
             if self.binary_support:
                 self.zappa.add_binary_support(api_id=api_id)
 
             # Deploy the API!
+
             endpoint_url = self.deploy_api_gateway(api_id)
             deployment_string = deployment_string + ": {}".format(endpoint_url)
 
@@ -827,6 +836,9 @@ class ZappaCLI(object):
         # Remove the uploaded zip from S3, because it is now registered..
         self.remove_uploaded_zip()
 
+        # remove old version_lambda functions
+        self.zappa.remove_old_version_lambda_functions(self.lambda_name)
+
         # Update the configuration, in case there are changes.
         self.lambda_arn = self.zappa.update_lambda_configuration(
                                                         lambda_arn=self.lambda_arn,
@@ -849,16 +861,15 @@ class ZappaCLI(object):
 
             self.zappa.create_stack_template(
                                             lambda_arn=self.lambda_arn,
-                                            lambda_name=self.lambda_name,
+                                            api_name=self.api_name,
                                             api_key_required=self.api_key_required,
                                             iam_authorization=self.iam_authorization,
                                             authorizer=self.authorizer,
                                             cors_options=self.cors,
                                             description=self.apigateway_description
                                         )
-            self.zappa.update_stack(self.lambda_name, self.s3_bucket_name, wait=True, update_only=True)
-
-            api_id = self.zappa.get_api_id(self.lambda_name)
+            api_id = self.zappa.get_api_id(self.api_name)
+            self.zappa.update_stack(self.api_name, self.s3_bucket_name, wait=True, update_only=True)
 
             # update binary support
             if self.binary_support:
@@ -889,11 +900,15 @@ class ZappaCLI(object):
             api_url = None
             if endpoint_url and 'amazonaws.com' not in endpoint_url:
                 api_url = self.zappa.get_api_url(
-                    self.lambda_name,
+                    self.api_name,
                     self.api_stage)
 
                 if endpoint_url != api_url:
                     deployed_string = deployed_string + " (" + api_url + ")"
+
+                # deleting unused api deployments
+                api_id = self.zappa.get_api_id(self.api_name)
+                self.zappa.delete_unused_api_deployments(api_id)
 
             if self.stage_config.get('touch', True):
                 if api_url:
@@ -960,17 +975,18 @@ class ZappaCLI(object):
 
         if self.use_apigateway:
             if remove_logs:
-                self.zappa.remove_api_gateway_logs(self.lambda_name)
+                self.zappa.remove_api_gateway_logs(self.api_name, self.api_stage)
 
             domain_name = self.stage_config.get('domain', None)
 
             # Only remove the api key when not specified
             if self.api_key_required and self.api_key is None:
-                api_id = self.zappa.get_api_id(self.lambda_name)
+                api_id = self.zappa.get_api_id(self.api_name)
                 self.zappa.remove_api_key(api_id, self.api_stage)
 
             gateway_id = self.zappa.undeploy_api_gateway(
-                self.lambda_name,
+                self.api_name,
+                self.api_stage,
                 domain_name=domain_name
             )
 
@@ -1178,13 +1194,13 @@ class ZappaCLI(object):
         # URLs
         if self.use_apigateway:
             api_url = self.zappa.get_api_url(
-                self.lambda_name,
+                self.api_name,
                 self.api_stage)
 
             status_dict["API Gateway URL"] = api_url
 
             # Api Keys
-            api_id = self.zappa.get_api_id(self.lambda_name)
+            api_id = self.zappa.get_api_id(self.api_name)
             for api_key in self.zappa.get_api_keys(api_id, self.api_stage):
                 status_dict["API Gateway x-api-key"] = api_key
 
@@ -1575,11 +1591,12 @@ class ZappaCLI(object):
             from zappa.letsencrypt import get_cert_and_update_domain, cleanup
             cert_success = get_cert_and_update_domain(
                     self.zappa,
-                    self.lambda_name,
+                    self.api_name,
                     self.api_stage,
                     self.domain,
                     clean_up,
-                    manual
+                    manual,
+                    route53_enabled=self.stage_config.get('route53_enabled', True)
                 )
 
             # Deliberately undocumented feature (for now, at least.)
@@ -1594,14 +1611,16 @@ class ZappaCLI(object):
         else:
             if not self.zappa.get_domain_name(self.domain):
                 dns_name = self.zappa.create_domain_name(
+
                     domain_name=self.domain,
                     certificate_name=self.domain + "-Zappa-Cert",
                     certificate_body=certificate_body,
                     certificate_private_key=certificate_private_key,
                     certificate_chain=certificate_chain,
                     certificate_arn=cert_arn,
-                    lambda_name=self.lambda_name,
+                    api_name=self.api_name,
                     stage=self.api_stage,
+
                 )
                 if self.stage_config.get('route53_enabled', True):
                     self.zappa.update_route53_records(self.domain, dns_name)
@@ -1615,7 +1634,7 @@ class ZappaCLI(object):
                     certificate_private_key=certificate_private_key,
                     certificate_chain=certificate_chain,
                     certificate_arn=cert_arn,
-                    lambda_name=self.lambda_name,
+                    api_name=self.api_name,
                     stage=self.api_stage,
                     route53=self.stage_config.get('route53_enabled', True)
                 )
@@ -1781,6 +1800,7 @@ class ZappaCLI(object):
         self.manage_roles = self.stage_config.get('manage_roles', True)
         self.binary_support = self.stage_config.get('binary_support', True)
         self.api_key_required = self.stage_config.get('api_key_required', False)
+        self.api_name = slugify.slugify(self.stage_config.get('api_name', self.lambda_name))
         self.api_key = self.stage_config.get('api_key')
         self.iam_authorization = self.stage_config.get('iam_authorization', False)
         self.cors = self.stage_config.get("cors", None)

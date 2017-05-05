@@ -1181,6 +1181,7 @@ class TestZappa(unittest.TestCase):
             # Make sure we get an error if we don't configure the domain.
             zappa_cli.zappa.function_versions = ["$LATEST"]
             zappa_cli.api_stage = "stage"
+            zappa_cli.api_name = "api_name"
             zappa_cli.zappa_settings = {"stage": {}}
             zappa_cli.api_stage = "stage"
             zappa_cli.domain = "test.example.com"
