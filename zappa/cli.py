@@ -109,6 +109,7 @@ class ZappaCLI(object):
     exception_handler = None
     environment_variables = None
     authorizer = None
+    aws_kms_key_arn = ''
 
     stage_name_env_pattern = re.compile('^[a-zA-Z0-9_]+$')
 
@@ -185,19 +186,31 @@ class ZappaCLI(object):
             version=pkg_resources.get_distribution("zappa").version,
             help='Print the zappa version'
         )
-        parser.add_argument(
-            '-a', '--app_function', help='The WSGI application function.'
-        )
-        parser.add_argument(
-            '-s', '--settings_file', help='The path to a Zappa settings file.'
-        )
+
 
         env_parser = argparse.ArgumentParser(add_help=False)
-        group = env_parser.add_mutually_exclusive_group()
+        me_group = env_parser.add_mutually_exclusive_group()
         all_help = ('Execute this command for all of our defined '
                     'Zappa environments.')
-        group.add_argument('--all', action='store_true', help=all_help)
-        group.add_argument('command_env', nargs='?')
+        me_group.add_argument('--all', action='store_true', help=all_help)
+        me_group.add_argument('command_env', nargs='?')
+
+        group = env_parser.add_argument_group()
+        group.add_argument(
+            '-a', '--app_function', help='The WSGI application function.'
+        )
+        group.add_argument(
+            '-s', '--settings_file', help='The path to a Zappa settings file.'
+        )
+        group.add_argument(
+            '-q', '--quiet', action='store_true', help='Silence all output.'
+        )
+        # https://github.com/Miserlou/Zappa/issues/407
+        # Moved when 'template' command added.
+        # Fuck Terraform.
+        group.add_argument(
+            '-j', '--json', action='store_true', help='Make the output of this command be machine readable.'
+        )
 
         ##
         # Certify
@@ -224,16 +237,39 @@ class ZappaCLI(object):
         ##
         # Deploy
         ##
-        subparsers.add_parser(
+        deploy_parser = subparsers.add_parser(
             'deploy', parents=[env_parser], help='Deploy application.'
         )
-        subparsers.add_parser('init', help='Initialize Zappa app.')
+
+        ##
+        # Init
+        ##
+        init_parser = subparsers.add_parser('init', help='Initialize Zappa app.')
 
         ##
         # Package
         ##
         package_parser = subparsers.add_parser(
             'package', parents=[env_parser], help='Build the application zip package locally.'
+        )
+        package_parser.add_argument(
+            '-o', '--output', help='Name of file to output the package to.'
+        )
+
+        ##
+        # Template
+        ##
+        template_parser = subparsers.add_parser(
+            'template', parents=[env_parser], help='Create a CloudFormation template for this API Gateway.'
+        )
+        template_parser.add_argument(
+            '-l', '--lambda-arn', required=True, help='ARN of the Lambda function to template to.'
+        )
+        template_parser.add_argument(
+            '-r', '--role-arn', required=True, help='ARN of the Role to template with.'
+        )
+        template_parser.add_argument(
+            '-o', '--output', help='Name of file to output the template to.'
         )
 
         ##
@@ -297,10 +333,6 @@ class ZappaCLI(object):
             'status', parents=[env_parser],
             help='Show deployment status and event schedules.'
         )
-        status_parser.add_argument(
-            '--json', action='store_true',
-            help='Returns status in JSON format.'
-        )  # https://github.com/Miserlou/Zappa/issues/407
 
         ##
         # Log Tailing
@@ -384,6 +416,10 @@ class ZappaCLI(object):
 
         self.command = args.command
 
+
+        if self.vargs.get('quiet'):
+            self.silence()
+
         # We don't have any settings yet, so make those first!
         # (Settings-based interactions will fail
         # before a project has been initialized.)
@@ -432,11 +468,13 @@ class ZappaCLI(object):
         self.api_stage = environment
 
         if command not in ['status', 'manage']:
-            click.echo("Calling " + click.style(command, fg="green", bold=True) + " for environment " +
-                       click.style(self.api_stage, bold=True) + ".." )
+            if not self.vargs['json']:
+                click.echo("Calling " + click.style(command, fg="green", bold=True) + " for environment " +
+                           click.style(self.api_stage, bold=True) + ".." )
 
         # Explicity define the app function.
-        if self.vargs['app_function'] is not None:
+        # Related: https://github.com/Miserlou/Zappa/issues/832
+        if self.vargs.get('app_function', None):
             self.app_function = self.vargs['app_function']
 
         # Load our settings, based on api_stage.
@@ -451,7 +489,13 @@ class ZappaCLI(object):
         if command == 'deploy': # pragma: no cover
             self.deploy()
         if command == 'package': # pragma: no cover
-            self.package()
+            self.package(self.vargs['output'])
+        if command == 'template': # pragma: no cover
+            self.template(      self.vargs['lambda_arn'],
+                                self.vargs['role_arn'],
+                                output=self.vargs['output'],
+                                json=self.vargs['json']
+                            )
         elif command == 'update': # pragma: no cover
             self.update()
         elif command == 'rollback': # pragma: no cover
@@ -514,7 +558,7 @@ class ZappaCLI(object):
     # The Commands
     ##
 
-    def package(self):
+    def package(self, output=None):
         """
         Only build the package
         """
@@ -527,10 +571,47 @@ class ZappaCLI(object):
         if self.prebuild_script:
             self.execute_prebuild_script()
         # Create the Lambda Zip
-        self.create_package()
+        self.create_package(output)
         self.callback('zip')
         size = human_size(os.path.getsize(self.zip_path))
         click.echo(click.style("Package created", fg="green", bold=True) + ": " + click.style(self.zip_path, bold=True) + " (" + size + ")")
+
+    def template(self, lambda_arn, role_arn, output=None, json=False):
+        """
+        Only build the template file.
+        """
+
+        if not lambda_arn:
+            raise ClickException("Lambda ARN is required to template.")
+
+        if not role_arn:
+            raise ClickException("Role ARN is required to template.")
+
+        self.zappa.credentials_arn = role_arn
+
+        # Create the template!
+        template = self.zappa.create_stack_template(
+                                            lambda_arn=lambda_arn,
+                                            lambda_name=self.lambda_name,
+                                            api_key_required=self.api_key_required,
+                                            iam_authorization=self.iam_authorization,
+                                            authorizer=self.authorizer,
+                                            cors_options=self.cors,
+                                            description=self.apigateway_description
+                                        )
+
+        if not output:
+            template_file = self.lambda_name + '-template-' + str(int(time.time())) + '.json'
+        else:
+            template_file = output
+        with open(template_file, 'wb') as out:
+            out.write(bytes(template.to_json(indent=None, separators=(',',':')), "utf-8"))
+
+        if not json:
+            click.echo(click.style("Template created", fg="green", bold=True) + ": " + click.style(template_file, bold=True))
+        else:
+            with open(template_file, 'r') as out:
+                print(out.read())
 
     def deploy(self):
         """
@@ -611,7 +692,9 @@ class ZappaCLI(object):
                 dead_letter_config=self.dead_letter_config,
                 timeout=self.timeout_seconds,
                 memory_size=self.memory_size,
-                runtime=self.runtime
+                runtime=self.runtime,
+                environment_variables=self.environment_variables,
+                aws_kms_key_arn=self.aws_kms_key_arn
             )
 
         # Schedule events for this deployment
@@ -754,7 +837,9 @@ class ZappaCLI(object):
                                                         vpc_config=self.vpc_config,
                                                         timeout=self.timeout_seconds,
                                                         memory_size=self.memory_size,
-                                                        runtime=self.runtime
+                                                        runtime=self.runtime,
+                                                        environment_variables=self.environment_variables,
+                                                        aws_kms_key_arn=self.aws_kms_key_arn
                                                     )
 
         # Finally, delete the local copy our zip package
@@ -912,9 +997,7 @@ class ZappaCLI(object):
                 return
 
         for event in events:
-            if event.get('name') == 'zappa-keep-warm':
-                continue
-            self.function_sanity_check(event.get('function'))
+            self.collision_warning(event.get('function'))
 
         if self.stage_config.get('keep_warm', True):
             if not events:
@@ -1490,7 +1573,7 @@ class ZappaCLI(object):
 
         # Let's Encrypt
         if not cert_location and not cert_arn:
-            from letsencrypt import get_cert_and_update_domain, cleanup
+            from zappa.letsencrypt import get_cert_and_update_domain, cleanup
             cert_success = get_cert_and_update_domain(
                     self.zappa,
                     self.lambda_name,
@@ -1707,6 +1790,7 @@ class ZappaCLI(object):
         self.check_environment(self.environment_variables)
         self.authorizer = self.stage_config.get('authorizer', {})
         self.runtime = self.stage_config.get('runtime', get_runtime_from_python_version())
+        self.aws_kms_key_arn = self.stage_config.get('aws_kms_key_arn', '')
 
         desired_role_name = self.lambda_name + "-ZappaLambdaExecutionRole"
         self.zappa = Zappa( boto_session=session,
@@ -1727,14 +1811,11 @@ class ZappaCLI(object):
                 setattr(self.zappa, setting, setting_val)
 
         if self.app_function:
-            self.function_sanity_check(self.app_function)
+            self.collision_warning(self.app_function)
             if self.app_function[-3:] == '.py':
                 click.echo(click.style("Warning!", fg="red", bold=True) +
                            " Your app_function is pointing to a " + click.style("file and not a function", bold=True) +
                            "! It should probably be something like 'my_file.app', not 'my_file.py'!")
-
-        if self.exception_handler:
-            self.function_sanity_check(self.exception_handler)
 
         return self.zappa
 
@@ -1791,7 +1872,7 @@ class ZappaCLI(object):
                 except ValueError: # pragma: no cover
                     raise ValueError("Unable to load the Zappa settings JSON. It may be malformed.")
 
-    def create_package(self):
+    def create_package(self, output=None):
         """
         Ensure that the package can be properly configured,
         and then create it.
@@ -1824,7 +1905,8 @@ class ZappaCLI(object):
                 venv=self.zappa.create_handler_venv(),
                 handler_file=handler_file,
                 slim_handler=True,
-                exclude=exclude
+                exclude=exclude,
+                output=output
             )
         else:
 
@@ -1859,7 +1941,8 @@ class ZappaCLI(object):
                 prefix=self.lambda_name,
                 handler_file=handler_file,
                 use_precompiled_packages=self.stage_config.get('use_precompiled_packages', True),
-                exclude=exclude
+                exclude=exclude,
+                output=output
             )
 
             # Warn if this is too large for Lambda.
@@ -2190,13 +2273,12 @@ class ZappaCLI(object):
         prebuild_function = getattr(module_, pb_func)
         prebuild_function()  # Call the function
 
-    def function_sanity_check(self, item):
+    def collision_warning(self, item):
         """
         Given a string, print a warning if this could
-        collide with a Zappa core package module, or if the
-        given function could not be correctly imported.
+        collide with a Zappa core package module.
 
-        Use for app functions, event functions, and exception handlers.
+        Use for app functions and events.
         """
 
         namespace_collisions = [
@@ -2207,23 +2289,6 @@ class ZappaCLI(object):
                 click.echo(click.style("Warning!", fg="red", bold=True) +
                            " You may have a namespace collision with " + click.style(item, bold=True) +
                            "! You may want to rename that file.")
-
-        module_path, function_path = item.rsplit('.', 1)
-        try:
-            module = importlib.import_module(module_path)
-        except ImportError: # pragma: no cover
-            raise ClickException(
-                "You have tried to reference the module " + click.style(module_path, bold=True) +
-                " when importing " + click.style(item, bold=True) + ", but this module cannot be " +
-                "imported. Please check for typos and ensure that this module is reachable.")
-
-        try:
-            getattr(module, function_path)
-        except AttributeError: # pragma: no cover
-            raise ClickException(
-                "You have tried to reference the function " + click.style(function_path, bold=True) +
-                " when importing " + click.style(item, bold=True) + ", but this function cannot be " +
-                "imported. Please check for typos and ensure that this function is reachable.")
 
     def deploy_api_gateway(self, api_id):
         cache_cluster_enabled = self.stage_config.get('cache_cluster_enabled', False)
@@ -2250,6 +2315,14 @@ class ZappaCLI(object):
             raise ClickException(
                 click.style("Zappa", bold=True) + " requires an " + click.style("active virtual environment", bold=True, fg="red") + "!\n" +
                 "Learn more about virtual environments here: " + click.style("http://docs.python-guide.org/en/latest/dev/virtualenvs/", bold=False, fg="cyan"))
+
+    def silence(self):
+        """
+        Route all stdout to null.
+        """
+
+        sys.stdout = open(os.devnull, 'w')
+        sys.stderr = open(os.devnull, 'w')
 
 ####################################################################
 # Main

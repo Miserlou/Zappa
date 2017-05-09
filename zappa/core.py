@@ -370,7 +370,8 @@ class Zappa(object):
                             exclude=None,
                             use_precompiled_packages=True,
                             include=None,
-                            venv=None
+                            venv=None,
+                            output=None
                         ):
         """
         Create a Lambda-ready zip file of the current virtualenvironment and working directory.
@@ -386,7 +387,10 @@ class Zappa(object):
             venv = self.get_current_venv()
 
         cwd = os.getcwd()
-        zip_fname = prefix + '-' + str(int(time.time())) + '.zip'
+        if not output:
+            zip_fname = prefix + '-' + str(int(time.time())) + '.zip'
+        else:
+            zip_fname = output
         zip_path = os.path.join(cwd, zip_fname)
 
         # Files that should be excluded from the zip
@@ -481,7 +485,12 @@ class Zappa(object):
             # First, try lambda packages
             for name, details in lambda_packages.items():
                 if name.lower() in installed_packages_name_set:
-                    tar = tarfile.open(details['path'], mode="r:gz")
+
+                    # Packages can be compiled for different runtimes
+                    if not self.runtime in details:
+                        continue
+
+                    tar = tarfile.open(details[self.runtime]['path'], mode="r:gz")
                     for member in tar.getmembers():
                         # If we can, trash the local version.
                         if member.isdir():
@@ -723,7 +732,9 @@ class Zappa(object):
                                 publish=True,
                                 vpc_config=None,
                                 dead_letter_config=None,
-                                runtime='python2.7'
+                                runtime='python2.7',
+                                environment_variables=None,
+                                aws_kms_key_arn=None
                             ):
         """
         Given a bucket and key of a valid Lambda-zip, a function name and a handler, register that Lambda function.
@@ -734,6 +745,10 @@ class Zappa(object):
             dead_letter_config = {}
         if not self.credentials_arn:
             self.get_credentials_arn()
+        if not environment_variables:
+            environment_variables = {}
+        if not aws_kms_key_arn:
+            aws_kms_key_arn = ''
 
         response = self.lambda_client.create_function(
             FunctionName=function_name,
@@ -749,7 +764,9 @@ class Zappa(object):
             MemorySize=memory_size,
             Publish=publish,
             VpcConfig=vpc_config,
-            DeadLetterConfig=dead_letter_config
+            DeadLetterConfig=dead_letter_config,
+            Environment={'Variables': environment_variables},
+            KMSKeyArn=aws_kms_key_arn
         )
 
         return response['FunctionArn']
@@ -778,7 +795,9 @@ class Zappa(object):
                                         memory_size=512,
                                         publish=True,
                                         vpc_config=None,
-                                        runtime='python2.7'
+                                        runtime='python2.7',
+                                        environment_variables=None,
+                                        aws_kms_key_arn=None
                                     ):
         """
         Given an existing function ARN, update the configuration variables.
@@ -789,6 +808,10 @@ class Zappa(object):
             vpc_config = {}
         if not self.credentials_arn:
             self.get_credentials_arn()
+        if not environment_variables:
+            environment_variables = {}
+        if not aws_kms_key_arn:
+            aws_kms_key_arn = ''
 
         response = self.lambda_client.update_function_configuration(
             FunctionName=function_name,
@@ -798,7 +821,9 @@ class Zappa(object):
             Description=description,
             Timeout=timeout,
             MemorySize=memory_size,
-            VpcConfig=vpc_config
+            VpcConfig=vpc_config,
+            Environment={'Variables': environment_variables},
+            KMSKeyArn=aws_kms_key_arn
         )
 
         return response['FunctionArn']
@@ -928,11 +953,22 @@ class Zappa(object):
                 restapi, lambda_uri, authorizer
             )
 
-        self.create_and_setup_methods(restapi, root_id, api_key_required, invocations_uri,
-                                      authorization_type, authorizer_resource, 0)
+        self.create_and_setup_methods(  restapi,
+                                        root_id,
+                                        api_key_required,
+                                        invocations_uri,
+                                        authorization_type,
+                                        authorizer_resource,
+                                        0
+                                        )
 
         if cors_options is not None:
-            self.create_and_setup_cors(restapi, root_id, invocations_uri, 0, cors_options)
+            self.create_and_setup_cors( restapi,
+                                        root_id,
+                                        invocations_uri,
+                                        0,
+                                        cors_options
+                                    )
 
         resource = troposphere.apigateway.Resource('ResourceAnyPathSlashed')
         self.cf_api_resources.append(resource.title)
@@ -941,11 +977,22 @@ class Zappa(object):
         resource.PathPart = "{proxy+}"
         self.cf_template.add_resource(resource)
 
-        self.create_and_setup_methods(restapi, resource, api_key_required, invocations_uri,
-                                      authorization_type, authorizer_resource, 1)  # pragma: no cover
+        self.create_and_setup_methods(  restapi,
+                                        resource,
+                                        api_key_required,
+                                        invocations_uri,
+                                        authorization_type,
+                                        authorizer_resource,
+                                        1
+                                    )  # pragma: no cover
 
         if cors_options is not None:
-            self.create_and_setup_cors(restapi, resource, invocations_uri, 1, cors_options)  # pragma: no cover
+            self.create_and_setup_cors( restapi,
+                                        resource,
+                                        invocations_uri,
+                                        1,
+                                        cors_options
+                                    )  # pragma: no cover
         return restapi
 
     def create_authorizer(self, restapi, uri, authorizer):
@@ -977,7 +1024,8 @@ class Zappa(object):
 
         return authorizer_resource
 
-    def create_and_setup_methods(   self,
+    def create_and_setup_methods(
+                                    self,
                                     restapi,
                                     resource,
                                     api_key_required,
@@ -1345,8 +1393,15 @@ class Zappa(object):
         self.cf_api_resources = []
         self.cf_parameters = {}
 
-        restapi = self.create_api_gateway_routes(lambda_arn, lambda_name, api_key_required,
-                                                auth_type, authorizer, cors_options, description)
+        restapi = self.create_api_gateway_routes(
+                                            lambda_arn,
+                                            api_name=lambda_name,
+                                            api_key_required=api_key_required,
+                                            authorization_type=auth_type,
+                                            authorizer=authorizer,
+                                            cors_options=cors_options,
+                                            description=description
+                                        )
         return self.cf_template
 
     def update_stack(self, name, working_bucket, wait=False, update_only=False):

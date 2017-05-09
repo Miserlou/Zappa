@@ -1,13 +1,14 @@
 import os
 import sys
 from setuptools import setup
+from io import open
 
 # Set external files
 try:
     from pypandoc import convert
     README = convert('README.md', 'rst')
 except ImportError:
-    README = open(os.path.join(os.path.dirname(__file__), 'README.md')).read()
+    README = open(os.path.join(os.path.dirname(__file__), 'README.md'), 'r', encoding="utf-8").read()
 
 with open(os.path.join(os.path.dirname(__file__), 'requirements.txt')) as f:
     required = f.read().splitlines()
@@ -17,7 +18,7 @@ with open(os.path.join(os.path.dirname(__file__), 'test_requirements.txt')) as f
 
 setup(
     name='zappa',
-    version='0.41.0',
+    version='0.41.2',
     packages=['zappa'],
     install_requires=required,
     tests_require=test_required,
@@ -41,6 +42,7 @@ setup(
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.6',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
     ],

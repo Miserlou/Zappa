@@ -18,7 +18,7 @@
                "expression": "rate(1 minute)"
            },
            {
-               "function": "tests.test_app.method",
+               "function": "test.test_app.method",
                "event_source": {
                    "arn": "arn:aws:sns:::1",
                    "events": [

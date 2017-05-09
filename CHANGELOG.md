@@ -1,5 +1,19 @@
 # Zappa Changelog
 
+## 0.41.2
+* Support for new `lambda-packages` format (Python3 support)
+* Fix `setup.py` on Windows Python3
+* Fix #818 - python3 import for LE
+* Support AWS-specific environment variables (with KMS)
+
+## 0.41.1
+* Add `template` command
+* Add `--json` in more places
+* Add `--output` to package
+* Support for manylinux wheels Python 3.6 package downloading #803
+from nikbora
+* Fix PyEnv exit code #799
+
 ## 0.41.0
 * Add Python3 Support! #793, #6
 * Deprecate `lets_encrypt_expression`

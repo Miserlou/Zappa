@@ -25,6 +25,7 @@
     - [Scheduling](#scheduling)
     - [Undeploy](#undeploy)
     - [Package](#package)
+    - [Template](#template)
     - [Status](#status)
     - [Tailing Logs](#tailing-logs)
     - [Remote Function Invocation](#remote-function-invocation)
@@ -263,6 +264,20 @@ If you have a `zip` callback in your `callbacks` setting, this will also be invo
     }
 }
 ```
+
+You can also specify the output filename of the package with `-o`:
+
+    $ zappa package production -o my_awesome_package.zip
+
+#### Template
+
+Similarly, if you only want the API Gateway CloudFormation template, for use the `template` command:
+
+    $ zappa template production --l your-lambda-arn -r your-role-arn
+
+Note that you must supply your own Lambda ARN and Role ARNs in this case, as they may not have been created for you.
+
+You can use get the JSON output directly with `--json`, and specify the output file with `--output`.
 
 #### Status
 
@@ -521,6 +536,7 @@ to change Zappa's behavior. Use these at your own risk!
         "attach_policy": "my_attach_policy.json", // optional, IAM attach policy JSON file
         "async_source": "sns", // Source of async tasks. Defaults to "lambda"
         "async_resources": true, // Create the SNS topic to use. Defaults to true.
+        "aws_kms_key_arn": "your_aws_kms_key_arn", // Your AWS KMS Key ARN
         "aws_region": "aws-region-name", // optional, uses region set in profile or environment variables if not set here,
         "binary_support": true, // Enable automatic MIME-type based response encoding through API Gateway. Default true.
         "callbacks": { // Call custom functions during the local Zappa deployment/update process
@@ -770,7 +786,7 @@ your_value = os.environ.get('your_key')
 
 If your project needs to be aware of the type of environment you're deployed to, you'll also be able to get `SERVERTYPE` (AWS Lambda), `FRAMEWORK` (Zappa), `PROJECT` (your project name) and `STAGE` (_dev_, _production_, etc.) variables at any time.
 
-Please note that these are not the [AWS Lambda environment variables](https://github.com/Miserlou/Zappa/issues/501) that Amazon now offers directly. These were implemented long before that feature was available, and will not be available through your AWS console.
+If you are using KMS-encrypted AWS envrionment variables, you can set your KMS Key ARN in the `aws_kms_key_arn` setting.
 
 ##### Remote Environment Variables
 
