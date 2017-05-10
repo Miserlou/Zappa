@@ -26,6 +26,62 @@ Discussion of this comes from:
     https://github.com/Miserlou/Zappa/pull/694
     https://github.com/Miserlou/Zappa/pull/732
 
+## Full lifetime of an asynchronous dispatch:
+
+1. In a file called `foo.py`, there is the following code:
+
+```
+   from zappa.async import task
+
+   @task
+   def my_async_func(*args, **kwargs):
+       return sum(args)
+```
+
+2. The decorator desugars to:
+   `my_async_func = task(my_async_func)`
+
+3. Somewhere else, the code runs:
+   `res = my_async_func(1,2)`
+   really calls task's `_run_async(1,2)`
+      with `func` equal to the original `my_async_func`
+   If we are running in Lambda, this runs:
+      LambdaAsyncResponse().send('foo.my_async_func', (1,2), {})
+   and returns the LambdaAsyncResponse instance to the local
+   context.  That local context, can, e.g. test for `res.sent`
+   to confirm it was dispatched correctly.
+
+4. LambdaAsyncResponse.send invoked the currently running
+   AWS Lambda instance with the json message:
+
+```
+   { "command": "zappa.async.route_lambda_task",
+     "task_path": "foo.my_async_func",
+     "args": [1,2],
+     "kwargs": {}
+   }
+```
+
+5. The new lambda instance is invoked with the message above,
+   and Zappa runs its usual bootstrapping context, and inside
+   zappa.handler, the existance of the 'command' key in the message
+   dispatches the full message to zappa.async.route_lambda_task, which
+   in turn calls `run_message(message)`
+
+6. `run_message` loads the task_path value to load the `func` from `foo.py`.
+   We should note that my_async_func is wrapped by @task in this new
+   context, as well.  However, @task also decorated `my_async_func.sync()`
+   to run the original function synchronously.
+
+   `run_message` duck-types the method and finds the `.sync` attribute
+   and runs that instead -- thus we do not infinitely dispatch.
+
+   If `my_async_func` had code to dispatch other functions inside its
+   synchronous portions (or even call itself recursively), those *would*
+   be dispatched asynchronously, unless, of course, they were called
+   by: `my_async_func.sync(1,2)` in which case it would run synchronously
+   and in the current lambda function.
+
 """
 
 import boto3
@@ -212,15 +268,40 @@ def run(func, args=[], kwargs={}, service='lambda', **task_kwargs):
 # http://stackoverflow.com/questions/10294014/python-decorator-best-practice-using-a-class-vs-a-function
 # However, this needs to pass inspect.getargspec() in handler.py which does not take classes
 def task(func, service='lambda'):
-    """
-    Async task decorator for a function.
-    Serialises and dispatches the task to SNS.
-    Lambda subscribes to SNS topic and gets this message
-    Lambda routes the message to the same function
+    """Async task decorator so that running
+
+    Args:
+        func (function): the function to be wrapped
+            Further requirements:
+            func must be an independent top-level function.
+                 i.e. not a class method or an anonymous function
+        service (str): either 'lambda' or 'sns'
+
+    Returns:
+        A replacement function that dispatches func() to
+        run asynchronously through the service in question
     """
     task_path = get_func_task_path(func)
 
     def _run_async(*args, **kwargs):
+        """
+        This is the wrapping async function that replaces the function
+        that is decorated with @task.
+        Args:
+            These are just passed through to @task's func
+
+        Assuming a valid service is passed to task() and it is run
+        inside a Lambda process (i.e. AWS_LAMBDA_FUNCTION_NAME exists),
+        it dispatches the function to be run through the service variable.
+        Otherwise, it runs the task synchronously.
+
+        Returns:
+            In async mode, the object returned includes state of the dispatch.
+            For instance
+
+            When outside of Lambda, the func passed to @task is run and we
+            return the actual value.
+        """
         if (service in ASYNC_CLASSES) and (AWS_LAMBDA_FUNCTION_NAME):
             send_result = ASYNC_CLASSES[service]().send(task_path, args, kwargs)
             return send_result
@@ -237,7 +318,7 @@ def task(func, service='lambda'):
 
 def task_sns(func):
     """
-    SNS-based task dispatcher.
+    SNS-based task dispatcher. Functions the same way as task()
     """
     return task(func, service='sns')
 
