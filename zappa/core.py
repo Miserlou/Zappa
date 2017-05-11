@@ -483,52 +483,36 @@ class Zappa(object):
                                   pip.get_installed_distributions() if package.project_name in package_to_keep or
                                   package.location in [site_packages, site_packages_64]}
 
-            # First, try lambda packages
-            for name, details in lambda_packages.items():
-
-                # Packages can be compiled for different runtimes
-                if self.runtime not in details:
-                    continue
-
-                if name.lower() in installed_packages:
-                    installed_package_name = name.lower()
-                    installed_package_version = installed_packages[installed_package_name]
-
-                    # Binaries can be compiled for different package versions
-                    # Related: https://github.com/Miserlou/Zappa/issues/800
-                    if installed_package_version != details[self.runtime]['version']:
-                        continue
-
-                    print("Using lambda-packages binary for %s %s" % (installed_package_name, installed_package_version,))
-
-                    tar = tarfile.open(details[self.runtime]['path'], mode="r:gz")
-                    for member in tar.getmembers():
-                        # If we can, trash the local version.
-                        if member.isdir():
-                            shutil.rmtree(os.path.join(temp_project_path, member.name), ignore_errors=True)
-                            continue
-                        tar.extract(member, temp_project_path)
-
-            # Then try to use manylinux packages from PyPi..
-            # Related: https://github.com/Miserlou/Zappa/issues/398
             try:
                 for installed_package_name, installed_package_version in installed_packages.items():
 
-                    # Ignore any packages we had in lambda-packages. User package version during check.
-                    # Related: https://github.com/Miserlou/Zappa/issues/800
-                    if installed_package_name in lambda_packages and lambda_packages[installed_package_name] == installed_package_version:
-                        continue
+                    if self.should_use_lambda_package(installed_package_name, installed_package_version, lambda_packages):
+                        print("Using lambda-packages binary for %s %s" % (installed_package_name, installed_package_version,))
 
-                    wheel_url = self.get_manylinux_wheel(installed_package_name, installed_package_version)
+                        lambda_package = lambda_packages[installed_package_name][self.runtime]
 
-                    if wheel_url:
-                        print("Downloading %s" % os.path.basename(wheel_url))
+                        tar = tarfile.open(lambda_package['path'], mode="r:gz")
+                        for member in tar.getmembers():
+                            # If we can, trash the local version.
+                            if member.isdir():
+                                shutil.rmtree(os.path.join(temp_project_path, member.name), ignore_errors=True)
+                                continue
 
-                        with BytesIO() as file_stream:
-                            self.download_url_with_progress(wheel_url, file_stream)
+                            tar.extract(member, temp_project_path)
 
-                            with zipfile.ZipFile(file_stream) as zfile:
-                                zfile.extractall(temp_project_path)
+                    else:
+                        # Otherwise try to use manylinux packages from PyPi..
+                        # Related: https://github.com/Miserlou/Zappa/issues/398
+                        wheel_url = self.get_manylinux_wheel(installed_package_name, installed_package_version)
+
+                        if wheel_url:
+                            print("Downloading %s" % os.path.basename(wheel_url))
+
+                            with BytesIO() as file_stream:
+                                self.download_url_with_progress(wheel_url, file_stream)
+
+                                with zipfile.ZipFile(file_stream) as zfile:
+                                    zfile.extractall(temp_project_path)
 
             except Exception as e:
                 print(e)
@@ -604,6 +588,19 @@ class Zappa(object):
             shutil.rmtree(venv)
 
         return zip_fname
+
+    def should_use_lambda_package(self, package_name, package_version, lambda_packages):
+        lambda_package_details = lambda_packages.get(package_name, None)
+
+        if lambda_package_details is None or self.runtime not in lambda_package_details:
+            return False
+
+        # Binaries can be compiled for different package versions
+        # Related: https://github.com/Miserlou/Zappa/issues/800
+        if package_version != lambda_package_details[self.runtime]['version']:
+            return False
+
+        return True
 
     def download_url_with_progress(self, url, file_stream):
         resp = requests.get(url, timeout=2, stream=True)
