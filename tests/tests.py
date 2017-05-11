@@ -125,8 +125,8 @@ class TestZappa(unittest.TestCase):
 
     def test_get_manylinux_python27(self):
         z = Zappa(runtime='python2.7')
-        self.assertNotEqual(z.get_manylinux_wheel('cffi'), None)
-        self.assertEqual(z.get_manylinux_wheel('derpderpderpderp'), None)
+        self.assertNotEqual(z.get_manylinux_wheel('cffi', '1.10.0'), None)
+        self.assertEqual(z.get_manylinux_wheel('derpderpderpderp', '0.0'), None)
 
         # mock the pip.get_installed_distributions() to include a package in manylinux so that the code
         # for zipping pre-compiled packages gets called
@@ -140,8 +140,8 @@ class TestZappa(unittest.TestCase):
 
     def test_get_manylinux_python36(self):
         z = Zappa(runtime='python3.6')
-        self.assertNotEqual(z.get_manylinux_wheel('psycopg2'), None)
-        self.assertEqual(z.get_manylinux_wheel('derpderpderpderp'), None)
+        self.assertNotEqual(z.get_manylinux_wheel('psycopg2', '2.7.1'), None)
+        self.assertEqual(z.get_manylinux_wheel('derpderpderpderp', '0.0'), None)
 
         # mock the pip.get_installed_distributions() to include a package in manylinux so that the code
         # for zipping pre-compiled packages gets called
