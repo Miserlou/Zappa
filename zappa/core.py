@@ -513,17 +513,22 @@ class Zappa(object):
             # Related: https://github.com/Miserlou/Zappa/issues/398
             try:
                 for installed_package_name, installed_package_version in installed_packages.items():
-                    if installed_package_name not in lambda_packages:
-                        wheel_url = self.get_manylinux_wheel(installed_package_name, installed_package_version)
 
-                        if wheel_url:
-                            print("Downloading %s" % os.path.basename(wheel_url))
+                    # Ignore any packages we had in lambda-packages. User package version during check.
+                    # Related: https://github.com/Miserlou/Zappa/issues/800
+                    if installed_package_name in lambda_packages and lambda_packages[installed_package_name] == installed_package_version:
+                        continue
 
-                            with BytesIO() as file_stream:
-                                self.download_url_with_progress(wheel_url, file_stream)
+                    wheel_url = self.get_manylinux_wheel(installed_package_name, installed_package_version)
 
-                                with zipfile.ZipFile(file_stream) as zfile:
-                                    zfile.extractall(temp_project_path)
+                    if wheel_url:
+                        print("Downloading %s" % os.path.basename(wheel_url))
+
+                        with BytesIO() as file_stream:
+                            self.download_url_with_progress(wheel_url, file_stream)
+
+                            with zipfile.ZipFile(file_stream) as zfile:
+                                zfile.extractall(temp_project_path)
 
             except Exception as e:
                 print(e)
