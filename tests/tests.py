@@ -113,12 +113,11 @@ class TestZappa(unittest.TestCase):
     #             self.assertEqual(mock_remove.call_count, 1)
 
     def test_create_lambda_package(self):
-        # mock the pip.get_installed_distributions() to include a package in lambda_packages so that the code
+        # mock the pip.get_installed_distributions() to include a known package in lambda_packages so that the code
         # for zipping pre-compiled packages gets called
-        mock_named_tuple = collections.namedtuple('mock_named_tuple', ['project_name', 'location'])
-        mock_return_val = [mock_named_tuple(list(lambda_packages.keys())[0], '/path')]  # choose name of 1st package in lambda_packages
-        with mock.patch('pip.get_installed_distributions', return_value=mock_return_val):
-            z = Zappa()
+        mock_installed_packages = {'psycopg2': '2.6.1'}
+        with mock.patch('zappa.core.Zappa.get_installed_packages', return_value=mock_installed_packages):
+            z = Zappa(runtime='python2.7')
             path = z.create_lambda_zip(handler_file=os.path.realpath(__file__))
             self.assertTrue(os.path.isfile(path))
             os.remove(path)
@@ -128,12 +127,10 @@ class TestZappa(unittest.TestCase):
         self.assertNotEqual(z.get_manylinux_wheel('cffi', '1.10.0'), None)
         self.assertEqual(z.get_manylinux_wheel('derpderpderpderp', '0.0'), None)
 
-        # mock the pip.get_installed_distributions() to include a package in manylinux so that the code
-        # for zipping pre-compiled packages gets called
-        mock_named_tuple = collections.namedtuple('mock_named_tuple', ['project_name', 'location'])
-        mock_return_val = [mock_named_tuple('pandas', '/path')]
-        with mock.patch('pip.get_installed_distributions', return_value=mock_return_val):
-            z = Zappa()
+        # mock with a known manylinux wheel package so that code for downloading them gets invoked
+        mock_installed_packages = { 'cffi' : '1.10.0' }
+        with mock.patch('zappa.core.Zappa.get_installed_packages', return_value = mock_installed_packages):
+            z = Zappa(runtime='python2.7')
             path = z.create_lambda_zip(handler_file=os.path.realpath(__file__))
             self.assertTrue(os.path.isfile(path))
             os.remove(path)
@@ -143,15 +140,33 @@ class TestZappa(unittest.TestCase):
         self.assertNotEqual(z.get_manylinux_wheel('psycopg2', '2.7.1'), None)
         self.assertEqual(z.get_manylinux_wheel('derpderpderpderp', '0.0'), None)
 
-        # mock the pip.get_installed_distributions() to include a package in manylinux so that the code
-        # for zipping pre-compiled packages gets called
-        mock_named_tuple = collections.namedtuple('mock_named_tuple', ['project_name', 'location'])
-        mock_return_val = [mock_named_tuple('psycopg2', '/path')]
-        with mock.patch('pip.get_installed_distributions', return_value=mock_return_val):
-            z = Zappa()
+        # mock with a known manylinux wheel package so that code for downloading them gets invoked
+        mock_installed_packages = {'psycopg2': '2.7.1'}
+        with mock.patch('zappa.core.Zappa.get_installed_packages', return_value=mock_installed_packages):
+            z = Zappa(runtime='python3.6')
             path = z.create_lambda_zip(handler_file=os.path.realpath(__file__))
             self.assertTrue(os.path.isfile(path))
             os.remove(path)
+
+    def test_should_use_lambda_packages(self):
+        z = Zappa(runtime='python2.7')
+
+        # using a known lambda package
+        self.assertTrue(z.should_use_lambda_package('psycopg2', '2.6.1'))
+        self.assertFalse(z.should_use_lambda_package('psycopg2', '2.7.1'))
+
+    def test_getting_installed_packages(self, *args):
+        z = Zappa(runtime='python2.7')
+
+        # mock pip packages call to be same as what our mocked site packages dir has
+        mock_package = collections.namedtuple('mock_package', ['project_name', 'version'])
+        mock_pip_installed_packages = [mock_package('super_package', '0.1')]
+
+        with mock.patch('os.path.isdir', return_value=True):
+            with mock.patch('os.listdir', return_value=['super_package']):
+                import pip  # this gets called in non-test Zappa mode
+                with mock.patch('pip.get_installed_distributions', return_value=mock_pip_installed_packages):
+                    self.assertDictEqual(z.get_installed_packages('',''), {'super_package' : '0.1'})
 
     def test_load_credentials(self):
         z = Zappa()

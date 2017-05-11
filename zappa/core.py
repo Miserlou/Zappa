@@ -470,23 +470,15 @@ class Zappa(object):
 
         copy_tree(temp_package_path, temp_project_path, update=True)
 
-        package_to_keep = []
-        if os.path.isdir(site_packages):
-            package_to_keep += os.listdir(site_packages)
-        if os.path.isdir(site_packages_64):
-            package_to_keep += os.listdir(site_packages_64)
-
         # Then the pre-compiled packages..
         if use_precompiled_packages:
             print("Downloading and installing dependencies..")
-            installed_packages = {package.project_name.lower(): package.version for package in
-                                  pip.get_installed_distributions() if package.project_name in package_to_keep or
-                                  package.location in [site_packages, site_packages_64]}
+            installed_packages = self.get_installed_packages(site_packages, site_packages_64)
 
             try:
                 for installed_package_name, installed_package_version in installed_packages.items():
 
-                    if self.should_use_lambda_package(installed_package_name, installed_package_version, lambda_packages):
+                    if self.should_use_lambda_package(installed_package_name, installed_package_version):
                         print("Using lambda-packages binary for %s %s" % (installed_package_name, installed_package_version,))
 
                         lambda_package = lambda_packages[installed_package_name][self.runtime]
@@ -589,7 +581,28 @@ class Zappa(object):
 
         return zip_fname
 
-    def should_use_lambda_package(self, package_name, package_version, lambda_packages):
+    @staticmethod
+    def get_installed_packages(site_packages, site_packages_64):
+        """
+        Returns a dict of installed packages that Zappa cares about.
+        """
+        import pip  # this is to avoid 'funkiness' with global import
+        package_to_keep = []
+        if os.path.isdir(site_packages):
+            package_to_keep += os.listdir(site_packages)
+        if os.path.isdir(site_packages_64):
+            package_to_keep += os.listdir(site_packages_64)
+
+        installed_packages = {package.project_name.lower(): package.version for package in
+                              pip.get_installed_distributions() if package.project_name in package_to_keep or
+                              package.location in [site_packages, site_packages_64]}
+
+        return installed_packages
+
+    def should_use_lambda_package(self, package_name, package_version):
+        """
+        Checks if a given package version binary should be copied over from lambda-packages
+        """
         lambda_package_details = lambda_packages.get(package_name, None)
 
         if lambda_package_details is None or self.runtime not in lambda_package_details:
@@ -602,7 +615,12 @@ class Zappa(object):
 
         return True
 
-    def download_url_with_progress(self, url, file_stream):
+    @staticmethod
+    def download_url_with_progress(url, stream):
+        """
+        Downloads a given url in chunks and writes to the provided stream (can be any io stream).
+        Displays the progress bar for the download.
+        """
         resp = requests.get(url, timeout=2, stream=True)
         resp.raw.decode_content = True
 
@@ -610,7 +628,7 @@ class Zappa(object):
         for chunk in resp.iter_content(chunk_size=1024):
             if chunk:
                 progress.update(len(chunk))
-                file_stream.write(chunk)
+                stream.write(chunk)
 
         progress.close()
 
