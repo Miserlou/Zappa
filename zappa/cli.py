@@ -479,7 +479,7 @@ class ZappaCLI(object):
 
         # Load our settings, based on api_stage.
         try:
-            self.load_settings(self.vargs['settings_file'])
+            self.load_settings(self.vargs.get('settings_file'))
         except ValueError as e:
             print("Error: {}".format(e.message))
             sys.exit(-1)
