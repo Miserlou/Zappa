@@ -470,52 +470,45 @@ class Zappa(object):
 
         copy_tree(temp_package_path, temp_project_path, update=True)
 
-        package_to_keep = []
-        if os.path.isdir(site_packages):
-            package_to_keep += os.listdir(site_packages)
-        if os.path.isdir(site_packages_64):
-            package_to_keep += os.listdir(site_packages_64)
-
         # Then the pre-compiled packages..
         if use_precompiled_packages:
             print("Downloading and installing dependencies..")
-            installed_packages_name_set = [package.project_name.lower() for package in
-                                           pip.get_installed_distributions() if package.project_name in package_to_keep or
-                                           package.location in [site_packages, site_packages_64]]
-            # First, try lambda packages
-            for name, details in lambda_packages.items():
-                if name.lower() in installed_packages_name_set:
+            installed_packages = self.get_installed_packages(site_packages, site_packages_64)
 
-                    # Packages can be compiled for different runtimes
-                    if not self.runtime in details:
-                        continue
-
-                    tar = tarfile.open(details[self.runtime]['path'], mode="r:gz")
-                    for member in tar.getmembers():
-                        # If we can, trash the local version.
-                        if member.isdir():
-                            shutil.rmtree(os.path.join(temp_project_path, member.name), ignore_errors=True)
-                            continue
-                        tar.extract(member, temp_project_path)
-
-            progress = tqdm(total=len(installed_packages_name_set), unit_scale=False, unit='pkg')
-
-            # Then try to use manylinux packages from PyPi..
-            # Related: https://github.com/Miserlou/Zappa/issues/398
             try:
-                for installed_package_name in installed_packages_name_set:
-                    if installed_package_name not in lambda_packages:
-                        wheel_url = self.get_manylinux_wheel(installed_package_name)
+                for installed_package_name, installed_package_version in installed_packages.items():
+
+                    if self.should_use_lambda_package(installed_package_name, installed_package_version):
+                        print("Using lambda-packages binary for %s %s" % (installed_package_name, installed_package_version,))
+
+                        lambda_package = lambda_packages[installed_package_name][self.runtime]
+
+                        tar = tarfile.open(lambda_package['path'], mode="r:gz")
+                        for member in tar.getmembers():
+                            # If we can, trash the local version.
+                            if member.isdir():
+                                shutil.rmtree(os.path.join(temp_project_path, member.name), ignore_errors=True)
+                                continue
+
+                            tar.extract(member, temp_project_path)
+
+                    else:
+                        # Otherwise try to use manylinux packages from PyPi..
+                        # Related: https://github.com/Miserlou/Zappa/issues/398
+                        wheel_url = self.get_manylinux_wheel(installed_package_name, installed_package_version)
+
                         if wheel_url:
-                            resp = requests.get(wheel_url, timeout=2, stream=True)
-                            resp.raw.decode_content = True
-                            zipresp = resp.raw
-                            with zipfile.ZipFile(BytesIO(zipresp.read())) as zfile:
-                                zfile.extractall(temp_project_path)
-                    progress.update()
-            except Exception:
-                pass # XXX - What should we do here?
-            progress.close()
+                            print("Downloading %s" % os.path.basename(wheel_url))
+
+                            with BytesIO() as file_stream:
+                                self.download_url_with_progress(wheel_url, file_stream)
+
+                                with zipfile.ZipFile(file_stream) as zfile:
+                                    zfile.extractall(temp_project_path)
+
+            except Exception as e:
+                print(e)
+                # XXX - What should we do here?
 
         # Then zip it all up..
         print("Packaging project as zip..")
@@ -588,7 +581,58 @@ class Zappa(object):
 
         return zip_fname
 
-    def get_manylinux_wheel(self, package):
+    @staticmethod
+    def get_installed_packages(site_packages, site_packages_64):
+        """
+        Returns a dict of installed packages that Zappa cares about.
+        """
+        import pip  # this is to avoid 'funkiness' with global import
+        package_to_keep = []
+        if os.path.isdir(site_packages):
+            package_to_keep += os.listdir(site_packages)
+        if os.path.isdir(site_packages_64):
+            package_to_keep += os.listdir(site_packages_64)
+
+        installed_packages = {package.project_name.lower(): package.version for package in
+                              pip.get_installed_distributions() if package.project_name in package_to_keep or
+                              package.location in [site_packages, site_packages_64]}
+
+        return installed_packages
+
+    def should_use_lambda_package(self, package_name, package_version):
+        """
+        Checks if a given package version binary should be copied over from lambda-packages
+        """
+        lambda_package_details = lambda_packages.get(package_name, None)
+
+        if lambda_package_details is None or self.runtime not in lambda_package_details:
+            return False
+
+        # Binaries can be compiled for different package versions
+        # Related: https://github.com/Miserlou/Zappa/issues/800
+        if package_version != lambda_package_details[self.runtime]['version']:
+            return False
+
+        return True
+
+    @staticmethod
+    def download_url_with_progress(url, stream):
+        """
+        Downloads a given url in chunks and writes to the provided stream (can be any io stream).
+        Displays the progress bar for the download.
+        """
+        resp = requests.get(url, timeout=2, stream=True)
+        resp.raw.decode_content = True
+
+        progress = tqdm(unit="B", unit_scale=True, total=int(resp.headers.get('Content-Length', 0)))
+        for chunk in resp.iter_content(chunk_size=1024):
+            if chunk:
+                progress.update(len(chunk))
+                stream.write(chunk)
+
+        progress.close()
+
+    def get_manylinux_wheel(self, package_name, package_version):
         """
         For a given package name, returns a link to the download URL,
         else returns None.
@@ -596,12 +640,11 @@ class Zappa(object):
         Related: https://github.com/Miserlou/Zappa/issues/398
         Examples here: https://gist.github.com/perrygeo/9545f94eaddec18a65fd7b56880adbae
         """
-        url = 'https://pypi.python.org/pypi/{}/json'.format(package)
+        url = 'https://pypi.python.org/pypi/{}/json'.format(package_name)
         try:
             res = requests.get(url, timeout=1.5)
             data = res.json()
-            version = data['info']['version']
-            for f in data['releases'][version]:
+            for f in data['releases'][package_version]:
                 if f['filename'].endswith(self.manylinux_wheel_file_suffix):
                     return f['url']
         except Exception as e: # pragma: no cover
