@@ -352,7 +352,7 @@ class Zappa(object):
             try:
                 subprocess.check_output('pyenv help', stderr=subprocess.STDOUT)
             except OSError:
-                print("This directory seems to have pyenv's local venv"
+                print("This directory seems to have pyenv's local venv, "
                       "but pyenv executable was not found.")
             with open('.python-version', 'r') as f:
                 env_name = f.read()[:-1]
