@@ -509,6 +509,9 @@ class Zappa(object):
                                 self.download_url_with_progress(wheel_url, file_stream)
 
                                 with zipfile.ZipFile(file_stream) as zfile:
+                                    # Since we are getting a manylinux wheel for the package we should delete the local
+                                    # version to save space in resulting Zappa package.
+                                    shutil.rmtree(os.path.join(temp_project_path, installed_package_name), ignore_errors= True)
                                     zfile.extractall(temp_project_path)
 
             except Exception as e:
