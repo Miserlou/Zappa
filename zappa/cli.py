@@ -1417,6 +1417,7 @@ class ZappaCLI(object):
         if global_deployment:
             regions = API_GATEWAY_REGIONS
             if global_type.lower() in ["p", "primary"]:
+                # https://github.com/Miserlou/Zappa/issues/828#issuecomment-301654635
                 envs = [{env + '-' + region: { 'aws_region': region}} for region in regions if '-1' in region]
             else:
                 envs = [{env + '-' + region: { 'aws_region': region}} for region in regions]
