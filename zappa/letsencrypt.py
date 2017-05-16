@@ -265,7 +265,7 @@ def get_cert(zappa_instance, log=LOGGER, CA=DEFAULT_CA):
 
         challenge = [ch for ch in json.loads(result.decode('utf8'))['challenges'] if ch['type'] == "dns-01"][0]
         token = re.sub(r"[^A-Za-z0-9_\-]", "_", challenge['token'])
-        keyauthorization = "{0}.{1}".format(token, thumbprint)
+        keyauthorization = "{0}.{1}".format(token, thumbprint).encode('utf-8')
 
         # sha256_b64
         digest = _b64(hashlib.sha256(keyauthorization).digest())
