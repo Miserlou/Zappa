@@ -23,5 +23,6 @@
 <!--- Include as many relevant details about the environment you experienced the bug in -->
 * Zappa version used:
 * Operating System and Python version:
+* The output of `pip freeze`:
 * Link to your project (optional):
 * Your `zappa_settings.py`: 
