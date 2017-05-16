@@ -400,6 +400,11 @@ class Zappa(object):
         # Exclude the zip itself
         exclude.append(zip_path)
 
+        # Make sure that 'concurrent' is always forbidden.
+        # https://github.com/Miserlou/Zappa/issues/827
+        if not 'concurrent' in exclude:
+            exclude.append('concurrent')
+
         def splitpath(path):
             parts = []
             (path, tail) = os.path.split(path)
