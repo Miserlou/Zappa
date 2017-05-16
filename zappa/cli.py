@@ -1417,10 +1417,9 @@ class ZappaCLI(object):
         if global_deployment:
             regions = API_GATEWAY_REGIONS
             if global_type.lower() in ["p", "primary"]:
-                # https://github.com/Miserlou/Zappa/issues/828#issuecomment-301654635
-                envs = [{env + '-' + region: { 'aws_region': region}} for region in regions if '-1' in region]
+                envs = [{env + '_' + region.replace('-', '_'): { 'aws_region': region}} for region in regions if '-1' in region]
             else:
-                envs = [{env + '-' + region: { 'aws_region': region}} for region in regions]
+                envs = [{env + '_' + region.replace('-', '_'): { 'aws_region': region}} for region in regions]
         else:
             envs = [{env: {}}]
 
@@ -1433,7 +1432,8 @@ class ZappaCLI(object):
 
             env_bucket = bucket
             if global_deployment:
-                env_bucket = bucket + '-' + env_name
+                # env_bucket = bucket.replace('-', '_') + '_' + env_name
+                env_bucket = bucket + '-' + env_name.replace("_", "-")
 
             env_zappa_settings = {
                 env_name: {
