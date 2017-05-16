@@ -1,5 +1,12 @@
 # Zappa Changelog
 
+## 0.41.3
+* Various Python3 fixes
+* Remove some dead code
+* More binary package fixes thanks to and @nikbora and @bxm156
+* Improved async tasks thanks to @schuyler1d
+* Various small changes
+
 ## 0.41.2
 * Support for new `lambda-packages` format (Python3 support)
 * Fix `setup.py` on Windows Python3
