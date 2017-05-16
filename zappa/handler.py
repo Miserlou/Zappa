@@ -34,25 +34,6 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 
-class WSGIException(Exception):
-    """
-    This exception is used by the handler to indicate that underlying WSGI app has returned a non-2xx(3xx) code.
-    """
-
-    pass
-
-
-class UncaughtWSGIException(Exception):
-    """
-    Indicates a problem that happened outside of WSGI app context (and thus wasn't handled by the WSGI app itself)
-    while processing a request from API Gateway.
-    """
-
-    def __init__(self, message, original=None):
-        super(UncaughtWSGIException, self).__init__(message)
-        self.original = original
-
-
 class LambdaHandler(object):
     """
     Singleton for avoiding duplicate setup.
@@ -260,17 +241,6 @@ class LambdaHandler(object):
         exception_handler = handler.settings.EXCEPTION_HANDLER
         try:
             return handler.handler(event, context)
-        except WSGIException as wsgi_ex:
-            # do nothing about LambdaExceptions since those are already handled (or should be handled by the WSGI app).
-            raise wsgi_ex
-        except UncaughtWSGIException as u_wsgi_ex:
-            # hand over original error to exception handler, since the exception happened outside of WSGI app context
-            # (it wasn't propertly processed by the app itself)
-            cls._process_exception(exception_handler=exception_handler,
-                                   event=event, context=context, exception=u_wsgi_ex.original)
-            # raise unconditionally since it's an API gateway error (i.e. client expects to see a 500 and execution
-            # won't be retried).
-            raise u_wsgi_ex
         except Exception as ex:
             exception_processed = cls._process_exception(exception_handler=exception_handler,
                                                          event=event, context=context, exception=ex)
