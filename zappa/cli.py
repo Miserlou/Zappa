@@ -1432,7 +1432,7 @@ class ZappaCLI(object):
 
             env_bucket = bucket
             if global_deployment:
-                # env_bucket = bucket.replace('-', '_') + '_' + env_name
+            # `zappa init` doesn't generate compatible s3_bucket names #828
                 env_bucket = bucket + '-' + env_name.replace("_", "-")
 
             env_zappa_settings = {
