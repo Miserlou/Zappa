@@ -490,22 +490,10 @@ class Zappa(object):
                     elif self.have_correct_manylinux_package_version(installed_package_name, installed_package_version):
                         # Otherwise try to use manylinux packages from PyPi..
                         # Related: https://github.com/Miserlou/Zappa/issues/398
-                        wheel_url = self.get_manylinux_wheel_url(installed_package_name, installed_package_version)
-
-                        if wheel_url:
-                            print("Downloading %s" % os.path.basename(wheel_url))
-
-                            with BytesIO() as file_stream:
-                                self.download_url_with_progress(wheel_url, file_stream)
-
-                                with zipfile.ZipFile(file_stream) as zfile:
-                                    # Since we are getting a manylinux wheel for the package we should delete the local
-                                    # version to save space in the resulting Zappa package.
-                                    shutil.rmtree(os.path.join(temp_project_path, installed_package_name), ignore_errors = True)
-                                    zfile.extractall(temp_project_path)
                         cached_wheel_path = self.get_cached_manylinux_wheel(installed_package_name,
                                                                             installed_package_version)
                         if cached_wheel_path:
+                            shutil.rmtree(os.path.join(temp_project_path, installed_package_name), ignore_errors=True)
                             with zipfile.ZipFile(cached_wheel_path) as zfile:
                                 zfile.extractall(temp_project_path)
 
@@ -649,7 +637,7 @@ class Zappa(object):
         """
         Checks if a given package version binary should be downlaoded from PyPi manylinux wheel
         """
-        return self.get_manylinux_wheel_url(package_name, package_version) is not None
+        return self.get_cached_manylinux_wheel(package_name, package_version) is not None
 
     @staticmethod
     def download_url_with_progress(url, stream):
@@ -668,7 +656,6 @@ class Zappa(object):
 
         progress.close()
 
-    def get_manylinux_wheel_url(self, package_name, package_version):
     def get_cached_manylinux_wheel(self, package_name, package_version):
         """
         Gets the locally stored version of a manylinux wheel. If one does not exist, the function downloads it.
