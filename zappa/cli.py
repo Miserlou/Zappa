@@ -2064,14 +2064,9 @@ class ZappaCLI(object):
 
             # Keep Warm Setting Needed by Handler
             keep_warm = self.stage_config.get('keep_warm', 1)
-            if keep_warm:
+            if keep_warm > 0:
                 # Handle legacy configs with boolean values:
-                if keep_warm is True:
-                    kw_val = 1
-                elif keep_warm is False:
-                    kw_val = 0
-                else:
-                    kw_val = keep_warm
+                kw_val = 1 if keep_warm is True else keep_warm
 
                 settings_s += "WARM_LAMBDA_COUNT={0:d}\n".format(kw_val)
 
