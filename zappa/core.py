@@ -669,7 +669,7 @@ class Zappa(object):
 
         if not os.path.exists(wheel_path):
             # The file is not cached, download it.
-            wheel_url = self.get_manylinux_wheel(package_name, package_version)
+            wheel_url = self.get_manylinux_wheel_url(package_name, package_version)
             if not wheel_url:
                 return None
 
@@ -681,7 +681,7 @@ class Zappa(object):
 
         return wheel_path
 
-    def get_manylinux_wheel(self, package_name, package_version):
+    def get_manylinux_wheel_url(self, package_name, package_version):
         """
         For a given package name, returns a link to the download URL,
         else returns None.
