@@ -240,14 +240,11 @@ class LambdaHandler(object):
         return app_function
 
     @classmethod
-    def lambda_handler(cls, event, context, keep_warm=False):  # pragma: no cover
+    def lambda_handler(cls, event, context):  # pragma: no cover
         handler = cls()
         exception_handler = handler.settings.EXCEPTION_HANDLER
         try:
-            if keep_warm:
-                return handler.warm_more_lambda_handler(event, context)
-            else:
-                return handler.handler(event, context)
+            return handler.handler(event, context)
         except Exception as ex:
             exception_processed = cls._process_exception(exception_handler=exception_handler,
                                                          event=event, context=context, exception=ex)
@@ -492,14 +489,15 @@ def lambda_handler(event, context):  # pragma: no cover
 
 
 def keep_warm_callback(event, context):
-    """Method is triggered by the CloudWatch event scheduled when keep_warm setting is set to true or an int."""
-    if hasattr(LambdaHandler.settings, 'WARM_LAMBDA_COUNT'):
-        warm_coount = LambdaHandler.settings.WARM_LAMBDA_COUNT
-    else:
-        warm_coount = 1
+    """Method is triggered by the CloudWatch event scheduled when keep_warm setting is set 1 or more."""
 
+    # Get the desired warm count out of the settings file.
+    settings = importlib.import_module('zappa_settings')
+    warm_coount = settings.WARM_LAMBDA_COUNT
+
+    print("My warm count {}".format(warm_coount))
     with ThreadPool(10) as pool:
-        mp = pool.map_async(keep_warm_lambda_initializer, [(event, context) for _ in range(warm_coount)])
+        mp = pool.map_async(keep_warm_lambda_initializer, range(warm_coount))
         pool.close()
         try:
             _ = mp.get(270)  # Wait 4m30s to get the result. Will die at 5m or `timeout_seconds` in zappa_settings.json
