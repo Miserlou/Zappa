@@ -500,16 +500,11 @@ class Zappa(object):
                     else:
                         # Otherwise try to use manylinux packages from PyPi..
                         # Related: https://github.com/Miserlou/Zappa/issues/398
-                        wheel_url = self.get_manylinux_wheel(installed_package_name, installed_package_version)
-
-                        if wheel_url:
-                            print("Downloading %s" % os.path.basename(wheel_url))
-
-                            with BytesIO() as file_stream:
-                                self.download_url_with_progress(wheel_url, file_stream)
-
-                                with zipfile.ZipFile(file_stream) as zfile:
-                                    zfile.extractall(temp_project_path)
+                        cached_wheel_path = self.get_cached_manylinux_wheel(installed_package_name,
+                                                                            installed_package_version)
+                        if cached_wheel_path:
+                            with zipfile.ZipFile(cached_wheel_path) as zfile:
+                                zfile.extractall(temp_project_path)
 
             except Exception as e:
                 print(e)
@@ -636,6 +631,32 @@ class Zappa(object):
                 stream.write(chunk)
 
         progress.close()
+
+    def get_cached_manylinux_wheel(self, package_name, package_version):
+        """
+        Gets the locally stored version of a manylinux wheel. If one does not exist, the function downloads it.
+        """
+        cached_wheels_dir = os.path.join(tempfile.gettempdir(), 'cached_wheels')
+        if not os.path.isdir(cached_wheels_dir):
+            os.makedirs(cached_wheels_dir)
+
+        wheel_file = '{0!s}-{1!s}-{2!s}'.format(package_name, package_version, self.manylinux_wheel_file_suffix)
+        wheel_path = os.path.join(cached_wheels_dir, wheel_file)
+
+        if not os.path.exists(wheel_path):
+            s = time.time()
+            # The file is not cached, download it.
+            wheel_url = self.get_manylinux_wheel(package_name, package_version)
+            if not wheel_url:
+                return None
+
+            print("{} - Downloading".format(package_name))
+            with open(wheel_path, 'wb') as f:
+                self.download_url_with_progress(wheel_url, f)
+        else:
+            print("{} - Locally Cached".format(package_name))
+
+        return wheel_path
 
     def get_manylinux_wheel(self, package_name, package_version):
         """
