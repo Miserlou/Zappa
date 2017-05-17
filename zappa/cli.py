@@ -999,7 +999,7 @@ class ZappaCLI(object):
         for event in events:
             self.collision_warning(event.get('function'))
 
-        if self.stage_config.get('keep_warm', 1):
+        if self.stage_config.get('keep_warm', 1) > 0:
             if not events:
                 events = []
 

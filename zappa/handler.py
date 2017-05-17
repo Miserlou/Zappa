@@ -491,21 +491,25 @@ def lambda_handler(event, context):  # pragma: no cover
 def keep_warm_callback(event, context):
     """Method is triggered by the CloudWatch event scheduled when keep_warm setting is set 1 or more."""
 
+    start = time.time()
     # Get the desired warm count out of the settings file.
     settings = importlib.import_module('zappa_settings')
     warm_coount = settings.WARM_LAMBDA_COUNT
 
-    print("My warm count {}".format(warm_coount))
-    with ThreadPool(10) as pool:
-        mp = pool.map_async(keep_warm_lambda_initializer, range(warm_coount))
-        pool.close()
-        try:
-            _ = mp.get(270)  # Wait 4m30s to get the result. Will die at 5m or `timeout_seconds` in zappa_settings.json
-        except Exception as ex:
-            print("keep warm pool exception", ex)
+    pool = ThreadPool(20)
+    mp = pool.map_async(func=keep_warm_lambda_initializer,
+                        iterable=range(warm_coount))
+
+    pool.close()
+    pool.join()
+    try:
+        _ = mp.get(270)  # Wait 4m30s to get the result. Will die at 5m or `timeout_seconds` in zappa_settings.json
+    except Exception as ex:
+        print("keep warm pool exception", ex)
+    print("Keeping warm calls took {} seconds".format(time.time() - start))
 
 
 @task
 def keep_warm_lambda_initializer(event=None, context=None):
     lambda_handler(event={}, context=context)  # overriding event with an empty one so that web app initialization will
-    time.sleep(10)  # Sleeping so this lambda stays busy and subsequent calls cold-start new lambdas
+    time.sleep(30)  # Sleeping so this lambda stays busy and subsequent calls cold-start new lambdas
