@@ -24,7 +24,6 @@ from builtins import bytes
 from past.builtins import basestring
 
 from click.exceptions import ClickException
-from lambda_packages import lambda_packages
 
 from .utils import placebo_session, patch_open
 
@@ -124,8 +123,8 @@ class TestZappa(unittest.TestCase):
 
     def test_get_manylinux_python27(self):
         z = Zappa(runtime='python2.7')
-        self.assertNotEqual(z.get_manylinux_wheel('cffi', '1.10.0'), None)
-        self.assertEqual(z.get_manylinux_wheel('derpderpderpderp', '0.0'), None)
+        self.assertTrue(z.have_correct_manylinux_package_version('cffi', '1.10.0'))
+        self.assertFalse(z.have_correct_manylinux_package_version('derpderpderpderp', '0.0'))
 
         # mock with a known manylinux wheel package so that code for downloading them gets invoked
         mock_installed_packages = { 'cffi' : '1.10.0' }
@@ -137,8 +136,8 @@ class TestZappa(unittest.TestCase):
 
     def test_get_manylinux_python36(self):
         z = Zappa(runtime='python3.6')
-        self.assertNotEqual(z.get_manylinux_wheel('psycopg2', '2.7.1'), None)
-        self.assertEqual(z.get_manylinux_wheel('derpderpderpderp', '0.0'), None)
+        self.assertTrue(z.have_correct_manylinux_package_version('psycopg2', '2.7.1'))
+        self.assertFalse(z.have_correct_manylinux_package_version('derpderpderpderp', '0.0'))
 
         # mock with a known manylinux wheel package so that code for downloading them gets invoked
         mock_installed_packages = {'psycopg2': '2.7.1'}
@@ -151,9 +150,11 @@ class TestZappa(unittest.TestCase):
     def test_should_use_lambda_packages(self):
         z = Zappa(runtime='python2.7')
 
-        # using a known lambda package
-        self.assertTrue(z.should_use_lambda_package('psycopg2', '2.6.1'))
-        self.assertFalse(z.should_use_lambda_package('psycopg2', '2.7.1'))
+        self.assertTrue(z.have_correct_lambda_package_version('psycopg2', '2.6.1'))
+        self.assertFalse(z.have_correct_lambda_package_version('psycopg2', '2.7.1'))
+
+        self.assertTrue(z.have_any_lambda_package_version('psycopg2'))
+        self.assertFalse(z.have_any_lambda_package_version('no_package'))
 
     def test_getting_installed_packages(self, *args):
         z = Zappa(runtime='python2.7')
