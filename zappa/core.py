@@ -644,7 +644,6 @@ class Zappa(object):
         wheel_path = os.path.join(cached_wheels_dir, wheel_file)
 
         if not os.path.exists(wheel_path):
-            s = time.time()
             # The file is not cached, download it.
             wheel_url = self.get_manylinux_wheel(package_name, package_version)
             if not wheel_url:
