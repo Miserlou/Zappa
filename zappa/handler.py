@@ -491,7 +491,6 @@ def lambda_handler(event, context):  # pragma: no cover
 def keep_warm_callback(event, context):
     """Method is triggered by the CloudWatch event scheduled when keep_warm setting is set 1 or more."""
 
-    start = time.time()
     # Get the desired warm count out of the settings file.
     settings = importlib.import_module('zappa_settings')
     warm_coount = settings.WARM_LAMBDA_COUNT
