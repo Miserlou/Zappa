@@ -506,7 +506,6 @@ def keep_warm_callback(event, context):
         _ = mp.get(270)  # Wait 4m30s to get the result. Will die at 5m or `timeout_seconds` in zappa_settings.json
     except Exception as ex:
         print("keep warm pool exception", ex)
-    print("Keeping warm calls took {} seconds".format(time.time() - start))
 
 
 @task
