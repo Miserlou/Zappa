@@ -10,10 +10,12 @@ import json
 import logging
 import os
 import sys
+import time
 import traceback
 import zipfile
 
 from builtins import str
+from multiprocessing.dummy import Pool as ThreadPool
 from werkzeug.wrappers import Response
 
 # This file may be copied into a project's root,
@@ -22,10 +24,12 @@ try:
     from zappa.middleware import ZappaWSGIMiddleware
     from zappa.wsgi import create_wsgi_request, common_log
     from zappa.utilities import parse_s3_url
+    from zappa.async import task
 except ImportError as e:  # pragma: no cover
     from .middleware import ZappaWSGIMiddleware
     from .wsgi import create_wsgi_request, common_log
     from .utilities import parse_s3_url
+    from .async import task
 
 
 # Set up logging
@@ -236,11 +240,14 @@ class LambdaHandler(object):
         return app_function
 
     @classmethod
-    def lambda_handler(cls, event, context):  # pragma: no cover
+    def lambda_handler(cls, event, context, keep_warm=False):  # pragma: no cover
         handler = cls()
         exception_handler = handler.settings.EXCEPTION_HANDLER
         try:
-            return handler.handler(event, context)
+            if keep_warm:
+                return handler.warm_more_lambda_handler(event, context)
+            else:
+                return handler.handler(event, context)
         except Exception as ex:
             exception_processed = cls._process_exception(exception_handler=exception_handler,
                                                          event=event, context=context, exception=ex)
@@ -485,6 +492,22 @@ def lambda_handler(event, context):  # pragma: no cover
 
 
 def keep_warm_callback(event, context):
-    """Method is triggered by the CloudWatch event scheduled when keep_warm setting is set to true."""
+    """Method is triggered by the CloudWatch event scheduled when keep_warm setting is set to true or an int."""
+    if hasattr(LambdaHandler.settings, 'WARM_LAMBDA_COUNT'):
+        warm_coount = LambdaHandler.settings.WARM_LAMBDA_COUNT
+    else:
+        warm_coount = 1
+
+    with ThreadPool(10) as pool:
+        mp = pool.map_async(keep_warm_lambda_initializer, [(event, context) for _ in range(warm_coount)])
+        pool.close()
+        try:
+            _ = mp.get(270)  # Wait 4m30s to get the result. Will die at 5m or `timeout_seconds` in zappa_settings.json
+        except Exception as ex:
+            print("keep warm pool exception", ex)
+
+
+@task
+def keep_warm_lambda_initializer(event=None, context=None):
     lambda_handler(event={}, context=context)  # overriding event with an empty one so that web app initialization will
-    # be triggered.
+    time.sleep(10)  # Sleeping so this lambda stays busy and subsequent calls cold-start new lambdas

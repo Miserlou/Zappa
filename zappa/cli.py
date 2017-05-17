@@ -2062,6 +2062,10 @@ class ZappaCLI(object):
             if authorizer_function:
                 settings_s += "AUTHORIZER_FUNCTION='{0!s}'\n".format(authorizer_function)
 
+            # Keep Warm Setting Needed by Handler
+            keep_warm = self.stage_config.get('keep_warm', True)
+            if keep_warm:
+                settings_s += "WARM_LAMBDA_COUNT='{0!s}'\n".format(keep_warm)
 
             # Copy our Django app into root of our package.
             # It doesn't work otherwise.
