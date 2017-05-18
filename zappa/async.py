@@ -91,7 +91,6 @@ import importlib
 import inspect
 import json
 import os
-import traceback
 
 from .utilities import get_topic_name
 
