@@ -486,22 +486,22 @@ class Zappa(object):
                     if self.have_correct_lambda_package_version(installed_package_name, installed_package_version):
                         print("Using lambda_packages binary for %s %s" % (installed_package_name, installed_package_version,))
                         self.extract_lambda_package(installed_package_name, temp_project_path)
+                    else:
+                        cached_wheel_path = self.get_cached_manylinux_wheel(installed_package_name, installed_package_version)
+                        if cached_wheel_path:
+                            # Otherwise try to use manylinux packages from PyPi..
+                            # Related: https://github.com/Miserlou/Zappa/issues/398
+                            shutil.rmtree(os.path.join(temp_project_path, installed_package_name), ignore_errors=True)
+                            with zipfile.ZipFile(cached_wheel_path) as zfile:
+                                zfile.extractall(temp_project_path)
 
-                    cached_wheel_path = self.get_cached_manylinux_wheel(installed_package_name, installed_package_version) 
-                    if cached_wheel_path:
-                        # Otherwise try to use manylinux packages from PyPi..
-                        # Related: https://github.com/Miserlou/Zappa/issues/398
-                        shutil.rmtree(os.path.join(temp_project_path, installed_package_name), ignore_errors=True)
-                        with zipfile.ZipFile(cached_wheel_path) as zfile:
-                            zfile.extractall(temp_project_path)
-
-                    elif self.have_any_lambda_package_version(installed_package_name):
-                        # Finally see if we may have at least one version of the package in lambda packages
-                        # Related: https://github.com/Miserlou/Zappa/issues/855
-                        lambda_version = lambda_packages[installed_package_name][self.runtime]['version']
-                        print("Warning! You require pre-compiled %s version %s but will use %s that is in "
-                              "lambda_packages. " % (installed_package_name, installed_package_version, lambda_version, ))
-                        self.extract_lambda_package(installed_package_name, temp_project_path)
+                        elif self.have_any_lambda_package_version(installed_package_name):
+                            # Finally see if we may have at least one version of the package in lambda packages
+                            # Related: https://github.com/Miserlou/Zappa/issues/855
+                            lambda_version = lambda_packages[installed_package_name][self.runtime]['version']
+                            print("Warning! You require pre-compiled %s version %s but will use %s that is in "
+                                  "lambda_packages. " % (installed_package_name, installed_package_version, lambda_version, ))
+                            self.extract_lambda_package(installed_package_name, temp_project_path)
 
             except Exception as e:
                 print(e)
