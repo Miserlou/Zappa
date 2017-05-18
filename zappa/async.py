@@ -129,7 +129,7 @@ class LambdaAsyncResponse(object):
         else: # pragma: no cover
             self.client = LAMBDA_CLIENT
 
-    def send(self, task_path, args, kwargs):
+    def send(self, task_path, lambda_function, args, kwargs):
         """
         Create the message object and pass it to the actual sender.
         """
@@ -138,10 +138,10 @@ class LambdaAsyncResponse(object):
                 'args': args,
                 'kwargs': kwargs
             }
-        self._send(message)
+        self._send(message, lambda_function)
         return self
 
-    def _send(self, message):
+    def _send(self, message, lambda_function):
         """
         Given a message, directly invoke the lamdba function for this task.
         """
@@ -150,7 +150,7 @@ class LambdaAsyncResponse(object):
         if len(payload) > 128000: # pragma: no cover
             raise AsyncException("Payload too large for async Lambda call")
         self.response = self.client.invoke(
-                                    FunctionName=AWS_LAMBDA_FUNCTION_NAME,
+                                    FunctionName=lambda_function,
                                     InvocationType='Event', #makes the call async
                                     Payload=payload
                                 )
@@ -246,7 +246,8 @@ def run_message(message):
 # Execution interfaces and classes
 ##
 
-def run(func, args=[], kwargs={}, service='lambda', **task_kwargs):
+def run(func, args=[], kwargs={}, service='lambda',
+        aws_lambda_function_name_override=None, aws_region_override=None, **task_kwargs):
     """
     Instead of decorating a function with @task, you can just run it directly.
     If you were going to do func(*args, **kwargs), then you will call this:
@@ -261,13 +262,17 @@ def run(func, args=[], kwargs={}, service='lambda', **task_kwargs):
     and other arguments are similar to @task
     """
     task_path = get_func_task_path(func)
+
+    lambda_function = aws_lambda_function_name_override or AWS_LAMBDA_FUNCTION_NAME
+    aws_region = aws_region_override or AWS_REGION
+
     return ASYNC_CLASSES[service](**task_kwargs).send(task_path, args, kwargs)
 
 
 # Handy:
 # http://stackoverflow.com/questions/10294014/python-decorator-best-practice-using-a-class-vs-a-function
 # However, this needs to pass inspect.getargspec() in handler.py which does not take classes
-def task(func, service='lambda'):
+def task(func, service='lambda', aws_lambda_function_name_override=None, aws_region_override=None):
     """Async task decorator so that running
 
     Args:
@@ -282,6 +287,9 @@ def task(func, service='lambda'):
         run asynchronously through the service in question
     """
     task_path = get_func_task_path(func)
+
+    lambda_function = aws_lambda_function_name_override or AWS_LAMBDA_FUNCTION_NAME
+    aws_region = aws_region_override or AWS_REGION
 
     def _run_async(*args, **kwargs):
         """
@@ -302,8 +310,8 @@ def task(func, service='lambda'):
             When outside of Lambda, the func passed to @task is run and we
             return the actual value.
         """
-        if (service in ASYNC_CLASSES) and (AWS_LAMBDA_FUNCTION_NAME):
-            send_result = ASYNC_CLASSES[service]().send(task_path, args, kwargs)
+        if (service in ASYNC_CLASSES) and lambda_function:
+            send_result = ASYNC_CLASSES[service](lambda_function, aws_region).send(task_path, args, kwargs)
             return send_result
         else:
             return func(*args, **kwargs)
