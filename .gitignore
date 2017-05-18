@@ -78,3 +78,6 @@ target/
 tests/zappa_settings.json
 tests/example_template_outputs
 
+# Sublime Text stuff
+*.sublime-project
+*.sublime-workspace
