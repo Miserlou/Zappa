@@ -487,7 +487,7 @@ class Zappa(object):
             try:
                 for installed_package_name, installed_package_version in installed_packages.items():
                     if self.have_correct_lambda_package_version(installed_package_name, installed_package_version):
-                        print("Using lambda_packages binary for %s %s" % (installed_package_name, installed_package_version,))
+                        print(" - %s==%s: Using precompiled lambda package " % (installed_package_name, installed_package_version,))
                         self.extract_lambda_package(installed_package_name, temp_project_path)
                     else:
                         cached_wheel_path = self.get_cached_manylinux_wheel(installed_package_name, installed_package_version)
@@ -502,8 +502,7 @@ class Zappa(object):
                             # Finally see if we may have at least one version of the package in lambda packages
                             # Related: https://github.com/Miserlou/Zappa/issues/855
                             lambda_version = lambda_packages[installed_package_name][self.runtime]['version']
-                            print("Warning! You require pre-compiled %s version %s but will use %s that is in "
-                                  "lambda_packages. " % (installed_package_name, installed_package_version, lambda_version, ))
+                            print(" - %s==%s: Warning! Using precompiled lambda package version %s instead!" % (installed_package_name, installed_package_version, lambda_version, ))
                             self.extract_lambda_package(installed_package_name, temp_project_path)
 
             except Exception as e:
@@ -670,11 +669,11 @@ class Zappa(object):
             if not wheel_url:
                 return None
 
-            print("{} - Downloading".format(package_name))
+            print(" - {}=={}: Downloading".format(package_name, package_version))
             with open(wheel_path, 'wb') as f:
                 self.download_url_with_progress(wheel_url, f)
         else:
-            print("{} - Locally Cached at {}".format(package_name, wheel_path))
+            print(" - {}=={}: Using locally cached manylinux wheel".format(package_name, package_version))
 
         return wheel_path
 
