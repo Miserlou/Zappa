@@ -1,5 +1,13 @@
 # Zappa Changelog
 
+## 0.42.0
+* Cached manylinux wheel installed
+* New dependency installation formatting
+* Clarify "stage" vs "environment" terminology in code
+* Fix problem with capitalized packages
+* Delete local package if using wheels version. This saves several MBs on package size in some cases (e.g. numpy).
+* Thanks to @mcrowson, @nikbora and @schuyler1d
+
 ## 0.41.3
 * Various Python3 fixes
 * Remove some dead code
