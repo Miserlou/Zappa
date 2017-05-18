@@ -631,12 +631,6 @@ class Zappa(object):
         """
         return lambda_packages.get(package_name, {}).get(self.runtime) is not None
 
-    def have_correct_manylinux_package_version(self, package_name, package_version):
-        """
-        Checks if a given package version binary should be downlaoded from PyPi manylinux wheel
-        """
-        return self.get_cached_manylinux_wheel(package_name, package_version) is not None
-
     @staticmethod
     def download_url_with_progress(url, stream):
         """
