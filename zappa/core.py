@@ -22,7 +22,7 @@ from builtins import int, bytes
 from botocore.exceptions import ClientError
 from distutils.dir_util import copy_tree
 from io import BytesIO, open
-from lambda_packages import lambda_packages
+from lambda_packages import lambda_packages as lambda_packages_orig
 from setuptools import find_packages
 from tqdm import tqdm
 
@@ -43,6 +43,10 @@ logging.basicConfig(format='%(levelname)s:%(message)s')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+
+# We lower-case lambda package keys to match lower-cased keys in get_installed_packages()
+lambda_packages = {package_name.lower():val
+                   for package_name,val in lambda_packages_orig.items()}
 
 ##
 # Policies And Template Mappings
@@ -482,7 +486,6 @@ class Zappa(object):
 
             try:
                 for installed_package_name, installed_package_version in installed_packages.items():
-
                     if self.have_correct_lambda_package_version(installed_package_name, installed_package_version):
                         print("Using lambda_packages binary for %s %s" % (installed_package_name, installed_package_version,))
                         self.extract_lambda_package(installed_package_name, temp_project_path)
@@ -612,6 +615,7 @@ class Zappa(object):
     def have_correct_lambda_package_version(self, package_name, package_version):
         """
         Checks if a given package version binary should be copied over from lambda packages.
+        package_name should be lower-cased version of package name.
         """
         lambda_package_details = lambda_packages.get(package_name, {}).get(self.runtime)
 
@@ -628,6 +632,7 @@ class Zappa(object):
     def have_any_lambda_package_version(self, package_name):
         """
         Checks if a given package has any lambda package version. We can try and use it with a warning.
+        package_name should be lower-cased version of package name.
         """
         return lambda_packages.get(package_name, {}).get(self.runtime) is not None
 
