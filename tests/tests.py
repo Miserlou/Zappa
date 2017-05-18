@@ -123,8 +123,8 @@ class TestZappa(unittest.TestCase):
 
     def test_get_manylinux_python27(self):
         z = Zappa(runtime='python2.7')
-        self.assertTrue(z.have_correct_manylinux_package_version('cffi', '1.10.0'))
-        self.assertFalse(z.have_correct_manylinux_package_version('derpderpderpderp', '0.0'))
+        self.assertIsNotNone(z.get_cached_manylinux_wheel('cffi', '1.10.0'))
+        self.assertIsNone(z.get_cached_manylinux_wheel('derpderpderpderp', '0.0'))
 
         # mock with a known manylinux wheel package so that code for downloading them gets invoked
         mock_installed_packages = { 'cffi' : '1.10.0' }
@@ -136,8 +136,8 @@ class TestZappa(unittest.TestCase):
 
     def test_get_manylinux_python36(self):
         z = Zappa(runtime='python3.6')
-        self.assertTrue(z.have_correct_manylinux_package_version('psycopg2', '2.7.1'))
-        self.assertFalse(z.have_correct_manylinux_package_version('derpderpderpderp', '0.0'))
+        self.assertIsNotNone(z.get_cached_manylinux_wheel('psycopg2', '2.7.1'))
+        self.assertIsNone(z.get_cached_manylinux_wheel('derpderpderpderp', '0.0'))
 
         # mock with a known manylinux wheel package so that code for downloading them gets invoked
         mock_installed_packages = {'psycopg2': '2.7.1'}
