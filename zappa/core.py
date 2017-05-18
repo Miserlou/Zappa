@@ -483,24 +483,14 @@ class Zappa(object):
             try:
                 for installed_package_name, installed_package_version in installed_packages.items():
 
-                    if self.should_use_lambda_package(installed_package_name, installed_package_version):
-                        print("Using lambda-packages binary for %s %s" % (installed_package_name, installed_package_version,))
+                    if self.have_correct_lambda_package_version(installed_package_name, installed_package_version):
+                        print("Using lambda_packages binary for %s %s" % (installed_package_name, installed_package_version,))
+                        self.extract_lambda_package(installed_package_name, temp_project_path)
 
-                        lambda_package = lambda_packages[installed_package_name][self.runtime]
-
-                        tar = tarfile.open(lambda_package['path'], mode="r:gz")
-                        for member in tar.getmembers():
-                            # If we can, trash the local version.
-                            if member.isdir():
-                                shutil.rmtree(os.path.join(temp_project_path, member.name), ignore_errors=True)
-                                continue
-
-                            tar.extract(member, temp_project_path)
-
-                    else:
+                    elif self.have_correct_manylinux_package_version(installed_package_name, installed_package_version):
                         # Otherwise try to use manylinux packages from PyPi..
                         # Related: https://github.com/Miserlou/Zappa/issues/398
-                        wheel_url = self.get_manylinux_wheel(installed_package_name, installed_package_version)
+                        wheel_url = self.get_manylinux_wheel_url(installed_package_name, installed_package_version)
 
                         if wheel_url:
                             print("Downloading %s" % os.path.basename(wheel_url))
@@ -509,7 +499,18 @@ class Zappa(object):
                                 self.download_url_with_progress(wheel_url, file_stream)
 
                                 with zipfile.ZipFile(file_stream) as zfile:
+                                    # Since we are getting a manylinux wheel for the package we should delete the local
+                                    # version to save space in the resulting Zappa package.
+                                    shutil.rmtree(os.path.join(temp_project_path, installed_package_name), ignore_errors = True)
                                     zfile.extractall(temp_project_path)
+
+                    elif self.have_any_lambda_package_version(installed_package_name):
+                        # Finally see if we may have at least one version of the package in lambda packages
+                        # Related: https://github.com/Miserlou/Zappa/issues/855
+                        lambda_version = lambda_packages[installed_package_name][self.runtime]['version']
+                        print("Warning! You require pre-compiled %s version %s but will use %s that is in "
+                              "lambda_packages. " % (installed_package_name, installed_package_version, lambda_version, ))
+                        self.extract_lambda_package(installed_package_name, temp_project_path)
 
             except Exception as e:
                 print(e)
@@ -586,6 +587,19 @@ class Zappa(object):
 
         return zip_fname
 
+    def extract_lambda_package(self, package_name, path):
+        """
+        Extracts the lambda package into a given path. Assumes the package exists in lambda packages.
+        """
+        lambda_package = lambda_packages[package_name][self.runtime]
+
+        # Trash the local version to help with package space saving
+        shutil.rmtree(os.path.join(path, package_name), ignore_errors=True)
+
+        tar = tarfile.open(lambda_package['path'], mode="r:gz")
+        for member in tar.getmembers():
+            tar.extract(member, path)
+
     @staticmethod
     def get_installed_packages(site_packages, site_packages_64):
         """
@@ -604,21 +618,33 @@ class Zappa(object):
 
         return installed_packages
 
-    def should_use_lambda_package(self, package_name, package_version):
+    def have_correct_lambda_package_version(self, package_name, package_version):
         """
-        Checks if a given package version binary should be copied over from lambda-packages
+        Checks if a given package version binary should be copied over from lambda packages.
         """
-        lambda_package_details = lambda_packages.get(package_name, None)
+        lambda_package_details = lambda_packages.get(package_name, {}).get(self.runtime)
 
-        if lambda_package_details is None or self.runtime not in lambda_package_details:
+        if lambda_package_details is None:
             return False
 
         # Binaries can be compiled for different package versions
         # Related: https://github.com/Miserlou/Zappa/issues/800
-        if package_version != lambda_package_details[self.runtime]['version']:
+        if package_version != lambda_package_details['version']:
             return False
 
         return True
+
+    def have_any_lambda_package_version(self, package_name):
+        """
+        Checks if a given package has any lambda package version. We can try and use it with a warning.
+        """
+        return lambda_packages.get(package_name, {}).get(self.runtime) is not None
+
+    def have_correct_manylinux_package_version(self, package_name, package_version):
+        """
+        Checks if a given package version binary should be downlaoded from PyPi manylinux wheel
+        """
+        return self.get_manylinux_wheel_url(package_name, package_version) is not None
 
     @staticmethod
     def download_url_with_progress(url, stream):
@@ -637,7 +663,7 @@ class Zappa(object):
 
         progress.close()
 
-    def get_manylinux_wheel(self, package_name, package_version):
+    def get_manylinux_wheel_url(self, package_name, package_version):
         """
         For a given package name, returns a link to the download URL,
         else returns None.
