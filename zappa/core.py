@@ -487,15 +487,13 @@ class Zappa(object):
                         print("Using lambda_packages binary for %s %s" % (installed_package_name, installed_package_version,))
                         self.extract_lambda_package(installed_package_name, temp_project_path)
 
-                    elif self.have_correct_manylinux_package_version(installed_package_name, installed_package_version):
+                    cached_wheel_path = self.get_cached_manylinux_wheel(installed_package_name, installed_package_version) 
+                    if cached_wheel_path:
                         # Otherwise try to use manylinux packages from PyPi..
                         # Related: https://github.com/Miserlou/Zappa/issues/398
-                        cached_wheel_path = self.get_cached_manylinux_wheel(installed_package_name,
-                                                                            installed_package_version)
-                        if cached_wheel_path:
-                            shutil.rmtree(os.path.join(temp_project_path, installed_package_name), ignore_errors=True)
-                            with zipfile.ZipFile(cached_wheel_path) as zfile:
-                                zfile.extractall(temp_project_path)
+                        shutil.rmtree(os.path.join(temp_project_path, installed_package_name), ignore_errors=True)
+                        with zipfile.ZipFile(cached_wheel_path) as zfile:
+                            zfile.extractall(temp_project_path)
 
                     elif self.have_any_lambda_package_version(installed_package_name):
                         # Finally see if we may have at least one version of the package in lambda packages
@@ -677,7 +675,7 @@ class Zappa(object):
             with open(wheel_path, 'wb') as f:
                 self.download_url_with_progress(wheel_url, f)
         else:
-            print("{} - Locally Cached".format(package_name))
+            print("{} - Locally Cached at {}".format(package_name, wheel_path))
 
         return wheel_path
 
