@@ -20,13 +20,10 @@ import tempfile
 from click.exceptions import ClickException
 from lambda_packages import lambda_packages
 
-from .test_app import remote_async_me, async_me
-from placebo.utils import placebo_session
 try:
     from mock import patch
 except ImportError:
     from unittest.mock import patch
-
 
 from zappa.async import AsyncException, LambdaAsyncResponse, SnsAsyncResponse
 from zappa.async import import_and_get_task, \
@@ -87,16 +84,3 @@ class TestZappa(unittest.TestCase):
     def test_sync_call(self):
         funk = import_and_get_task("tests.test_app.async_me")
         self.assertEqual(funk.sync('123'), "run async when on lambda 123")
-
-    @placebo_session
-    def test_remote_lambda_call(self, session):
-        """Ensure that we hit lambda to invoke the function even though we're not there"""
-
-        with patch('boto3.Session') as mock_session:
-            mock_session.return_value = session
-
-            res = remote_async_me('456')
-            self.assertTrue(isinstance(res, LambdaAsyncResponse))
-
-            local_res = async_me('123')
-            self.assertEquals(local_res, "run async when on lambda 123")
