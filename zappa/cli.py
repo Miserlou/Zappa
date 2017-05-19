@@ -78,7 +78,7 @@ class ZappaCLI(object):
     # CLI
     vargs = None
     command = None
-    command_env = None
+    stage_env = None
 
     # Zappa settings
     zappa = None
@@ -134,7 +134,7 @@ class ZappaCLI(object):
             try:
                 stage_settings = dict(self.zappa_settings[stage].copy())
             except KeyError:
-                raise ClickException("Cannot extend settings for undefined environment '" + stage + "'.")
+                raise ClickException("Cannot extend settings for undefined stage '" + stage + "'.")
 
             extends_stage = self.zappa_settings[stage].get('extends', None)
             if not extends_stage:
@@ -191,9 +191,9 @@ class ZappaCLI(object):
         env_parser = argparse.ArgumentParser(add_help=False)
         me_group = env_parser.add_mutually_exclusive_group()
         all_help = ('Execute this command for all of our defined '
-                    'Zappa environments.')
+                    'Zappa stages.')
         me_group.add_argument('--all', action='store_true', help=all_help)
-        me_group.add_argument('command_env', nargs='?')
+        me_group.add_argument('stage_env', nargs='?')
 
         group = env_parser.add_argument_group()
         group.add_argument(
@@ -402,17 +402,17 @@ class ZappaCLI(object):
 
         # Parse the input
         # NOTE(rmoe): Special case for manage command
-        # The manage command can't have both command_env and command_rest
+        # The manage command can't have both stage_env and command_rest
         # arguments. Since they are both positional arguments argparse can't
         # differentiate the two. This causes problems when used with --all.
         # (e.g. "manage --all showmigrations admin" argparse thinks --all has
-        # been specified AND that command_env='showmigrations')
+        # been specified AND that stage_env='showmigrations')
         # By having command_rest collect everything but --all we can split it
         # apart here instead of relying on argparse.
         if args.command == 'manage' and not self.vargs.get('all'):
-            self.command_env = self.vargs['command_rest'].pop(0)
+            self.stage_env = self.vargs['command_rest'].pop(0)
         else:
-            self.command_env = self.vargs.get('command_env')
+            self.stage_env = self.vargs.get('stage_env')
 
         self.command = args.command
 
@@ -434,42 +434,42 @@ class ZappaCLI(object):
         # Load and Validate Settings File
         self.load_settings_file(self.vargs.get('settings_file'))
 
-        # Should we execute this for all environments, or just one?
-        all_environments = self.vargs.get('all')
-        environments = []
+        # Should we execute this for all stages, or just one?
+        all_stages = self.vargs.get('all')
+        stages = []
 
-        if all_environments: # All envs!
-            environments = self.zappa_settings.keys()
+        if all_stages: # All stages!
+            stages = self.zappa_settings.keys()
         else: # Just one env.
-            if not self.command_env:
-                # If there's only one environment defined in the settings,
+            if not self.stage_env:
+                # If there's only one stage defined in the settings,
                 # use that as the default.
                 if len(self.zappa_settings.keys()) == 1:
-                    environments.append(list(self.zappa_settings.keys())[0])
+                    stages.append(list(self.zappa_settings.keys())[0])
                 else:
-                    parser.error("Please supply an environment to interact with.")
+                    parser.error("Please supply an stage to interact with.")
             else:
-                environments.append(self.command_env)
+                stages.append(self.stage_env)
 
-        for environment in environments:
+        for stage in stages:
             try:
-                self.dispatch_command(self.command, environment)
+                self.dispatch_command(self.command, stage)
             except ClickException as e:
                 # Discussion on exit codes: https://github.com/Miserlou/Zappa/issues/407
                 e.show()
                 sys.exit(e.exit_code)
 
-    def dispatch_command(self, command, environment):
+    def dispatch_command(self, command, stage):
         """
-        Given a command to execute and environment,
+        Given a command to execute and stage,
         execute that command.
         """
 
-        self.api_stage = environment
+        self.api_stage = stage
 
         if command not in ['status', 'manage']:
             if not self.vargs['json']:
-                click.echo("Calling " + click.style(command, fg="green", bold=True) + " for environment " +
+                click.echo("Calling " + click.style(command, fg="green", bold=True) + " for stage " +
                            click.style(self.api_stage, bold=True) + ".." )
 
         # Explicity define the app function.
@@ -1291,7 +1291,7 @@ class ZappaCLI(object):
 
         # Create Env
         while True:
-            click.echo("Your Zappa configuration can support multiple production environments, like '" +
+            click.echo("Your Zappa configuration can support multiple production stages, like '" +
                        click.style("dev", bold=True)  + "', '" + click.style("staging", bold=True)  + "', and '" +
                        click.style("production", bold=True)  + "'.")
             env = input("What do you want to call this environment (default 'dev'): ") or "dev"
@@ -1299,7 +1299,7 @@ class ZappaCLI(object):
                 self.check_stage_name(env)
                 break
             except ValueError:
-                click.echo(click.style("Environment names must match a-zA-Z0-9_", fg="red"))
+                click.echo(click.style("Stage names must match a-zA-Z0-9_", fg="red"))
 
         # Detect AWS profiles and regions
         # If anyone knows a more straightforward way to easily detect and parse AWS profiles I'm happy to change this, feels like a hack
@@ -1723,16 +1723,16 @@ class ZappaCLI(object):
         # Load up file
         self.load_settings_file(settings_file)
 
-        # Make sure that the environments are valid names:
+        # Make sure that the stages are valid names:
         for stage_name in self.zappa_settings.keys():
             try:
                 self.check_stage_name(stage_name)
             except ValueError:
                 raise ValueError("API stage names must match a-zA-Z0-9_ ; '{0!s}' does not.".format(stage_name))
 
-        # Make sure that this environment is our settings
+        # Make sure that this stage is our settings
         if self.api_stage not in self.zappa_settings.keys():
-            raise ClickException("Please define '{0!s}' in your Zappa settings.".format(self.api_stage))
+            raise ClickException("Please define stage '{0!s}' in your Zappa settings.".format(self.api_stage))
 
         # We need a working title for this project. Use one if supplied, else cwd dirname.
         if 'project_name' in self.stage_config: # pragma: no cover
@@ -1748,7 +1748,7 @@ class ZappaCLI(object):
         #           And various others from Slack.
         self.lambda_name = slugify.slugify(self.project_name + '-' + self.api_stage)
 
-        # Load environment-specific settings
+        # Load stage-specific settings
         self.s3_bucket_name = self.stage_config.get('s3_bucket', "zappa-" + ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(9)))
         self.vpc_config = self.stage_config.get('vpc_config', {})
         self.memory_size = self.stage_config.get('memory_size', 512)
@@ -2009,7 +2009,7 @@ class ZappaCLI(object):
                 env_dict['AWS_REGION'] = self.aws_region
             env_dict.update(dict(self.environment_variables))
 
-            # Environement variable keys can't be Unicode
+            # Environment variable keys can't be Unicode
             # https://github.com/Miserlou/Zappa/issues/604
             try:
                 env_dict = dict((k.encode('ascii'), v) for (k, v) in env_dict.items())

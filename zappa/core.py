@@ -22,7 +22,7 @@ from builtins import int, bytes
 from botocore.exceptions import ClientError
 from distutils.dir_util import copy_tree
 from io import BytesIO, open
-from lambda_packages import lambda_packages
+from lambda_packages import lambda_packages as lambda_packages_orig
 from setuptools import find_packages
 from tqdm import tqdm
 
@@ -43,6 +43,10 @@ logging.basicConfig(format='%(levelname)s:%(message)s')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+
+# We lower-case lambda package keys to match lower-cased keys in get_installed_packages()
+lambda_packages = {package_name.lower():val
+                   for package_name,val in lambda_packages_orig.items()}
 
 ##
 # Policies And Template Mappings
@@ -482,35 +486,24 @@ class Zappa(object):
 
             try:
                 for installed_package_name, installed_package_version in installed_packages.items():
-
                     if self.have_correct_lambda_package_version(installed_package_name, installed_package_version):
-                        print("Using lambda_packages binary for %s %s" % (installed_package_name, installed_package_version,))
+                        print(" - %s==%s: Using precompiled lambda package " % (installed_package_name, installed_package_version,))
                         self.extract_lambda_package(installed_package_name, temp_project_path)
+                    else:
+                        cached_wheel_path = self.get_cached_manylinux_wheel(installed_package_name, installed_package_version)
+                        if cached_wheel_path:
+                            # Otherwise try to use manylinux packages from PyPi..
+                            # Related: https://github.com/Miserlou/Zappa/issues/398
+                            shutil.rmtree(os.path.join(temp_project_path, installed_package_name), ignore_errors=True)
+                            with zipfile.ZipFile(cached_wheel_path) as zfile:
+                                zfile.extractall(temp_project_path)
 
-                    elif self.have_correct_manylinux_package_version(installed_package_name, installed_package_version):
-                        # Otherwise try to use manylinux packages from PyPi..
-                        # Related: https://github.com/Miserlou/Zappa/issues/398
-                        wheel_url = self.get_manylinux_wheel_url(installed_package_name, installed_package_version)
-
-                        if wheel_url:
-                            print("Downloading %s" % os.path.basename(wheel_url))
-
-                            with BytesIO() as file_stream:
-                                self.download_url_with_progress(wheel_url, file_stream)
-
-                                with zipfile.ZipFile(file_stream) as zfile:
-                                    # Since we are getting a manylinux wheel for the package we should delete the local
-                                    # version to save space in the resulting Zappa package.
-                                    shutil.rmtree(os.path.join(temp_project_path, installed_package_name), ignore_errors = True)
-                                    zfile.extractall(temp_project_path)
-
-                    elif self.have_any_lambda_package_version(installed_package_name):
-                        # Finally see if we may have at least one version of the package in lambda packages
-                        # Related: https://github.com/Miserlou/Zappa/issues/855
-                        lambda_version = lambda_packages[installed_package_name][self.runtime]['version']
-                        print("Warning! You require pre-compiled %s version %s but will use %s that is in "
-                              "lambda_packages. " % (installed_package_name, installed_package_version, lambda_version, ))
-                        self.extract_lambda_package(installed_package_name, temp_project_path)
+                        elif self.have_any_lambda_package_version(installed_package_name):
+                            # Finally see if we may have at least one version of the package in lambda packages
+                            # Related: https://github.com/Miserlou/Zappa/issues/855
+                            lambda_version = lambda_packages[installed_package_name][self.runtime]['version']
+                            print(" - %s==%s: Warning! Using precompiled lambda package version %s instead!" % (installed_package_name, installed_package_version, lambda_version, ))
+                            self.extract_lambda_package(installed_package_name, temp_project_path)
 
             except Exception as e:
                 print(e)
@@ -621,6 +614,7 @@ class Zappa(object):
     def have_correct_lambda_package_version(self, package_name, package_version):
         """
         Checks if a given package version binary should be copied over from lambda packages.
+        package_name should be lower-cased version of package name.
         """
         lambda_package_details = lambda_packages.get(package_name, {}).get(self.runtime)
 
@@ -637,14 +631,9 @@ class Zappa(object):
     def have_any_lambda_package_version(self, package_name):
         """
         Checks if a given package has any lambda package version. We can try and use it with a warning.
+        package_name should be lower-cased version of package name.
         """
         return lambda_packages.get(package_name, {}).get(self.runtime) is not None
-
-    def have_correct_manylinux_package_version(self, package_name, package_version):
-        """
-        Checks if a given package version binary should be downlaoded from PyPi manylinux wheel
-        """
-        return self.get_manylinux_wheel_url(package_name, package_version) is not None
 
     @staticmethod
     def download_url_with_progress(url, stream):
@@ -662,6 +651,31 @@ class Zappa(object):
                 stream.write(chunk)
 
         progress.close()
+
+    def get_cached_manylinux_wheel(self, package_name, package_version):
+        """
+        Gets the locally stored version of a manylinux wheel. If one does not exist, the function downloads it.
+        """
+        cached_wheels_dir = os.path.join(tempfile.gettempdir(), 'cached_wheels')
+        if not os.path.isdir(cached_wheels_dir):
+            os.makedirs(cached_wheels_dir)
+
+        wheel_file = '{0!s}-{1!s}-{2!s}'.format(package_name, package_version, self.manylinux_wheel_file_suffix)
+        wheel_path = os.path.join(cached_wheels_dir, wheel_file)
+
+        if not os.path.exists(wheel_path):
+            # The file is not cached, download it.
+            wheel_url = self.get_manylinux_wheel_url(package_name, package_version)
+            if not wheel_url:
+                return None
+
+            print(" - {}=={}: Downloading".format(package_name, package_version))
+            with open(wheel_path, 'wb') as f:
+                self.download_url_with_progress(wheel_url, f)
+        else:
+            print(" - {}=={}: Using locally cached manylinux wheel".format(package_name, package_version))
+
+        return wheel_path
 
     def get_manylinux_wheel_url(self, package_name, package_version):
         """
