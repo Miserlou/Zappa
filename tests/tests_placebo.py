@@ -1,30 +1,17 @@
 # -*- coding: utf8 -*-
-import base64
-import collections
-import json
-
 import mock
 import os
 import random
 import string
-import zipfile
-import re
 import unittest
 
-from click.exceptions import ClickException
-from lambda_packages import lambda_packages
+from .utils import placebo_session
 
-from .utils import placebo_session, patch_open
+from zappa.cli import ZappaCLI
+from zappa.handler import LambdaHandler
+from zappa.utilities import (add_event_source, remove_event_source)
+from zappa.core import Zappa
 
-from zappa.cli import ZappaCLI, shamelessly_promote
-from zappa.ext.django_zappa import get_django_wsgi
-from zappa.handler import LambdaHandler, lambda_handler
-from zappa.letsencrypt import get_cert_and_update_domain, create_domain_key, create_domain_csr, create_chained_certificate, get_cert, cleanup, parse_account_key, parse_csr, sign_certificate, encode_certificate, register_account, verify_challenge
-from zappa.utilities import (detect_django_settings, copytree, detect_flask_apps,
-                        add_event_source, remove_event_source,
-                        get_event_source_status, parse_s3_url)
-from zappa.wsgi import create_wsgi_request, common_log
-from zappa.core import Zappa, ASSUME_POLICY, ATTACH_POLICY
 
 def random_string(length):
     return ''.join(random.choice(string.printable) for _ in range(length))
