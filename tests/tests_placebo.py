@@ -1,30 +1,17 @@
 # -*- coding: utf8 -*-
-import base64
-import collections
-import json
-
 import mock
 import os
 import random
 import string
-import zipfile
-import re
 import unittest
 
-from click.exceptions import ClickException
-from lambda_packages import lambda_packages
+from .utils import placebo_session
 
-from .utils import placebo_session, patch_open
+from zappa.cli import ZappaCLI
+from zappa.handler import LambdaHandler
+from zappa.utilities import (add_event_source, remove_event_source)
+from zappa.core import Zappa
 
-from zappa.cli import ZappaCLI, shamelessly_promote
-from zappa.ext.django_zappa import get_django_wsgi
-from zappa.handler import LambdaHandler, lambda_handler
-from zappa.letsencrypt import get_cert_and_update_domain, create_domain_key, create_domain_csr, create_chained_certificate, get_cert, cleanup, parse_account_key, parse_csr, sign_certificate, encode_certificate, register_account, verify_challenge
-from zappa.utilities import (detect_django_settings, copytree, detect_flask_apps,
-                        add_event_source, remove_event_source,
-                        get_event_source_status, parse_s3_url)
-from zappa.wsgi import create_wsgi_request, common_log
-from zappa.core import Zappa, ASSUME_POLICY, ATTACH_POLICY
 
 def random_string(length):
     return ''.join(random.choice(string.printable) for _ in range(length))
@@ -187,6 +174,24 @@ class TestZappa(unittest.TestCase):
                     u'resources': [u'arn:aws:events:us-east-1:72333333333:rule/tests.test_app.schedule_me']
                 }
         lh.handler(event, None)
+
+        # Test command for async event
+        event = {
+                    u'account': u'72333333333',
+                    u'region': u'us-east-1',
+                    u'detail': {},
+                    u'command': u'zappa.async.route_lambda_task',
+                    u'task_path': u'tests.test_app.async_me',
+                    u'args': [u'xxx'],
+                    u'kwargs': {},
+                    u'source': u'aws.events',
+                    u'version': u'0',
+                    u'time': u'2016-05-10T21:05:39Z',
+                    u'id': u'0d6a6db0-d5e7-4755-93a0-750a8bf49d55',
+                }
+        self.assertEqual('run async when on lambda xxx', lh.handler(event, None))
+        event[u'kwargs'] = {'foo': 'bar'}
+        self.assertEqual('run async when on lambda xxxbar', lh.handler(event, None))
 
         # Test raw_command event
         event = {

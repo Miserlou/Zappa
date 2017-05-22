@@ -26,15 +26,71 @@ Discussion of this comes from:
     https://github.com/Miserlou/Zappa/pull/694
     https://github.com/Miserlou/Zappa/pull/732
 
+## Full lifetime of an asynchronous dispatch:
+
+1. In a file called `foo.py`, there is the following code:
+
+```
+   from zappa.async import task
+
+   @task
+   def my_async_func(*args, **kwargs):
+       return sum(args)
+```
+
+2. The decorator desugars to:
+   `my_async_func = task(my_async_func)`
+
+3. Somewhere else, the code runs:
+   `res = my_async_func(1,2)`
+   really calls task's `_run_async(1,2)`
+      with `func` equal to the original `my_async_func`
+   If we are running in Lambda, this runs:
+      LambdaAsyncResponse().send('foo.my_async_func', (1,2), {})
+   and returns the LambdaAsyncResponse instance to the local
+   context.  That local context, can, e.g. test for `res.sent`
+   to confirm it was dispatched correctly.
+
+4. LambdaAsyncResponse.send invoked the currently running
+   AWS Lambda instance with the json message:
+
+```
+   { "command": "zappa.async.route_lambda_task",
+     "task_path": "foo.my_async_func",
+     "args": [1,2],
+     "kwargs": {}
+   }
+```
+
+5. The new lambda instance is invoked with the message above,
+   and Zappa runs its usual bootstrapping context, and inside
+   zappa.handler, the existance of the 'command' key in the message
+   dispatches the full message to zappa.async.route_lambda_task, which
+   in turn calls `run_message(message)`
+
+6. `run_message` loads the task_path value to load the `func` from `foo.py`.
+   We should note that my_async_func is wrapped by @task in this new
+   context, as well.  However, @task also decorated `my_async_func.sync()`
+   to run the original function synchronously.
+
+   `run_message` duck-types the method and finds the `.sync` attribute
+   and runs that instead -- thus we do not infinitely dispatch.
+
+   If `my_async_func` had code to dispatch other functions inside its
+   synchronous portions (or even call itself recursively), those *would*
+   be dispatched asynchronously, unless, of course, they were called
+   by: `my_async_func.sync(1,2)` in which case it would run synchronously
+   and in the current lambda function.
+
 """
 
 import boto3
 import botocore
+from functools import update_wrapper
 import importlib
 import inspect
 import json
 import os
-import traceback
 
 from .utilities import get_topic_name
 
@@ -154,12 +210,7 @@ def route_lambda_task(event, context):
     imports the function, calls the function with args
     """
     message = event
-    func = import_and_get_task(message['task_path'])
-    return func(
-            *message['args'],
-            **message['kwargs']
-        )
-
+    return run_message(message)
 
 def route_sns_task(event, context):
     """
@@ -170,8 +221,22 @@ def route_sns_task(event, context):
     message = json.loads(
             record['Sns']['Message']
         )
+    return run_message(message)
+
+def run_message(message):
+    """
+    Runs a function defined by a message object with keys:
+    'task_path', 'args', and 'kwargs' used by lambda routing
+    and a 'command' in handler.py
+    """
     func = import_and_get_task(message['task_path'])
-    return func(
+    if hasattr(func, 'sync'):
+        return func.sync(
+            *message['args'],
+            **message['kwargs']
+        )
+    else:
+        return func(
             *message['args'],
             **message['kwargs']
         )
@@ -200,40 +265,61 @@ def run(func, args=[], kwargs={}, service='lambda', **task_kwargs):
 
 # Handy:
 # http://stackoverflow.com/questions/10294014/python-decorator-best-practice-using-a-class-vs-a-function
-class task(object):
+# However, this needs to pass inspect.getargspec() in handler.py which does not take classes
+def task(func, service='lambda'):
+    """Async task decorator so that running
+
+    Args:
+        func (function): the function to be wrapped
+            Further requirements:
+            func must be an independent top-level function.
+                 i.e. not a class method or an anonymous function
+        service (str): either 'lambda' or 'sns'
+
+    Returns:
+        A replacement function that dispatches func() to
+        run asynchronously through the service in question
     """
-    Async task decorator for a function.
-    Serialises and dispatches the task to SNS.
-    Lambda subscribes to SNS topic and gets this message
-    Lambda routes the message to the same function
-    """
-    def __init__(self, func):
-        self.func = func
-        self.service = "lambda"
+    task_path = get_func_task_path(func)
 
-    def __call__(self, *args, **kwargs):
+    def _run_async(*args, **kwargs):
         """
-        Get the function path and, if invoked from the main Lambda code, send the message.
+        This is the wrapping async function that replaces the function
+        that is decorated with @task.
+        Args:
+            These are just passed through to @task's func
 
-        If it's local, or invoked directly, simply execute it now.
+        Assuming a valid service is passed to task() and it is run
+        inside a Lambda process (i.e. AWS_LAMBDA_FUNCTION_NAME exists),
+        it dispatches the function to be run through the service variable.
+        Otherwise, it runs the task synchronously.
+
+        Returns:
+            In async mode, the object returned includes state of the dispatch.
+            For instance
+
+            When outside of Lambda, the func passed to @task is run and we
+            return the actual value.
         """
-
-        task_path = get_func_task_path(self.func)
-        routed = is_from_router()
-
-        if (self.service in ASYNC_CLASSES) and (AWS_LAMBDA_FUNCTION_NAME) and (not routed):
-            send_result = ASYNC_CLASSES[self.service]().send(task_path, args, kwargs)
+        if (service in ASYNC_CLASSES) and (AWS_LAMBDA_FUNCTION_NAME):
+            send_result = ASYNC_CLASSES[service]().send(task_path, args, kwargs)
             return send_result
         else:
-            return self.func(*args, **kwargs)
+            return func(*args, **kwargs)
 
-class task_sns(task):
+    update_wrapper(_run_async, func)
+
+    _run_async.service = service
+    _run_async.sync = func
+
+    return _run_async
+
+
+def task_sns(func):
     """
-    SNS-based task dispatcher.
+    SNS-based task dispatcher. Functions the same way as task()
     """
-    def __init__(self, func):
-        self.func = func
-        self.service = "sns"
+    return task(func, service='sns')
 
 ##
 # Utility Functions
@@ -260,18 +346,3 @@ def get_func_task_path(func):
                                         func_name=func.__name__
                                     )
     return task_path
-
-def is_from_router():
-    """
-    Detect if this stack is being executed from the router
-    """
-
-    tb = traceback.extract_stack()
-    for line in tb:
-        for item in line:
-            if 'route_lambda_task' in line:
-                return True
-            if 'route_sns_task' in line:
-                return True
-
-    return False

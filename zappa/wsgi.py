@@ -5,7 +5,6 @@ import logging
 import six
 import sys
 
-from builtins import bytes
 from requestlogger import ApacheFormatter
 from sys import stderr
 from werkzeug import urls
@@ -24,6 +23,7 @@ BINARY_METHODS = [
                     "CONNECT",
                     "OPTIONS"
                 ]
+
 
 def create_wsgi_request(event_info,
                         server_name='zappa',
@@ -50,6 +50,7 @@ def create_wsgi_request(event_info,
         # Related:  https://github.com/Miserlou/Zappa/issues/677
         #           https://github.com/Miserlou/Zappa/issues/683
         #           https://github.com/Miserlou/Zappa/issues/696
+        #           https://github.com/Miserlou/Zappa/issues/836
         #           https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Summary_table
         if binary_support and (method in BINARY_METHODS):
             if event_info.get('isBase64Encoded', False):
@@ -57,11 +58,13 @@ def create_wsgi_request(event_info,
                 body = base64.b64decode(encoded_body)
             else:
                 body = event_info['body']
+                if isinstance(body, six.string_types):
+                    body = body.encode("utf-8")
+
         else:
             body = event_info['body']
-
-        if body and isinstance(body, six.string_types):
-            body = body.encode("utf-8")
+            if isinstance(body, six.string_types):
+                body = body.encode("utf-8")
 
         # Make header names canonical, e.g. content-type => Content-Type
         for header in headers.keys():

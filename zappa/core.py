@@ -22,7 +22,7 @@ from builtins import int, bytes
 from botocore.exceptions import ClientError
 from distutils.dir_util import copy_tree
 from io import BytesIO, open
-from lambda_packages import lambda_packages
+from lambda_packages import lambda_packages as lambda_packages_orig
 from setuptools import find_packages
 from tqdm import tqdm
 
@@ -43,6 +43,10 @@ logging.basicConfig(format='%(levelname)s:%(message)s')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+
+# We lower-case lambda package keys to match lower-cased keys in get_installed_packages()
+lambda_packages = {package_name.lower():val
+                   for package_name,val in lambda_packages_orig.items()}
 
 ##
 # Policies And Template Mappings
@@ -352,7 +356,7 @@ class Zappa(object):
             try:
                 subprocess.check_output('pyenv help', stderr=subprocess.STDOUT)
             except OSError:
-                print("This directory seems to have pyenv's local venv"
+                print("This directory seems to have pyenv's local venv, "
                       "but pyenv executable was not found.")
             with open('.python-version', 'r') as f:
                 env_name = f.read()[:-1]
@@ -399,6 +403,11 @@ class Zappa(object):
 
         # Exclude the zip itself
         exclude.append(zip_path)
+
+        # Make sure that 'concurrent' is always forbidden.
+        # https://github.com/Miserlou/Zappa/issues/827
+        if not 'concurrent' in exclude:
+            exclude.append('concurrent')
 
         def splitpath(path):
             parts = []
@@ -470,47 +479,35 @@ class Zappa(object):
 
         copy_tree(temp_package_path, temp_project_path, update=True)
 
-        package_to_keep = []
-        if os.path.isdir(site_packages):
-            package_to_keep += os.listdir(site_packages)
-        if os.path.isdir(site_packages_64):
-            package_to_keep += os.listdir(site_packages_64)
-
         # Then the pre-compiled packages..
         if use_precompiled_packages:
             print("Downloading and installing dependencies..")
-            installed_packages_name_set = [package.project_name.lower() for package in
-                                           pip.get_installed_distributions() if package.project_name in package_to_keep or
-                                           package.location in [site_packages, site_packages_64]]
-            # First, try lambda packages
-            for name, details in lambda_packages.items():
-                if name.lower() in installed_packages_name_set:
-                    tar = tarfile.open(details['path'], mode="r:gz")
-                    for member in tar.getmembers():
-                        # If we can, trash the local version.
-                        if member.isdir():
-                            shutil.rmtree(os.path.join(temp_project_path, member.name), ignore_errors=True)
-                            continue
-                        tar.extract(member, temp_project_path)
+            installed_packages = self.get_installed_packages(site_packages, site_packages_64)
 
-            progress = tqdm(total=len(installed_packages_name_set), unit_scale=False, unit='pkg')
-
-            # Then try to use manylinux packages from PyPi..
-            # Related: https://github.com/Miserlou/Zappa/issues/398
             try:
-                for installed_package_name in installed_packages_name_set:
-                    if installed_package_name not in lambda_packages:
-                        wheel_url = self.get_manylinux_wheel(installed_package_name)
-                        if wheel_url:
-                            resp = requests.get(wheel_url, timeout=2, stream=True)
-                            resp.raw.decode_content = True
-                            zipresp = resp.raw
-                            with zipfile.ZipFile(BytesIO(zipresp.read())) as zfile:
+                for installed_package_name, installed_package_version in installed_packages.items():
+                    if self.have_correct_lambda_package_version(installed_package_name, installed_package_version):
+                        print(" - %s==%s: Using precompiled lambda package " % (installed_package_name, installed_package_version,))
+                        self.extract_lambda_package(installed_package_name, temp_project_path)
+                    else:
+                        cached_wheel_path = self.get_cached_manylinux_wheel(installed_package_name, installed_package_version)
+                        if cached_wheel_path:
+                            # Otherwise try to use manylinux packages from PyPi..
+                            # Related: https://github.com/Miserlou/Zappa/issues/398
+                            shutil.rmtree(os.path.join(temp_project_path, installed_package_name), ignore_errors=True)
+                            with zipfile.ZipFile(cached_wheel_path) as zfile:
                                 zfile.extractall(temp_project_path)
-                    progress.update()
-            except Exception:
-                pass # XXX - What should we do here?
-            progress.close()
+
+                        elif self.have_any_lambda_package_version(installed_package_name):
+                            # Finally see if we may have at least one version of the package in lambda packages
+                            # Related: https://github.com/Miserlou/Zappa/issues/855
+                            lambda_version = lambda_packages[installed_package_name][self.runtime]['version']
+                            print(" - %s==%s: Warning! Using precompiled lambda package version %s instead!" % (installed_package_name, installed_package_version, lambda_version, ))
+                            self.extract_lambda_package(installed_package_name, temp_project_path)
+
+            except Exception as e:
+                print(e)
+                # XXX - What should we do here?
 
         # Then zip it all up..
         print("Packaging project as zip..")
@@ -583,7 +580,104 @@ class Zappa(object):
 
         return zip_fname
 
-    def get_manylinux_wheel(self, package):
+    def extract_lambda_package(self, package_name, path):
+        """
+        Extracts the lambda package into a given path. Assumes the package exists in lambda packages.
+        """
+        lambda_package = lambda_packages[package_name][self.runtime]
+
+        # Trash the local version to help with package space saving
+        shutil.rmtree(os.path.join(path, package_name), ignore_errors=True)
+
+        tar = tarfile.open(lambda_package['path'], mode="r:gz")
+        for member in tar.getmembers():
+            tar.extract(member, path)
+
+    @staticmethod
+    def get_installed_packages(site_packages, site_packages_64):
+        """
+        Returns a dict of installed packages that Zappa cares about.
+        """
+        import pip  # this is to avoid 'funkiness' with global import
+        package_to_keep = []
+        if os.path.isdir(site_packages):
+            package_to_keep += os.listdir(site_packages)
+        if os.path.isdir(site_packages_64):
+            package_to_keep += os.listdir(site_packages_64)
+
+        installed_packages = {package.project_name.lower(): package.version for package in
+                              pip.get_installed_distributions() if package.project_name in package_to_keep or
+                              package.location in [site_packages, site_packages_64]}
+
+        return installed_packages
+
+    def have_correct_lambda_package_version(self, package_name, package_version):
+        """
+        Checks if a given package version binary should be copied over from lambda packages.
+        package_name should be lower-cased version of package name.
+        """
+        lambda_package_details = lambda_packages.get(package_name, {}).get(self.runtime)
+
+        if lambda_package_details is None:
+            return False
+
+        # Binaries can be compiled for different package versions
+        # Related: https://github.com/Miserlou/Zappa/issues/800
+        if package_version != lambda_package_details['version']:
+            return False
+
+        return True
+
+    def have_any_lambda_package_version(self, package_name):
+        """
+        Checks if a given package has any lambda package version. We can try and use it with a warning.
+        package_name should be lower-cased version of package name.
+        """
+        return lambda_packages.get(package_name, {}).get(self.runtime) is not None
+
+    @staticmethod
+    def download_url_with_progress(url, stream):
+        """
+        Downloads a given url in chunks and writes to the provided stream (can be any io stream).
+        Displays the progress bar for the download.
+        """
+        resp = requests.get(url, timeout=2, stream=True)
+        resp.raw.decode_content = True
+
+        progress = tqdm(unit="B", unit_scale=True, total=int(resp.headers.get('Content-Length', 0)))
+        for chunk in resp.iter_content(chunk_size=1024):
+            if chunk:
+                progress.update(len(chunk))
+                stream.write(chunk)
+
+        progress.close()
+
+    def get_cached_manylinux_wheel(self, package_name, package_version):
+        """
+        Gets the locally stored version of a manylinux wheel. If one does not exist, the function downloads it.
+        """
+        cached_wheels_dir = os.path.join(tempfile.gettempdir(), 'cached_wheels')
+        if not os.path.isdir(cached_wheels_dir):
+            os.makedirs(cached_wheels_dir)
+
+        wheel_file = '{0!s}-{1!s}-{2!s}'.format(package_name, package_version, self.manylinux_wheel_file_suffix)
+        wheel_path = os.path.join(cached_wheels_dir, wheel_file)
+
+        if not os.path.exists(wheel_path):
+            # The file is not cached, download it.
+            wheel_url = self.get_manylinux_wheel_url(package_name, package_version)
+            if not wheel_url:
+                return None
+
+            print(" - {}=={}: Downloading".format(package_name, package_version))
+            with open(wheel_path, 'wb') as f:
+                self.download_url_with_progress(wheel_url, f)
+        else:
+            print(" - {}=={}: Using locally cached manylinux wheel".format(package_name, package_version))
+
+        return wheel_path
+
+    def get_manylinux_wheel_url(self, package_name, package_version):
         """
         For a given package name, returns a link to the download URL,
         else returns None.
@@ -591,12 +685,11 @@ class Zappa(object):
         Related: https://github.com/Miserlou/Zappa/issues/398
         Examples here: https://gist.github.com/perrygeo/9545f94eaddec18a65fd7b56880adbae
         """
-        url = 'https://pypi.python.org/pypi/{}/json'.format(package)
+        url = 'https://pypi.python.org/pypi/{}/json'.format(package_name)
         try:
             res = requests.get(url, timeout=1.5)
             data = res.json()
-            version = data['info']['version']
-            for f in data['releases'][version]:
+            for f in data['releases'][package_version]:
                 if f['filename'].endswith(self.manylinux_wheel_file_suffix):
                     return f['url']
         except Exception as e: # pragma: no cover
@@ -727,7 +820,9 @@ class Zappa(object):
                                 publish=True,
                                 vpc_config=None,
                                 dead_letter_config=None,
-                                runtime='python2.7'
+                                runtime='python2.7',
+                                environment_variables=None,
+                                aws_kms_key_arn=None
                             ):
         """
         Given a bucket and key of a valid Lambda-zip, a function name and a handler, register that Lambda function.
@@ -738,6 +833,10 @@ class Zappa(object):
             dead_letter_config = {}
         if not self.credentials_arn:
             self.get_credentials_arn()
+        if not environment_variables:
+            environment_variables = {}
+        if not aws_kms_key_arn:
+            aws_kms_key_arn = ''
 
         response = self.lambda_client.create_function(
             FunctionName=function_name,
@@ -753,7 +852,9 @@ class Zappa(object):
             MemorySize=memory_size,
             Publish=publish,
             VpcConfig=vpc_config,
-            DeadLetterConfig=dead_letter_config
+            DeadLetterConfig=dead_letter_config,
+            Environment={'Variables': environment_variables},
+            KMSKeyArn=aws_kms_key_arn
         )
 
         return response['FunctionArn']
@@ -782,7 +883,9 @@ class Zappa(object):
                                         memory_size=512,
                                         publish=True,
                                         vpc_config=None,
-                                        runtime='python2.7'
+                                        runtime='python2.7',
+                                        environment_variables=None,
+                                        aws_kms_key_arn=None
                                     ):
         """
         Given an existing function ARN, update the configuration variables.
@@ -793,6 +896,10 @@ class Zappa(object):
             vpc_config = {}
         if not self.credentials_arn:
             self.get_credentials_arn()
+        if not environment_variables:
+            environment_variables = {}
+        if not aws_kms_key_arn:
+            aws_kms_key_arn = ''
 
         response = self.lambda_client.update_function_configuration(
             FunctionName=function_name,
@@ -802,7 +909,9 @@ class Zappa(object):
             Description=description,
             Timeout=timeout,
             MemorySize=memory_size,
-            VpcConfig=vpc_config
+            VpcConfig=vpc_config,
+            Environment={'Variables': environment_variables},
+            KMSKeyArn=aws_kms_key_arn
         )
 
         return response['FunctionArn']

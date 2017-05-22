@@ -1,39 +1,14 @@
 # -*- coding: utf8 -*-
-import base64
 import boto3
-import collections
-import json
-
-from io import BytesIO, StringIO
-import flask
 import mock
 import os
-import random
-import string
-import zipfile
-import re
 import unittest
-import shutil
-import sys
-import tempfile
-
-from click.exceptions import ClickException
-from lambda_packages import lambda_packages
 
 
 from zappa.async import AsyncException, LambdaAsyncResponse, SnsAsyncResponse
 from zappa.async import import_and_get_task, \
-                        get_func_task_path, \
-                        route_lambda_task, \
-                        route_sns_task, \
-                        run, \
-                        task, \
-                        is_from_router
+                        get_func_task_path
 
-from zappa.cli import ZappaCLI, shamelessly_promote
-from zappa.core import Zappa, \
-                        ASSUME_POLICY, \
-                        ATTACH_POLICY
 
 class TestZappa(unittest.TestCase):
     def setUp(self):
@@ -71,10 +46,13 @@ class TestZappa(unittest.TestCase):
         s = SnsAsyncResponse(arn="arn:abc:def", boto_session=boto_session)
 
     def test_nofails_funcs(self):
-        funk = import_and_get_task("tests.test_app.schedule_me")
+        funk = import_and_get_task("tests.test_app.async_me")
         get_func_task_path(funk)
-        is_from_router()
+        self.assertEqual(funk.__name__, 'async_me')
 
     ##
     # Functional tests
     ##
+    def test_sync_call(self):
+        funk = import_and_get_task("tests.test_app.async_me")
+        self.assertEqual(funk.sync('123'), "run async when on lambda 123")

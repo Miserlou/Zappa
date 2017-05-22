@@ -1,11 +1,6 @@
 # -*- coding: utf8 -*-
 import unittest
-import base58
-import json
 import sys
-
-from werkzeug.wrappers import Response
-from werkzeug.http import parse_cookie
 
 from zappa.wsgi import create_wsgi_request
 from zappa.middleware import ZappaWSGIMiddleware, all_casings
