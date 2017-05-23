@@ -1273,7 +1273,7 @@ class ZappaCLI(object):
 
         # Ensure that we don't already have a zappa_settings file.
         if os.path.isfile(settings_file):
-            raise ClickException("This project is " + click.style("already initialized", fg="red", bold=True) + "!")
+            raise ClickException("This project already has a " + click.style("{0!s} file".format(settings_file), fg="red", bold=True) + "!")
 
         # Explain system.
         click.echo(click.style(u"""\n███████╗ █████╗ ██████╗ ██████╗  █████╗
