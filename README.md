@@ -234,6 +234,27 @@ And now your scheduled event rules are deleted.
 
 See the [example](example/) for more details.
 
+##### Advanced Scheduling
+
+Sometimes a function needs multiple expressions to describe its schedule. To set multiple expressions, simply list your functions, and the list of expressions to schedule them using [cron or rate syntax](http://docs.aws.amazon.com/lambda/latest/dg/tutorial-scheduled-events-schedule-expressions.html) in your *zappa_settings.json* file:
+
+```javascript
+{
+    "production": {
+       ...
+       "events": [{
+           "function": "your_module.your_function", // The function to execute
+           "expressions": ["cron(0 20-23 ? * SUN-THU *)", "cron(0 0-8 ? * MON-FRI *)"] // When to execute it (in cron or rate format)
+       }],
+       ...
+    }
+}
+```
+
+This can be used to deal with issues arising from the UTC timezone crossing midnight during business hours in your local timezone.
+
+It should be noted that overlapping expressions will not throw a warning, and should be checked for, to prevent duplicate triggering of functions.
+
 #### Undeploy
 
 If you need to remove the API Gateway and Lambda function that you have previously published, you can simply:

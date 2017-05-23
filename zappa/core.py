@@ -1954,7 +1954,8 @@ class Zappa(object):
                                excluded_source_services=pull_services)
         for event in events:
             function = event['function']
-            expression = event.get('expression', None)
+            expression = event.get('expression', None) # single expression
+            expressions = event.get('expressions', None) # multiple expression
             event_source = event.get('event_source', None)
             name = self.get_scheduled_event_name(event, function, lambda_name)
             description = event.get('description', function)
@@ -1967,35 +1968,39 @@ class Zappa(object):
                 self.get_credentials_arn()
 
             if expression:
-                rule_response = self.events_client.put_rule(
-                    Name=name,
-                    ScheduleExpression=expression,
-                    State='ENABLED',
-                    Description=description,
-                    RoleArn=self.credentials_arn
-                )
+                expressions = [expression] # same code for single and multiple expression
 
-                if 'RuleArn' in rule_response:
-                    logger.debug('Rule created. ARN {}'.format(rule_response['RuleArn']))
+            if expressions:
+                for expression in expressions:
+                    rule_response = self.events_client.put_rule(
+                        Name=name,
+                        ScheduleExpression=expression,
+                        State='ENABLED',
+                        Description=description,
+                        RoleArn=self.credentials_arn
+                    )
 
-                # Specific permissions are necessary for any trigger to work.
-                self.create_event_permission(lambda_name, 'events.amazonaws.com', rule_response['RuleArn'])
+                    if 'RuleArn' in rule_response:
+                        logger.debug('Rule created. ARN {}'.format(rule_response['RuleArn']))
 
-                # Create the CloudWatch event ARN for this function.
-                target_response = self.events_client.put_targets(
-                    Rule=name,
-                    Targets=[
-                        {
-                            'Id': 'Id' + ''.join(random.choice(string.digits) for _ in range(12)),
-                            'Arn': lambda_arn,
-                        }
-                    ]
-                )
+                    # Specific permissions are necessary for any trigger to work.
+                    self.create_event_permission(lambda_name, 'events.amazonaws.com', rule_response['RuleArn'])
 
-                if target_response['ResponseMetadata']['HTTPStatusCode'] == 200:
-                    print("Scheduled {}!".format(name))
-                else:
-                    print("Problem scheduling {}.".format(name))
+                    # Create the CloudWatch event ARN for this function.
+                    target_response = self.events_client.put_targets(
+                        Rule=name,
+                        Targets=[
+                            {
+                                'Id': 'Id' + ''.join(random.choice(string.digits) for _ in range(12)),
+                                'Arn': lambda_arn,
+                            }
+                        ]
+                    )
+
+                    if target_response['ResponseMetadata']['HTTPStatusCode'] == 200:
+                        print("Scheduled {} with expression {}!".format(name, expression))
+                    else:
+                        print("Problem scheduling {} with expression {}.".format(name, expression))
 
             elif event_source:
                 service = self.service_from_arn(event_source['arn'])
