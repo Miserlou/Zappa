@@ -363,9 +363,17 @@ def validate_name(name, maxlen=80):
 
 def contains_python_files_or_subdirs(dirs, files):
     """
-    checks if len of dirs greater 0 or if there are any files ending on .py or .pyc in files
+    Checks (recursively) if the directory contains .py or .pyc files 
     """
-    return len(dirs) > 0 or len([filename for filename in files if filename.endswith('.py') or filename.endswith('.pyc')]) > 0
+    if [filename for filename in files if filename.endswith('.py') or filename.endswith('.pyc')]:
+        return True
+
+    for d in dirs:
+        for _, subdirs, subfiles in os.walk(d):
+            if [filename for filename in subfiles if filename.endswith('.py') or filename.endswith('.pyc')]:
+                return True
+
+    return False
 
 
 def conflicts_with_a_neighbouring_module(directory_path):
