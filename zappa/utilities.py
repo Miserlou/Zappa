@@ -366,3 +366,13 @@ def contains_python_files_or_subdirs(dirs, files):
     checks if len of dirs greater 0 or if there are any files ending on .py or .pyc in files
     """
     return len(dirs) > 0 or len([filename for filename in files if filename.endswith('.py') or filename.endswith('.pyc')]) > 0
+
+
+def conflicts_with_a_neighbouring_module(directory_path):
+    """
+    Checks if a directory lies in the same directory as a .py file with the same name.
+    """
+    parent_dir_path, current_dir_name = os.path.split(os.path.normpath(directory_path))
+    neighbours = os.listdir(parent_dir_path)
+    conflicting_neighbour_filename = current_dir_name+'.py'
+    return conflicting_neighbour_filename in neighbours
