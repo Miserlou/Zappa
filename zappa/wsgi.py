@@ -5,7 +5,6 @@ import logging
 import six
 import sys
 
-from builtins import bytes
 from requestlogger import ApacheFormatter
 from sys import stderr
 from werkzeug import urls
@@ -24,6 +23,7 @@ BINARY_METHODS = [
                     "CONNECT",
                     "OPTIONS"
                 ]
+
 
 def create_wsgi_request(event_info,
                         server_name='zappa',

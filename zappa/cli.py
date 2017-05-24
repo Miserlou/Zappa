@@ -1273,7 +1273,7 @@ class ZappaCLI(object):
 
         # Ensure that we don't already have a zappa_settings file.
         if os.path.isfile(settings_file):
-            raise ClickException("This project is " + click.style("already initialized", fg="red", bold=True) + "!")
+            raise ClickException("This project already has a " + click.style("{0!s} file".format(settings_file), fg="red", bold=True) + "!")
 
         # Explain system.
         click.echo(click.style(u"""\n███████╗ █████╗ ██████╗ ██████╗  █████╗
@@ -1432,7 +1432,8 @@ class ZappaCLI(object):
 
             env_bucket = bucket
             if global_deployment:
-                env_bucket = bucket.replace('-', '_') + '_' + env_name
+            # `zappa init` doesn't generate compatible s3_bucket names #828
+                env_bucket = (bucket + '-' + env_name).replace('_', '-')
 
             env_zappa_settings = {
                 env_name: {
@@ -1573,7 +1574,7 @@ class ZappaCLI(object):
 
         # Let's Encrypt
         if not cert_location and not cert_arn:
-            from zappa.letsencrypt import get_cert_and_update_domain, cleanup
+            from .letsencrypt import get_cert_and_update_domain, cleanup
             cert_success = get_cert_and_update_domain(
                     self.zappa,
                     self.lambda_name,
