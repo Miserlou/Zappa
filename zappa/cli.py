@@ -1502,9 +1502,6 @@ class ZappaCLI(object):
             raise ClickException("Can't certify a domain without " + click.style("domain", fg="red", bold=True) + " configured!")
 
         if not no_confirm: # pragma: no cover
-            if not manual and self.zappa.get_domain_name(self.domain):
-                click.echo(click.style("Warning!", fg="red", bold=True) + " If you have already certified this domain and are calling certify again, you may incur downtime.")
-                click.echo("You can avoid this downtime by calling certify with " + click.style("--manual", bold=True) + " and rotating your certificate yourself through the AWS console.")
             confirm = input("Are you sure you want to certify? [y/n] ")
             if confirm != 'y':
                 return

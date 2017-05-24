@@ -251,6 +251,9 @@ class Zappa(object):
         self.lambda_client = self.boto_session.client('lambda', config=long_config)
         self.events_client = self.boto_session.client('events')
         self.apigateway_client = self.boto_session.client('apigateway')
+        # acm certificates need to be created from us-east-1 to be used by API gateway
+        east_config = botocore.client.Config(region_name='us-east-1')
+        self.acm_client = self.boto_session.client('acm', config=east_config)
         self.logs_client = self.boto_session.client('logs')
         self.iam_client = self.boto_session.client('iam')
         self.iam = self.boto_session.resource('iam')
@@ -1733,23 +1736,11 @@ class Zappa(object):
                            stage=None,
                            route53=True):
         """
+        This updates your certificate information for an existing domain,
+        with similar arguments to boto's update_domain_name API Gateway api.
 
-        This doesn't quite do what it seems like it should do.
-
-        Unfortunately, there is currently no way to programatically rotate the
-        certificate for a currently deployed domain.
-
-        So, what we can do instead is delete the record of it and then recreate it.
-
-        The problem is that this causes a period of downtime. This could take up to 40 minutes,
-        in theory, but in practice this seems to only take (way) less than a minute, making it
-        at least somewhat acceptable.
-
-        Related issues:     https://github.com/Miserlou/Zappa/issues/590
-                            https://github.com/Miserlou/Zappa/issues/588
-                            https://github.com/Miserlou/Zappa/pull/458
-
-
+        It returns the resulting new domain information including the new certificate's ARN
+        if created during this process.
         """
 
         print("Updating domain name!")
@@ -1757,19 +1748,22 @@ class Zappa(object):
         certificate_name = certificate_name + str(time.time())
 
         api_gateway_domain = self.apigateway_client.get_domain_name(domainName=domain_name)
-        self.apigateway_client.delete_domain_name(domainName=domain_name)
-        dns_name = self.create_domain_name(domain_name,
-                           certificate_name,
-                           certificate_body,
-                           certificate_private_key,
-                           certificate_chain,
-                           certificate_arn,
-                           lambda_name,
-                           stage)
-        if route53:
-            self.update_route53_records(domain_name, dns_name)
+        if not certificate_arn\
+           and certificate_body and certificate_private_key and certificate_chain:
+            acm_certificate = self.acm_client.import_certificate(Certificate=certificate_body,
+                                                                 PrivateKey=certificate_private_key,
+                                                                 CertificateChain=certificate_chain)
+            certificate_arn = acm_certificate['CertificateArn']
 
-        return
+        return self.apigateway_client.update_domain_name(domainName=domain_name,
+                                                         patchOperations=[
+                                                             {"op" : "replace",
+                                                              "path" : "/certificateName",
+                                                              "value" : certificate_name},
+                                                             {"op" : "replace",
+                                                              "path" : "/certificateArn",
+                                                              "value" : certificate_arn}
+                                                         ])
 
     def get_domain_name(self, domain_name):
         """
