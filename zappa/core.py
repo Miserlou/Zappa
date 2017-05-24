@@ -1741,6 +1741,15 @@ class Zappa(object):
 
         It returns the resulting new domain information including the new certificate's ARN
         if created during this process.
+
+        Previously, this method involved downtime that could take up to 40 minutes
+        because the API Gateway api only allowed this by deleting, and then creating it.
+
+        Related issues:     https://github.com/Miserlou/Zappa/issues/590
+                            https://github.com/Miserlou/Zappa/issues/588
+                            https://github.com/Miserlou/Zappa/pull/458
+                            https://github.com/Miserlou/Zappa/issues/882
+                            https://github.com/Miserlou/Zappa/pull/883
         """
 
         print("Updating domain name!")
