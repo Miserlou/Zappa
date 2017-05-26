@@ -106,7 +106,7 @@ def create_wsgi_request(event_info,
         }
 
         # Input processing
-        if method in ["POST", "PUT", "PATCH"]:
+        if method in ["POST", "PUT", "PATCH", "DELETE"]:
             if 'Content-Type' in headers:
                 environ['CONTENT_TYPE'] = headers['Content-Type']
 
