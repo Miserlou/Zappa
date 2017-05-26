@@ -25,7 +25,7 @@
             ]
         },
         {
-            "Sid": "CoreLambda",
+            "Sid": "Core",
             "Effect": "Allow",
             "Action": [
                 "lambda:AddPermission",
@@ -46,7 +46,8 @@
                 "cloudformation:UpdateStack",
                 "logs:DescribeLogStreams",
                 "logs:DeleteLogGroup",
-                "logs:FilterLogEvents"
+                "logs:FilterLogEvents",
+                "s3:CreateBucket"
             ],
             "Resource": [
                 "*"
