@@ -7,7 +7,7 @@ durationpy==0.4
 future==0.16.0
 futures==3.1.1
 hjson==2.0.2
-jmespath==0.9.2
+jmespath==0.9.3
 kappa==0.6.0
 lambda-packages==0.15.0
 python-dateutil==2.6.0
