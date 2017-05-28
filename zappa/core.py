@@ -684,16 +684,36 @@ class Zappa(object):
 
         Related: https://github.com/Miserlou/Zappa/issues/398
         Examples here: https://gist.github.com/perrygeo/9545f94eaddec18a65fd7b56880adbae
+
+        This function downloads metadata JSON of `package_name` from Pypi
+        and examines if the package has a manylinux wheel. This function
+        also caches the JSON file so that we don't have to poll Pypi
+        everytime.
         """
-        url = 'https://pypi.python.org/pypi/{}/json'.format(package_name)
-        try:
-            res = requests.get(url, timeout=1.5)
-            data = res.json()
-            for f in data['releases'][package_version]:
-                if f['filename'].endswith(self.manylinux_wheel_file_suffix):
-                    return f['url']
-        except Exception as e: # pragma: no cover
-            return None
+        cached_pypi_info_dir = os.path.join(tempfile.gettempdir(), 'cached_pypi_info')
+        if not os.path.isdir(cached_pypi_info_dir):
+            os.makedirs(cached_pypi_info_dir)
+        # Even though the metadata is for the package, we save it in a
+        # filename that includes the package's version. This helps in
+        # invalidating the cached file if the user moves to a different
+        # version of the package.
+        json_file = '{0!s}-{1!s}.json'.format(package_name, package_version)
+        json_file_path = os.path.join(cached_pypi_info_dir, json_file)
+        if os.path.exists(json_file_path):
+            with open(json_file_path, 'rb') as f_:
+                data = json.load(f_)
+        else:
+            url = 'https://pypi.python.org/pypi/{}/json'.format(package_name)
+            try:
+                res = requests.get(url, timeout=1.5)
+                data = res.json()
+            except Exception as e: # pragma: no cover
+                return None
+            with open(json_file_path, 'wb') as f_:
+                json.dump(data, f_)
+        for f in data['releases'][package_version]:
+            if f['filename'].endswith(self.manylinux_wheel_file_suffix):
+                return f['url']
         return None
 
     ##
