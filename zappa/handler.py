@@ -135,7 +135,7 @@ class LambdaHandler(object):
             else:
 
                 try:  # Support both for tests
-                    from zappa.ext.django import get_django_wsgi
+                    from zappa.ext.django_zappa import get_django_wsgi
                 except ImportError:  # pragma: no cover
                     from django_zappa_app import get_django_wsgi
 
