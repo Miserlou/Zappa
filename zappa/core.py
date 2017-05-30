@@ -700,7 +700,7 @@ class Zappa(object):
         json_file = '{0!s}-{1!s}.json'.format(package_name, package_version)
         json_file_path = os.path.join(cached_pypi_info_dir, json_file)
         if os.path.exists(json_file_path):
-            with open(json_file_path, 'rb') as f_:
+            with open(json_file_path, 'r') as f_:
                 data = json.load(f_)
         else:
             url = 'https://pypi.python.org/pypi/{}/json'.format(package_name)
@@ -709,7 +709,7 @@ class Zappa(object):
                 data = res.json()
             except Exception as e: # pragma: no cover
                 return None
-            with open(json_file_path, 'wb') as f_:
+            with open(json_file_path, 'w') as f_:
                 json.dump(data, f_)
         for f in data['releases'][package_version]:
             if f['filename'].endswith(self.manylinux_wheel_file_suffix):
