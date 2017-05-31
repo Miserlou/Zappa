@@ -1453,7 +1453,7 @@ USE_TZ = True
 
     def test_remote_env_package(self):
         zappa_cli = ZappaCLI()
-        zappa_cli.api_stage = 'depricated_remote_env'
+        zappa_cli.api_stage = 'deprecated_remote_env'
         zappa_cli.load_settings('test_settings.json')
         self.assertEqual('lmbda-env', zappa_cli.stage_config['remote_env_bucket'])
         self.assertEqual('dev/env.json', zappa_cli.stage_config['remote_env_file'])
