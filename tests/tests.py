@@ -1564,13 +1564,13 @@ USE_TZ = True
                     validate_name(value)
 
     def test_contains_python_files_or_subdirs(self):
-        self.assertTrue(contains_python_files_or_subdirs('data'))
-        self.assertTrue(contains_python_files_or_subdirs('data/test2'))
-        self.assertFalse(contains_python_files_or_subdirs('data/test1'))
+        self.assertTrue(contains_python_files_or_subdirs('tests/data'))
+        self.assertTrue(contains_python_files_or_subdirs('tests/data/test2'))
+        self.assertFalse(contains_python_files_or_subdirs('tests/data/test1'))
 
     def test_conflicts_with_a_neighbouring_module(self):
-        self.assertTrue(conflicts_with_a_neighbouring_module('data/test1'))
-        self.assertFalse(conflicts_with_a_neighbouring_module('data/test2'))
+        self.assertTrue(conflicts_with_a_neighbouring_module('tests/data/test1'))
+        self.assertFalse(conflicts_with_a_neighbouring_module('tests/data/test2'))
 
 
 if __name__ == '__main__':
