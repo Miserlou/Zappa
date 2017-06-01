@@ -1,0 +1,9 @@
+# test1 is a directory without any .py files in it, so a __init__.py file should NOT be created in it
+
+Information is not knowledge.
+Knowledge is not wisdom.
+Wisdom is not truth.
+Truth is not beauty.
+Beauty is not love.
+Love is not music.
+Music is THE BEST.

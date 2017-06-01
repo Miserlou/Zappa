@@ -361,17 +361,18 @@ def validate_name(name, maxlen=80):
     return name
 
 
-def contains_python_files_or_subdirs(dirs, files):
+def contains_python_files_or_subdirs(folder):
     """
     Checks (recursively) if the directory contains .py or .pyc files 
     """
-    if [filename for filename in files if filename.endswith('.py') or filename.endswith('.pyc')]:
-        return True
+    for root, dirs, files in os.walk(folder):
+        if [filename for filename in files if filename.endswith('.py') or filename.endswith('.pyc')]:
+            return True
 
-    for d in dirs:
-        for _, subdirs, subfiles in os.walk(d):
-            if [filename for filename in subfiles if filename.endswith('.py') or filename.endswith('.pyc')]:
-                return True
+        for d in dirs:
+            for _, subdirs, subfiles in os.walk(d):
+                if [filename for filename in subfiles if filename.endswith('.py') or filename.endswith('.pyc')]:
+                    return True
 
     return False
 
