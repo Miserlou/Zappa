@@ -33,6 +33,7 @@ from .utilities import (copytree,
                     human_size,
                     get_topic_name,
                     contains_python_files_or_subdirs,
+                    conflicts_with_a_neighbouring_module,
                     get_venv_from_python_version)
 
 ##
@@ -560,15 +561,19 @@ class Zappa(object):
                     zipf.writestr(zipi, f.read(), compression_method)
 
             # Create python init file if it does not exist
-            # Only do that if there are sub folders or python files
+            # Only do that if there are sub folders or python files and does not conflict with a neighbouring module
             # Related: https://github.com/Miserlou/Zappa/issues/766
-            if '__init__.py' not in files and contains_python_files_or_subdirs(dirs, files):
-                tmp_init = os.path.join(temp_project_path, '__init__.py')
-                open(tmp_init, 'a').close()
-                os.chmod(tmp_init,  0o755)
-                zipf.write(tmp_init,
-                           os.path.join(root.replace(temp_project_path, ''),
-                                        os.path.join(root.replace(temp_project_path, ''), '__init__.py')))
+            if not contains_python_files_or_subdirs(root):
+                # if the directory does not contain any .py file at any level, we can skip the rest
+                dirs[:] = [d for d in dirs if d != root]
+            else:
+                if '__init__.py' not in files and not conflicts_with_a_neighbouring_module(root):
+                    tmp_init = os.path.join(temp_project_path, '__init__.py')
+                    open(tmp_init, 'a').close()
+                    os.chmod(tmp_init,  0o755)
+                    zipf.write(tmp_init,
+                               os.path.join(root.replace(temp_project_path, ''),
+                                            os.path.join(root.replace(temp_project_path, ''), '__init__.py')))
 
         # And, we're done!
         zipf.close()

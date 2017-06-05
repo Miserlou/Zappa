@@ -22,7 +22,8 @@ from zappa.letsencrypt import get_cert_and_update_domain, create_domain_key, cre
     create_chained_certificate, cleanup, parse_account_key, parse_csr, sign_certificate, encode_certificate,\
     register_account, verify_challenge
 from zappa.utilities import (detect_django_settings, detect_flask_apps,  parse_s3_url, human_size, string_to_timestamp,
-                        validate_name, InvalidAwsLambdaName, contains_python_files_or_subdirs)
+                             validate_name, InvalidAwsLambdaName, contains_python_files_or_subdirs,
+                             conflicts_with_a_neighbouring_module)
 from zappa.wsgi import create_wsgi_request, common_log
 from zappa.core import Zappa, ASSUME_POLICY, ATTACH_POLICY
 
@@ -1549,8 +1550,6 @@ USE_TZ = True
 
         zappa_cli.remove_local_zip()
 
-
-
     def test_validate_name(self):
         fname = 'tests/name_scenarios.json'
         with open(fname, 'r') as f:
@@ -1565,17 +1564,13 @@ USE_TZ = True
                     validate_name(value)
 
     def test_contains_python_files_or_subdirs(self):
-        files = ['foo.py']
-        dirs = []
-        self.assertTrue(contains_python_files_or_subdirs(dirs, files))
+        self.assertTrue(contains_python_files_or_subdirs('tests/data'))
+        self.assertTrue(contains_python_files_or_subdirs('tests/data/test2'))
+        self.assertFalse(contains_python_files_or_subdirs('tests/data/test1'))
 
-        files = []
-        dirs = ['subfolder']
-        self.assertTrue(contains_python_files_or_subdirs(dirs, files))
-
-        files = ['somefile.txt']
-        dirs = []
-        self.assertFalse(contains_python_files_or_subdirs(dirs, files))
+    def test_conflicts_with_a_neighbouring_module(self):
+        self.assertTrue(conflicts_with_a_neighbouring_module('tests/data/test1'))
+        self.assertFalse(conflicts_with_a_neighbouring_module('tests/data/test2'))
 
 
 if __name__ == '__main__':
