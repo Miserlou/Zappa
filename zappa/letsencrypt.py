@@ -284,7 +284,7 @@ def get_cert(zappa_instance, log=LOGGER, CA=DEFAULT_CA):
         # notify challenge are met
         code, result = _send_signed_request(challenge['uri'], {
             "resource": "challenge",
-            "keyAuthorization": str(keyauthorization),
+            "keyAuthorization": keyauthorization.decode('utf-8'),
         })
         if code != 202:
             raise ValueError("Error triggering challenge: {0} {1}".format(code, result))
