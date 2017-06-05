@@ -378,8 +378,6 @@ If your domain is located within an AWS Route 53 Hosted Zone and you've defined 
 
 And your domain will be verified, certified and registered!
 
-Please note that this can take around 45 minutes to take effect. You can avoid this by using the `certify --manual` and then copying the values presented into the AWS Console.
-
 More detailed instructions are available [in this handy guide](https://github.com/Miserlou/Zappa/blob/master/docs/domain_with_free_ssl_dns.md) and lower down in this README file.
 
 ## Executing in Response to AWS Events
