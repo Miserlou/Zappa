@@ -63,7 +63,7 @@
        "slim_handler": true,
        "delete_local_zip": true
     },
-    "depricated_remote_env": {
+    "deprecated_remote_env": {
        "s3_bucket": "lmbda",
        "remote_env_bucket": "lmbda-env",
        "remote_env_file": "dev/env.json"

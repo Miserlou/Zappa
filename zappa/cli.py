@@ -1774,7 +1774,7 @@ class ZappaCLI(object):
         self.apigateway_description = self.stage_config.get('apigateway_description', None)
 
         self.lambda_handler = self.stage_config.get('lambda_handler', 'handler.lambda_handler')
-        # DEPRICATED. https://github.com/Miserlou/Zappa/issues/456
+        # DEPRECATED. https://github.com/Miserlou/Zappa/issues/456
         self.remote_env_bucket = self.stage_config.get('remote_env_bucket', None)
         self.remote_env_file = self.stage_config.get('remote_env_file', None)
         self.remote_env = self.stage_config.get('remote_env', None)
@@ -1998,7 +1998,7 @@ class ZappaCLI(object):
                 settings_s = settings_s + "REMOTE_ENV='{0!s}'\n".format(
                     self.remote_env
                 )
-            # DEPRICATED. use remove_env instead
+            # DEPRECATED. use remove_env instead
             elif self.remote_env_bucket and self.remote_env_file:
                 settings_s = settings_s + "REMOTE_ENV='s3://{0!s}/{1!s}'\n".format(
                     self.remote_env_bucket, self.remote_env_file
