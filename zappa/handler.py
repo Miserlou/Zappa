@@ -291,6 +291,12 @@ class LambdaHandler(object):
 
         arn = None
         if 'Sns' in record:
+            try:
+                message = json.loads(record['Sns']['Message'])
+                if message.get('command'):
+                    return message['command']
+            except ValueError:
+                pass
             arn = record['Sns'].get('TopicArn')
         elif 'dynamodb' in record or 'kinesis' in record:
             arn = record.get('eventSourceARN')

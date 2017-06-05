@@ -252,6 +252,37 @@ class TestZappa(unittest.TestCase):
         }
         self.assertEqual("AWS SNS EVENT", lh.handler(event, None))
 
+        # Test AWS SNS event
+        event = {
+            u'account': u'72333333333',
+            u'region': u'us-east-1',
+            u'detail': {},
+            u'Records': [
+                {
+                    u'EventVersion': u'1.0',
+                    u'EventSource': u'aws:sns',
+                    u'EventSubscriptionArn': u'arn:aws:sns:EXAMPLE',
+                    u'Sns': {
+                        u'SignatureVersion': u'1',
+                        u'Timestamp': u'1970-01-01T00:00:00.000Z',
+                        u'Signature': u'EXAMPLE',
+                        u'SigningCertUrl': u'EXAMPLE',
+                        u'MessageId': u'95df01b4-ee98-5cb9-9903-4c221d41eb5e',
+                        u'Message': u'{"args": ["arg1", "arg2"], "command": "zappa.async.route_sns_task", '
+                                    u'"task_path": "test_settings.aws_async_sns_event", "kwargs": {"arg3": "varg3"}}',
+                        u'Subject': u'TestInvoke',
+                        u'Type': u'Notification',
+                        u'UnsubscribeUrl': u'EXAMPLE',
+                        u'MessageAttributes': {
+                            u'Test': {u'Type': u'String', u'Value': u'TestString'},
+                            u'TestBinary': {u'Type': u'Binary', u'Value': u'TestBinary'}
+                        }
+                    }
+                }
+            ]
+        }
+        self.assertEqual("AWS ASYNC SNS EVENT", lh.handler(event, None))
+
         # Test AWS DynamoDB event
         event = {
             u'Records': [
