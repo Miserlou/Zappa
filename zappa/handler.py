@@ -158,7 +158,7 @@ class LambdaHandler(object):
                 boto_session = self.session
 
             # Download the zip
-            remote_bucket, remote_file = project_zip_path.lstrip('s3://').split('/', 1)
+            remote_bucket, remote_file = parse_s3_url(project_zip_path)
             s3 = boto_session.resource('s3')
 
             zip_path = '/tmp/{0!s}'.format(remote_file)
