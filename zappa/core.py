@@ -365,7 +365,7 @@ class Zappa(object):
                 print("This directory seems to have pyenv's local venv, "
                       "but pyenv executable was not found.")
             with open('.python-version', 'r') as f:
-                env_name = f.read()[:-1]
+                env_name = f.readline().strip()
             bin_path = subprocess.check_output(['pyenv', 'which', 'python']).decode('utf-8')
             venv = bin_path[:bin_path.rfind(env_name)] + env_name
         else:  # pragma: no cover
