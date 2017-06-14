@@ -1101,6 +1101,85 @@ class ZappaCLI(object):
         else:
             print(response)
 
+    def format_invoke_command(self, string):
+        """
+        Formats correctly the string ouput from the invoke() method,
+        replacing line breaks and tabs when necessary.
+        """
+
+        string = string.replace('\\n', '\n')
+
+        formated_response = ''
+        for line in string.splitlines():
+            if line.startswith('REPORT'):
+                line = line.replace('\t', '\n')
+            if line.startswith('[DEBUG]'):
+                line = line.replace('\t', ' ')
+            formated_response += line + '\n'
+        formated_response = formated_response.replace('\n\n', '\n')
+
+        return formated_response
+
+    def colorize_invoke_command(self, string):
+        """
+        Apply various heuristics to return a colorized version the invoke
+        comman string. If these fail, simply return the string in plaintext.
+
+        Inspired by colorize_log_entry().
+        """
+
+        final_string = string
+
+        try:
+
+            # Line headers
+            try:
+                for token in ['START', 'END', 'REPORT', '[DEBUG]']:
+                    if token in final_string:
+                        format_string = '{}' if token == '[DEBUG]' else '[{}]'
+                        final_string = final_string.replace(token, click.style(
+                            format_string.format(token),
+                            bold=True,
+                            fg='cyan'
+                        ))
+            except Exception: # pragma: no cover
+                pass
+
+            # Green bold Tokens
+            try:
+                for token in [
+                    'Zappa Event:',
+                    'RequestId:',
+                    'Version:',
+                    'Duration:',
+                    'Billed',
+                    'Memory Size:',
+                    'Max Memory Used:'
+                ]:
+                    if token in final_string:
+                        final_string = final_string.replace(token, click.style(
+                            token,
+                            bold=True,
+                            fg='green'
+                        ))
+            except Exception: # pragma: no cover
+                pass
+
+            # UUIDs
+            for token in final_string.replace('\t', ' ').split(' '):
+                try:
+                    if token.count('-') is 4 and token.replace('-', '').isalnum():
+                        final_string = final_string.replace(
+                            token,
+                            click.style(token, fg='magenta')
+                        )
+                except Exception: # pragma: no cover
+                    pass
+
+            return final_string
+        except Exception:
+            return string
+
     def status(self, return_json=False):
         """
         Describe the status of the current deployment.
