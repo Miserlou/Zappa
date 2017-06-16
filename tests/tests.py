@@ -776,6 +776,30 @@ class TestZappa(unittest.TestCase):
         zappa_cli.print_logs(logs, colorize=True, non_http=False, http=False)
         zappa_cli.check_for_update()
 
+    def test_cli_format_invoke_command(self):
+        zappa_cli = ZappaCLI()
+        plain_string = "START RequestId: def8808e-5223-11e7-b3b7-4919f6e7dd4f Version: $LATEST\n[DEBUG]\t2017-06-15T23:39:27.638Z\tdef8808e-5223-11e7-b3b7-4919f6e7dd4f\tZappa Event: {'raw_command': 'import datetime; print(datetime.datetime.now())'}\n2017-06-15 23:39:27.638296\nEND RequestId: def8808e-5223-11e7-b3b7-4919f6e7dd4f\nREPORT RequestId: def8808e-5223-11e7-b3b7-4919f6e7dd4f\tDuration: 0.59 ms\tBilled Duration: 100 ms \tMemory Size: 512 MB\tMax Memory Used: 53 MB\t\n"
+        final_string = "START RequestId: def8808e-5223-11e7-b3b7-4919f6e7dd4f Version: $LATEST\n[DEBUG] 2017-06-15T23:39:27.638Z def8808e-5223-11e7-b3b7-4919f6e7dd4f Zappa Event: {'raw_command': 'import datetime; print(datetime.datetime.now())'}\n2017-06-15 23:39:27.638296\nEND RequestId: def8808e-5223-11e7-b3b7-4919f6e7dd4f\nREPORT RequestId: def8808e-5223-11e7-b3b7-4919f6e7dd4f\nDuration: 0.59 ms\nBilled Duration: 100 ms \nMemory Size: 512 MB\nMax Memory Used: 53 MB\n"
+
+        formated_string = zappa_cli.format_invoke_command(plain_string)
+        self.assertEqual(final_string, formated_string)
+
+    def test_cli_colorize_invoke_command(self):
+        zappa_cli = ZappaCLI()
+        plain_string = "START RequestId: dd81d3de-5225-11e7-a24f-59014f430ab3 Version: $LATEST\n[DEBUG] 2017-06-15T23:53:44.194Z dd81d3de-5225-11e7-a24f-59014f430ab3 Zappa Event: {'raw_command': 'import datetime; print(datetime.datetime.now())'}\n2017-06-15 23:53:44.195012\nEND RequestId: dd81d3de-5225-11e7-a24f-59014f430ab3\nREPORT RequestId: dd81d3de-5225-11e7-a24f-59014f430ab3\nDuration: 0.63 ms\nBilled Duration: 100 ms \nMemory Size: 512 MB\nMax Memory Used: 53 MB\n"
+        final_string = "\x1b[36m\x1b[1m[START]\x1b[0m \x1b[32m\x1b[1mRequestId:\x1b[0m \x1b[35m\x1b[35mdd81d3de-5225-11e7-a24f-59014f430ab3\x1b[0m\x1b[0m \x1b[32m\x1b[1mVersion:\x1b[0m $LATEST\n\x1b[36m\x1b[1m[DEBUG]\x1b[0m 2017-06-15T23:53:44.194Z \x1b[35m\x1b[35mdd81d3de-5225-11e7-a24f-59014f430ab3\x1b[0m\x1b[0m \x1b[32m\x1b[1mZappa Event:\x1b[0m {'raw_command': 'import datetime; print(datetime.datetime.now())'}\n2017-06-15 23:53:44.195012\n\x1b[36m\x1b[1m[END]\x1b[0m \x1b[32m\x1b[1mRequestId:\x1b[0m \x1b[35m\x1b[35mdd81d3de-5225-11e7-a24f-59014f430ab3\x1b[0m\x1b[0m\n\x1b[36m\x1b[1m[REPORT]\x1b[0m \x1b[32m\x1b[1mRequestId:\x1b[0m \x1b[35m\x1b[35mdd81d3de-5225-11e7-a24f-59014f430ab3\x1b[0m\x1b[0m\n\x1b[32m\x1b[1mDuration:\x1b[0m 0.63 ms\n\x1b[32m\x1b[1mBilled\x1b[0m \x1b[32m\x1b[1mDuration:\x1b[0m 100 ms \n\x1b[32m\x1b[1mMemory Size:\x1b[0m 512 MB\n\x1b[32m\x1b[1mMax Memory Used:\x1b[0m 53 MB\n"
+
+        colorized_string = zappa_cli.colorize_invoke_command(plain_string)
+        self.assertEqual(final_string, colorized_string)
+
+    def test_cli_colorize_invoke_command_bad_string(self):
+        zappa_cli = ZappaCLI()
+        plain_string = "Hey, I'm a plain string, won't be colorized"
+        final_string = "Hey, I'm a plain string, won't be colorized"
+
+        colorized_string = zappa_cli.colorize_invoke_command(plain_string)
+        self.assertEqual(final_string, colorized_string)
+
     # def test_cli_args(self):
     #     zappa_cli = ZappaCLI()
     #     # Sanity
