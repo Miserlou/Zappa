@@ -414,6 +414,9 @@ class ZappaCLI(object):
         else:
             self.stage_env = self.vargs.get('stage_env')
 
+        if args.command == 'package':
+            self.load_credentials = False
+
         self.command = args.command
 
 
@@ -2102,14 +2105,16 @@ class ZappaCLI(object):
                 # Need to keep the project zip as the slim handler uses it.
                 self.zappa.remove_from_s3(self.handler_path, self.s3_bucket_name)
 
-
     def on_exit(self):
         """
         Cleanup after the command finishes.
         Always called: SystemExit, KeyboardInterrupt and any other Exception that occurs.
         """
         if self.zip_path:
-            self.remove_uploaded_zip()
+            # Only try to remove uploaded zip if we're running a command that has loaded credentials
+            if self.load_credentials:
+                self.remove_uploaded_zip()
+
             self.remove_local_zip()
 
     def print_logs(self, logs, colorize=True, http=False, non_http=False):

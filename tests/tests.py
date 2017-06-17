@@ -1508,6 +1508,25 @@ USE_TZ = True
             # cleanup
             os.remove(zappa_cli.zip_path)
 
+    def test_package_does_not_load_credentials(self):
+        zappa_cli = ZappaCLI()
+        zappa_cli.api_stage = 'ttt888'
+
+        with mock.patch('zappa.core.Zappa.load_credentials') as LoadCredentialsMock:
+            # load_credentials is set in ZappaCLI.handler; simulates 'zappa package'
+            zappa_cli.load_credentials = False
+            zappa_cli.load_settings('test_settings.json')
+            zappa_cli.package()
+            zappa_cli.on_exit()  # simulate the command exits
+
+            # credentials should not be loaded for package command
+            self.assertFalse(zappa_cli.load_credentials)
+            self.assertFalse(LoadCredentialsMock.called)
+
+        # cleanup
+        os.remove(zappa_cli.zip_path)
+
+
     def test_flask_logging_bug(self):
         """
         This checks whether Flask can write errors sanely.
