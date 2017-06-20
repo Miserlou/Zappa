@@ -250,20 +250,22 @@ class Zappa(object):
         if load_credentials:
             self.load_credentials(boto_session, profile_name)
 
-        self.s3_client = self.boto_session.client('s3')
-        self.lambda_client = self.boto_session.client('lambda', config=long_config)
-        self.events_client = self.boto_session.client('events')
-        self.apigateway_client = self.boto_session.client('apigateway')
-        # acm certificates need to be created from us-east-1 to be used by API gateway
-        east_config = botocore.client.Config(region_name='us-east-1')
-        self.acm_client = self.boto_session.client('acm', config=east_config)
-        self.logs_client = self.boto_session.client('logs')
-        self.iam_client = self.boto_session.client('iam')
-        self.iam = self.boto_session.resource('iam')
-        self.cloudwatch = self.boto_session.client('cloudwatch')
-        self.route53 = self.boto_session.client('route53')
-        self.sns_client = self.boto_session.client('sns')
-        self.cf_client = self.boto_session.client('cloudformation')
+            # Initialize clients
+            self.s3_client = self.boto_session.client('s3')
+            self.lambda_client = self.boto_session.client('lambda', config=long_config)
+            self.events_client = self.boto_session.client('events')
+            self.apigateway_client = self.boto_session.client('apigateway')
+            # acm certificates need to be created from us-east-1 to be used by API gateway
+            east_config = botocore.client.Config(region_name='us-east-1')
+            self.acm_client = self.boto_session.client('acm', config=east_config)
+            self.logs_client = self.boto_session.client('logs')
+            self.iam_client = self.boto_session.client('iam')
+            self.iam = self.boto_session.resource('iam')
+            self.cloudwatch = self.boto_session.client('cloudwatch')
+            self.route53 = self.boto_session.client('route53')
+            self.sns_client = self.boto_session.client('sns')
+            self.cf_client = self.boto_session.client('cloudformation')
+   
         self.cf_template = troposphere.Template()
         self.cf_api_resources = []
         self.cf_parameters = {}
