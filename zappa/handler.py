@@ -445,7 +445,7 @@ class LambdaHandler(object):
                         else:
                             zappa_returndict['body'] = response.data
                     else:
-                        zappa_returndict['body'] = response.data
+                        zappa_returndict['body'] = response.get_data(as_text=True)
 
                 zappa_returndict['statusCode'] = response.status_code
                 zappa_returndict['headers'] = {}
