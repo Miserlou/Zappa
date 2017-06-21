@@ -2304,6 +2304,8 @@ class ZappaCLI(object):
             cloudwatch_log_level=self.stage_config.get('cloudwatch_log_level', 'OFF'),
             cloudwatch_data_trace=self.stage_config.get('cloudwatch_data_trace', False),
             cloudwatch_metrics_enabled=self.stage_config.get('cloudwatch_metrics_enabled', False),
+            cache_cluster_ttl=self.stage_config.get('cache_cluster_ttl', 300),
+            cache_cluster_encrypted=self.stage_config.get('cache_cluster_encrypted', False)
         )
         return endpoint_url
 

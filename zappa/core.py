@@ -1240,7 +1240,9 @@ class Zappa(object):
                             variables=None,
                             cloudwatch_log_level='OFF',
                             cloudwatch_data_trace=False,
-                            cloudwatch_metrics_enabled=False
+                            cloudwatch_metrics_enabled=False,
+                            cache_cluster_ttl=300,
+                            cache_cluster_encrypted=False
                         ):
         """
         Deploy the API Gateway!
@@ -1269,6 +1271,8 @@ class Zappa(object):
                 self.get_patch_op('logging/loglevel', cloudwatch_log_level),
                 self.get_patch_op('logging/dataTrace', cloudwatch_data_trace),
                 self.get_patch_op('metrics/enabled', cloudwatch_metrics_enabled),
+                self.get_patch_op('caching/ttlInSeconds', str(cache_cluster_ttl)),
+                self.get_patch_op('caching/dataEncrypted', cache_cluster_encrypted)
             ]
         )
 
