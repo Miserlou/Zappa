@@ -823,7 +823,7 @@ class Zappa(object):
                                 vpc_config=None,
                                 dead_letter_config=None,
                                 runtime='python2.7',
-                                environment_variables=None,
+                                aws_environment_variables=None,
                                 aws_kms_key_arn=None
                             ):
         """
@@ -835,8 +835,8 @@ class Zappa(object):
             dead_letter_config = {}
         if not self.credentials_arn:
             self.get_credentials_arn()
-        if not environment_variables:
-            environment_variables = {}
+        if not aws_environment_variables:
+            aws_environment_variables = {}
         if not aws_kms_key_arn:
             aws_kms_key_arn = ''
 
@@ -855,7 +855,7 @@ class Zappa(object):
             Publish=publish,
             VpcConfig=vpc_config,
             DeadLetterConfig=dead_letter_config,
-            Environment={'Variables': environment_variables},
+            Environment={'Variables': aws_environment_variables},
             KMSKeyArn=aws_kms_key_arn
         )
 
@@ -886,7 +886,7 @@ class Zappa(object):
                                         publish=True,
                                         vpc_config=None,
                                         runtime='python2.7',
-                                        environment_variables=None,
+                                        aws_environment_variables=None,
                                         aws_kms_key_arn=None
                                     ):
         """
@@ -898,10 +898,19 @@ class Zappa(object):
             vpc_config = {}
         if not self.credentials_arn:
             self.get_credentials_arn()
-        if not environment_variables:
-            environment_variables = {}
+        if not aws_environment_variables:
+            aws_environment_variables = {}
         if not aws_kms_key_arn:
             aws_kms_key_arn = ''
+
+        if aws_environment_variables != {}:
+            lambda_aws_environment_variables = \
+                self.lambda_client.get_function_configuration(FunctionName=function_name)["Environment"].get("Variables", {})
+
+            # Only append keys that are remote but not in settings file
+            for key, value in lambda_aws_environment_variables.items():
+                if key not in aws_environment_variables:
+                    aws_environment_variables[key] = value
 
         response = self.lambda_client.update_function_configuration(
             FunctionName=function_name,
@@ -912,7 +921,7 @@ class Zappa(object):
             Timeout=timeout,
             MemorySize=memory_size,
             VpcConfig=vpc_config,
-            Environment={'Variables': environment_variables},
+            Environment={'Variables': aws_environment_variables},
             KMSKeyArn=aws_kms_key_arn
         )
 
