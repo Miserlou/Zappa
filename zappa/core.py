@@ -172,7 +172,7 @@ LAMBDA_REGIONS = ['us-east-1', 'us-east-2',
 # Related: https://github.com/Miserlou/Zappa/pull/581
 ZIP_EXCLUDES = [
     '*.exe', '*.DS_Store', '*.Python', '*.git', '.git/*', '*.zip', '*.tar.gz',
-    '*.hg', '*.egg-info', 'pip', 'docutils*', 'setuputils*'
+    '*.hg', '*.egg-info', 'pip', 'docutils*', 'setuputils*', '__pycache__/*'
 ]
 
 ##
@@ -265,7 +265,7 @@ class Zappa(object):
             self.route53 = self.boto_session.client('route53')
             self.sns_client = self.boto_session.client('sns')
             self.cf_client = self.boto_session.client('cloudformation')
-   
+
         self.cf_template = troposphere.Template()
         self.cf_api_resources = []
         self.cf_parameters = {}
