@@ -25,7 +25,7 @@ class ZappaWSGIMiddleware(object):
     """
     Middleware functions necessary for a Zappa deployment.
 
-    Most hacks have now been remove except for Set-Cookie permuation.
+    Most hacks have now been remove except for Set-Cookie permutation.
     """
     def __init__(self, application):
         self.application = application
