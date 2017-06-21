@@ -696,7 +696,7 @@ class ZappaCLI(object):
                 timeout=self.timeout_seconds,
                 memory_size=self.memory_size,
                 runtime=self.runtime,
-                environment_variables=self.environment_variables,
+                aws_environment_variables=self.aws_environment_variables,
                 aws_kms_key_arn=self.aws_kms_key_arn
             )
 
@@ -841,7 +841,7 @@ class ZappaCLI(object):
                                                         timeout=self.timeout_seconds,
                                                         memory_size=self.memory_size,
                                                         runtime=self.runtime,
-                                                        environment_variables=self.environment_variables,
+                                                        aws_environment_variables=self.aws_environment_variables,
                                                         aws_kms_key_arn=self.aws_kms_key_arn
                                                     )
 
@@ -1788,6 +1788,7 @@ class ZappaCLI(object):
         self.cors = self.stage_config.get("cors", None)
         self.lambda_description = self.stage_config.get('lambda_description', "Zappa Deployment")
         self.environment_variables = self.stage_config.get('environment_variables', {})
+        self.aws_environment_variables = self.stage_config.get('aws_environment_variables', {})
         self.check_environment(self.environment_variables)
         self.authorizer = self.stage_config.get('authorizer', {})
         self.runtime = self.stage_config.get('runtime', get_runtime_from_python_version())
