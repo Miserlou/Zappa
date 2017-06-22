@@ -57,6 +57,7 @@
     - [Setting Environment Variables](#setting-environment-variables)
       - [Local Environment Variables](#local-environment-variables)
       - [Remote Environment Variables](#remote-environment-variables)
+    - [API Gateway Context Variables](#api-gateway-context-variables)
     - [Catching Unhandled Exceptions](#catching-unhandled-exceptions)
     - [Using Custom AWS IAM Roles and Policies](#using-custom-aws-iam-roles-and-policies)
     - [Globally Available Server-less Architectures](#globally-available-server-less-architectures)
@@ -582,6 +583,7 @@ to change Zappa's behavior. Use these at your own risk!
         "django_settings": "your_project.production_settings", // The modular path to your Django project's settings. For Django projects only.
         "domain": "yourapp.yourdomain.com", // Required if you're using a domain
         "environment_variables": {"your_key": "your_value"}, // A dictionary of environment variables that will be available to your deployed app. See also "remote_env". Default {}.
+        "context_header_mappings": { "HTTP_header_name": "API_Gateway_context_variable" }, // A dictionary mapping HTTP header names to API Gateway context variables
         "events": [
             {   // Recurring events
                 "function": "your_module.your_recurring_function", // The function to execute
@@ -837,6 +839,37 @@ Now in your application you can use:
 ```python
 import os
 db_string = os.environ.get('DB_CONNECTION_STRING')
+```
+
+#### API Gateway Context Variables
+
+If you want to map an API Gateway context variable (http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html) to an HTTP header you can set up the mapping in `zappa_settings.json`:
+
+```javascript
+{
+    "dev": {
+        ...
+        "context_header_mappings": { 
+            "HTTP_header_name": "API_Gateway_context_variable" 
+        }
+    },
+    ...
+}
+```
+
+For example, if you want to expose the $context.identity.cognitoIdentityId variable as the HTTP header CognitoIdentityId, and $context.stage as APIStage, you would have:
+
+```javascript
+{
+    "dev": {
+        ...
+        "context_header_mappings": { 
+            "CognitoIdentityId": "identity.cognitoIdentityId",
+            "APIStage": "stage"
+        }
+    },
+    ...
+}
 ```
 
 #### Catching Unhandled Exceptions
