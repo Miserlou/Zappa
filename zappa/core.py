@@ -1064,7 +1064,7 @@ class Zappa(object):
                                         0
                                         )
 
-        if cors_options is not None:
+        if cors_options:
             self.create_and_setup_cors( restapi,
                                         root_id,
                                         invocations_uri,
@@ -1088,7 +1088,7 @@ class Zappa(object):
                                         1
                                     )  # pragma: no cover
 
-        if cors_options is not None:
+        if cors_options:
             self.create_and_setup_cors( restapi,
                                         resource,
                                         invocations_uri,
