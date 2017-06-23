@@ -1,5 +1,11 @@
 # Zappa Changelog
 
+## 0.43.0
+* Add exclude for __pycache__ contents (#943)
+* Fix #937 - Use get_data
+* Add support for configuring APIGW cache TTL and encryption #942
+* Addressing #909: Don't load credentials for 'package' command
+
 ## 0.42.1
 * Small fixes for #918, #922, #803, #802, #799, #888, #903, #893, #828, #874, and others.
 * Support for manylinux wheels Python 3.6 package downloading.
