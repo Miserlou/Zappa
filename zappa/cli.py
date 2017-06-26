@@ -284,6 +284,10 @@ class ZappaCLI(object):
             help=('When invoking remotely, invoke this python as a string,'
                   ' not as a modular path.')
         )
+        invoke_parser.add_argument(
+            '--no-color', action='store_true',
+            help=("Don't color the output")
+        )
         invoke_parser.add_argument('command_rest')
 
         ##
@@ -297,6 +301,10 @@ class ZappaCLI(object):
                      "required if --all is specified")
         manage_parser.add_argument('--all', action='store_true', help=all_help)
         manage_parser.add_argument('command_rest', nargs='+', help=rest_help)
+        manage_parser.add_argument(
+            '--no-color', action='store_true',
+            help=("Don't color the output")
+        )
 
         ##
         # Rollback
@@ -509,7 +517,11 @@ class ZappaCLI(object):
                 print("Please enter the function to invoke.")
                 return
 
-            self.invoke(self.vargs['command_rest'], raw_python=self.vargs['raw'])
+            self.invoke(
+                self.vargs['command_rest'],
+                raw_python=self.vargs['raw'],
+                no_color=self.vargs['no_color'],
+            )
         elif command == 'manage': # pragma: no cover
 
             if not self.vargs.get('command_rest'):
@@ -527,7 +539,11 @@ class ZappaCLI(object):
             else:
                 command = command_tail[0] # ex: zappa manage dev showmigrations admin
 
-            self.invoke(command, command="manage")
+            self.invoke(
+                command,
+                command="manage",
+                no_color=self.vargs['no_color'],
+            )
 
         elif command == 'tail': # pragma: no cover
             self.tail(
@@ -1074,8 +1090,7 @@ class ZappaCLI(object):
             removed_arns = self.zappa.remove_async_sns_topic(self.lambda_name)
             click.echo('SNS Topic removed: %s' % ', '.join(removed_arns))
 
-
-    def invoke(self, function_name, raw_python=False, command=None):
+    def invoke(self, function_name, raw_python=False, command=None, no_color=False):
         """
         Invoke a remote function.
         """
@@ -1100,9 +1115,94 @@ class ZappaCLI(object):
         )
 
         if 'LogResult' in response:
-            print(base64.b64decode(response['LogResult']))
+            if no_color:
+                print(base64.b64decode(response['LogResult']))
+            else:
+                decoded = base64.b64decode(response['LogResult']).decode()
+                formated = self.format_invoke_command(decoded)
+                colorized = self.colorize_invoke_command(formated)
+                print(colorized)
         else:
             print(response)
+
+    def format_invoke_command(self, string):
+        """
+        Formats correctly the string ouput from the invoke() method,
+        replacing line breaks and tabs when necessary.
+        """
+
+        string = string.replace('\\n', '\n')
+
+        formated_response = ''
+        for line in string.splitlines():
+            if line.startswith('REPORT'):
+                line = line.replace('\t', '\n')
+            if line.startswith('[DEBUG]'):
+                line = line.replace('\t', ' ')
+            formated_response += line + '\n'
+        formated_response = formated_response.replace('\n\n', '\n')
+
+        return formated_response
+
+    def colorize_invoke_command(self, string):
+        """
+        Apply various heuristics to return a colorized version the invoke
+        comman string. If these fail, simply return the string in plaintext.
+
+        Inspired by colorize_log_entry().
+        """
+
+        final_string = string
+
+        try:
+
+            # Line headers
+            try:
+                for token in ['START', 'END', 'REPORT', '[DEBUG]']:
+                    if token in final_string:
+                        format_string = '{}' if token == '[DEBUG]' else '[{}]'
+                        final_string = final_string.replace(token, click.style(
+                            format_string.format(token),
+                            bold=True,
+                            fg='cyan'
+                        ))
+            except Exception: # pragma: no cover
+                pass
+
+            # Green bold Tokens
+            try:
+                for token in [
+                    'Zappa Event:',
+                    'RequestId:',
+                    'Version:',
+                    'Duration:',
+                    'Billed',
+                    'Memory Size:',
+                    'Max Memory Used:'
+                ]:
+                    if token in final_string:
+                        final_string = final_string.replace(token, click.style(
+                            token,
+                            bold=True,
+                            fg='green'
+                        ))
+            except Exception: # pragma: no cover
+                pass
+
+            # UUIDs
+            for token in final_string.replace('\t', ' ').split(' '):
+                try:
+                    if token.count('-') is 4 and token.replace('-', '').isalnum():
+                        final_string = final_string.replace(
+                            token,
+                            click.style(token, fg='magenta')
+                        )
+                except Exception: # pragma: no cover
+                    pass
+
+            return final_string
+        except Exception:
+            return string
 
     def status(self, return_json=False):
         """
