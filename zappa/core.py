@@ -910,16 +910,17 @@ class Zappa(object):
             vpc_config = {}
         if not self.credentials_arn:
             self.get_credentials_arn()
-        if not aws_environment_variables:
-            aws_environment_variables = {}
         if not aws_kms_key_arn:
             aws_kms_key_arn = ''
 
-        if aws_environment_variables != {}:
-            lambda_aws_environment_variables = \
-                self.lambda_client.get_function_configuration(FunctionName=function_name)["Environment"].get("Variables", {})
+        if not aws_environment_variables:
+            aws_environment_variables = {}
+        else:
+            # Get any remote aws lambda env vars so they don't get trashed
+            lambda_aws_environment_variables = self.lambda_client\
+                .get_function_configuration(FunctionName=function_name)["Environment"].get("Variables", {})
 
-            # Only append keys that are remote but not in settings file
+            # Append keys that are remote but not in settings file
             for key, value in lambda_aws_environment_variables.items():
                 if key not in aws_environment_variables:
                     aws_environment_variables[key] = value
