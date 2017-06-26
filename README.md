@@ -812,13 +812,13 @@ If your project needs to be aware of the type of environment you're deployed to,
 
 If you want to use native AWS Lambda environment variables you can use the `aws_environment_variables` configuration setting. These are useful as you can easily change them via the AWS Lambda console or cli at runtime. They are also useful for storing sensitive credentials and to take advantage of KMS encryption of environment variables.
 
-Any environment variables that you have set outside of Zappa (via AWS Lambda console or cli) will remain as they are when running `update`, unless they are also in `aws_environment_variables`, in which case the value will be overwritten by the settings one.
+Any environment variables that you have set outside of Zappa (via AWS Lambda console or cli) will remain as they are when running `update`, unless they are also in `aws_environment_variables`, in which case the remote value will be overwritten by the one in the settings file.
 
-If you are using KMS-encrypted AWS envrionment variables, you can set your KMS Key ARN in the `aws_kms_key_arn` setting. Make sure that the values you set are the encrypted version in such case.
+If you are using KMS-encrypted AWS environment variables, you can set your KMS Key ARN in the `aws_kms_key_arn` setting. Make sure that the values you set are the encrypted version in such case.
 
 ##### Remote Environment Variables (via an S3 file)
 
-_Note: remote environment variables were added to Zappa before AWS introduced native environment variables on Lambda (via the console and cli). Before going down this route check if it makes more sense to use that as a solution._
+_Note: S3 remote environment variables were added to Zappa before AWS introduced native environment variables for Lambda (via the console and cli). Before going down this route check if it those more sense for your use case._
 
 If you want to use remote environment variables to configure your application (which is especially useful for things like sensitive credentials), you can create a file and place it in an S3 bucket to which your Zappa application has access to. To do this, add the `remote_env` key to zappa_settings pointing to a file containing a flat JSON object, so that each key-value pair on the object will be set as an environment variable and value whenever a new lambda instance spins up.
 
