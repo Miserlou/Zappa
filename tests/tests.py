@@ -300,6 +300,7 @@ class TestZappa(unittest.TestCase):
 
     def test_update_aws_env_vars(self):
         z = Zappa()
+        z.credentials_arn = {}
 
         with mock.patch.object(z, "lambda_client") as mock_client:
             # Simulate already having some AWS env vars remotely
