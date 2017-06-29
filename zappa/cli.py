@@ -84,6 +84,7 @@ class ZappaCLI(object):
     zappa = None
     zappa_settings = None
     load_credentials = True
+    disable_progress = False
 
     # Specific settings
     api_stage = None
@@ -211,6 +212,10 @@ class ZappaCLI(object):
         # Fuck Terraform.
         group.add_argument(
             '-j', '--json', action='store_true', help='Make the output of this command be machine readable.'
+        )
+        # https://github.com/Miserlou/Zappa/issues/891
+        group.add_argument(
+            '--disable_progress', action='store_true', help='Disable progress bars.'
         )
 
         ##
@@ -428,7 +433,7 @@ class ZappaCLI(object):
 
         self.command = args.command
 
-
+        self.disable_progress = self.vargs.get('disable_progress')
         if self.vargs.get('quiet'):
             self.silence()
 
@@ -672,14 +677,14 @@ class ZappaCLI(object):
 
         # Upload it to S3
         success = self.zappa.upload_to_s3(
-                self.zip_path, self.s3_bucket_name)
+                self.zip_path, self.s3_bucket_name, disable_progress=self.disable_progress)
         if not success: # pragma: no cover
             raise ClickException("Unable to upload to S3. Quitting.")
 
         # If using a slim handler, upload it to S3 and tell lambda to use this slim handler zip
         if self.stage_config.get('slim_handler', False):
             # https://github.com/Miserlou/Zappa/issues/510
-            success = self.zappa.upload_to_s3(self.handler_path, self.s3_bucket_name)
+            success = self.zappa.upload_to_s3(self.handler_path, self.s3_bucket_name, disable_progress=self.disable_progress)
             if not success:  # pragma: no cover
                 raise ClickException("Unable to upload handler to S3. Quitting.")
 
@@ -735,7 +740,12 @@ class ZappaCLI(object):
                                                         description=self.apigateway_description
                                                     )
 
-            self.zappa.update_stack(self.lambda_name, self.s3_bucket_name, wait=True)
+            self.zappa.update_stack(
+                                    self.lambda_name,
+                                    self.s3_bucket_name,
+                                    wait=True,
+                                    disable_progress=self.disable_progress
+                                )
 
             api_id = self.zappa.get_api_id(self.lambda_name)
 
@@ -815,14 +825,14 @@ class ZappaCLI(object):
         self.callback('zip')
 
         # Upload it to S3
-        success = self.zappa.upload_to_s3(self.zip_path, self.s3_bucket_name)
+        success = self.zappa.upload_to_s3(self.zip_path, self.s3_bucket_name, disable_progress=self.disable_progress)
         if not success:  # pragma: no cover
             raise ClickException("Unable to upload project to S3. Quitting.")
 
         # If using a slim handler, upload it to S3 and tell lambda to use this slim handler zip
         if self.stage_config.get('slim_handler', False):
             # https://github.com/Miserlou/Zappa/issues/510
-            success = self.zappa.upload_to_s3(self.handler_path, self.s3_bucket_name)
+            success = self.zappa.upload_to_s3(self.handler_path, self.s3_bucket_name, disable_progress=self.disable_progress)
             if not success:  # pragma: no cover
                 raise ClickException("Unable to upload handler to S3. Quitting.")
 
@@ -877,7 +887,12 @@ class ZappaCLI(object):
                                             cors_options=self.cors,
                                             description=self.apigateway_description
                                         )
-            self.zappa.update_stack(self.lambda_name, self.s3_bucket_name, wait=True, update_only=True)
+            self.zappa.update_stack(
+                                    self.lambda_name,
+                                    self.s3_bucket_name,
+                                    wait=True,
+                                    update_only=True,
+                                    disable_progress=self.disable_progress)
 
             api_id = self.zappa.get_api_id(self.lambda_name)
 
@@ -1997,7 +2012,8 @@ class ZappaCLI(object):
             self.zip_path = self.zappa.create_lambda_zip(
                 prefix=self.lambda_name,
                 use_precompiled_packages=self.stage_config.get('use_precompiled_packages', True),
-                exclude=self.stage_config.get('exclude', [])
+                exclude=self.stage_config.get('exclude', []),
+                disable_progress=self.disable_progress
             )
 
             # Make sure the normal venv is not included in the handler's zip
@@ -2010,7 +2026,8 @@ class ZappaCLI(object):
                 handler_file=handler_file,
                 slim_handler=True,
                 exclude=exclude,
-                output=output
+                output=output,
+                disable_progress=self.disable_progress
             )
         else:
 
@@ -2046,7 +2063,8 @@ class ZappaCLI(object):
                 handler_file=handler_file,
                 use_precompiled_packages=self.stage_config.get('use_precompiled_packages', True),
                 exclude=exclude,
-                output=output
+                output=output,
+                disable_progress=self.disable_progress
             )
 
             # Warn if this is too large for Lambda.

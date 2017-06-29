@@ -386,7 +386,8 @@ class Zappa(object):
                             use_precompiled_packages=True,
                             include=None,
                             venv=None,
-                            output=None
+                            output=None,
+                            disable_progress=False
                         ):
         """
         Create a Lambda-ready zip file of the current virtualenvironment and working directory.
@@ -501,7 +502,7 @@ class Zappa(object):
                         print(" - %s==%s: Using precompiled lambda package " % (installed_package_name, installed_package_version,))
                         self.extract_lambda_package(installed_package_name, temp_project_path)
                     else:
-                        cached_wheel_path = self.get_cached_manylinux_wheel(installed_package_name, installed_package_version)
+                        cached_wheel_path = self.get_cached_manylinux_wheel(installed_package_name, installed_package_version, disable_progress)
                         if cached_wheel_path:
                             # Otherwise try to use manylinux packages from PyPi..
                             # Related: https://github.com/Miserlou/Zappa/issues/398
@@ -651,7 +652,7 @@ class Zappa(object):
         return lambda_packages.get(package_name, {}).get(self.runtime) is not None
 
     @staticmethod
-    def download_url_with_progress(url, stream):
+    def download_url_with_progress(url, stream, disable_progress):
         """
         Downloads a given url in chunks and writes to the provided stream (can be any io stream).
         Displays the progress bar for the download.
@@ -659,7 +660,7 @@ class Zappa(object):
         resp = requests.get(url, timeout=2, stream=True)
         resp.raw.decode_content = True
 
-        progress = tqdm(unit="B", unit_scale=True, total=int(resp.headers.get('Content-Length', 0)))
+        progress = tqdm(unit="B", unit_scale=True, total=int(resp.headers.get('Content-Length', 0)), disable=disable_progress)
         for chunk in resp.iter_content(chunk_size=1024):
             if chunk:
                 progress.update(len(chunk))
@@ -667,7 +668,7 @@ class Zappa(object):
 
         progress.close()
 
-    def get_cached_manylinux_wheel(self, package_name, package_version):
+    def get_cached_manylinux_wheel(self, package_name, package_version, disable_progress=False):
         """
         Gets the locally stored version of a manylinux wheel. If one does not exist, the function downloads it.
         """
@@ -686,7 +687,7 @@ class Zappa(object):
 
             print(" - {}=={}: Downloading".format(package_name, package_version))
             with open(wheel_path, 'wb') as f:
-                self.download_url_with_progress(wheel_url, f)
+                self.download_url_with_progress(wheel_url, f, disable_progress)
         else:
             print(" - {}=={}: Using locally cached manylinux wheel".format(package_name, package_version))
 
@@ -715,7 +716,7 @@ class Zappa(object):
     # S3
     ##
 
-    def upload_to_s3(self, source_path, bucket_name):
+    def upload_to_s3(self, source_path, bucket_name, disable_progress=False):
         r"""
         Given a file, upload it to S3.
         Credentials should be stored in environment variables or ~/.aws/credentials (%USERPROFILE%\.aws\credentials on Windows).
@@ -747,7 +748,7 @@ class Zappa(object):
         try:
             source_size = os.stat(source_path).st_size
             print("Uploading {0} ({1})..".format(dest_path, human_size(source_size)))
-            progress = tqdm(total=float(os.path.getsize(source_path)), unit_scale=True, unit='B')
+            progress = tqdm(total=float(os.path.getsize(source_path)), unit_scale=True, unit='B', disable=disable_progress)
 
             # Attempt to upload to S3 using the S3 meta client with the progress bar.
             # If we're unable to do that, try one more time using a session client,
@@ -1522,7 +1523,7 @@ class Zappa(object):
                                         )
         return self.cf_template
 
-    def update_stack(self, name, working_bucket, wait=False, update_only=False):
+    def update_stack(self, name, working_bucket, wait=False, update_only=False, disable_progress=False):
         """
         Update or create the CF stack managed by Zappa.
         """
@@ -1532,7 +1533,7 @@ class Zappa(object):
         with open(template, 'wb') as out:
             out.write(bytes(self.cf_template.to_json(indent=None, separators=(',',':')), "utf-8"))
 
-        self.upload_to_s3(template, working_bucket)
+        self.upload_to_s3(template, working_bucket, disable_progress=disable_progress)
 
         url = 'https://s3.amazonaws.com/{0}/{1}'.format(working_bucket, template)
         tags = [{'Key':'ZappaProject','Value':name}]
@@ -1570,7 +1571,7 @@ class Zappa(object):
             total_resources = len(self.cf_template.resources)
             current_resources = 0
             sr = self.cf_client.get_paginator('list_stack_resources')
-            progress = tqdm(total=total_resources, unit='res')
+            progress = tqdm(total=total_resources, unit='res', disable=disable_progress)
             while True:
                 time.sleep(3)
                 result = self.cf_client.describe_stacks(StackName=name)
