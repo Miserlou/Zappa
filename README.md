@@ -532,7 +532,7 @@ run(your_function, args, kwargs, service='sns') # Using SNS
 
 ### Remote Invocations
 
-By default, Zappa will use lambda's current function name and current aws region. If you wish to invoke a lambda with
+By default, Zappa will use lambda's current function name and current AWS region. If you wish to invoke a lambda with
   a different function name/region or invoke your lambda from outside of lambda, you must specify the 
   `remote_aws_lambda_function_name` and `remote_aws_region` arguments so that the application knows which function and 
   region to use. For example, if some part of our pizza making application had to live on an EC2 instance, but we 
