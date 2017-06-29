@@ -1438,6 +1438,20 @@ USE_TZ = True
         self.assertTrue(len(truncated) <= 64)
         self.assertEqual(truncated, "a-b")
 
+    def test_hashed_rule_name(self):
+        zappa = Zappa()
+        truncated = zappa.get_event_name(
+            "basldfkjalsdkfjalsdkfjaslkdfjalsdkfjadlsfkjasdlfkjasdlfkjasdflkjasdf-asdfasdfasdfasdfasdf",
+            "this.is.my.dang.function.wassup.yeah.its.long")
+        self.assertTrue(len(truncated) == 64)
+
+        rule_name = zappa.get_hashed_rule_name(
+            event=dict(name='some-event-name'),
+            function="this.is.my.dang.function.wassup.yeah.its.long",
+            lambda_name="basldfkjalsdkfjalsdkfjaslkdfjalsdkfjadlsfkjasdlfkjasdlfkjasdflkjasdf-asdfasdfasdfasdfasdf")
+        self.assertTrue(len(rule_name) <= 64)
+        self.assertTrue(rule_name.endswith("-this.is.my.dang.function.wassup.yeah.its.long"))
+
     def test_detect_dj(self):
         # Sanity
         settings_modules = detect_django_settings()
