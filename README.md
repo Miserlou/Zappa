@@ -530,6 +530,26 @@ run(your_function, args, kwargs) # Using Lambda
 run(your_function, args, kwargs, service='sns') # Using SNS
 ```
 
+### Remote Invocations
+
+By default, Zappa will use lambda's current function name and current aws region. If you wish to invoke a lambda with
+  a different function name/region or invoke your lambda from outside of lambda, you must specify the 
+  `remote_aws_lambda_function_name` and `remote_aws_region` arguments so that the application knows which function and 
+  region to use. For example, if some part of our pizza making application had to live on an EC2 instance, but we 
+  wished to call the make_pie() function on its own Lambda instance, we would do it as follows:
+  
+ ```python
+@task(remote_aws_lambda_function_name='pizza-pie-prod', remote_aws_region='us-east-1')
+def make_pie():
+    """ This takes a long time! """
+    ingredients = get_ingredients()
+    pie = bake(ingredients)
+    deliver(pie)
+
+```
+If those task() parameters were not used, then EC2 would execute the function locally. These same
+ `remote_aws_lambda_function_name` and `remote_aws_region` arguments can be used on the zappa.async.run() function as well.
+
 ### Restrictions
 
 The following restrictions to this feature apply:
