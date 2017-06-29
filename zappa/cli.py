@@ -110,6 +110,7 @@ class ZappaCLI(object):
     environment_variables = None
     authorizer = None
     aws_kms_key_arn = ''
+    context_header_mappings = None
 
     stage_name_env_pattern = re.compile('^[a-zA-Z0-9_]+$')
 
@@ -1893,6 +1894,7 @@ class ZappaCLI(object):
         self.authorizer = self.stage_config.get('authorizer', {})
         self.runtime = self.stage_config.get('runtime', get_runtime_from_python_version())
         self.aws_kms_key_arn = self.stage_config.get('aws_kms_key_arn', '')
+        self.context_header_mappings = self.stage_config.get('context_header_mappings', {})
 
         desired_role_name = self.lambda_name + "-ZappaLambdaExecutionRole"
         self.zappa = Zappa( boto_session=session,
@@ -2086,6 +2088,12 @@ class ZappaCLI(object):
                 settings_s = settings_s + "BINARY_SUPPORT=True\n"
             else:
                 settings_s = settings_s + "BINARY_SUPPORT=False\n"
+
+            head_map_dict = {}
+            head_map_dict.update(dict(self.context_header_mappings))
+            settings_s = settings_s + "CONTEXT_HEADER_MAPPINGS={0}\n".format(
+                head_map_dict
+            )
 
             # If we're on a domain, we don't need to define the /<<env>> in
             # the WSGI PATH

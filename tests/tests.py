@@ -1641,6 +1641,28 @@ USE_TZ = True
         self.assertTrue(conflicts_with_a_neighbouring_module('tests/data/test1'))
         self.assertFalse(conflicts_with_a_neighbouring_module('tests/data/test2'))
 
+    def test_settings_py_generation(self):
+        zappa_cli = ZappaCLI()
+        zappa_cli.api_stage = 'ttt888'
+        zappa_cli.load_settings('test_settings.json')
+        zappa_cli.create_package()
+        with zipfile.ZipFile(zappa_cli.zip_path, 'r') as lambda_zip:
+            content = lambda_zip.read('zappa_settings.py').decode("utf-8")
+            settings = {}
+            exec(content, globals(), settings)
+
+            # validate environment variables
+            self.assertIn('ENVIRONMENT_VARIABLES', settings)
+            self.assertEqual(settings['ENVIRONMENT_VARIABLES'][b'TEST_ENV_VAR'], "test_value")
+
+            # validate Context header mappings
+            self.assertIn('CONTEXT_HEADER_MAPPINGS', settings)
+            self.assertEqual(settings['CONTEXT_HEADER_MAPPINGS']['CognitoIdentityId'], "identity.cognitoIdentityId")
+            self.assertEqual(settings['CONTEXT_HEADER_MAPPINGS']['APIStage'], "stage")
+
+        zappa_cli.remove_local_zip()
+
+
 
 if __name__ == '__main__':
     unittest.main()
