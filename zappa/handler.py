@@ -158,7 +158,7 @@ class LambdaHandler(object):
                 boto_session = self.session
 
             # Download the zip
-            remote_bucket, remote_file = project_zip_path.lstrip('s3://').split('/', 1)
+            remote_bucket, remote_file = parse_s3_url(project_zip_path)
             s3 = boto_session.resource('s3')
 
             zip_path = '/tmp/{0!s}'.format(remote_file)
@@ -421,7 +421,8 @@ class LambdaHandler(object):
                     event,
                     script_name=script_name,
                     trailing_slash=self.trailing_slash,
-                    binary_support=settings.BINARY_SUPPORT
+                    binary_support=settings.BINARY_SUPPORT,
+                    context_header_mappings=settings.CONTEXT_HEADER_MAPPINGS
                 )
 
                 # We are always on https on Lambda, so tell our wsgi app that.
@@ -445,7 +446,7 @@ class LambdaHandler(object):
                         else:
                             zappa_returndict['body'] = response.data
                     else:
-                        zappa_returndict['body'] = response.data
+                        zappa_returndict['body'] = response.get_data(as_text=True)
 
                 zappa_returndict['statusCode'] = response.status_code
                 zappa_returndict['headers'] = {}

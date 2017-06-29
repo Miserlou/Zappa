@@ -173,3 +173,77 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
                                       trailing_slash=False)
         user = environ.get('REMOTE_USER', u'no_user')
         self.assertEqual(user, u'no_user')
+
+    def test_wsgi_map_context_headers_handling(self):
+
+        # Validate a single context value mapping is translated into a HTTP header
+        event = {
+            u'httpMethod': u'GET',
+            u'queryStringParameters': None,
+            u'path': u'/v1/runs',
+            u'params': {},
+            u'body': {},
+            u'headers': {
+                u'Content-Type': u'application/json'
+            },
+            u'pathParameters': {
+                u'proxy': 'v1/runs'
+            },
+            u'requestContext': {
+                u'authorizer': {
+                    u'principalId': u'user1'
+                },
+
+            },
+            u'query': {}
+        }
+
+        environ = create_wsgi_request(event, script_name='http://zappa.com/',
+                                      trailing_slash=False,
+                                      context_header_mappings={'PrincipalId': 'authorizer.principalId'})
+        self.assertEqual(environ['HTTP_PRINCIPALID'], u'user1')
+
+        # Validate multiple mappings with an invalid mapping
+        # Invalid mapping should be ignored
+        event = {
+            u'httpMethod': u'GET',
+            u'queryStringParameters': None,
+            u'path': u'/v1/runs',
+            u'params': {},
+            u'body': {},
+            u'headers': {
+                u'Content-Type': u'application/json'
+            },
+            u'pathParameters': {
+                u'proxy': 'v1/runs'
+            },
+            u'requestContext': {
+                u"resourceId": u"123456",
+                u"apiId": u"1234567890",
+                u"resourcePath": u"/{proxy+}",
+                u"httpMethod": u"POST",
+                u"requestId": u"c6af9ac6-7b61-11e6-9a41-93e8deadbeef",
+                u"accountId": u"123456789012",
+                u"identity": {
+                    u"userAgent": u"Custom User Agent String",
+                    u"cognitoIdentityPoolId": u"userpoolID",
+                    u"cognitoIdentityId": u"myCognitoID",
+                    u"sourceIp": u"127.0.0.1",
+                },
+                "stage": "prod"
+            },
+            u'query': {}
+        }
+
+        environ = create_wsgi_request(event, script_name='http://zappa.com/',
+                                      trailing_slash=False,
+                                      context_header_mappings={'CognitoIdentityID': 'identity.cognitoIdentityId',
+                                                               'APIStage': 'stage',
+                                                               'InvalidValue': 'identity.cognitoAuthenticationType',
+                                                               'OtherInvalid': 'nothinghere'})
+        self.assertEqual(environ['HTTP_COGNITOIDENTITYID'], u'myCognitoID')
+        self.assertEqual(environ['HTTP_APISTAGE'], u'prod')
+        self.assertNotIn('HTTP_INVALIDVALUE', environ)
+        self.assertNotIn('HTTP_OTHERINVALID', environ)
+
+

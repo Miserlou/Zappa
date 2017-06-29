@@ -110,6 +110,7 @@ class ZappaCLI(object):
     environment_variables = None
     authorizer = None
     aws_kms_key_arn = ''
+    context_header_mappings = None
 
     stage_name_env_pattern = re.compile('^[a-zA-Z0-9_]+$')
 
@@ -284,6 +285,10 @@ class ZappaCLI(object):
             help=('When invoking remotely, invoke this python as a string,'
                   ' not as a modular path.')
         )
+        invoke_parser.add_argument(
+            '--no-color', action='store_true',
+            help=("Don't color the output")
+        )
         invoke_parser.add_argument('command_rest')
 
         ##
@@ -297,6 +302,10 @@ class ZappaCLI(object):
                      "required if --all is specified")
         manage_parser.add_argument('--all', action='store_true', help=all_help)
         manage_parser.add_argument('command_rest', nargs='+', help=rest_help)
+        manage_parser.add_argument(
+            '--no-color', action='store_true',
+            help=("Don't color the output")
+        )
 
         ##
         # Rollback
@@ -414,6 +423,9 @@ class ZappaCLI(object):
         else:
             self.stage_env = self.vargs.get('stage_env')
 
+        if args.command == 'package':
+            self.load_credentials = False
+
         self.command = args.command
 
 
@@ -506,7 +518,11 @@ class ZappaCLI(object):
                 print("Please enter the function to invoke.")
                 return
 
-            self.invoke(self.vargs['command_rest'], raw_python=self.vargs['raw'])
+            self.invoke(
+                self.vargs['command_rest'],
+                raw_python=self.vargs['raw'],
+                no_color=self.vargs['no_color'],
+            )
         elif command == 'manage': # pragma: no cover
 
             if not self.vargs.get('command_rest'):
@@ -524,7 +540,11 @@ class ZappaCLI(object):
             else:
                 command = command_tail[0] # ex: zappa manage dev showmigrations admin
 
-            self.invoke(command, command="manage")
+            self.invoke(
+                command,
+                command="manage",
+                no_color=self.vargs['no_color'],
+            )
 
         elif command == 'tail': # pragma: no cover
             self.tail(
@@ -693,7 +713,7 @@ class ZappaCLI(object):
                 timeout=self.timeout_seconds,
                 memory_size=self.memory_size,
                 runtime=self.runtime,
-                environment_variables=self.environment_variables,
+                aws_environment_variables=self.aws_environment_variables,
                 aws_kms_key_arn=self.aws_kms_key_arn
             )
 
@@ -838,7 +858,7 @@ class ZappaCLI(object):
                                                         timeout=self.timeout_seconds,
                                                         memory_size=self.memory_size,
                                                         runtime=self.runtime,
-                                                        environment_variables=self.environment_variables,
+                                                        aws_environment_variables=self.aws_environment_variables,
                                                         aws_kms_key_arn=self.aws_kms_key_arn
                                                     )
 
@@ -1071,8 +1091,7 @@ class ZappaCLI(object):
             removed_arns = self.zappa.remove_async_sns_topic(self.lambda_name)
             click.echo('SNS Topic removed: %s' % ', '.join(removed_arns))
 
-
-    def invoke(self, function_name, raw_python=False, command=None):
+    def invoke(self, function_name, raw_python=False, command=None, no_color=False):
         """
         Invoke a remote function.
         """
@@ -1097,9 +1116,94 @@ class ZappaCLI(object):
         )
 
         if 'LogResult' in response:
-            print(base64.b64decode(response['LogResult']))
+            if no_color:
+                print(base64.b64decode(response['LogResult']))
+            else:
+                decoded = base64.b64decode(response['LogResult']).decode()
+                formated = self.format_invoke_command(decoded)
+                colorized = self.colorize_invoke_command(formated)
+                print(colorized)
         else:
             print(response)
+
+    def format_invoke_command(self, string):
+        """
+        Formats correctly the string ouput from the invoke() method,
+        replacing line breaks and tabs when necessary.
+        """
+
+        string = string.replace('\\n', '\n')
+
+        formated_response = ''
+        for line in string.splitlines():
+            if line.startswith('REPORT'):
+                line = line.replace('\t', '\n')
+            if line.startswith('[DEBUG]'):
+                line = line.replace('\t', ' ')
+            formated_response += line + '\n'
+        formated_response = formated_response.replace('\n\n', '\n')
+
+        return formated_response
+
+    def colorize_invoke_command(self, string):
+        """
+        Apply various heuristics to return a colorized version the invoke
+        comman string. If these fail, simply return the string in plaintext.
+
+        Inspired by colorize_log_entry().
+        """
+
+        final_string = string
+
+        try:
+
+            # Line headers
+            try:
+                for token in ['START', 'END', 'REPORT', '[DEBUG]']:
+                    if token in final_string:
+                        format_string = '{}' if token == '[DEBUG]' else '[{}]'
+                        final_string = final_string.replace(token, click.style(
+                            format_string.format(token),
+                            bold=True,
+                            fg='cyan'
+                        ))
+            except Exception: # pragma: no cover
+                pass
+
+            # Green bold Tokens
+            try:
+                for token in [
+                    'Zappa Event:',
+                    'RequestId:',
+                    'Version:',
+                    'Duration:',
+                    'Billed',
+                    'Memory Size:',
+                    'Max Memory Used:'
+                ]:
+                    if token in final_string:
+                        final_string = final_string.replace(token, click.style(
+                            token,
+                            bold=True,
+                            fg='green'
+                        ))
+            except Exception: # pragma: no cover
+                pass
+
+            # UUIDs
+            for token in final_string.replace('\t', ' ').split(' '):
+                try:
+                    if token.count('-') is 4 and token.replace('-', '').isalnum():
+                        final_string = final_string.replace(
+                            token,
+                            click.style(token, fg='magenta')
+                        )
+                except Exception: # pragma: no cover
+                    pass
+
+            return final_string
+        except Exception:
+            return string
 
     def status(self, return_json=False):
         """
@@ -1459,7 +1563,7 @@ class ZappaCLI(object):
         import json as json # hjson is fine for loading, not fine for writing.
         zappa_settings_json = json.dumps(zappa_settings, sort_keys=True, indent=4)
 
-        click.echo("\nOkay, here's your " + click.style("zappa_settings.js", bold=True) + ":\n")
+        click.echo("\nOkay, here's your " + click.style("zappa_settings.json", bold=True) + ":\n")
         click.echo(click.style(zappa_settings_json, fg="yellow", bold=False))
 
         confirm = input("\nDoes this look " + click.style("okay", bold=True, fg="green")  + "? (default 'y') [y/n]: ") or 'yes'
@@ -1785,10 +1889,12 @@ class ZappaCLI(object):
         self.cors = self.stage_config.get("cors", None)
         self.lambda_description = self.stage_config.get('lambda_description', "Zappa Deployment")
         self.environment_variables = self.stage_config.get('environment_variables', {})
+        self.aws_environment_variables = self.stage_config.get('aws_environment_variables', {})
         self.check_environment(self.environment_variables)
         self.authorizer = self.stage_config.get('authorizer', {})
         self.runtime = self.stage_config.get('runtime', get_runtime_from_python_version())
         self.aws_kms_key_arn = self.stage_config.get('aws_kms_key_arn', '')
+        self.context_header_mappings = self.stage_config.get('context_header_mappings', {})
 
         desired_role_name = self.lambda_name + "-ZappaLambdaExecutionRole"
         self.zappa = Zappa( boto_session=session,
@@ -1983,6 +2089,12 @@ class ZappaCLI(object):
             else:
                 settings_s = settings_s + "BINARY_SUPPORT=False\n"
 
+            head_map_dict = {}
+            head_map_dict.update(dict(self.context_header_mappings))
+            settings_s = settings_s + "CONTEXT_HEADER_MAPPINGS={0}\n".format(
+                head_map_dict
+            )
+
             # If we're on a domain, we don't need to define the /<<env>> in
             # the WSGI PATH
             if self.domain:
@@ -2102,14 +2214,16 @@ class ZappaCLI(object):
                 # Need to keep the project zip as the slim handler uses it.
                 self.zappa.remove_from_s3(self.handler_path, self.s3_bucket_name)
 
-
     def on_exit(self):
         """
         Cleanup after the command finishes.
         Always called: SystemExit, KeyboardInterrupt and any other Exception that occurs.
         """
         if self.zip_path:
-            self.remove_uploaded_zip()
+            # Only try to remove uploaded zip if we're running a command that has loaded credentials
+            if self.load_credentials:
+                self.remove_uploaded_zip()
+
             self.remove_local_zip()
 
     def print_logs(self, logs, colorize=True, http=False, non_http=False):
@@ -2299,6 +2413,8 @@ class ZappaCLI(object):
             cloudwatch_log_level=self.stage_config.get('cloudwatch_log_level', 'OFF'),
             cloudwatch_data_trace=self.stage_config.get('cloudwatch_data_trace', False),
             cloudwatch_metrics_enabled=self.stage_config.get('cloudwatch_metrics_enabled', False),
+            cache_cluster_ttl=self.stage_config.get('cache_cluster_ttl', 300),
+            cache_cluster_encrypted=self.stage_config.get('cache_cluster_encrypted', False)
         )
         return endpoint_url
 

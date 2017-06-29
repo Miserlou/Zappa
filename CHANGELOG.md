@@ -1,5 +1,22 @@
 # Zappa Changelog
 
+## 0.43.0
+* Add exclude for __pycache__ contents (#943)
+* Fix #937 - Use get_data
+* Add support for configuring APIGW cache TTL and encryption #942
+* Addressing #909: Don't load credentials for 'package' command
+
+## 0.42.1
+* Small fixes for #918, #922, #803, #802, #799, #888, #903, #893, #828, #874, and others.
+* Support for manylinux wheels Python 3.6 package downloading.
+* Py3 `certify` fixes.
+* Add support for multiple expressions when scheduling
+* Fix content-type headers not passing through on DELETE
+* Avoid creating __init__.py in a directory next to a module (.py file) with the same name
+* Check recursively if there is any .py{,c} file in a directory before creating __init__.py
+* Fix SNS event tasks
+* Bump lambda-packages
+
 ## 0.42.0
 * Cached manylinux wheel installed
 * New dependency installation formatting
