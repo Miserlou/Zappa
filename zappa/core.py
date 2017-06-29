@@ -3,6 +3,7 @@ from __future__ import print_function
 import boto3
 import botocore
 import glob
+import hashlib
 import json
 import logging
 import os
@@ -835,7 +836,7 @@ class Zappa(object):
                                 vpc_config=None,
                                 dead_letter_config=None,
                                 runtime='python2.7',
-                                environment_variables=None,
+                                aws_environment_variables=None,
                                 aws_kms_key_arn=None
                             ):
         """
@@ -847,8 +848,8 @@ class Zappa(object):
             dead_letter_config = {}
         if not self.credentials_arn:
             self.get_credentials_arn()
-        if not environment_variables:
-            environment_variables = {}
+        if not aws_environment_variables:
+            aws_environment_variables = {}
         if not aws_kms_key_arn:
             aws_kms_key_arn = ''
 
@@ -867,7 +868,7 @@ class Zappa(object):
             Publish=publish,
             VpcConfig=vpc_config,
             DeadLetterConfig=dead_letter_config,
-            Environment={'Variables': environment_variables},
+            Environment={'Variables': aws_environment_variables},
             KMSKeyArn=aws_kms_key_arn
         )
 
@@ -898,7 +899,7 @@ class Zappa(object):
                                         publish=True,
                                         vpc_config=None,
                                         runtime='python2.7',
-                                        environment_variables=None,
+                                        aws_environment_variables=None,
                                         aws_kms_key_arn=None
                                     ):
         """
@@ -910,10 +911,21 @@ class Zappa(object):
             vpc_config = {}
         if not self.credentials_arn:
             self.get_credentials_arn()
-        if not environment_variables:
-            environment_variables = {}
         if not aws_kms_key_arn:
             aws_kms_key_arn = ''
+
+        if not aws_environment_variables:
+            aws_environment_variables = {}
+        else:
+            # Get any remote aws lambda env vars so they don't get trashed
+            # Related: https://github.com/Miserlou/Zappa/issues/765
+            lambda_aws_environment_variables = self.lambda_client\
+                .get_function_configuration(FunctionName=function_name)["Environment"].get("Variables", {})
+
+            # Append keys that are remote but not in settings file
+            for key, value in lambda_aws_environment_variables.items():
+                if key not in aws_environment_variables:
+                    aws_environment_variables[key] = value
 
         response = self.lambda_client.update_function_configuration(
             FunctionName=function_name,
@@ -924,7 +936,7 @@ class Zappa(object):
             Timeout=timeout,
             MemorySize=memory_size,
             VpcConfig=vpc_config,
-            Environment={'Variables': environment_variables},
+            Environment={'Variables': aws_environment_variables},
             KMSKeyArn=aws_kms_key_arn
         )
 
@@ -1990,8 +2002,15 @@ class Zappa(object):
 
             if expressions:
                 for expression in expressions:
+                    # if it's possible that we truncated name, generate a unique, shortened name
+                    # https://github.com/Miserlou/Zappa/issues/970
+                    if len(name) >= 64:
+                        rule_name = self.get_hashed_rule_name(event, function, lambda_name)
+                    else:
+                        rule_name = name
+
                     rule_response = self.events_client.put_rule(
-                        Name=name,
+                        Name=rule_name,
                         ScheduleExpression=expression,
                         State='ENABLED',
                         Description=description,
@@ -2006,7 +2025,7 @@ class Zappa(object):
 
                     # Create the CloudWatch event ARN for this function.
                     target_response = self.events_client.put_targets(
-                        Rule=name,
+                        Rule=rule_name,
                         Targets=[
                             {
                                 'Id': 'Id' + ''.join(random.choice(string.digits) for _ in range(12)),
@@ -2016,9 +2035,9 @@ class Zappa(object):
                     )
 
                     if target_response['ResponseMetadata']['HTTPStatusCode'] == 200:
-                        print("Scheduled {} with expression {}!".format(name, expression))
+                        print("Scheduled {} with expression {}!".format(rule_name, expression))
                     else:
-                        print("Problem scheduling {} with expression {}.".format(name, expression))
+                        print("Problem scheduling {} with expression {}.".format(rule_name, expression))
 
             elif event_source:
                 service = self.service_from_arn(event_source['arn'])
@@ -2069,6 +2088,16 @@ class Zappa(object):
 
         """
         return '{prefix:.{width}}-{postfix}'.format(prefix=lambda_name, width=max(0, 63 - len(name)), postfix=name)[:64]
+
+    @staticmethod
+    def get_hashed_rule_name(event, function, lambda_name):
+        """
+        Returns an AWS-valid CloudWatch rule name using a digest of the event name, lambda name, and function.
+        This allows support for rule names that may be longer than the 64 char limit.
+        """
+        event_name = event.get('name', function)
+        name_hash = hashlib.sha1('{}-{}'.format(lambda_name, event_name).encode('UTF-8')).hexdigest()
+        return Zappa.get_event_name(name_hash, function)
 
     def delete_rule(self, rule_name):
         """
