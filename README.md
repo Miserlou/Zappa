@@ -809,6 +809,20 @@ If your project needs to be aware of the type of environment you're deployed to,
 
 If you are using KMS-encrypted AWS envrionment variables, you can set your KMS Key ARN in the `aws_kms_key_arn` setting.
 
+In Django, during development, you can add your Zappa defined variables to your locally running app by, for example, adding the below to manage.py
+
+RUNNING_DEVSERVER = sys.platform.startswith('win')
+```python
+if RUNNING_DEVSERVER:
+    import json
+    import os
+    json_data = open('zappa_settings.json')
+    env_vars = json.load(json_data)['dev']['environment_variables']
+    for key, val in env_vars.items():
+        os.environ[key] = val
+
+```        
+
 ##### Remote Environment Variables
 
 If you want to use remote environment variables to configure your application (which is especially useful for things like sensitive credentials), you can create a file and place it in an S3 bucket to which your Zappa application has access to. To do this, add the `remote_env` key to zappa_settings pointing to a file containing a flat JSON object, so that each key-value pair on the object will be set as an environment variable and value whenever a new lambda instance spins up.
