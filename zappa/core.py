@@ -172,8 +172,8 @@ LAMBDA_REGIONS = ['us-east-1', 'us-east-2',
 # Related: https://github.com/Miserlou/Zappa/pull/56
 # Related: https://github.com/Miserlou/Zappa/pull/581
 ZIP_EXCLUDES = [
-    '*.exe', '*.DS_Store', '*.Python', '*.git', '.git/*', '*.zip', '*.tar.gz',
-    '*.hg', '*.egg-info', 'pip', 'docutils*', 'setuputils*', '__pycache__/*'
+    '*.exe', '*.DS_Store', '*.Python', '*.git', '*.zip', '*.tar.gz',
+    '*.hg', '*.egg-info', 'pip', 'docutils*', 'setuputils*', '__pycache__'
 ]
 
 ##
@@ -414,7 +414,7 @@ class Zappa(object):
             exclude = list()
 
         # Exclude the zip itself
-        exclude.append(zip_path)
+        exclude.append(zip_fname)
 
         # Make sure that 'concurrent' is always forbidden.
         # https://github.com/Miserlou/Zappa/issues/827
@@ -448,8 +448,20 @@ class Zappa(object):
         if not slim_handler:
             # Slim handler does not take the project files.
             if minify:
+                excludes = ZIP_EXCLUDES + exclude
+
                 # Related: https://github.com/Miserlou/Zappa/issues/744
-                excludes = ZIP_EXCLUDES + exclude + [split_venv[-1]]
+                # We want to exclude virtualenv but only if it's really in the project's folder
+                venv_relative_path = os.path.relpath(venv, cwd)
+                if not venv_relative_path.startswith(".."):
+                    excludes.append(venv_relative_path)
+
+                for exclude_pattern in excludes:
+                    if os.path.sep in exclude_pattern:
+                        print("Warning: exclude doesn't support nested paths, "
+                              "it only takes single folder or file names."
+                              "\n{} will probably not be excluded".format(exclude_pattern))
+
                 copytree(cwd, temp_project_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
             else:
                 copytree(cwd, temp_project_path, symlinks=False)
