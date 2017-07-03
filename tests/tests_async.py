@@ -4,6 +4,10 @@ import mock
 import os
 import unittest
 
+try:
+    from mock import patch
+except ImportError:
+    from unittest.mock import patch
 
 from zappa.async import AsyncException, LambdaAsyncResponse, SnsAsyncResponse
 from zappa.async import import_and_get_task, \

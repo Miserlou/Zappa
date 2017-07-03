@@ -297,6 +297,18 @@ class TestZappa(unittest.TestCase):
         path = os.getcwd()
       # z.schedule_events # TODO
 
+
+    def test_update_aws_env_vars(self):
+        z = Zappa()
+        z.credentials_arn = object()
+
+        with mock.patch.object(z, "lambda_client") as mock_client:
+            # Simulate already having some AWS env vars remotely
+            mock_client.get_function_configuration.return_value = {"Environment": {"Variables": {"REMOTE_ONLY": "AAA", "CHANGED_REMOTE" : "BBB"}}}
+            z.update_lambda_configuration("test", "test", "test", aws_environment_variables={"CHANGED_REMOTE" : "ZZ", "LOCAL_ONLY" : "YY"})
+            end_result_should_be = {"REMOTE_ONLY": "AAA", "CHANGED_REMOTE" : "ZZ", "LOCAL_ONLY" : "YY"}
+            self.assertEqual(mock_client.update_function_configuration.call_args[1]["Environment"], { "Variables": end_result_should_be})
+
     ##
     # Logging
     ##
@@ -1438,6 +1450,20 @@ USE_TZ = True
         self.assertTrue(len(truncated) <= 64)
         self.assertEqual(truncated, "a-b")
 
+    def test_hashed_rule_name(self):
+        zappa = Zappa()
+        truncated = zappa.get_event_name(
+            "basldfkjalsdkfjalsdkfjaslkdfjalsdkfjadlsfkjasdlfkjasdlfkjasdflkjasdf-asdfasdfasdfasdfasdf",
+            "this.is.my.dang.function.wassup.yeah.its.long")
+        self.assertTrue(len(truncated) == 64)
+
+        rule_name = zappa.get_hashed_rule_name(
+            event=dict(name='some-event-name'),
+            function="this.is.my.dang.function.wassup.yeah.its.long",
+            lambda_name="basldfkjalsdkfjalsdkfjaslkdfjalsdkfjadlsfkjasdlfkjasdlfkjasdflkjasdf-asdfasdfasdfasdfasdf")
+        self.assertTrue(len(rule_name) <= 64)
+        self.assertTrue(rule_name.endswith("-this.is.my.dang.function.wassup.yeah.its.long"))
+
     def test_detect_dj(self):
         # Sanity
         settings_modules = detect_django_settings()
@@ -1614,6 +1640,28 @@ USE_TZ = True
     def test_conflicts_with_a_neighbouring_module(self):
         self.assertTrue(conflicts_with_a_neighbouring_module('tests/data/test1'))
         self.assertFalse(conflicts_with_a_neighbouring_module('tests/data/test2'))
+
+    def test_settings_py_generation(self):
+        zappa_cli = ZappaCLI()
+        zappa_cli.api_stage = 'ttt888'
+        zappa_cli.load_settings('test_settings.json')
+        zappa_cli.create_package()
+        with zipfile.ZipFile(zappa_cli.zip_path, 'r') as lambda_zip:
+            content = lambda_zip.read('zappa_settings.py').decode("utf-8")
+            settings = {}
+            exec(content, globals(), settings)
+
+            # validate environment variables
+            self.assertIn('ENVIRONMENT_VARIABLES', settings)
+            self.assertEqual(settings['ENVIRONMENT_VARIABLES'][b'TEST_ENV_VAR'], "test_value")
+
+            # validate Context header mappings
+            self.assertIn('CONTEXT_HEADER_MAPPINGS', settings)
+            self.assertEqual(settings['CONTEXT_HEADER_MAPPINGS']['CognitoIdentityId'], "identity.cognitoIdentityId")
+            self.assertEqual(settings['CONTEXT_HEADER_MAPPINGS']['APIStage'], "stage")
+
+        zappa_cli.remove_local_zip()
+
 
 
 if __name__ == '__main__':

@@ -57,6 +57,7 @@
     - [Setting Environment Variables](#setting-environment-variables)
       - [Local Environment Variables](#local-environment-variables)
       - [Remote Environment Variables](#remote-environment-variables)
+    - [API Gateway Context Variables](#api-gateway-context-variables)
     - [Catching Unhandled Exceptions](#catching-unhandled-exceptions)
     - [Using Custom AWS IAM Roles and Policies](#using-custom-aws-iam-roles-and-policies)
     - [Globally Available Server-less Architectures](#globally-available-server-less-architectures)
@@ -529,6 +530,26 @@ run(your_function, args, kwargs) # Using Lambda
 run(your_function, args, kwargs, service='sns') # Using SNS
 ```
 
+### Remote Invocations
+
+By default, Zappa will use lambda's current function name and current AWS region. If you wish to invoke a lambda with
+  a different function name/region or invoke your lambda from outside of lambda, you must specify the 
+  `remote_aws_lambda_function_name` and `remote_aws_region` arguments so that the application knows which function and 
+  region to use. For example, if some part of our pizza making application had to live on an EC2 instance, but we 
+  wished to call the make_pie() function on its own Lambda instance, we would do it as follows:
+  
+ ```python
+@task(remote_aws_lambda_function_name='pizza-pie-prod', remote_aws_region='us-east-1')
+def make_pie():
+    """ This takes a long time! """
+    ingredients = get_ingredients()
+    pie = bake(ingredients)
+    deliver(pie)
+
+```
+If those task() parameters were not used, then EC2 would execute the function locally. These same
+ `remote_aws_lambda_function_name` and `remote_aws_region` arguments can be used on the zappa.async.run() function as well.
+
 ### Restrictions
 
 The following restrictions to this feature apply:
@@ -555,6 +576,7 @@ to change Zappa's behavior. Use these at your own risk!
         "attach_policy": "my_attach_policy.json", // optional, IAM attach policy JSON file
         "async_source": "sns", // Source of async tasks. Defaults to "lambda"
         "async_resources": true, // Create the SNS topic to use. Defaults to true.
+        "aws_environment_variables" : {"your_key": "your_value"}, // A dictionary of environment variables that will be available to your deployed app via AWS Lambdas native environment variables. See also "environment_variables" and "remote_env" . Default {}.
         "aws_kms_key_arn": "your_aws_kms_key_arn", // Your AWS KMS Key ARN
         "aws_region": "aws-region-name", // optional, uses region set in profile or environment variables if not set here,
         "binary_support": true, // Enable automatic MIME-type based response encoding through API Gateway. Default true.
@@ -574,6 +596,7 @@ to change Zappa's behavior. Use these at your own risk!
         "cloudwatch_log_level": "OFF", // Enables/configures a level of logging for the given staging. Available options: "OFF", "INFO", "ERROR", default "OFF". C
         "cloudwatch_data_trace": false, // Logs all data about received events. Default false.
         "cloudwatch_metrics_enabled": false, // Additional metrics for the API Gateway. Default false.
+        "context_header_mappings": { "HTTP_header_name": "API_Gateway_context_variable" }, // A dictionary mapping HTTP header names to API Gateway context variables
         "cors": true, // Enable Cross-Origin Resource Sharing. Default false. If true, simulates the "Enable CORS" button on the API Gateway console. Can also be a dictionary specifying lists of "allowed_headers", "allowed_methods", and string of "allowed_origin"
         "dead_letter_arn": "arn:aws:<sns/sqs>:::my-topic/queue", // Optional Dead Letter configuration for when Lambda async invoke fails thrice
         "debug": true, // Print Zappa configuration errors tracebacks in the 500. Default true.
@@ -581,7 +604,7 @@ to change Zappa's behavior. Use these at your own risk!
         "delete_s3_zip": true, // Delete the s3 zip archive. Default true.
         "django_settings": "your_project.production_settings", // The modular path to your Django project's settings. For Django projects only.
         "domain": "yourapp.yourdomain.com", // Required if you're using a domain
-        "environment_variables": {"your_key": "your_value"}, // A dictionary of environment variables that will be available to your deployed app. See also "remote_env". Default {}.
+        "environment_variables": {"your_key": "your_value"}, // A dictionary of environment variables that will be available to your deployed app. See also "remote_env" and "aws_environment_variables". Default {}.
         "events": [
             {   // Recurring events
                 "function": "your_module.your_recurring_function", // The function to execute
@@ -784,7 +807,7 @@ However, it's now far easier to use Route 53-based DNS authentication, which wil
 
 ##### Local Environment Variables
 
-If you want to set local remote environment variables for a deployment stage, you can simply set them in your `zappa_settings.json`:
+If you want to set local environment variables for a deployment stage, you can simply set them in your `zappa_settings.json`:
 
 ```javascript
 {
@@ -807,13 +830,15 @@ your_value = os.environ.get('your_key')
 
 If your project needs to be aware of the type of environment you're deployed to, you'll also be able to get `SERVERTYPE` (AWS Lambda), `FRAMEWORK` (Zappa), `PROJECT` (your project name) and `STAGE` (_dev_, _production_, etc.) variables at any time.
 
-If you are using KMS-encrypted AWS envrionment variables, you can set your KMS Key ARN in the `aws_kms_key_arn` setting.
+##### Remote AWS Environment Variables
 
-In Django, during development, you can add your Zappa defined variables to your locally running app by, for example, adding the below to manage.py
+If you want to use native AWS Lambda environment variables you can use the `aws_environment_variables` configuration setting. These are useful as you can easily change them via the AWS Lambda console or cli at runtime. They are also useful for storing sensitive credentials and to take advantage of KMS encryption of environment variables.
 
-RUNNING_DEVSERVER = sys.platform.startswith('win')
+
+During development, you can add your Zappa defined variables to your locally running app by, for example, using the below (for Django, to manage.py).
+
 ```python
-if RUNNING_DEVSERVER:
+if 'SERVERTYPE' in os.environ and os.environ['SERVERTYPE'] == 'AWS Lambda':
     import json
     import os
     json_data = open('zappa_settings.json')
@@ -821,14 +846,26 @@ if RUNNING_DEVSERVER:
     for key, val in env_vars.items():
         os.environ[key] = val
 
-```        
+``` 
 
 ##### Remote Environment Variables
+=======
+Any environment variables that you have set outside of Zappa (via AWS Lambda console or cli) will remain as they are when running `update`, unless they are also in `aws_environment_variables`, in which case the remote value will be overwritten by the one in the settings file.
+
+If you are using KMS-encrypted AWS environment variables, you can set your KMS Key ARN in the `aws_kms_key_arn` setting. Make sure that the values you set are encrypted in such case.
+
+_Note: if you rely on these as well as `environment_variables`, and you have the same key names, then those in `environment_variables` will take precedence as they are injected in the lambda handler._
+
+##### Remote Environment Variables (via an S3 file)
+
+_S3 remote environment variables were added to Zappa before AWS introduced native environment variables for Lambda (via the console and cli). Before going down this route check if above make more sense for your usecase._
+
 
 If you want to use remote environment variables to configure your application (which is especially useful for things like sensitive credentials), you can create a file and place it in an S3 bucket to which your Zappa application has access to. To do this, add the `remote_env` key to zappa_settings pointing to a file containing a flat JSON object, so that each key-value pair on the object will be set as an environment variable and value whenever a new lambda instance spins up.
 
 For example, to ensure your application has access to the database credentials without storing them in your version control, you can add a file to S3 with the connection string and load it into the lambda environment using the `remote_env` configuration setting.
 
+#####
 super-secret-config.json (uploaded to my-config-bucket):
 ```javascript
 {
@@ -851,6 +888,37 @@ Now in your application you can use:
 ```python
 import os
 db_string = os.environ.get('DB_CONNECTION_STRING')
+```
+
+#### API Gateway Context Variables
+
+If you want to map an API Gateway context variable (http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html) to an HTTP header you can set up the mapping in `zappa_settings.json`:
+
+```javascript
+{
+    "dev": {
+        ...
+        "context_header_mappings": { 
+            "HTTP_header_name": "API_Gateway_context_variable" 
+        }
+    },
+    ...
+}
+```
+
+For example, if you want to expose the $context.identity.cognitoIdentityId variable as the HTTP header CognitoIdentityId, and $context.stage as APIStage, you would have:
+
+```javascript
+{
+    "dev": {
+        ...
+        "context_header_mappings": { 
+            "CognitoIdentityId": "identity.cognitoIdentityId",
+            "APIStage": "stage"
+        }
+    },
+    ...
+}
 ```
 
 #### Catching Unhandled Exceptions

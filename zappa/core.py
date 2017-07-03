@@ -3,6 +3,7 @@ from __future__ import print_function
 import boto3
 import botocore
 import glob
+import hashlib
 import json
 import logging
 import os
@@ -385,7 +386,8 @@ class Zappa(object):
                             use_precompiled_packages=True,
                             include=None,
                             venv=None,
-                            output=None
+                            output=None,
+                            disable_progress=False
                         ):
         """
         Create a Lambda-ready zip file of the current virtualenvironment and working directory.
@@ -500,7 +502,7 @@ class Zappa(object):
                         print(" - %s==%s: Using precompiled lambda package " % (installed_package_name, installed_package_version,))
                         self.extract_lambda_package(installed_package_name, temp_project_path)
                     else:
-                        cached_wheel_path = self.get_cached_manylinux_wheel(installed_package_name, installed_package_version)
+                        cached_wheel_path = self.get_cached_manylinux_wheel(installed_package_name, installed_package_version, disable_progress)
                         if cached_wheel_path:
                             # Otherwise try to use manylinux packages from PyPi..
                             # Related: https://github.com/Miserlou/Zappa/issues/398
@@ -650,7 +652,7 @@ class Zappa(object):
         return lambda_packages.get(package_name, {}).get(self.runtime) is not None
 
     @staticmethod
-    def download_url_with_progress(url, stream):
+    def download_url_with_progress(url, stream, disable_progress):
         """
         Downloads a given url in chunks and writes to the provided stream (can be any io stream).
         Displays the progress bar for the download.
@@ -658,7 +660,7 @@ class Zappa(object):
         resp = requests.get(url, timeout=2, stream=True)
         resp.raw.decode_content = True
 
-        progress = tqdm(unit="B", unit_scale=True, total=int(resp.headers.get('Content-Length', 0)))
+        progress = tqdm(unit="B", unit_scale=True, total=int(resp.headers.get('Content-Length', 0)), disable=disable_progress)
         for chunk in resp.iter_content(chunk_size=1024):
             if chunk:
                 progress.update(len(chunk))
@@ -666,7 +668,7 @@ class Zappa(object):
 
         progress.close()
 
-    def get_cached_manylinux_wheel(self, package_name, package_version):
+    def get_cached_manylinux_wheel(self, package_name, package_version, disable_progress=False):
         """
         Gets the locally stored version of a manylinux wheel. If one does not exist, the function downloads it.
         """
@@ -685,7 +687,7 @@ class Zappa(object):
 
             print(" - {}=={}: Downloading".format(package_name, package_version))
             with open(wheel_path, 'wb') as f:
-                self.download_url_with_progress(wheel_url, f)
+                self.download_url_with_progress(wheel_url, f, disable_progress)
         else:
             print(" - {}=={}: Using locally cached manylinux wheel".format(package_name, package_version))
 
@@ -714,7 +716,7 @@ class Zappa(object):
     # S3
     ##
 
-    def upload_to_s3(self, source_path, bucket_name):
+    def upload_to_s3(self, source_path, bucket_name, disable_progress=False):
         r"""
         Given a file, upload it to S3.
         Credentials should be stored in environment variables or ~/.aws/credentials (%USERPROFILE%\.aws\credentials on Windows).
@@ -746,7 +748,7 @@ class Zappa(object):
         try:
             source_size = os.stat(source_path).st_size
             print("Uploading {0} ({1})..".format(dest_path, human_size(source_size)))
-            progress = tqdm(total=float(os.path.getsize(source_path)), unit_scale=True, unit='B')
+            progress = tqdm(total=float(os.path.getsize(source_path)), unit_scale=True, unit='B', disable=disable_progress)
 
             # Attempt to upload to S3 using the S3 meta client with the progress bar.
             # If we're unable to do that, try one more time using a session client,
@@ -835,7 +837,7 @@ class Zappa(object):
                                 vpc_config=None,
                                 dead_letter_config=None,
                                 runtime='python2.7',
-                                environment_variables=None,
+                                aws_environment_variables=None,
                                 aws_kms_key_arn=None
                             ):
         """
@@ -847,8 +849,8 @@ class Zappa(object):
             dead_letter_config = {}
         if not self.credentials_arn:
             self.get_credentials_arn()
-        if not environment_variables:
-            environment_variables = {}
+        if not aws_environment_variables:
+            aws_environment_variables = {}
         if not aws_kms_key_arn:
             aws_kms_key_arn = ''
 
@@ -867,7 +869,7 @@ class Zappa(object):
             Publish=publish,
             VpcConfig=vpc_config,
             DeadLetterConfig=dead_letter_config,
-            Environment={'Variables': environment_variables},
+            Environment={'Variables': aws_environment_variables},
             KMSKeyArn=aws_kms_key_arn
         )
 
@@ -898,7 +900,7 @@ class Zappa(object):
                                         publish=True,
                                         vpc_config=None,
                                         runtime='python2.7',
-                                        environment_variables=None,
+                                        aws_environment_variables=None,
                                         aws_kms_key_arn=None
                                     ):
         """
@@ -910,10 +912,21 @@ class Zappa(object):
             vpc_config = {}
         if not self.credentials_arn:
             self.get_credentials_arn()
-        if not environment_variables:
-            environment_variables = {}
         if not aws_kms_key_arn:
             aws_kms_key_arn = ''
+
+        if not aws_environment_variables:
+            aws_environment_variables = {}
+        else:
+            # Get any remote aws lambda env vars so they don't get trashed
+            # Related: https://github.com/Miserlou/Zappa/issues/765
+            lambda_aws_environment_variables = self.lambda_client\
+                .get_function_configuration(FunctionName=function_name)["Environment"].get("Variables", {})
+
+            # Append keys that are remote but not in settings file
+            for key, value in lambda_aws_environment_variables.items():
+                if key not in aws_environment_variables:
+                    aws_environment_variables[key] = value
 
         response = self.lambda_client.update_function_configuration(
             FunctionName=function_name,
@@ -924,7 +937,7 @@ class Zappa(object):
             Timeout=timeout,
             MemorySize=memory_size,
             VpcConfig=vpc_config,
-            Environment={'Variables': environment_variables},
+            Environment={'Variables': aws_environment_variables},
             KMSKeyArn=aws_kms_key_arn
         )
 
@@ -1064,7 +1077,7 @@ class Zappa(object):
                                         0
                                         )
 
-        if cors_options is not None:
+        if cors_options:
             self.create_and_setup_cors( restapi,
                                         root_id,
                                         invocations_uri,
@@ -1088,7 +1101,7 @@ class Zappa(object):
                                         1
                                     )  # pragma: no cover
 
-        if cors_options is not None:
+        if cors_options:
             self.create_and_setup_cors( restapi,
                                         resource,
                                         invocations_uri,
@@ -1510,7 +1523,7 @@ class Zappa(object):
                                         )
         return self.cf_template
 
-    def update_stack(self, name, working_bucket, wait=False, update_only=False):
+    def update_stack(self, name, working_bucket, wait=False, update_only=False, disable_progress=False):
         """
         Update or create the CF stack managed by Zappa.
         """
@@ -1520,7 +1533,7 @@ class Zappa(object):
         with open(template, 'wb') as out:
             out.write(bytes(self.cf_template.to_json(indent=None, separators=(',',':')), "utf-8"))
 
-        self.upload_to_s3(template, working_bucket)
+        self.upload_to_s3(template, working_bucket, disable_progress=disable_progress)
 
         url = 'https://s3.amazonaws.com/{0}/{1}'.format(working_bucket, template)
         tags = [{'Key':'ZappaProject','Value':name}]
@@ -1558,7 +1571,7 @@ class Zappa(object):
             total_resources = len(self.cf_template.resources)
             current_resources = 0
             sr = self.cf_client.get_paginator('list_stack_resources')
-            progress = tqdm(total=total_resources, unit='res')
+            progress = tqdm(total=total_resources, unit='res', disable=disable_progress)
             while True:
                 time.sleep(3)
                 result = self.cf_client.describe_stacks(StackName=name)
@@ -1990,8 +2003,15 @@ class Zappa(object):
 
             if expressions:
                 for expression in expressions:
+                    # if it's possible that we truncated name, generate a unique, shortened name
+                    # https://github.com/Miserlou/Zappa/issues/970
+                    if len(name) >= 64:
+                        rule_name = self.get_hashed_rule_name(event, function, lambda_name)
+                    else:
+                        rule_name = name
+
                     rule_response = self.events_client.put_rule(
-                        Name=name,
+                        Name=rule_name,
                         ScheduleExpression=expression,
                         State='ENABLED',
                         Description=description,
@@ -2006,7 +2026,7 @@ class Zappa(object):
 
                     # Create the CloudWatch event ARN for this function.
                     target_response = self.events_client.put_targets(
-                        Rule=name,
+                        Rule=rule_name,
                         Targets=[
                             {
                                 'Id': 'Id' + ''.join(random.choice(string.digits) for _ in range(12)),
@@ -2016,9 +2036,9 @@ class Zappa(object):
                     )
 
                     if target_response['ResponseMetadata']['HTTPStatusCode'] == 200:
-                        print("Scheduled {} with expression {}!".format(name, expression))
+                        print("Scheduled {} with expression {}!".format(rule_name, expression))
                     else:
-                        print("Problem scheduling {} with expression {}.".format(name, expression))
+                        print("Problem scheduling {} with expression {}.".format(rule_name, expression))
 
             elif event_source:
                 service = self.service_from_arn(event_source['arn'])
@@ -2069,6 +2089,16 @@ class Zappa(object):
 
         """
         return '{prefix:.{width}}-{postfix}'.format(prefix=lambda_name, width=max(0, 63 - len(name)), postfix=name)[:64]
+
+    @staticmethod
+    def get_hashed_rule_name(event, function, lambda_name):
+        """
+        Returns an AWS-valid CloudWatch rule name using a digest of the event name, lambda name, and function.
+        This allows support for rule names that may be longer than the 64 char limit.
+        """
+        event_name = event.get('name', function)
+        name_hash = hashlib.sha1('{}-{}'.format(lambda_name, event_name).encode('UTF-8')).hexdigest()
+        return Zappa.get_event_name(name_hash, function)
 
     def delete_rule(self, rule_name):
         """
