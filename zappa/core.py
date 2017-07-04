@@ -919,7 +919,7 @@ class Zappa(object):
             aws_environment_variables = {}
         else:
             # There may not be an Environment key defined.
-            # https://github.com/Miserlou/Zappa/issues/765
+            # https://github.com/Miserlou/Zappa/issues/987
             lambda_aws_environment_variables = self.lambda_client.get_function_configuration(FunctionName=function_name)
             if "Environment" in lambda_aws_environment_variables:
                 # Get any remote aws lambda env vars so they don't get trashed
