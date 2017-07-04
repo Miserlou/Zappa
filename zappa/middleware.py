@@ -54,6 +54,9 @@ class ZappaWSGIMiddleware(object):
             """
 
             # All the non-cookie headers should be sent unharmed.
+            
+            # The main app can send 'set-cookie' headers in any casing
+            # Related: https://github.com/Miserlou/Zappa/issues/990
             new_headers = [header for header in headers
                            if ((type(header[0]) != str) or (header[0].lower() != 'set-cookie'))]
             cookie_headers = [header for header in headers 
