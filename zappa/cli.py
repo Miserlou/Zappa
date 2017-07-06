@@ -2137,12 +2137,12 @@ class ZappaCLI(object):
                 env_dict['AWS_REGION'] = self.aws_region
             env_dict.update(dict(self.environment_variables))
 
-            # Environment variable keys can't be Unicode
+            # Environment variable keys must be ascii
             # https://github.com/Miserlou/Zappa/issues/604
             try:
                 env_dict = dict((k.encode('ascii').decode('ascii'), v) for (k, v) in env_dict.items())
-            except Exception: # pragma: no cover
-                raise ValueError("Environment variable keys must not be unicode.")
+            except Exception:
+                raise ValueError("Environment variable keys must be ascii.")
 
             settings_s = settings_s + "ENVIRONMENT_VARIABLES={0}\n".format(
                     env_dict
