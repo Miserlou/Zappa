@@ -1653,7 +1653,7 @@ USE_TZ = True
 
             # validate environment variables
             self.assertIn('ENVIRONMENT_VARIABLES', settings)
-            self.assertEqual(settings['ENVIRONMENT_VARIABLES'][b'TEST_ENV_VAR'], "test_value")
+            self.assertEqual(settings['ENVIRONMENT_VARIABLES']['TEST_ENV_VAR'], "test_value")
 
             # validate Context header mappings
             self.assertIn('CONTEXT_HEADER_MAPPINGS', settings)

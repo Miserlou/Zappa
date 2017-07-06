@@ -2140,9 +2140,9 @@ class ZappaCLI(object):
             # Environment variable keys can't be Unicode
             # https://github.com/Miserlou/Zappa/issues/604
             try:
-                env_dict = dict((k.encode('ascii'), v) for (k, v) in env_dict.items())
+                env_dict = dict((k.encode('ascii').decode('ascii'), v) for (k, v) in env_dict.items())
             except Exception: # pragma: no cover
-                    raise ValueError("Environment variable keys must not be unicode.")
+                raise ValueError("Environment variable keys must not be unicode.")
 
             settings_s = settings_s + "ENVIRONMENT_VARIABLES={0}\n".format(
                     env_dict
