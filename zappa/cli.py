@@ -797,6 +797,9 @@ class ZappaCLI(object):
             conf = function_response['Configuration']
             last_updated = parser.parse(conf['LastModified'])
             last_updated_unix = time.mktime(last_updated.timetuple())
+        except botocore.exceptions.BotoCoreError as e:
+            click.echo(click.style(type(e).__name__, fg="red") + ": " + e.args[0])
+            sys.exit(-1)
         except Exception as e:
             click.echo(click.style("Warning!", fg="red") + " Couldn't get function " + self.lambda_name +
                        " in " + self.zappa.aws_region + " - have you deployed yet?")
