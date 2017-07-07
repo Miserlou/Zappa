@@ -2139,6 +2139,7 @@ class ZappaCLI(object):
 
             # Environment variable keys must be ascii
             # https://github.com/Miserlou/Zappa/issues/604
+            # https://github.com/Miserlou/Zappa/issues/998
             try:
                 env_dict = dict((k.encode('ascii').decode('ascii'), v) for (k, v) in env_dict.items())
             except Exception:
