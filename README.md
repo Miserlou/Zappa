@@ -87,7 +87,7 @@
 
 **Zappa** makes it super easy to build and deploy all Python WSGI applications on AWS Lambda + API Gateway. Think of it as "serverless" web hosting for your Python apps. That means **infinite scaling**, **zero downtime**, **zero maintenance** - and at a fraction of the cost of your current deployments!
 
-If you've got a Python web app (including Django and Flask apps), it's as easy as:
+If you've got a Python web app in a virtualenv (including Django and Flask apps), it's as easy as:
 
 ```
 $ pip install zappa
