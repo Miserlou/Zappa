@@ -41,7 +41,6 @@ class TestZappa(unittest.TestCase):
         z = Zappa(session)
         zip_path = z.create_lambda_zip(minify=False)
         res = z.upload_to_s3(zip_path, bucket_name)
-        os.remove(zip_path)
         self.assertTrue(res)
         s3 = session.resource('s3')
 
@@ -58,6 +57,34 @@ class TestZappa(unittest.TestCase):
 
         fail = z.upload_to_s3('/tmp/this_isnt_real', bucket_name)
         self.assertFalse(fail)
+
+        #Will graciouly handle quirky S3 behavior on 'us-east-1' region name'
+        z.aws_region = 'us-east-1'
+        res = z.upload_to_s3(zip_path, bucket_name)
+        os.remove(zip_path)
+        self.assertTrue(res)
+
+    @placebo_session
+    def test_copy_on_s3(self, session):
+        bucket_name = 'test_zappa_upload_s3'
+        z = Zappa(session)
+        zip_path = z.create_lambda_zip(minify=False)
+        res = z.upload_to_s3(zip_path, bucket_name)
+        self.assertTrue(res)
+        s3 = session.resource('s3')
+
+        # will throw ClientError with 404 if bucket doesn't exist
+        s3.meta.client.head_bucket(Bucket=bucket_name)
+
+        # will throw ClientError with 404 if object doesn't exist
+        s3.meta.client.head_object(
+            Bucket=bucket_name,
+            Key=zip_path,
+        )
+        zp = 'copy_' + zip_path
+        res = z.copy_on_s3(zip_path, zp, bucket_name)
+        os.remove(zip_path)
+        self.assertTrue(res)
 
     @placebo_session
     def test_create_lambda_function(self, session):

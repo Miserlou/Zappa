@@ -1,0 +1,14 @@
+{
+    "status_code": 200,
+    "data": {
+        "ETag": "\"86865b71093464f5a301e1027439491b-1\"",
+        "Bucket": "test_zappa_upload_s3",
+        "Location": "https://test_zappa_upload_s3.s3.amazonaws.com/lambda_package-1456273359.zip",
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200,
+            "HostId": "MRuE82ncxtI6IA04QwvcPHGZX/81kUhSZ+LwV7jAGsv674NknH9btnGPsUuLXBspNuqGtFbdWKY=",
+            "RequestId": "4BD122934F722C61"
+        },
+        "Key": "lambda_package-1456273359.zip"
+    }
+}
