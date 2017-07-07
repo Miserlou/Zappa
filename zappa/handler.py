@@ -153,7 +153,27 @@ class LambdaHandler(object):
         if not os.path.isdir(project_folder):
             # The project folder doesn't exist in this cold lambda, get it from S3
             if not self.session:
-                boto_session = boto3.Session()
+
+                # Specify region + credentials of new session 
+                # to avoid a 400 Bad Request from S3
+                # https://github.com/Miserlou/Zappa/issues/984
+
+                session_kw = {}
+
+                aws_region = os.environ.get('AWS_REGION', None)
+                if aws_region:
+                    session_kw['region_name'] = aws_region
+
+                aws_access_key_id = os.environ.get('AWS_ACCESS_KEY_ID', None)
+                aws_secret_access_key = os.environ.get('AWS_SECRET_ACCESS_KEY', None)
+                if aws_access_key_id and aws_secret_access_key:
+                    session_kw.update({
+                            'aws_access_key_id': aws_access_key_id,
+                            'aws_secret_access_key': aws_secret_access_key
+                        })
+
+                boto_session = boto3.Session(**session_kw)
+
             else:
                 boto_session = self.session
 
