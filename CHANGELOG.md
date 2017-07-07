@@ -1,6 +1,6 @@
 # Zappa Changelog
 
-## 0.43.0
+## 0.42.2
 * Add exclude for __pycache__ contents (#943)
 * Fix #937 - Use get_data
 * Add support for configuring APIGW cache TTL and encryption #942
