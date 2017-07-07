@@ -309,6 +309,18 @@ class TestZappa(unittest.TestCase):
             end_result_should_be = {"REMOTE_ONLY": "AAA", "CHANGED_REMOTE" : "ZZ", "LOCAL_ONLY" : "YY"}
             self.assertEqual(mock_client.update_function_configuration.call_args[1]["Environment"], { "Variables": end_result_should_be})
 
+    def test_update_empty_aws_env_hash(self):
+        z = Zappa()
+        z.credentials_arn = object()
+
+        with mock.patch.object(z, "lambda_client") as mock_client:
+            # Simulate having no AWS env vars remotely
+            mock_client.get_function_configuration.return_value = {}
+            z.update_lambda_configuration("test", "test", "test", aws_environment_variables={"LOCAL_ONLY" : "LZ", "SHOW_AND_TELL" : "SHA"})
+            end_result_should_be = {"LOCAL_ONLY" : "LZ", "SHOW_AND_TELL" : "SHA"}
+            self.assertEqual(mock_client.update_function_configuration.call_args[1]["Environment"], { "Variables": end_result_should_be})
+
+
     ##
     # Logging
     ##
