@@ -1653,7 +1653,7 @@ USE_TZ = True
 
             # validate environment variables
             self.assertIn('ENVIRONMENT_VARIABLES', settings)
-            self.assertEqual(settings['ENVIRONMENT_VARIABLES'][b'TEST_ENV_VAR'], "test_value")
+            self.assertEqual(settings['ENVIRONMENT_VARIABLES']['TEST_ENV_VAR'], "test_value")
 
             # validate Context header mappings
             self.assertIn('CONTEXT_HEADER_MAPPINGS', settings)
@@ -1661,6 +1661,14 @@ USE_TZ = True
             self.assertEqual(settings['CONTEXT_HEADER_MAPPINGS']['APIStage'], "stage")
 
         zappa_cli.remove_local_zip()
+
+    def test_only_ascii_env_var_allowed(self):
+        zappa_cli = ZappaCLI()
+        zappa_cli.api_stage = 'ttt888'
+        zappa_cli.load_settings('tests/test_non_ascii_environment_var_key.json')
+        with self.assertRaises(ValueError) as context:
+            zappa_cli.create_package()
+        self.assertEqual('Environment variable keys must be ascii.', str(context.exception))
 
 
 
