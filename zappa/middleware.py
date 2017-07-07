@@ -54,9 +54,13 @@ class ZappaWSGIMiddleware(object):
             """
 
             # All the non-cookie headers should be sent unharmed.
-            new_headers = [(header[0], header[1]) for header in headers if
-                           header[0] != 'Set-Cookie']
-            cookie_headers = [x for x in headers if x[0] == "Set-Cookie"]
+            
+            # The main app can send 'set-cookie' headers in any casing
+            # Related: https://github.com/Miserlou/Zappa/issues/990
+            new_headers = [header for header in headers
+                           if ((type(header[0]) != str) or (header[0].lower() != 'set-cookie'))]
+            cookie_headers = [header for header in headers 
+                              if ((type(header[0]) == str) and (header[0].lower() == "set-cookie"))]
             for header, new_name in zip(cookie_headers,
                                         all_casings("Set-Cookie")):
                 new_headers.append((new_name, header[1]))
