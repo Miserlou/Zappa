@@ -215,7 +215,7 @@ class Zappa(object):
             load_credentials=True,
             desired_role_name=None,
             runtime='python2.7',
-            extra_tags=(),
+            tags=(),
         ):
         # Set aws_region to None to use the system's region instead
         if aws_region is None:
@@ -268,7 +268,7 @@ class Zappa(object):
             self.sns_client = self.boto_session.client('sns')
             self.cf_client = self.boto_session.client('cloudformation')
 
-        self.extra_tags = extra_tags
+        self.tags = tags
         self.cf_template = troposphere.Template()
         self.cf_api_resources = []
         self.cf_parameters = {}
@@ -279,7 +279,7 @@ class Zappa(object):
         if value not in self.cf_parameters:
             keyname = chr(ord('A') + len(self.cf_parameters))
             param = self.cf_template.add_parameter(troposphere.Parameter(
-                keyname, Type="String", Default=value, tags=self.extra_tags
+                keyname, Type="String", Default=value, tags=self.tags
             ))
 
             self.cf_parameters[value] = param
@@ -742,9 +742,9 @@ class Zappa(object):
                     CreateBucketConfiguration={'LocationConstraint': self.aws_region},
                 )
 
-        if self.extra_tags:
+        if self.tags:
             tags = {
-                'TagSet': [{'Key': key, 'Value': self.extra_tags[key]} for key in self.extra_tags.keys()]
+                'TagSet': [{'Key': key, 'Value': self.tags[key]} for key in self.tags.keys()]
             }
             self.s3_client.put_bucket_tagging(Bucket=bucket_name, Tagging=tags)
 
@@ -883,8 +883,8 @@ class Zappa(object):
 
         resource_arn = response['FunctionArn']
 
-        if self.extra_tags:
-            self.lambda_client.tag_resource(Resource=resource_arn, Tags=self.extra_tags)
+        if self.tags:
+            self.lambda_client.tag_resource(Resource=resource_arn, Tags=self.tags)
 
         return resource_arn
 
@@ -1130,7 +1130,7 @@ class Zappa(object):
         authorizer_type = authorizer.get("type", "TOKEN").upper()
         identity_validation_expression = authorizer.get('validation_expression', None)
 
-        authorizer_resource = troposphere.apigateway.Authorizer("Authorizer", tags=self.extra_tags)
+        authorizer_resource = troposphere.apigateway.Authorizer("Authorizer")
         authorizer_resource.RestApiId = troposphere.Ref(restapi)
         authorizer_resource.Name = authorizer.get("name", "ZappaAuthorizer")
         authorizer_resource.Type = authorizer_type
@@ -1549,8 +1549,8 @@ class Zappa(object):
         self.upload_to_s3(template, working_bucket, disable_progress=disable_progress)
 
         url = 'https://s3.amazonaws.com/{0}/{1}'.format(working_bucket, template)
-        tags = [{'Key': key, 'Value': self.extra_tags[key]}
-                for key in self.extra_tags.keys()
+        tags = [{'Key': key, 'Value': self.tags[key]}
+                for key in self.tags.keys()
                 if key != 'ZappaProject']
         tags.append({'Key':'ZappaProject','Value':name})
         update = True

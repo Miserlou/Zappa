@@ -112,7 +112,7 @@ class ZappaCLI(object):
     authorizer = None
     aws_kms_key_arn = ''
     context_header_mappings = None
-    extra_tags = []
+    tags = []
 
     stage_name_env_pattern = re.compile('^[a-zA-Z0-9_]+$')
 
@@ -1916,7 +1916,7 @@ class ZappaCLI(object):
         self.context_header_mappings = self.stage_config.get('context_header_mappings', {})
 
         # Additional tags
-        self.extra_tags = self.stage_config.get('tags', {})
+        self.tags = self.stage_config.get('tags', {})
 
         desired_role_name = self.lambda_name + "-ZappaLambdaExecutionRole"
         self.zappa = Zappa( boto_session=session,
@@ -1924,7 +1924,7 @@ class ZappaCLI(object):
                             aws_region=self.aws_region,
                             load_credentials=self.load_credentials,
                             desired_role_name=desired_role_name,
-                            extra_tags=self.extra_tags,
+                            tags=self.tags,
                             runtime=self.runtime
                         )
 
