@@ -628,6 +628,10 @@ to change Zappa's behavior. Use these at your own risk!
             "Action": ["rekognition:*"], // AWS Service ARN
             "Resource": "*"
         }],
+        "extra_tags": { // Attach additional tags in AWS
+            "Key": "value",  // Example Key and value
+            "Key2": "value",
+            },
         "iam_authorization": true, // optional, use IAM to require request signing. Default false. Note that enabling this will override the authorizer configuration.
         "include": ["your_special_library_to_load_at_handler_init"], // load special libraries into PYTHONPATH at handler init that certain modules cannot find on path
         "authorizer": {
