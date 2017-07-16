@@ -119,7 +119,7 @@ __Awesome!__
 
 ## Installation and Configuration
 
-_Before you begin, make sure you are running Python 2.7 or Python 3.6 and you have a valid AWS account and your [AWS credentials file](https://blogs.aws.amazon.com/security/post/Tx3D6U6WSFGOK2H/A-New-and-Standardized-Way-to-Manage-Credentials-in-the-AWS-SDKs) is properly installed._
+_Before you begin, make sure you are running Python 2.7 and you have a valid AWS account and your [AWS credentials file](https://blogs.aws.amazon.com/security/post/Tx3D6U6WSFGOK2H/A-New-and-Standardized-Way-to-Manage-Credentials-in-the-AWS-SDKs) is properly installed._
 
 **Zappa** can easily be installed through pip, like so:
 
@@ -347,7 +347,7 @@ For instance, suppose you have a basic application in a file called "my_app.py",
 
 Any remote print statements made and the value the function returned will then be printed to your local console. **Nifty!**
 
-You can also invoke interpretable Python 2.7 or Python 3.6 strings directly by using `--raw`, like so:
+You can also invoke interpretable Python 2.7 strings directly by using `--raw`, like so:
 
     $ zappa invoke production "print 1 + 2 + 3" --raw
 
