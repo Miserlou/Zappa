@@ -1,5 +1,18 @@
 # Zappa Changelog
 
+## 0.43.0
+* Checks for the key 'Environment' when fetching remote lambda env vars (#988)
+* except BotoCoreError before general exception in zappa.cli.update
+* make cookie hack case-insensitive
+* Fix #998 - Make environment variable keys strings instead of byte arrays in python 3.6
+* Add --disable_progress command line parameter
+* #946 - Allow setting cors to false.
+* #870 Lambda from outside
+* Implement context header mappings - Feature Request Issue #939
+* Separating out native AWS environment variables ##962
+* Rule name shortening
+* Splintering aws_environment_variables from environment_variables (to avoid overwriting AWS native env vars).
+
 ## 0.42.2
 * Add exclude for __pycache__ contents (#943)
 * Fix #937 - Use get_data
