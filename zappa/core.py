@@ -900,7 +900,7 @@ class Zappa(object):
                                         publish=True,
                                         vpc_config=None,
                                         runtime='python2.7',
-                                        aws_environment_variables={},
+                                        aws_environment_variables=None,
                                         aws_kms_key_arn=None
                                     ):
         """
@@ -914,6 +914,8 @@ class Zappa(object):
             self.get_credentials_arn()
         if not aws_kms_key_arn:
             aws_kms_key_arn = ''
+        if not aws_environment_variables:
+            aws_environment_variables = {}
 
         # Check if there are any remote aws lambda env vars so they don't get trashed.
         # https://github.com/Miserlou/Zappa/issues/987,  Related: https://github.com/Miserlou/Zappa/issues/765
