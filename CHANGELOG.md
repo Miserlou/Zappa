@@ -1,5 +1,8 @@
 # Zappa Changelog
 
+## 0.43.1
+* Fixes #1001, don't override AWS env vars if k:v not set. Thanks Nik and Sean!
+
 ## 0.43.0
 * Checks for the key 'Environment' when fetching remote lambda env vars (#988)
 * except BotoCoreError before general exception in zappa.cli.update
