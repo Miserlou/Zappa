@@ -1114,6 +1114,13 @@ Zappa is currently supported by these awesome individuals and companies:
 
 Thank you very, very much!
 
+## Merch
+
+<br />
+<p align="center">
+  <a href="https://blog.zappa.io/posts/weve-got-merch-now-introducing-zappa-tshirts"><img src="https://i.imgur.com/jYZ7aUR.png" alt="Merch!"/></a>
+</p>
+
 ## Support / Development / Training / Consulting
 
 Do you need help with..
