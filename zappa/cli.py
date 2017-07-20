@@ -751,7 +751,7 @@ class ZappaCLI(object):
 
             # Add binary support
             if self.binary_support:
-                self.zappa.add_binary_support(api_id=api_id)
+                self.zappa.add_binary_support(api_id=api_id, cors=self.cors)
 
             # Deploy the API!
             endpoint_url = self.deploy_api_gateway(api_id)
@@ -901,9 +901,9 @@ class ZappaCLI(object):
 
             # update binary support
             if self.binary_support:
-                self.zappa.add_binary_support(api_id=api_id)
+                self.zappa.add_binary_support(api_id=api_id, cors=self.cors)
             else:
-                self.zappa.remove_binary_support(api_id=api_id)
+                self.zappa.remove_binary_support(api_id=api_id, cors=self.cors)
 
             endpoint_url = self.deploy_api_gateway(api_id)
 
