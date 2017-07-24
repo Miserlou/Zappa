@@ -406,15 +406,30 @@ class LambdaHandler(object):
             # This is a normal HTTP request
             if event.get('httpMethod', None):
 
-                if settings.DOMAIN:
-                    # If we're on a domain, we operate normally
-                    script_name = ''
+                script_name = ''
+                headers = event.get('headers')
+                if headers:
+                    host = headers.get('Host')
                 else:
-                    # But if we're not, then our base URL
-                    # will be something like
-                    # https://blahblahblah.execute-api.us-east-1.amazonaws.com/dev
-                    # So, we need to make sure the WSGI app knows this.
-                    script_name = '/' + settings.API_STAGE
+                    host = None
+
+                if host:
+                    if 'amazonaws.com' in host:
+                        # The path provided in th event doesn't include the
+                        # stage, so we must tell Flask to include the API
+                        # stage in the url it calculates. See https://github.com/Miserlou/Zappa/issues/1014
+                        script_name = '/' + settings.API_STAGE
+                else:
+                    # This is a test request sent from the AWS console
+                    if settings.DOMAIN:
+                        # Assume the requests received will be on the specified
+                        # domain. No special handling is required
+                        pass
+                    else:
+                        # Assume the requests received will be to the
+                        # amazonaws.com endpoint, so tell Flask to include the
+                        # API stage
+                        script_name = '/' + settings.API_STAGE
 
                 # Create the environment for WSGI and handle the request
                 environ = create_wsgi_request(
