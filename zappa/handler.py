@@ -417,7 +417,7 @@ class LambdaHandler(object):
                     if 'amazonaws.com' in host:
                         # The path provided in th event doesn't include the
                         # stage, so we must tell Flask to include the API
-                        # stage in the url it calculates
+                        # stage in the url it calculates. See https://github.com/Miserlou/Zappa/issues/1014
                         script_name = '/' + settings.API_STAGE
                 else:
                     # This is a test request sent from the AWS console
