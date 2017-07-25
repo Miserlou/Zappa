@@ -1290,7 +1290,7 @@ class Zappa(object):
 
         return "https://{}.execute-api.{}.amazonaws.com/{}".format(api_id, self.boto_session.region_name, stage_name)
 
-    def add_binary_support(self, api_id):
+    def add_binary_support(self, api_id, cors=False):
             """
             Add binary support
             """
@@ -1308,7 +1308,27 @@ class Zappa(object):
                     ]
                 )
 
-    def remove_binary_support(self, api_id):
+            if cors:
+                # fix for issue 699, cors+binary support don't work together
+                # go through each resource and update the contentHandling type
+                response = self.apigateway_client.get_resources(restApiId=api_id)
+                resource_ids = [item['id'] for item in response['items']]
+
+                for resource_id in resource_ids:
+                    self.apigateway_client.update_integration(
+                        restApiId=api_id,
+                        resourceId=resource_id,
+                        httpMethod='OPTIONS',
+                        patchOperations=[
+                            {
+                                "op": "replace",
+                                "path": "/contentHandling",
+                                "value": "CONVERT_TO_TEXT"
+                            }
+                        ]
+                    )
+
+    def remove_binary_support(self, api_id, cors=False):
         """
         Remove binary support
         """
@@ -1325,6 +1345,24 @@ class Zappa(object):
                     }
                 ]
             )
+        if cors:
+            # go through each resource and change the contentHandling type
+            response = self.apigateway_client.get_resources(restApiId=api_id)
+            resource_ids = [item['id'] for item in response['items']]
+
+            for resource_id in resource_ids:
+                self.apigateway_client.update_integration(
+                    restApiId=api_id,
+                    resourceId=resource_id,
+                    httpMethod='OPTIONS',
+                    patchOperations=[
+                        {
+                            "op": "replace",
+                            "path": "/contentHandling",
+                            "value": ""
+                        }
+                    ]
+                )
 
     def get_api_keys(self, api_id, stage_name):
         """
