@@ -159,13 +159,14 @@ class LambdaHandler(object):
                 boto_session = self.session
 
             # Lambda Function Memory Size in MB
-            server_memory_mb = int(os.environ["AWS_LAMBDA_FUNCTION_MEMORY_SIZE"])
+            server_memory_mb = int(os.environ.get("AWS_LAMBDA_FUNCTION_MEMORY_SIZE", 128))
 
             # Maximum memory (bytes) to allocate for in-memory tempfile before spilling to disk
             tempfile_size_bytes = (server_memory_mb - 100) * 1024 * 1024
 
             # Related: https://github.com/Miserlou/Zappa/issues/702
-            with tempfile.SpooledTemporaryFile(max_size=tempfile_size_bytes, mode='wb+') as project_zip:
+            with tempfile.SpooledTemporaryFile(max_size=tempfile_size_bytes,
+                                               mode='wb+') as project_zip:
                 # In memory tempfile. Spills to disk once size > max_size. Deletes on close context
 
                 # Download zip file from S3
