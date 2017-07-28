@@ -10,6 +10,7 @@ import json
 import logging
 import os
 import sys
+import tempfile
 import traceback
 import zipfile
 
@@ -157,16 +158,24 @@ class LambdaHandler(object):
             else:
                 boto_session = self.session
 
-            # Download the zip
-            remote_bucket, remote_file = parse_s3_url(project_zip_path)
-            s3 = boto_session.resource('s3')
+            # Lambda Function Memory Size in MB
+            server_memory_mb = int(os.environ["AWS_LAMBDA_FUNCTION_MEMORY_SIZE"])
 
-            zip_path = '/tmp/{0!s}'.format(remote_file)
-            s3.Object(remote_bucket, remote_file).download_file(zip_path)
+            # Maximum memory (bytes) to allocate for in-memory tempfile before spilling to disk
+            tempfile_size_bytes = (server_memory_mb - 100) * 1024 * 1024
 
-            # Unzip contents to project folder
-            with zipfile.ZipFile(zip_path, 'r') as z:
-                z.extractall(path=project_folder)
+            # Related: https://github.com/Miserlou/Zappa/issues/702
+            with tempfile.SpooledTemporaryFile(max_size=tempfile_size_bytes, mode='wb+') as project_zip:
+                # In memory tempfile. Spills to disk once size > max_size. Deletes on close context
+
+                # Download zip file from S3
+                remote_bucket, remote_file = parse_s3_url(project_zip_path)
+                s3 = boto_session.resource('s3')
+                s3.Object(remote_bucket, remote_file).download_fileobj(project_zip)
+
+                # Unzip contents to project folder
+                with zipfile.ZipFile(project_zip) as z:
+                    z.extractall(path=project_folder)
 
         # Add to project path
         sys.path.insert(0, project_folder)
