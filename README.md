@@ -721,7 +721,11 @@ You can also simply handle CORS directly in your application. Your web framework
 
 #### Large Projects
 
-AWS currently limits Lambda zip sizes to 50 megabytes. If your project is larger than that, set `slim_handler: true` in your `zappa_settings.json`. In this case, your fat application package will be replaced with a small handler-only package. The handler file then pulls the rest of the large project down from S3 at run time! The initial load of the large project may add to startup overhead, but the difference should be minimal on a warm lambda function. Note that this will also eat into the _memory_ space of your application function.
+AWS currently limits Lambda zip sizes to 50 megabytes. If your project is larger than that, set `slim_handler: true` in your `zappa_settings.json`. In this case, your heavyweight application package will be replaced with a small handler package. When the Lambda function starts, the handler package downloads your project files from S3, unzips them into `/tmp` storage, and fires up your application! The initial load of the large project may add to startup overhead, but the difference should be minimal on a warm lambda function.
+
+For deployments between 250 and 500 megabytes, the `memory_size` of the Lambda instance will determine if your deployment succeeds. The `/tmp` folder on each Lambda instance has 500 megabytes of free space. When the handler package downloads the zip file containing your project from S3, it attempts to store that file in memory while it unzips it's contents to `/tmp/<your_project>/`. If the `memory_size` of the instance is smaller than the size of your zipped project, the zip file spills onto `/tmp` and eats into the maximum project size that can be unzipped.
+
+As a rule of thumb, if a project directory is between 250 and 500 megabytes on your development machine, set `memory_size` > 650 megabytes and your deployments will never fail due to insufficient resources.
 
 #### Enabling Bash Completion
 
