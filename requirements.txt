@@ -1,6 +1,6 @@
 argcomplete==1.8.2
 base58==0.2.4
-botocore==1.5.40
+botocore==1.5.92
 boto3==1.4.4
 docutils>=0.12
 durationpy==0.4
