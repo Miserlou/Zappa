@@ -387,7 +387,8 @@ class Zappa(object):
                             include=None,
                             venv=None,
                             output=None,
-                            disable_progress=False
+                            disable_progress=False,
+                            archive_format='zip'
                         ):
         """
         Create a Lambda-ready zip file of the current virtualenvironment and working directory.
@@ -395,6 +396,10 @@ class Zappa(object):
         Returns path to that file.
 
         """
+        # Validate archive_format
+        if archive_format not in ['zip', 'tarball']:
+            raise KeyError("The archive format to create a lambda package must be zip or tarball")
+
         # Pip is a weird package.
         # Calling this function in some environments without this can cause.. funkiness.
         import pip
@@ -404,17 +409,20 @@ class Zappa(object):
 
         cwd = os.getcwd()
         if not output:
-            zip_fname = prefix + '-' + str(int(time.time())) + '.zip'
+            if archive_format == 'zip':
+                archive_fname = prefix + '-' + str(int(time.time())) + '.zip'
+            elif archive_format == 'tarball':
+                archive_fname = prefix + '-' + str(int(time.time())) + '.tar.gz'
         else:
-            zip_fname = output
-        zip_path = os.path.join(cwd, zip_fname)
+            archive_fname = output
+        archive_path = os.path.join(cwd, archive_fname)
 
         # Files that should be excluded from the zip
         if exclude is None:
             exclude = list()
 
         # Exclude the zip itself
-        exclude.append(zip_path)
+        exclude.append(archive_path)
 
         # Make sure that 'concurrent' is always forbidden.
         # https://github.com/Miserlou/Zappa/issues/827
@@ -521,15 +529,20 @@ class Zappa(object):
                 print(e)
                 # XXX - What should we do here?
 
-        # Then zip it all up..
-        print("Packaging project as zip..")
-        try:
-            # import zlib
-            compression_method = zipfile.ZIP_DEFLATED
-        except ImportError:  # pragma: no cover
-            compression_method = zipfile.ZIP_STORED
+        # Then archive it all up..
+        if archive_format == 'zip':
+            print("Packaging project as zip.")
 
-        zipf = zipfile.ZipFile(zip_path, 'w', compression_method)
+            try:
+                compression_method = zipfile.ZIP_DEFLATED
+            except ImportError:  # pragma: no cover
+                compression_method = zipfile.ZIP_STORED
+            archivef = zipfile.ZipFile(archive_path, 'w', compression_method)
+
+        elif archive_format == 'tarball':
+            print("Packaging project as gzipped tarball.")
+            archivef = tarfile.open(archive_path, 'w:gz')
+
         for root, dirs, files in os.walk(temp_project_path):
 
             for filename in files:
@@ -561,13 +574,18 @@ class Zappa(object):
                 # Related: https://github.com/Miserlou/Zappa/issues/682
                 os.chmod(os.path.join(root, filename),  0o755)
 
-                # Actually put the file into the proper place in the zip
-                # Related: https://github.com/Miserlou/Zappa/pull/716
-                zipi = zipfile.ZipInfo(os.path.join(root.replace(temp_project_path, '').lstrip(os.sep), filename))
-                zipi.create_system = 3
-                zipi.external_attr = 0o755 << int(16) # Is this P2/P3 functional?
-                with open(os.path.join(root, filename), 'rb') as f:
-                    zipf.writestr(zipi, f.read(), compression_method)
+                if archive_format == 'zip':
+                    # Actually put the file into the proper place in the zip
+                    # Related: https://github.com/Miserlou/Zappa/pull/716
+                    zipi = zipfile.ZipInfo(os.path.join(root.replace(temp_project_path, '').lstrip(os.sep), filename))
+                    zipi.create_system = 3
+                    zipi.external_attr = 0o755 << int(16) # Is this P2/P3 functional?
+                    with open(os.path.join(root, filename), 'rb') as f:
+                        archivef.writestr(zipi, f.read(), compression_method)
+                elif archive_format == 'tarball':
+                    tarinfo = tarfile.TarInfo(os.path.join(root.replace(temp_project_path, '').lstrip(os.sep), filename))
+                    tarinfo.mode =  0755
+                    archivef.addfile(tarinfo, os.path.join(root, filename))
 
             # Create python init file if it does not exist
             # Only do that if there are sub folders or python files and does not conflict with a neighbouring module
@@ -580,12 +598,16 @@ class Zappa(object):
                     tmp_init = os.path.join(temp_project_path, '__init__.py')
                     open(tmp_init, 'a').close()
                     os.chmod(tmp_init,  0o755)
-                    zipf.write(tmp_init,
-                               os.path.join(root.replace(temp_project_path, ''),
-                                            os.path.join(root.replace(temp_project_path, ''), '__init__.py')))
+
+                    arcname = os.path.join(root.replace(temp_project_path, ''),
+                                           os.path.join(root.replace(temp_project_path, ''), '__init__.py'))
+                    if archive_format == 'zip':
+                        archivef.write(tmp_init, arcname)
+                    elif archive_format == 'tarball':
+                        archivef.add(tmp_init, arcname)
 
         # And, we're done!
-        zipf.close()
+        archivef.close()
 
         # Trash the temp directory
         shutil.rmtree(temp_project_path)
@@ -594,7 +616,7 @@ class Zappa(object):
             # Remove the temporary handler venv folder
             shutil.rmtree(venv)
 
-        return zip_fname
+        return archive_fname
 
     def extract_lambda_package(self, package_name, path):
         """
