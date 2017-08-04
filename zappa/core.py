@@ -584,7 +584,7 @@ class Zappa(object):
                         archivef.writestr(zipi, f.read(), compression_method)
                 elif archive_format == 'tarball':
                     tarinfo = tarfile.TarInfo(os.path.join(root.replace(temp_project_path, '').lstrip(os.sep), filename))
-                    tarinfo.mode =  0755
+                    tarinfo.mode =  0o755
                     archivef.addfile(tarinfo, os.path.join(root, filename))
 
             # Create python init file if it does not exist
