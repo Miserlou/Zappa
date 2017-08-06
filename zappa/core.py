@@ -541,7 +541,7 @@ class Zappa(object):
 
         elif archive_format == 'tarball':
             print("Packaging project as gzipped tarball.")
-            archivef = tarfile.open(archive_path, 'w:gz')
+            archivef = tarfile.open(archive_path, 'w|gz')
 
         for root, dirs, files in os.walk(temp_project_path):
 
@@ -584,8 +584,13 @@ class Zappa(object):
                         archivef.writestr(zipi, f.read(), compression_method)
                 elif archive_format == 'tarball':
                     tarinfo = tarfile.TarInfo(os.path.join(root.replace(temp_project_path, '').lstrip(os.sep), filename))
-                    tarinfo.mode =  0o755
-                    archivef.addfile(tarinfo, os.path.join(root, filename))
+                    tarinfo.mode = 0o755
+
+                    stat = os.stat(os.path.join(root, filename))
+                    tarinfo.mtime = stat.st_mtime
+                    tarinfo.size = stat.st_size
+                    with open(os.path.join(root, filename), 'rb') as f:
+                        archivef.addfile(tarinfo, f)
 
             # Create python init file if it does not exist
             # Only do that if there are sub folders or python files and does not conflict with a neighbouring module

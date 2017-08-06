@@ -164,7 +164,7 @@ class LambdaHandler(object):
             s3 = boto_session.resource('s3')
             archive_on_s3 = s3.Object(remote_bucket, remote_file).get()
 
-            with tarfile.open(fileobj=archive_on_s3['Body'], mode="r:gz") as t:
+            with tarfile.open(fileobj=archive_on_s3['Body'], mode="r|gz") as t:
                 t.extractall(project_folder)
 
         # Add to project path
