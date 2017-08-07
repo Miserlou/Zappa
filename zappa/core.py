@@ -1309,10 +1309,13 @@ class Zappa(object):
                 )
 
             if cors:
-                # fix for issue 699, cors+binary support don't work together
+                # fix for issue 699 and 1035, cors+binary support don't work together
                 # go through each resource and update the contentHandling type
                 response = self.apigateway_client.get_resources(restApiId=api_id)
-                resource_ids = [item['id'] for item in response['items']]
+                resource_ids = [
+                    item['id'] for item in response['items']
+                    if 'OPTIONS' in item.get('resourceMethods', {})
+                ]
 
                 for resource_id in resource_ids:
                     self.apigateway_client.update_integration(
@@ -1348,7 +1351,10 @@ class Zappa(object):
         if cors:
             # go through each resource and change the contentHandling type
             response = self.apigateway_client.get_resources(restApiId=api_id)
-            resource_ids = [item['id'] for item in response['items']]
+            resource_ids = [
+                item['id'] for item in response['items']
+                if 'OPTIONS' in item.get('resourceMethods', {})
+            ]
 
             for resource_id in resource_ids:
                 self.apigateway_client.update_integration(
