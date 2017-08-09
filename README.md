@@ -168,6 +168,8 @@ or for Django:
 }
 ```
 
+_Psst: If you're deploying a Django application with Zappa for the first time, you might want to read Edgar Roman's [Django Zapp Guide](https://edgarroman.github.io/zappa-django-guide/)._
+
 You can define as many stages as your like - we recommend having _dev_, _staging_, and _production_.
 
 Now, you're ready to deploy!
