@@ -851,10 +851,8 @@ if 'SERVERTYPE' in os.environ and os.environ['SERVERTYPE'] == 'AWS Lambda':
 ``` 
 
 ##### Remote Environment Variables
-=======
-Any environment variables that you have set outside of Zappa (via AWS Lambda console or cli) will remain as they are when running `update`, unless they are also in `aws_environment_variables`, in which case the remote value will be overwritten by the one in the settings file.
 
-If you are using KMS-encrypted AWS environment variables, you can set your KMS Key ARN in the `aws_kms_key_arn` setting. Make sure that the values you set are encrypted in such case.
+Any environment variables that you have set outside of Zappa (via AWS Lambda console or cli) will remain as they are when running `update`, unless they are also in `aws_environment_variables`, in which case the remote value will be overwritten by the one in the settings file. If you are using KMS-encrypted AWS environment variables, you can set your KMS Key ARN in the `aws_kms_key_arn` setting. Make sure that the values you set are encrypted in such case.
 
 _Note: if you rely on these as well as `environment_variables`, and you have the same key names, then those in `environment_variables` will take precedence as they are injected in the lambda handler._
 
