@@ -807,6 +807,10 @@ class TestZappa(unittest.TestCase):
         zappa_cli.print_logs(logs, colorize=True, non_http=False)
         zappa_cli.print_logs(logs, colorize=True, non_http=True, http=True)
         zappa_cli.print_logs(logs, colorize=True, non_http=False, http=False)
+        zappa_cli.print_logs(logs, colorize=False, force_colorize=False)
+        zappa_cli.print_logs(logs, colorize=False, force_colorize=True)
+        zappa_cli.print_logs(logs, colorize=True, force_colorize=False)
+        zappa_cli.print_logs(logs, colorize=True, non_http=False, http=False, force_colorize=True)
         zappa_cli.check_for_update()
 
     def test_cli_format_invoke_command(self):
