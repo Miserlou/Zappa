@@ -1067,6 +1067,7 @@ Are you using Zappa? Let us know and we'll list your site here!
 * [zops](https://github.com/bjinwright/zops) - Utilities for teams and continuous integrations using Zappa.
 * [cookiecutter-mobile-backend](https://github.com/narfman0/cookiecutter-mobile-backend/) - A `cookiecutter` Django project with Zappa and S3 uploads support.
 * [zappa-examples](https://github.com/narfman0/zappa-examples/) - Flask, Django, image uploads, and more!
+* [zappa-hug-example](https://github.com/mcrowson/zappa-hug-example) - Example of a Hug application using Zappa.
 * [Zappa Docker Image](https://github.com/danielwhatmuff/zappa) - A Docker image for running Zappa locally, based on Lambda Docker.
 * [zappa-dashing](https://github.com/nikos/zappa-dashing) - Monitor your AWS environment (health/metrics) with Zappa and CloudWatch.
 * [s3env](https://github.com/cameronmaske/s3env) - Manipulate a remote Zappa environment variable key/value JSON object file in an S3 bucket through the CLI.
