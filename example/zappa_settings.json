@@ -1,7 +1,7 @@
 {
     "dev_event": {
        "project_name": "dev_event_zappa_test_flask_app",
-       "keep_warm": false,
+       "keep_warm": 0,
        "debug": true,
        "log_level": "DEBUG",
        "events": [{
@@ -20,7 +20,7 @@
     },
     "dev_api": {
        "project_name": "dev_api_zappa_test_flask_app",
-       "keep_warm": false,
+       "keep_warm": 0,
        "debug": true,
        "log_level": "DEBUG",
        "aws_region": "us-west-2",

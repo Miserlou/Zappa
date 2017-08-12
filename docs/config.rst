@@ -42,7 +42,7 @@ Stages, such as *dev*, *staging*, and *production* are configured in the *zappa_
             "exclude": ["*.gz", "*.pem"],
             "http_methods": ["GET", "POST"],
             "integration_response_codes": [200, 301, 404, 500],
-            "keep_warm": true,
+            "keep_warm": 1,
             "lambda_handler": "your_custom_handler",
             "log_level": "DEBUG",
             "memory_size": 512,
@@ -181,7 +181,7 @@ This should in a formal like *[200, 301, 404, 500]*.
 keep_warm
 =========
 
-This boolean setting is used to specify whether to create CloudWatch events to keep the server warm.
+This integer setting is used to specify the number of lambda containers to keep warm via CloudWatch events.
 
 lambda_handler
 ==============
