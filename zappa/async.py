@@ -103,6 +103,7 @@ try:
             aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY']
         )
     else:
+        print('SKIPPED checking for aws access key')
         aws_session = boto3.Session()
     LAMBDA_CLIENT = aws_session.client('lambda')
     SNS_CLIENT = aws_session.client('sns')
