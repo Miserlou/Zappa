@@ -495,6 +495,8 @@ def order_pie():
 
 And that's it! Your API response will return immediately, while the `make_pie` function executes in a completely different Lambda instance.
 
+If you get a boto ClientError with the error, `The security token included in the request is invalid`, set `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` in your environmental variables.
+
 ### Task Sources
 
 By default, this feature uses direct AWS Lambda invocation. You can instead use AWS Simple Notification Service as the task event source by using the `task_sns` decorator, like so:

@@ -97,7 +97,14 @@ from .utilities import get_topic_name
 
 # Declare these here so they're kept warm.
 try:
-    aws_session = boto3.Session()
+    if os.environ.get('AWS_ACCESS_KEY_ID') and os.environ.get('AWS_SECRET_ACCESS_KEY'):
+        aws_session = boto3.Session(
+            aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'],
+            aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY']
+        )
+    else:
+        print('SKIPPED checking for aws access key')
+        aws_session = boto3.Session()
     LAMBDA_CLIENT = aws_session.client('lambda')
     SNS_CLIENT = aws_session.client('sns')
     STS_CLIENT = aws_session.client('sts')
