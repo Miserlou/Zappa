@@ -495,7 +495,7 @@ def order_pie():
 
 And that's it! Your API response will return immediately, while the `make_pie` function executes in a completely different Lambda instance.
 
-If you a boto ClientError with `The security token included in the request is invalid`, set `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` in your environmental variables.
+If you get a boto ClientError with the error, `The security token included in the request is invalid`, set `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` in your environmental variables.
 
 ### Task Sources
 
