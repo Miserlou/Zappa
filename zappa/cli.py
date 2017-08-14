@@ -374,6 +374,10 @@ class ZappaCLI(object):
             '--filter', type=str, default="",
             help="Apply a filter pattern to the logs."
         )
+        tail_parser.add_argument(
+            '--force-color', action='store_true',
+            help='Force coloring log tail output even if coloring support is note auto-detected. (example: piping)'
+        )
 
         ##
         # Undeploy
@@ -558,6 +562,7 @@ class ZappaCLI(object):
                 non_http=self.vargs['non_http'],
                 since=self.vargs['since'],
                 filter_pattern=self.vargs['filter'],
+                force_colorize=self.vargs['force_color'] or None,
             )
         elif command == 'undeploy': # pragma: no cover
             self.undeploy(
@@ -953,7 +958,7 @@ class ZappaCLI(object):
             self.lambda_name, versions_back=revision)
         print("Done!")
 
-    def tail(self, since, filter_pattern, limit=10000, keep_open=True, colorize=True, http=False, non_http=False):
+    def tail(self, since, filter_pattern, limit=10000, keep_open=True, colorize=True, http=False, non_http=False, force_colorize=False):
         """
         Tail this function's logs.
 
@@ -973,7 +978,7 @@ class ZappaCLI(object):
                     )
 
                 new_logs = [ e for e in new_logs if e['timestamp'] > last_since ]
-                self.print_logs(new_logs, colorize, http, non_http)
+                self.print_logs(new_logs, colorize, http, non_http, force_colorize)
 
                 if not keep_open:
                     break
@@ -2249,7 +2254,7 @@ class ZappaCLI(object):
 
             self.remove_local_zip()
 
-    def print_logs(self, logs, colorize=True, http=False, non_http=False):
+    def print_logs(self, logs, colorize=True, http=False, non_http=False, force_colorize=None):
         """
         Parse, filter and print logs to the console.
 
@@ -2265,7 +2270,7 @@ class ZappaCLI(object):
             if "END RequestId" in message:
                 continue
 
-            if not colorize:
+            if not colorize and not force_colorize:
                 if http:
                     if self.is_http_log_entry(message.strip()):
                         print("[" + str(timestamp) + "] " + message.strip())
@@ -2277,12 +2282,12 @@ class ZappaCLI(object):
             else:
                 if http:
                     if self.is_http_log_entry(message.strip()):
-                        click.echo(click.style("[", fg='cyan') + click.style(str(timestamp), bold=True) + click.style("]", fg='cyan') + self.colorize_log_entry(message.strip()))
+                        click.echo(click.style("[", fg='cyan') + click.style(str(timestamp), bold=True) + click.style("]", fg='cyan') + self.colorize_log_entry(message.strip()), color=force_colorize)
                 elif non_http:
                     if not self.is_http_log_entry(message.strip()):
-                        click.echo(click.style("[", fg='cyan') + click.style(str(timestamp), bold=True) + click.style("]", fg='cyan') + self.colorize_log_entry(message.strip()))
+                        click.echo(click.style("[", fg='cyan') + click.style(str(timestamp), bold=True) + click.style("]", fg='cyan') + self.colorize_log_entry(message.strip()), color=force_colorize)
                 else:
-                    click.echo(click.style("[", fg='cyan') + click.style(str(timestamp), bold=True) + click.style("]", fg='cyan') + self.colorize_log_entry(message.strip()))
+                    click.echo(click.style("[", fg='cyan') + click.style(str(timestamp), bold=True) + click.style("]", fg='cyan') + self.colorize_log_entry(message.strip()), color=force_colorize)
 
     def is_http_log_entry(self, string):
         """
