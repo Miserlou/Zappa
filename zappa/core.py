@@ -2125,6 +2125,7 @@ class Zappa(object):
         if index:
             # to ensure unique cloudwatch rule names in the case of multiple expressions
             # prefix all entries bar the first with the index
+            # Related: https://github.com/Miserlou/Zappa/pull/1051
             name = '{}-{}'.format(index, name)
         # prefix scheduled event names with lambda name. So we can look them up later via the prefix.
         return Zappa.get_event_name(lambda_name, name)
