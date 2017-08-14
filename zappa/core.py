@@ -2031,7 +2031,6 @@ class Zappa(object):
             expression = event.get('expression', None) # single expression
             expressions = event.get('expressions', None) # multiple expression
             event_source = event.get('event_source', None)
-            name = self.get_scheduled_event_name(event, function, lambda_name)
             description = event.get('description', function)
 
             #   - If 'cron' or 'rate' in expression, use ScheduleExpression
@@ -2045,7 +2044,8 @@ class Zappa(object):
                 expressions = [expression] # same code for single and multiple expression
 
             if expressions:
-                for expression in expressions:
+                for index, expression in enumerate(expressions):
+                    name = self.get_scheduled_event_name(event, function, lambda_name, index)
                     # if it's possible that we truncated name, generate a unique, shortened name
                     # https://github.com/Miserlou/Zappa/issues/970
                     if len(name) >= 64:
@@ -2116,12 +2116,16 @@ class Zappa(object):
 
 
     @staticmethod
-    def get_scheduled_event_name(event, function, lambda_name):
+    def get_scheduled_event_name(event, function, lambda_name, index=0):
         name = event.get('name', function)
         if name != function:
             # a custom event name has been provided, make sure function name is included as postfix,
             # otherwise zappa's handler won't be able to locate the function.
             name = '{}-{}'.format(name, function)
+        if index:
+            # to ensure unique cloudwatch rule names in the case of multiple expressions
+            # prefix all entries bar the first with the index
+            name = '{}-{}'.format(index, name)
         # prefix scheduled event names with lambda name. So we can look them up later via the prefix.
         return Zappa.get_event_name(lambda_name, name)
 
