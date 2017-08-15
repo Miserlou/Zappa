@@ -1,5 +1,13 @@
 # Zappa Changelog
 
+## 0.43.2
+* Add index prefix to each subsequent schedule expression for the same event (#1051)
+* fix/Only update CORS on resources which have an OPTIONS method (#1036)
+* Support for binary support and cors simultaneously (#1011)
+* Set Flask script name based on domain which the request was made to (#1015)
+* Fix SNS Async (#1055)
+* Various dep bumps 
+
 ## 0.43.1
 * Fixes #1001, don't override AWS env vars if k:v not set. Thanks Nik and Sean!
 
