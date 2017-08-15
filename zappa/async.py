@@ -163,7 +163,10 @@ class SnsAsyncResponse(LambdaAsyncResponse):
     Send a SNS message to a specified SNS topic
     Serialise the func path and arguments
     """
-    def __init__(self, **kwargs):
+    def __init__(self, lambda_function_name=None, aws_region=None, **kwargs):
+
+        self.lambda_function_name = lambda_function_name
+        self.aws_region = aws_region
 
         if kwargs.get('boto_session'):
             self.client = kwargs.get('boto_session').client('sns')
