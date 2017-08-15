@@ -6,6 +6,8 @@
 * Support for binary support and cors simultaneously (#1011)
 * Set Flask script name based on domain which the request was made to (#1015)
 * Fix SNS Async (#1055)
+* GZip for slim handler
+* Force color option
 * Various dep bumps 
 
 ## 0.43.1
