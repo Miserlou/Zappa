@@ -266,6 +266,7 @@ class Zappa(object):
             self.route53 = self.boto_session.client('route53')
             self.sns_client = self.boto_session.client('sns')
             self.cf_client = self.boto_session.client('cloudformation')
+            self.dynamodb_client = self.boto_session.client('dynamodb')
 
         self.cf_template = troposphere.Template()
         self.cf_api_resources = []
@@ -2302,6 +2303,74 @@ class Zappa(object):
         """
         Remove the async SNS topic.
         """
+        topic_name = get_topic_name(lambda_name)
+        removed_arns = []
+        for sub in self.sns_client.list_subscriptions()['Subscriptions']:
+            if topic_name in sub['TopicArn']:
+                self.sns_client.delete_topic(TopicArn=sub['TopicArn'])
+                removed_arns.append(sub['TopicArn'])
+        return removed_arns
+
+
+    ###
+    # Async / DynamoDB
+    ##
+
+    def _set_async_dynamodb_table_ttl(self, table_name):
+        self.dynamodb_client.update_time_to_live(
+            TableName=table_name,
+            TimeToLiveSpecification={
+                'Enabled': True,
+                'AttributeName': 'ttl'
+            }
+        )
+
+
+    def create_async_dynamodb_table(self, table_name):
+        """
+        Create the DynamoDB table for async task return values
+        """
+        try:
+            self.dynamodb_client.describe_table(TableName=table_name)
+            return True
+
+        # catch this exception (triggered if the table doesn't exist)
+        except botocore.exceptions.ClientError:
+            dynamodb_table = self.dynamodb_client.create_table(
+                AttributeDefinitions=[
+                    {
+                        'AttributeName': 'id',
+                        'AttributeType': 'S'
+                    }
+                ],
+                TableName=table_name,
+                KeySchema=[
+                    {
+                        'AttributeName': 'id',
+                        'KeyType': 'HASH'
+                    },
+                ],
+                ProvisionedThroughput = {
+                    'ReadCapacityUnits': 5,  ## TODO config/autoscale
+                    'WriteCapacityUnits': 5
+                }
+            )
+            if dynamodb_table:
+                try:
+                    self._set_async_dynamodb_table_ttl(table_name)
+                except botocore.exceptions.ClientError:
+                    # this fails because the operation is async, so retry
+                    time.sleep(5)
+                    self._set_async_dynamodb_table_ttl(table_name)
+
+        return dynamodb_table
+
+
+    def remove_async_dynamodb_table(self, table_name):
+        """
+        Remove the DynamoDB Table used for async return values
+        """
+
         topic_name = get_topic_name(lambda_name)
         removed_arns = []
         for sub in self.sns_client.list_subscriptions()['Subscriptions']:

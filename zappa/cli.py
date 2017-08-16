@@ -1079,6 +1079,15 @@ class ZappaCLI(object):
             )
             click.echo('SNS Topic created: %s' % topic_arn)
 
+        # Add async tasks DynamoDB
+        table_name = self.stage_config.get('async_response_table', False)
+        if table_name and self.stage_config.get('async_resources', True):
+            response_table = self.zappa.create_async_dynamodb_table(table_name)
+            if response_table is True:
+                print('DynamoDB table exists: %s' % table_name)
+            else:
+                print('DynamoDB table created: %s' % table_name)
+
     def unschedule(self):
         """
         Given a a list of scheduled functions,
@@ -2207,6 +2216,10 @@ class ZappaCLI(object):
                 base = __file__.rsplit(os.sep, 1)[0]
                 django_py = ''.join(os.path.join(base, 'ext', 'django_zappa.py'))
                 lambda_zip.write(django_py, 'django_zappa_app.py')
+
+            # async response
+            async_response_table = self.stage_config.get('async_response_table', '')
+            settings_s += "ASYNC_RESPONSE_TABLE='{0!s}'\n".format(async_response_table)
 
             # Lambda requires a specific chmod
             temp_settings = tempfile.NamedTemporaryFile(delete=False)
