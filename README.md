@@ -739,7 +739,8 @@ to change Zappa's behavior. Use these at your own risk!
         "vpc_config": { // Optional VPC configuration for Lambda function
             "SubnetIds": [ "subnet-12345678" ], // Note: not all availability zones support Lambda!
             "SecurityGroupIds": [ "sg-12345678" ]
-        }
+        },
+        "xray_tracing": false // Optional, enable AWS X-Ray tracing on your lambda function.
     }
 }
 ```
