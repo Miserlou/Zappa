@@ -535,11 +535,11 @@ run(your_function, args, kwargs, service='sns') # Using SNS
 ### Remote Invocations
 
 By default, Zappa will use lambda's current function name and current AWS region. If you wish to invoke a lambda with
-  a different function name/region or invoke your lambda from outside of lambda, you must specify the 
-  `remote_aws_lambda_function_name` and `remote_aws_region` arguments so that the application knows which function and 
-  region to use. For example, if some part of our pizza making application had to live on an EC2 instance, but we 
+  a different function name/region or invoke your lambda from outside of lambda, you must specify the
+  `remote_aws_lambda_function_name` and `remote_aws_region` arguments so that the application knows which function and
+  region to use. For example, if some part of our pizza making application had to live on an EC2 instance, but we
   wished to call the make_pie() function on its own Lambda instance, we would do it as follows:
-  
+
  ```python
 @task(remote_aws_lambda_function_name='pizza-pie-prod', remote_aws_region='us-east-1')
 def make_pie():
@@ -848,7 +848,7 @@ if 'SERVERTYPE' in os.environ and os.environ['SERVERTYPE'] == 'AWS Lambda':
     for key, val in env_vars.items():
         os.environ[key] = val
 
-``` 
+```
 
 ##### Remote Environment Variables
 
@@ -898,8 +898,8 @@ If you want to map an API Gateway context variable (http://docs.aws.amazon.com/a
 {
     "dev": {
         ...
-        "context_header_mappings": { 
-            "HTTP_header_name": "API_Gateway_context_variable" 
+        "context_header_mappings": {
+            "HTTP_header_name": "API_Gateway_context_variable"
         }
     },
     ...
@@ -912,7 +912,7 @@ For example, if you want to expose the $context.identity.cognitoIdentityId varia
 {
     "dev": {
         ...
-        "context_header_mappings": { 
+        "context_header_mappings": {
             "CognitoIdentityId": "identity.cognitoIdentityId",
             "APIStage": "stage"
         }
