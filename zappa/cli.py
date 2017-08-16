@@ -1670,10 +1670,10 @@ class ZappaCLI(object):
             # Get install account_key to /tmp/account_key.pem
             if account_key_location.startswith('s3://'):
                 bucket, key_name = parse_s3_url(account_key_location)
-                self.zappa.s3_client.download_file(bucket, key_name, '/tmp/account.key')
+                self.zappa.s3_client.download_file(bucket, key_name, '{}/account.key'.format(tempfile.gettempdir()))
             else:
                 from shutil import copyfile
-                copyfile(account_key_location, '/tmp/account.key')
+                copyfile(account_key_location, '{}/account.key'.format(tempfile.gettempdir()))
 
         # Prepare for Custom SSL
         elif not account_key_location and not cert_arn:
