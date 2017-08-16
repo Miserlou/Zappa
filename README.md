@@ -36,6 +36,7 @@
   - [Task Sources](#task-sources)
   - [Direct Invocation](#direct-invocation)
   - [Restrictions](#restrictions)
+  - [Responses](#responses)
 - [Advanced Settings](#advanced-settings)
     - [YAML Settings](#yaml-settings)
 - [Advanced Usage](#advanced-usage)
@@ -562,6 +563,56 @@ The following restrictions to this feature apply:
 
 All of this code is still backwards-compatible with non-Lambda environments - it simply executes in a blocking fashion and returns the result.
 
+### Responses
+
+It is possible to capture the responses of Asynchronous tasks.
+
+Zappa uses DynamoDB as the backend for these.
+
+To capture responses, you must configure a `async_response_table` in `zappa_settings`. This is the DynamoDB table name. Then, when decorating with `@task`, pass `capture_response=True`.
+
+Async responses are assigned a `response_id`. This is returned as a property of the `LambdaAsyncResponse` (or `SnsAsyncResponse`) object that is returned by the `@task` decorator.
+
+Example:
+
+```python
+from zappa.async import task, get_async_response
+from flask import Flask, make_response, abort, url_for, redirect, request
+from time import sleep
+
+app = Flask(__name__)
+
+@app.route('/payload')
+def payload():
+    delay = request.args.get('delay', 60)
+    x = longrunner(delay)
+    return redirect(url_for('response', response_id=x.response_id))
+
+@app.route('/async-response/<response_id>')
+def response(response_id):
+    response = get_async_response(response_id)
+    if response is None:
+        abort(404)
+
+    if response['async_status']['S'] == 'complete':
+        return response['async_response']['S'], 200, {'Content-Type': 'application/json'}
+
+    sleep(5)
+
+    return "Not yet ready. Redirecting.", 302, {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Location': url_for('response', response_id=response_id, backoff=5)),
+        'X-redirect-reason': "Not yet ready.",
+    }
+
+@task(capture_response=True)
+def longrunner(delay):
+    sleep(float(delay))
+    return {'MESSAGE': "It took {} seconds to generate this.".format(delay)}
+
+```
+
+
 ## Advanced Settings
 
 There are other settings that you can define in your local settings
@@ -577,7 +628,8 @@ to change Zappa's behavior. Use these at your own risk!
         "assume_policy": "my_assume_policy.json", // optional, IAM assume policy JSON file
         "attach_policy": "my_attach_policy.json", // optional, IAM attach policy JSON file
         "async_source": "sns", // Source of async tasks. Defaults to "lambda"
-        "async_resources": true, // Create the SNS topic to use. Defaults to true.
+        "async_resources": true, // Create the SNS topic and DynamoDB table to use. Defaults to true.
+        "async_response_table": "your_dynamodb_table_name",  // the DynamoDB table name to use for captured async responses; defaults to None (can't capture)
         "aws_environment_variables" : {"your_key": "your_value"}, // A dictionary of environment variables that will be available to your deployed app via AWS Lambdas native environment variables. See also "environment_variables" and "remote_env" . Default {}.
         "aws_kms_key_arn": "your_aws_kms_key_arn", // Your AWS KMS Key ARN
         "aws_region": "aws-region-name", // optional, uses region set in profile or environment variables if not set here,
