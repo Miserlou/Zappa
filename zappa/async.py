@@ -96,7 +96,11 @@ import uuid
 import time
 
 from .utilities import get_topic_name
-from zappa_settings import ASYNC_RESPONSE_TABLE
+
+try:
+    from zappa_settings import ASYNC_RESPONSE_TABLE
+except ImportError:
+    ASYNC_RESPONSE_TABLE = None
 
 # Declare these here so they're kept warm.
 try:
@@ -134,9 +138,20 @@ class LambdaAsyncResponse(object):
 
         self.lambda_function_name = lambda_function_name
         self.aws_region = aws_region
-        self.capture_response = capture_response
         if capture_response:
-            self.response_id = str(uuid.uuid4())
+            if ASYNC_RESPONSE_TABLE is None:
+                print(
+                    "Warning! Attempted to capture a response without "
+                    "async_response_table configured in settings (you won't "
+                    "capture async responses)."
+                )
+                capture_response = False
+                self.response_id = "MISCONFIGURED"
+
+            else:
+                self.response_id = str(uuid.uuid4())
+
+        self.capture_response = capture_response
 
 
     def send(self, task_path, args, kwargs):
