@@ -1081,12 +1081,22 @@ class ZappaCLI(object):
 
         # Add async tasks DynamoDB
         table_name = self.stage_config.get('async_response_table', False)
+        read_capacity = self.stage_config.get('async_response_table_read_capacity', 1)
+        write_capacity = self.stage_config.get('async_response_table_write_capacity', 1)
         if table_name and self.stage_config.get('async_resources', True):
-            response_table = self.zappa.create_async_dynamodb_table(table_name)
-            if response_table is True:
-                print('DynamoDB table exists: %s' % table_name)
+            created, response_table = self.zappa.create_async_dynamodb_table(
+                table_name, read_capacity, write_capacity)
+            if created:
+                click.echo('DynamoDB table created: %s' % table_name)
             else:
-                print('DynamoDB table created: %s' % table_name)
+                click.echo('DynamoDB table exists: %s' % table_name)
+                provisioned_throughput = response_table['Table']['ProvisionedThroughput']
+                if provisioned_throughput['ReadCapacityUnits'] != read_capacity or \
+                    provisioned_throughput['WriteCapacityUnits'] != write_capacity:
+                        click.echo(click.style(
+                            "\nWarning! Existing DynamoDB table ({}) does not match configured capacity.\n".format(table_name),
+                            fg='red'
+                        ))
 
     def unschedule(self):
         """

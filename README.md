@@ -630,6 +630,8 @@ to change Zappa's behavior. Use these at your own risk!
         "async_source": "sns", // Source of async tasks. Defaults to "lambda"
         "async_resources": true, // Create the SNS topic and DynamoDB table to use. Defaults to true.
         "async_response_table": "your_dynamodb_table_name",  // the DynamoDB table name to use for captured async responses; defaults to None (can't capture)
+        "async_response_table_read_capacity": 1,  // DynamoDB table read capacity; defaults to 1
+        "async_response_table_write_capacity": 1,  // DynamoDB table write capacity; defaults to 1
         "aws_environment_variables" : {"your_key": "your_value"}, // A dictionary of environment variables that will be available to your deployed app via AWS Lambdas native environment variables. See also "environment_variables" and "remote_env" . Default {}.
         "aws_kms_key_arn": "your_aws_kms_key_arn", // Your AWS KMS Key ARN
         "aws_region": "aws-region-name", // optional, uses region set in profile or environment variables if not set here,

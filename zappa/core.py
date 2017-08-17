@@ -2326,13 +2326,13 @@ class Zappa(object):
         )
 
 
-    def create_async_dynamodb_table(self, table_name):
+    def create_async_dynamodb_table(self, table_name, read_capacity, write_capacity):
         """
         Create the DynamoDB table for async task return values
         """
         try:
-            self.dynamodb_client.describe_table(TableName=table_name)
-            return True
+            dynamodb_table = self.dynamodb_client.describe_table(TableName=table_name)
+            return False, dynamodb_table
 
         # catch this exception (triggered if the table doesn't exist)
         except botocore.exceptions.ClientError:
@@ -2351,8 +2351,8 @@ class Zappa(object):
                     },
                 ],
                 ProvisionedThroughput = {
-                    'ReadCapacityUnits': 5,  ## TODO config/autoscale
-                    'WriteCapacityUnits': 5
+                    'ReadCapacityUnits': read_capacity,
+                    'WriteCapacityUnits': write_capacity
                 }
             )
             if dynamodb_table:
@@ -2360,10 +2360,10 @@ class Zappa(object):
                     self._set_async_dynamodb_table_ttl(table_name)
                 except botocore.exceptions.ClientError:
                     # this fails because the operation is async, so retry
-                    time.sleep(5)
+                    time.sleep(10)
                     self._set_async_dynamodb_table_ttl(table_name)
 
-        return dynamodb_table
+        return True, dynamodb_table
 
 
     def remove_async_dynamodb_table(self, table_name):
