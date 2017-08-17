@@ -577,7 +577,7 @@ Example:
 
 ```python
 from zappa.async import task, get_async_response
-from flask import Flask, make_response, abort, url_for, redirect, request
+from flask import Flask, make_response, abort, url_for, redirect, request, jsonify
 from time import sleep
 
 app = Flask(__name__)
@@ -595,7 +595,7 @@ def response(response_id):
         abort(404)
 
     if response['status'] == 'complete':
-        return response['response'], 200, {'Content-Type': 'application/json'}
+        return jsonify(response['response'])
 
     sleep(5)
 

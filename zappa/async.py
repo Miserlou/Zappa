@@ -276,7 +276,7 @@ def run_message(message):
                 'id': {'S': str(message['response_id'])},
                 'ttl': {'N': str(int(time.time()+600))},
                 'async_status': {'S': 'in progress'},
-                'async_response': {'S': 'N/A'},
+                'async_response': {'S': str(json.dumps('N/A'))},
             }
         )
 
@@ -459,5 +459,5 @@ def get_async_response(response_id):
 
     return {
         'status': response['Item']['async_status']['S'],
-        'response': response['Item']['async_response']['S'],
+        'response': json.loads(response['Item']['async_response']['S']),
     }
