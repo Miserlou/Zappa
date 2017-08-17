@@ -594,8 +594,8 @@ def response(response_id):
     if response is None:
         abort(404)
 
-    if response['async_status']['S'] == 'complete':
-        return response['async_response']['S'], 200, {'Content-Type': 'application/json'}
+    if response['status'] == 'complete':
+        return response['response'], 200, {'Content-Type': 'application/json'}
 
     sleep(5)
 

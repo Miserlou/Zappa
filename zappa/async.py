@@ -454,7 +454,10 @@ def get_async_response(response_id):
         TableName=ASYNC_RESPONSE_TABLE,
         Key={'id': {'S': str(response_id)}}
     )
-    try:
-        return response['Item']
-    except KeyError:
+    if 'Item' not in response:
         return None
+
+    return {
+        'status': response['Item']['async_status']['S'],
+        'response': response['Item']['async_response']['S'],
+    }
