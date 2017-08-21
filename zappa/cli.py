@@ -1079,6 +1079,25 @@ class ZappaCLI(object):
             )
             click.echo('SNS Topic created: %s' % topic_arn)
 
+        # Add async tasks DynamoDB
+        table_name = self.stage_config.get('async_response_table', False)
+        read_capacity = self.stage_config.get('async_response_table_read_capacity', 1)
+        write_capacity = self.stage_config.get('async_response_table_write_capacity', 1)
+        if table_name and self.stage_config.get('async_resources', True):
+            created, response_table = self.zappa.create_async_dynamodb_table(
+                table_name, read_capacity, write_capacity)
+            if created:
+                click.echo('DynamoDB table created: %s' % table_name)
+            else:
+                click.echo('DynamoDB table exists: %s' % table_name)
+                provisioned_throughput = response_table['Table']['ProvisionedThroughput']
+                if provisioned_throughput['ReadCapacityUnits'] != read_capacity or \
+                    provisioned_throughput['WriteCapacityUnits'] != write_capacity:
+                        click.echo(click.style(
+                            "\nWarning! Existing DynamoDB table ({}) does not match configured capacity.\n".format(table_name),
+                            fg='red'
+                        ))
+
     def unschedule(self):
         """
         Given a a list of scheduled functions,
@@ -2207,6 +2226,10 @@ class ZappaCLI(object):
                 base = __file__.rsplit(os.sep, 1)[0]
                 django_py = ''.join(os.path.join(base, 'ext', 'django_zappa.py'))
                 lambda_zip.write(django_py, 'django_zappa_app.py')
+
+            # async response
+            async_response_table = self.stage_config.get('async_response_table', '')
+            settings_s += "ASYNC_RESPONSE_TABLE='{0!s}'\n".format(async_response_table)
 
             # Lambda requires a specific chmod
             temp_settings = tempfile.NamedTemporaryFile(delete=False)
