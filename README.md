@@ -37,6 +37,7 @@
   - [Direct Invocation](#direct-invocation)
   - [Restrictions](#restrictions)
   - [Running Tasks in a VPC](#running-tasks-in-a-vpc)
+  - [Responses](#responses)
 - [Advanced Settings](#advanced-settings)
     - [YAML Settings](#yaml-settings)
 - [Advanced Usage](#advanced-usage)
@@ -536,11 +537,11 @@ run(your_function, args, kwargs, service='sns') # Using SNS
 ### Remote Invocations
 
 By default, Zappa will use lambda's current function name and current AWS region. If you wish to invoke a lambda with
-  a different function name/region or invoke your lambda from outside of lambda, you must specify the 
-  `remote_aws_lambda_function_name` and `remote_aws_region` arguments so that the application knows which function and 
-  region to use. For example, if some part of our pizza making application had to live on an EC2 instance, but we 
+  a different function name/region or invoke your lambda from outside of lambda, you must specify the
+  `remote_aws_lambda_function_name` and `remote_aws_region` arguments so that the application knows which function and
+  region to use. For example, if some part of our pizza making application had to live on an EC2 instance, but we
   wished to call the make_pie() function on its own Lambda instance, we would do it as follows:
-  
+
  ```python
 @task(remote_aws_lambda_function_name='pizza-pie-prod', remote_aws_region='us-east-1')
 def make_pie():
@@ -580,6 +581,55 @@ You can place your lambda in multiple subnets that are configured the same way a
 
 Some helpful resources are [this tutorial](https://gist.github.com/reggi/dc5f2620b7b4f515e68e46255ac042a7) and [this AWS doc page](http://docs.aws.amazon.com/lambda/latest/dg/vpc.html#vpc-internet).
 
+### Responses
+
+It is possible to capture the responses of Asynchronous tasks.
+
+Zappa uses DynamoDB as the backend for these.
+
+To capture responses, you must configure a `async_response_table` in `zappa_settings`. This is the DynamoDB table name. Then, when decorating with `@task`, pass `capture_response=True`.
+
+Async responses are assigned a `response_id`. This is returned as a property of the `LambdaAsyncResponse` (or `SnsAsyncResponse`) object that is returned by the `@task` decorator.
+
+Example:
+
+```python
+from zappa.async import task, get_async_response
+from flask import Flask, make_response, abort, url_for, redirect, request, jsonify
+from time import sleep
+
+app = Flask(__name__)
+
+@app.route('/payload')
+def payload():
+    delay = request.args.get('delay', 60)
+    x = longrunner(delay)
+    return redirect(url_for('response', response_id=x.response_id))
+
+@app.route('/async-response/<response_id>')
+def response(response_id):
+    response = get_async_response(response_id)
+    if response is None:
+        abort(404)
+
+    if response['status'] == 'complete':
+        return jsonify(response['response'])
+
+    sleep(5)
+
+    return "Not yet ready. Redirecting.", 302, {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Location': url_for('response', response_id=response_id, backoff=5)),
+        'X-redirect-reason': "Not yet ready.",
+    }
+
+@task(capture_response=True)
+def longrunner(delay):
+    sleep(float(delay))
+    return {'MESSAGE': "It took {} seconds to generate this.".format(delay)}
+
+```
+
 ## Advanced Settings
 
 There are other settings that you can define in your local settings
@@ -595,7 +645,10 @@ to change Zappa's behavior. Use these at your own risk!
         "assume_policy": "my_assume_policy.json", // optional, IAM assume policy JSON file
         "attach_policy": "my_attach_policy.json", // optional, IAM attach policy JSON file
         "async_source": "sns", // Source of async tasks. Defaults to "lambda"
-        "async_resources": true, // Create the SNS topic to use. Defaults to true.
+        "async_resources": true, // Create the SNS topic and DynamoDB table to use. Defaults to true.
+        "async_response_table": "your_dynamodb_table_name",  // the DynamoDB table name to use for captured async responses; defaults to None (can't capture)
+        "async_response_table_read_capacity": 1,  // DynamoDB table read capacity; defaults to 1
+        "async_response_table_write_capacity": 1,  // DynamoDB table write capacity; defaults to 1
         "aws_environment_variables" : {"your_key": "your_value"}, // A dictionary of environment variables that will be available to your deployed app via AWS Lambdas native environment variables. See also "environment_variables" and "remote_env" . Default {}.
         "aws_kms_key_arn": "your_aws_kms_key_arn", // Your AWS KMS Key ARN
         "aws_region": "aws-region-name", // optional, uses region set in profile or environment variables if not set here,
@@ -676,7 +729,7 @@ to change Zappa's behavior. Use these at your own risk!
         "slim_handler": false, // Useful if project >50M. Set true to just upload a small handler to Lambda and load actual project from S3 at runtime. Default false.
         "settings_file": "~/Projects/MyApp/settings/dev_settings.py", // Server side settings file location,
         "timeout_seconds": 30, // Maximum lifespan for the Lambda function (default 30, max 300.)
-        "touch": false, // GET the production URL upon initial deployment (default True)
+        "touch": true, // GET the production URL upon initial deployment (default True)
         "use_precompiled_packages": true, // If possible, use C-extension packages which have been pre-compiled for AWS Lambda. Default true.
         "vpc_config": { // Optional VPC configuration for Lambda function
             "SubnetIds": [ "subnet-12345678" ], // Note: not all availability zones support Lambda!
@@ -866,7 +919,7 @@ if 'SERVERTYPE' in os.environ and os.environ['SERVERTYPE'] == 'AWS Lambda':
     for key, val in env_vars.items():
         os.environ[key] = val
 
-``` 
+```
 
 ##### Remote Environment Variables
 
@@ -916,8 +969,8 @@ If you want to map an API Gateway context variable (http://docs.aws.amazon.com/a
 {
     "dev": {
         ...
-        "context_header_mappings": { 
-            "HTTP_header_name": "API_Gateway_context_variable" 
+        "context_header_mappings": {
+            "HTTP_header_name": "API_Gateway_context_variable"
         }
     },
     ...
@@ -930,7 +983,7 @@ For example, if you want to expose the $context.identity.cognitoIdentityId varia
 {
     "dev": {
         ...
-        "context_header_mappings": { 
+        "context_header_mappings": {
             "CognitoIdentityId": "identity.cognitoIdentityId",
             "APIStage": "stage"
         }
@@ -1090,6 +1143,7 @@ Are you using Zappa? Let us know and we'll list your site here!
 * [zappa-dashing](https://github.com/nikos/zappa-dashing) - Monitor your AWS environment (health/metrics) with Zappa and CloudWatch.
 * [s3env](https://github.com/cameronmaske/s3env) - Manipulate a remote Zappa environment variable key/value JSON object file in an S3 bucket through the CLI.
 * [zappa_resize_image_on_fly](https://github.com/wobeng/zappa_resize_image_on_fly) - Resize images on the fly using Flask, Zappa, Pillow, and OpenCV-python.
+* [zappa-ffmpeg](https://github.com/ubergarm/zappa-ffmpeg) - Run ffmpeg inside a lambda for serverless transformations. 
 * [gdrive-lambda](https://github.com/richiverse/gdrive-lambda) - pass json data to a csv file for end users who use Gdrive across the organization.
 * [travis-build-repeat](https://github.com/bcongdon/travis-build-repeat) - Repeat TravisCI builds to avoid stale test results.
 * [wunderskill-alexa-skill](https://github.com/mcrowson/wunderlist-alexa-skill) - An Alexa skill for adding to a Wunderlist.
