@@ -36,6 +36,7 @@
   - [Task Sources](#task-sources)
   - [Direct Invocation](#direct-invocation)
   - [Restrictions](#restrictions)
+  - [Running Tasks in a VPC](#running-tasks-in-a-vpc)
   - [Responses](#responses)
 - [Advanced Settings](#advanced-settings)
     - [YAML Settings](#yaml-settings)
@@ -563,6 +564,23 @@ The following restrictions to this feature apply:
 
 All of this code is still backwards-compatible with non-Lambda environments - it simply executes in a blocking fashion and returns the result.
 
+### Running Tasks in a VPC
+
+If you're running Zappa in a VPC you'll need to configure your subnets to allow your lambda to communicate with services inside your VPC as well as the public Internet. A minimal setup requires two subnets.
+
+In __subnet-a__:
+* Create a NAT
+* Create an Internet gateway
+* In the route table, create a route pointing the Internet gateway to 0.0.0.0/0.
+
+In __subnet-b__:
+* Place your lambda function
+* In the route table, create a route pointing the NAT that belongs to __subnet-a__ to 0.0.0.0/0.
+
+You can place your lambda in multiple subnets that are configured the same way as __subnet-b__ for high availability.
+
+Some helpful resources are [this tutorial](https://gist.github.com/reggi/dc5f2620b7b4f515e68e46255ac042a7) and [this AWS doc page](http://docs.aws.amazon.com/lambda/latest/dg/vpc.html#vpc-internet).
+
 ### Responses
 
 It is possible to capture the responses of Asynchronous tasks.
@@ -611,7 +629,6 @@ def longrunner(delay):
     return {'MESSAGE': "It took {} seconds to generate this.".format(delay)}
 
 ```
-
 
 ## Advanced Settings
 
