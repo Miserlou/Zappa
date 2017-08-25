@@ -216,6 +216,7 @@ class Zappa(object):
             desired_role_name=None,
             runtime='python2.7',
             tags=(),
+            endpoint_urls={}
         ):
         # Set aws_region to None to use the system's region instead
         if aws_region is None:
@@ -235,6 +236,7 @@ class Zappa(object):
         else:
             self.manylinux_wheel_file_suffix = 'cp36m-manylinux1_x86_64.whl'
 
+        self.endpoint_urls = endpoint_urls
 
         # Some common invokations, such as DB migrations,
         # can take longer than the default.
@@ -253,26 +255,39 @@ class Zappa(object):
             self.load_credentials(boto_session, profile_name)
 
             # Initialize clients
-            self.s3_client = self.boto_session.client('s3')
-            self.lambda_client = self.boto_session.client('lambda', config=long_config)
-            self.events_client = self.boto_session.client('events')
-            self.apigateway_client = self.boto_session.client('apigateway')
+            self.s3_client = self.boto_client('s3')
+            self.lambda_client = self.boto_client('lambda', config=long_config)
+            self.events_client = self.boto_client('events')
+            self.apigateway_client = self.boto_client('apigateway')
             # acm certificates need to be created from us-east-1 to be used by API gateway
             east_config = botocore.client.Config(region_name='us-east-1')
-            self.acm_client = self.boto_session.client('acm', config=east_config)
-            self.logs_client = self.boto_session.client('logs')
-            self.iam_client = self.boto_session.client('iam')
-            self.iam = self.boto_session.resource('iam')
-            self.cloudwatch = self.boto_session.client('cloudwatch')
-            self.route53 = self.boto_session.client('route53')
-            self.sns_client = self.boto_session.client('sns')
-            self.cf_client = self.boto_session.client('cloudformation')
-            self.dynamodb_client = self.boto_session.client('dynamodb')
+            self.acm_client = self.boto_client('acm', config=east_config)
+            self.logs_client = self.boto_client('logs')
+            self.iam_client = self.boto_client('iam')
+            self.iam = self.boto_resource('iam')
+            self.cloudwatch = self.boto_client('cloudwatch')
+            self.route53 = self.boto_client('route53')
+            self.sns_client = self.boto_client('sns')
+            self.cf_client = self.boto_client('cloudformation')
+            self.dynamodb_client = self.boto_client('dynamodb')
 
         self.tags = tags
         self.cf_template = troposphere.Template()
         self.cf_api_resources = []
         self.cf_parameters = {}
+
+    def configure_boto_session_method_kwargs(self, service, kw):
+        if service in self.endpoint_urls and not 'endpoint_url' in kw:
+            kw['endpoint_url'] = self.endpoint_urls[service]
+        return kw
+
+    def boto_client(self, service, *args, **kwargs):
+        """A wrapper to apply configuration options to boto clients"""
+        return self.boto_session.client(service, *args, **self.configure_boto_session_method_kwargs(service, kwargs))
+
+    def boto_resource(self, service, *args, **kwargs):
+        """A wrapper to apply configuration options to boto resources"""
+        return self.boto_session.resource(service, *args, **self.configure_boto_session_method_kwargs(service, kwargs))
 
     def cache_param(self, value):
         '''Returns a troposphere Ref to a value cached as a parameter.'''
