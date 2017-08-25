@@ -728,6 +728,10 @@ to change Zappa's behavior. Use these at your own risk!
         "s3_bucket": "dev-bucket", // Zappa zip bucket,
         "slim_handler": false, // Useful if project >50M. Set true to just upload a small handler to Lambda and load actual project from S3 at runtime. Default false.
         "settings_file": "~/Projects/MyApp/settings/dev_settings.py", // Server side settings file location,
+        "tags": { // Attach additional tags to AWS Resources
+            "Key": "Value",  // Example Key and value
+            "Key2": "Value2",
+            },
         "timeout_seconds": 30, // Maximum lifespan for the Lambda function (default 30, max 300.)
         "touch": true, // GET the production URL upon initial deployment (default True)
         "use_precompiled_packages": true, // If possible, use C-extension packages which have been pre-compiled for AWS Lambda. Default true.
