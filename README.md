@@ -36,6 +36,7 @@
   - [Task Sources](#task-sources)
   - [Direct Invocation](#direct-invocation)
   - [Restrictions](#restrictions)
+  - [Running Tasks in a VPC](#running-tasks-in-a-vpc)
   - [Responses](#responses)
 - [Advanced Settings](#advanced-settings)
     - [YAML Settings](#yaml-settings)
@@ -563,6 +564,23 @@ The following restrictions to this feature apply:
 
 All of this code is still backwards-compatible with non-Lambda environments - it simply executes in a blocking fashion and returns the result.
 
+### Running Tasks in a VPC
+
+If you're running Zappa in a VPC you'll need to configure your subnets to allow your lambda to communicate with services inside your VPC as well as the public Internet. A minimal setup requires two subnets.
+
+In __subnet-a__:
+* Create a NAT
+* Create an Internet gateway
+* In the route table, create a route pointing the Internet gateway to 0.0.0.0/0.
+
+In __subnet-b__:
+* Place your lambda function
+* In the route table, create a route pointing the NAT that belongs to __subnet-a__ to 0.0.0.0/0.
+
+You can place your lambda in multiple subnets that are configured the same way as __subnet-b__ for high availability.
+
+Some helpful resources are [this tutorial](https://gist.github.com/reggi/dc5f2620b7b4f515e68e46255ac042a7) and [this AWS doc page](http://docs.aws.amazon.com/lambda/latest/dg/vpc.html#vpc-internet).
+
 ### Responses
 
 It is possible to capture the responses of Asynchronous tasks.
@@ -612,7 +630,6 @@ def longrunner(delay):
 
 ```
 
-
 ## Advanced Settings
 
 There are other settings that you can define in your local settings
@@ -632,6 +649,7 @@ to change Zappa's behavior. Use these at your own risk!
         "async_response_table": "your_dynamodb_table_name",  // the DynamoDB table name to use for captured async responses; defaults to None (can't capture)
         "async_response_table_read_capacity": 1,  // DynamoDB table read capacity; defaults to 1
         "async_response_table_write_capacity": 1,  // DynamoDB table write capacity; defaults to 1
+        "aws_endpoint_urls": { "aws_service_name": "endpoint_url" }, // a dictionary of endpoint_urls that emulate the appropriate service.  Usually used for testing.
         "aws_environment_variables" : {"your_key": "your_value"}, // A dictionary of environment variables that will be available to your deployed app via AWS Lambdas native environment variables. See also "environment_variables" and "remote_env" . Default {}.
         "aws_kms_key_arn": "your_aws_kms_key_arn", // Your AWS KMS Key ARN
         "aws_region": "aws-region-name", // optional, uses region set in profile or environment variables if not set here,
@@ -711,6 +729,10 @@ to change Zappa's behavior. Use these at your own risk!
         "s3_bucket": "dev-bucket", // Zappa zip bucket,
         "slim_handler": false, // Useful if project >50M. Set true to just upload a small handler to Lambda and load actual project from S3 at runtime. Default false.
         "settings_file": "~/Projects/MyApp/settings/dev_settings.py", // Server side settings file location,
+        "tags": { // Attach additional tags to AWS Resources
+            "Key": "Value",  // Example Key and value
+            "Key2": "Value2",
+            },
         "timeout_seconds": 30, // Maximum lifespan for the Lambda function (default 30, max 300.)
         "touch": true, // GET the production URL upon initial deployment (default True)
         "use_precompiled_packages": true, // If possible, use C-extension packages which have been pre-compiled for AWS Lambda. Default true.

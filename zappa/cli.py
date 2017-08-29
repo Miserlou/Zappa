@@ -112,6 +112,7 @@ class ZappaCLI(object):
     authorizer = None
     aws_kms_key_arn = ''
     context_header_mappings = None
+    tags = []
 
     stage_name_env_pattern = re.compile('^[a-zA-Z0-9_]+$')
 
@@ -1689,10 +1690,10 @@ class ZappaCLI(object):
             # Get install account_key to /tmp/account_key.pem
             if account_key_location.startswith('s3://'):
                 bucket, key_name = parse_s3_url(account_key_location)
-                self.zappa.s3_client.download_file(bucket, key_name, '/tmp/account.key')
+                self.zappa.s3_client.download_file(bucket, key_name, '{}/account.key'.format(tempfile.gettempdir()))
             else:
                 from shutil import copyfile
-                copyfile(account_key_location, '/tmp/account.key')
+                copyfile(account_key_location, '{}/account.key'.format(tempfile.gettempdir()))
 
         # Prepare for Custom SSL
         elif not account_key_location and not cert_arn:
@@ -1938,13 +1939,18 @@ class ZappaCLI(object):
         self.aws_kms_key_arn = self.stage_config.get('aws_kms_key_arn', '')
         self.context_header_mappings = self.stage_config.get('context_header_mappings', {})
 
+        # Additional tags
+        self.tags = self.stage_config.get('tags', {})
+
         desired_role_name = self.lambda_name + "-ZappaLambdaExecutionRole"
         self.zappa = Zappa( boto_session=session,
                             profile_name=self.profile_name,
                             aws_region=self.aws_region,
                             load_credentials=self.load_credentials,
                             desired_role_name=desired_role_name,
-                            runtime=self.runtime
+                            tags=self.tags,
+                            runtime=self.runtime,
+                            endpoint_urls=self.zappa_settings.get('aws_endpoint_urls',{})
                         )
 
         for setting in CUSTOM_SETTINGS:
@@ -2218,7 +2224,6 @@ class ZappaCLI(object):
             authorizer_function = self.authorizer.get('function', None)
             if authorizer_function:
                 settings_s += "AUTHORIZER_FUNCTION='{0!s}'\n".format(authorizer_function)
-
 
             # Copy our Django app into root of our package.
             # It doesn't work otherwise.
