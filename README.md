@@ -1169,6 +1169,7 @@ Zappa is currently supported by these awesome individuals and companies:
   * Nathan Lawrence
   * LaunchLab
   * Sean Paley
+  * Theo Chitayat
 
 Thank you very, very much!
 
