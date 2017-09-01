@@ -820,7 +820,12 @@ The file's contents should then be sourced in e.g. ~/.bashrc.
 
 ##### API Key
 
-You can use the `api_key_required` setting to generate and assign an API key to all the routes of your API Gateway. After redeployment, you can then pass the provided key as a header called `x-api-key` to access the restricted endpoints. Without the `x-api-key` header, you will receive a 403. You'll also need to manually associate this API key with your usage plan in the AWS console. [More information on API keys in the API Gateway](http://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-api-keys.html).
+You can use the `api_key_required` setting to generate an API key to all the routes of your API Gateway. The process is as follows:
+1. Deploy/redeploy (update won't work) and write down the *id* for the key that has been created
+2. Go to AWS console > Amazon API Gateway and
+    * select "API Keys" and find the key *value* (for example `key_value`)
+    * select "Usage Plans", create a new usage plan and link the API Key and the API that Zappa has created for you
+3. Send a request where you pass the key value as a header called `x-api-key` to access the restricted endpoints (for example with curl: `curl --header "x-api-key: key_value"`). Note that without the x-api-key header, you will receive a 403.
 
 ##### IAM Policy
 
