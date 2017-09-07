@@ -1104,6 +1104,7 @@ You must have already created the corresponding SNS/SQS topic/queue, and the Lam
 * [AWS: Deploy Alexa Ask Skills with Flask-Ask and Zappa](https://developer.amazon.com/blogs/post/8e8ad73a-99e9-4c0f-a7b3-60f92287b0bf/New-Alexa-Tutorial-Deploy-Flask-Ask-Skills-to-AWS-Lambda-with-Zappa)
 * [Guide to using Django with Zappa](https://edgarroman.github.io/zappa-django-guide/)
 * [Apex and WWW Domains with Zappa](http://sciencestuff.xperiment.mobi/2017/08/09/apex-and-www-domains-with-pythons-zappa-https/)
+* [Zappa and LambCI](https://seancoates.com/blogs/zappa-and-lambci/)
 * _Your guide here?_
 
 ## Zappa in the Press
