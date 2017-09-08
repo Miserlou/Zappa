@@ -2136,6 +2136,7 @@ class Zappa(object):
                                      '"detail": <detail>, ' \
                                      '"version": <version>,' \
                                      '"resources": <resources>,' \
+                                     '"id": <id>,' \
                                      '"kwargs": %s' \
                                      '}' % json.dumps(kwargs)
 
@@ -2156,7 +2157,8 @@ class Zappa(object):
                                         'region': '$.region',
                                         'detail': '$.detail',
                                         'version': '$.version',
-                                        'resources': '$.resources'
+                                        'resources': '$.resources',
+                                        'id': '$.id'
                                     },
                                     'InputTemplate': input_template
                                 }
