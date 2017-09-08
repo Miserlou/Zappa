@@ -2140,6 +2140,7 @@ class Zappa(object):
                                      '}' % json.dumps(kwargs)
 
                     # Create the CloudWatch event ARN for this function.
+                    # https://github.com/Miserlou/Zappa/issues/359
                     target_response = self.events_client.put_targets(
                         Rule=rule_name,
                         Targets=[
