@@ -467,6 +467,26 @@ Similarly, for a [Simple Notification Service](https://aws.amazon.com/sns/) even
        ]
 ```
 
+Events can also take keyword arguments.
+```javascript
+       "events": [
+            {
+                "function": "your_module.your_recurring_function", // The function to execute
+                "kwargs": {"key": "val", "key2": "val2"},  // Keyword arguments to pass. These are available in the event
+                "expression": "rate(1 minute)" // When to execute it (in cron or rate format)
+            }    
+       ]
+```
+
+To get the keyword arguments you will need to look inside the event dict.
+
+```python
+def your_recurring_function(event, context):
+    my_kwargs = event.get(kwargs)  # dict of kwargs given in zappa_settings file
+
+```
+
+
 You can find more [example event sources here](http://docs.aws.amazon.com/lambda/latest/dg/eventsources.html).
 
 ## Asynchronous Task Execution
