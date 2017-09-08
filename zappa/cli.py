@@ -1585,6 +1585,7 @@ class ZappaCLI(object):
             env_zappa_settings = {
                 env_name: {
                     's3_bucket': env_bucket,
+                    'project_name': self.get_project_name()
                 }
             }
 
@@ -1884,7 +1885,7 @@ class ZappaCLI(object):
             # If the name is invalid, this will throw an exception with message up stack
             self.project_name = validate_name(self.stage_config['project_name'])
         else:
-            self.project_name = slugify.slugify(os.getcwd().split(os.sep)[-1])[:15]
+            self.project_name = self.get_project_name()
 
         # The name of the actual AWS Lambda function, ex, 'helloworld-dev'
         # Assume that we already have have validated the name beforehand.
@@ -2334,6 +2335,9 @@ class ZappaCLI(object):
                 pass
 
         return False
+
+    def get_project_name(self):
+        return slugify.slugify(os.getcwd().split(os.sep)[-1])[:15]
 
     def colorize_log_entry(self, string):
         """
