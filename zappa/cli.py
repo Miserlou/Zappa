@@ -1585,6 +1585,7 @@ class ZappaCLI(object):
             env_zappa_settings = {
                 env_name: {
                     's3_bucket': env_bucket,
+                    'runtime': 'python3.6' if sys.version_info[0] == 3 else 'python2.7'
                 }
             }
 
