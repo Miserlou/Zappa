@@ -94,6 +94,16 @@ ATTACH_POLICY = """{
         {
             "Effect": "Allow",
             "Action": [
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords"
+            ],
+            "Resource": [
+                "*"
+            ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
                 "ec2:AttachNetworkInterface",
                 "ec2:CreateNetworkInterface",
                 "ec2:DeleteNetworkInterface",
@@ -200,6 +210,7 @@ class Zappa(object):
     assume_policy = ASSUME_POLICY
     attach_policy = ATTACH_POLICY
     cloudwatch_log_levels = ['OFF', 'ERROR', 'INFO']
+    xray_tracing = False
 
     ##
     # Credentials
@@ -216,7 +227,8 @@ class Zappa(object):
             desired_role_name=None,
             runtime='python2.7',
             tags=(),
-            endpoint_urls={}
+            endpoint_urls={},
+            xray_tracing=False
         ):
         # Set aws_region to None to use the system's region instead
         if aws_region is None:
@@ -237,6 +249,7 @@ class Zappa(object):
             self.manylinux_wheel_file_suffix = 'cp36m-manylinux1_x86_64.whl'
 
         self.endpoint_urls = endpoint_urls
+        self.xray_tracing = xray_tracing
 
         # Some common invokations, such as DB migrations,
         # can take longer than the default.
@@ -889,7 +902,8 @@ class Zappa(object):
                                 dead_letter_config=None,
                                 runtime='python2.7',
                                 aws_environment_variables=None,
-                                aws_kms_key_arn=None
+                                aws_kms_key_arn=None,
+                                xray_tracing=False
                             ):
         """
         Given a bucket and key of a valid Lambda-zip, a function name and a handler, register that Lambda function.
@@ -921,7 +935,10 @@ class Zappa(object):
             VpcConfig=vpc_config,
             DeadLetterConfig=dead_letter_config,
             Environment={'Variables': aws_environment_variables},
-            KMSKeyArn=aws_kms_key_arn
+            KMSKeyArn=aws_kms_key_arn,
+            TracingConfig={
+                'Mode': 'Active' if self.xray_tracing else 'PassThrough'
+            }
         )
 
         resource_arn = response['FunctionArn']
@@ -993,7 +1010,10 @@ class Zappa(object):
             MemorySize=memory_size,
             VpcConfig=vpc_config,
             Environment={'Variables': aws_environment_variables},
-            KMSKeyArn=aws_kms_key_arn
+            KMSKeyArn=aws_kms_key_arn,
+            TracingConfig={
+                'Mode': 'Active' if self.xray_tracing else 'PassThrough'
+            }
         )
 
         return response['FunctionArn']
