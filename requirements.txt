@@ -19,5 +19,5 @@ toml==0.9.2
 tqdm==4.15.0
 troposphere>=1.9.0
 Werkzeug==0.12
-wheel==0.29.0
+wheel==0.30.0
 wsgi-request-logger==0.4.6
