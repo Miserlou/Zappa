@@ -62,6 +62,7 @@
     - [API Gateway Context Variables](#api-gateway-context-variables)
     - [Catching Unhandled Exceptions](#catching-unhandled-exceptions)
     - [Using Custom AWS IAM Roles and Policies](#using-custom-aws-iam-roles-and-policies)
+    - [AWS X-Ray](#aws-x-ray)
     - [Globally Available Server-less Architectures](#globally-available-server-less-architectures)
     - [Raising AWS Service Limits](#raising-aws-service-limits)
     - [Using Zappa With Docker](#using-zappa-with-docker)
@@ -739,7 +740,8 @@ to change Zappa's behavior. Use these at your own risk!
         "vpc_config": { // Optional VPC configuration for Lambda function
             "SubnetIds": [ "subnet-12345678" ], // Note: not all availability zones support Lambda!
             "SecurityGroupIds": [ "sg-12345678" ]
-        }
+        },
+        "xray_tracing": false // Optional, enable AWS X-Ray tracing on your lambda function.
     }
 }
 ```
@@ -1064,6 +1066,36 @@ If you only need to add a few permissions to the default Zappa execution policy,
     ...
 }
 ```
+
+#### AWS X-Ray
+
+Zappa can enable [AWS X-Ray](https://aws.amazon.com/xray/) support on your function with a configuration setting:
+
+```javascript
+{
+    "dev": {
+        ...
+        "xray_tracing": true
+    },
+    ...
+}
+```
+
+This will enable it on the Lambda function and allow you to instrument your code with X-Ray.
+For example, with Flask:
+
+```python
+from aws_xray_sdk.core import xray_recorder
+from aws_xray_sdk.ext.flask.middleware import XRayMiddleware
+
+app = Flask(__name__)
+
+xray_recorder.configure(service='my_app_name')
+XRayMiddleware(app, xray_recorder)
+```
+
+The official [X-Ray documentation for Python](http://docs.aws.amazon.com/xray-sdk-for-python/latest/reference/) has more information on how to use this with your code.
+
 
 #### Globally Available Server-less Architectures
 

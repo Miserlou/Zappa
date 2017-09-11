@@ -110,6 +110,7 @@ class ZappaCLI(object):
     exception_handler = None
     environment_variables = None
     authorizer = None
+    xray_tracing = False
     aws_kms_key_arn = ''
     context_header_mappings = None
     tags = []
@@ -1939,6 +1940,7 @@ class ZappaCLI(object):
         self.runtime = self.stage_config.get('runtime', get_runtime_from_python_version())
         self.aws_kms_key_arn = self.stage_config.get('aws_kms_key_arn', '')
         self.context_header_mappings = self.stage_config.get('context_header_mappings', {})
+        self.xray_tracing = self.stage_config.get('xray_tracing', False)
 
         # Additional tags
         self.tags = self.stage_config.get('tags', {})
@@ -1949,9 +1951,10 @@ class ZappaCLI(object):
                             aws_region=self.aws_region,
                             load_credentials=self.load_credentials,
                             desired_role_name=desired_role_name,
-                            tags=self.tags,
                             runtime=self.runtime,
-                            endpoint_urls=self.stage_config.get('aws_endpoint_urls',{})
+                            tags=self.tags,
+                            endpoint_urls=self.stage_config.get('aws_endpoint_urls',{}),
+                            xray_tracing=self.xray_tracing
                         )
 
         for setting in CUSTOM_SETTINGS:
