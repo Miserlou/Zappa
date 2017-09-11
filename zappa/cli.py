@@ -1588,7 +1588,6 @@ class ZappaCLI(object):
                 g_env = {
                     env_name: {
                         'extends': env,
-                        's3_bucket': (bucket + '-' + env_name).replace('_', '-'),
                         'aws_region': region
                     }
                 }
