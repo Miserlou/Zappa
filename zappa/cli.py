@@ -1950,7 +1950,7 @@ class ZappaCLI(object):
                             desired_role_name=desired_role_name,
                             tags=self.tags,
                             runtime=self.runtime,
-                            endpoint_urls=self.zappa_settings.get('aws_endpoint_urls',{})
+                            endpoint_urls=self.stage_config.get('aws_endpoint_urls',{})
                         )
 
         for setting in CUSTOM_SETTINGS:
