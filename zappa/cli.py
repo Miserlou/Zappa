@@ -314,6 +314,7 @@ class ZappaCLI(object):
             help=("Don't color the output")
         )
         # This is explicitly added here because this is the only subcommand that doesn't inherit from env_parser
+        # https://github.com/Miserlou/Zappa/issues/1002
         manage_parser.add_argument(
             '-s', '--settings_file', help='The path to a Zappa settings file.'
         )
