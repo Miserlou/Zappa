@@ -679,9 +679,12 @@ class Zappa(object):
         if os.path.isdir(site_packages_64):
             package_to_keep += os.listdir(site_packages_64)
 
+        package_to_keep = [x.lower() for x in package_to_keep]
+
         installed_packages = {package.project_name.lower(): package.version for package in
-                              pip.get_installed_distributions() if package.project_name in package_to_keep or
-                              package.location in [site_packages, site_packages_64]}
+                              pip.get_installed_distributions()
+                              if package.project_name.lower() in package_to_keep
+                              or package.location in [site_packages, site_packages_64]}
 
         return installed_packages
 
