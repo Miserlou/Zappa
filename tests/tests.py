@@ -155,14 +155,27 @@ class TestZappa(unittest.TestCase):
         z = Zappa(runtime='python2.7')
 
         # mock pip packages call to be same as what our mocked site packages dir has
-        mock_package = collections.namedtuple('mock_package', ['project_name', 'version'])
-        mock_pip_installed_packages = [mock_package('super_package', '0.1')]
+        mock_package = collections.namedtuple('mock_package', ['project_name', 'version', 'location'])
+        mock_pip_installed_packages = [mock_package('super_package', '0.1', '/venv/site-packages')]
 
         with mock.patch('os.path.isdir', return_value=True):
             with mock.patch('os.listdir', return_value=['super_package']):
                 import pip  # this gets called in non-test Zappa mode
                 with mock.patch('pip.get_installed_distributions', return_value=mock_pip_installed_packages):
                     self.assertDictEqual(z.get_installed_packages('',''), {'super_package' : '0.1'})
+
+    def test_getting_installed_packages_mixed_case(self, *args):
+        z = Zappa(runtime='python2.7')
+
+        # mock pip packages call to be same as what our mocked site packages dir has
+        mock_package = collections.namedtuple('mock_package', ['project_name', 'version', 'location'])
+        mock_pip_installed_packages = [mock_package('SuperPackage', '0.1', '/venv/site-packages')]
+
+        with mock.patch('os.path.isdir', return_value=True):
+            with mock.patch('os.listdir', return_value=['superpackage']):
+                import pip  # this gets called in non-test Zappa mode
+                with mock.patch('pip.get_installed_distributions', return_value=mock_pip_installed_packages):
+                    self.assertDictEqual(z.get_installed_packages('',''), {'superpackage' : '0.1'})
 
     def test_load_credentials(self):
         z = Zappa()
