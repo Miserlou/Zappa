@@ -781,7 +781,8 @@ class Zappa(object):
         json_file = '{0!s}-{1!s}.json'.format(package_name, package_version)
         json_file_path = os.path.join(cached_pypi_info_dir, json_file)
         if os.path.exists(json_file_path):
-            with open(json_file_path, 'r') as metafile:
+            print(json_file_path)
+            with open(json_file_path, 'rb') as metafile:
                 data = json.load(metafile)
         else:
             url = 'https://pypi.python.org/pypi/{}/json'.format(package_name)
@@ -789,9 +790,8 @@ class Zappa(object):
                 res = requests.get(url, timeout=1.5)
                 data = res.json()
             except Exception as e: # pragma: no cover
-                print("Problem while contacting PyPI: " + str(e))
                 return None
-            with open(json_file_path, 'w') as metafile:
+            with open(json_file_path, 'wb') as metafile:
                 jsondata = json.dumps(data)
                 metafile.write(bytes(jsondata, "utf-8")) 
         for f in data['releases'][package_version]:
