@@ -1,5 +1,21 @@
 # Zappa Changelog
 
+## 0.44.0
+* Async responses (thanks Sean!)
+* Remove setLevel call from common log
+* Fix #1023
+* Merge #1058, 1059, 1073
+* Allow overriding of endpoint_url arg
+* Add support for API Gateway stage variables
+* Add AWS X-Ray support (thanks @mathom!)
+* Events take kwargs (Thanks @mcrowson!)
+* Detect P2/3 during `init`
+* Include stage names in `slim_handler` zips
+* Allow `-s` with `manage`
+* Use same S3 bucket for global endpoints
+* Fix bug with mixed-case packages
+* Cache wheels, fix 0-byte wheels
+
 ## 0.43.2
 * Add index prefix to each subsequent schedule expression for the same event (#1051)
 * fix/Only update CORS on resources which have an OPTIONS method (#1036)
