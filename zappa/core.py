@@ -679,9 +679,12 @@ class Zappa(object):
         if os.path.isdir(site_packages_64):
             package_to_keep += os.listdir(site_packages_64)
 
+        package_to_keep = [x.lower() for x in package_to_keep]
+
         installed_packages = {package.project_name.lower(): package.version for package in
-                              pip.get_installed_distributions() if package.project_name in package_to_keep or
-                              package.location in [site_packages, site_packages_64]}
+                              pip.get_installed_distributions()
+                              if package.project_name.lower() in package_to_keep
+                              or package.location in [site_packages, site_packages_64]}
 
         return installed_packages
 
@@ -737,7 +740,7 @@ class Zappa(object):
         wheel_file = '{0!s}-{1!s}-{2!s}'.format(package_name, package_version, self.manylinux_wheel_file_suffix)
         wheel_path = os.path.join(cached_wheels_dir, wheel_file)
 
-        if not os.path.exists(wheel_path):
+        if not os.path.exists(wheel_path) or not zipfile.is_zipfile(wheel_path):
             # The file is not cached, download it.
             wheel_url = self.get_manylinux_wheel_url(package_name, package_version)
             if not wheel_url:
@@ -746,6 +749,9 @@ class Zappa(object):
             print(" - {}=={}: Downloading".format(package_name, package_version))
             with open(wheel_path, 'wb') as f:
                 self.download_url_with_progress(wheel_url, f, disable_progress)
+            
+            if not zipfile.is_zipfile(wheel_path):
+                return None
         else:
             print(" - {}=={}: Using locally cached manylinux wheel".format(package_name, package_version))
 
@@ -758,16 +764,39 @@ class Zappa(object):
 
         Related: https://github.com/Miserlou/Zappa/issues/398
         Examples here: https://gist.github.com/perrygeo/9545f94eaddec18a65fd7b56880adbae
+
+        This function downloads metadata JSON of `package_name` from Pypi
+        and examines if the package has a manylinux wheel. This function
+        also caches the JSON file so that we don't have to poll Pypi
+        everytime.
         """
-        url = 'https://pypi.python.org/pypi/{}/json'.format(package_name)
-        try:
-            res = requests.get(url, timeout=1.5)
-            data = res.json()
-            for f in data['releases'][package_version]:
-                if f['filename'].endswith(self.manylinux_wheel_file_suffix):
-                    return f['url']
-        except Exception as e: # pragma: no cover
-            return None
+        cached_pypi_info_dir = os.path.join(tempfile.gettempdir(), 'cached_pypi_info')
+        if not os.path.isdir(cached_pypi_info_dir):
+            os.makedirs(cached_pypi_info_dir)
+        # Even though the metadata is for the package, we save it in a
+        # filename that includes the package's version. This helps in
+        # invalidating the cached file if the user moves to a different
+        # version of the package.
+        # Related: https://github.com/Miserlou/Zappa/issues/899
+        json_file = '{0!s}-{1!s}.json'.format(package_name, package_version)
+        json_file_path = os.path.join(cached_pypi_info_dir, json_file)
+        if os.path.exists(json_file_path):
+            print(json_file_path)
+            with open(json_file_path, 'rb') as metafile:
+                data = json.load(metafile)
+        else:
+            url = 'https://pypi.python.org/pypi/{}/json'.format(package_name)
+            try:
+                res = requests.get(url, timeout=1.5)
+                data = res.json()
+            except Exception as e: # pragma: no cover
+                return None
+            with open(json_file_path, 'wb') as metafile:
+                jsondata = json.dumps(data)
+                metafile.write(bytes(jsondata, "utf-8")) 
+        for f in data['releases'][package_version]:
+            if f['filename'].endswith(self.manylinux_wheel_file_suffix):
+                return f['url']
         return None
 
     ##
@@ -2109,6 +2138,7 @@ class Zappa(object):
             function = event['function']
             expression = event.get('expression', None) # single expression
             expressions = event.get('expressions', None) # multiple expression
+            kwargs = event.get('kwargs', {}) # optional dict of keyword arguments for the event
             event_source = event.get('event_source', None)
             description = event.get('description', function)
 
@@ -2146,13 +2176,41 @@ class Zappa(object):
                     # Specific permissions are necessary for any trigger to work.
                     self.create_event_permission(lambda_name, 'events.amazonaws.com', rule_response['RuleArn'])
 
+                    # Overwriting the input, supply the original values and add kwargs
+                    input_template = '{"time": <time>, ' \
+                                     '"detail-type": <detail-type>, ' \
+                                     '"source": <source>,' \
+                                     '"account": <account>, ' \
+                                     '"region": <region>,' \
+                                     '"detail": <detail>, ' \
+                                     '"version": <version>,' \
+                                     '"resources": <resources>,' \
+                                     '"id": <id>,' \
+                                     '"kwargs": %s' \
+                                     '}' % json.dumps(kwargs)
+
                     # Create the CloudWatch event ARN for this function.
+                    # https://github.com/Miserlou/Zappa/issues/359
                     target_response = self.events_client.put_targets(
                         Rule=rule_name,
                         Targets=[
                             {
                                 'Id': 'Id' + ''.join(random.choice(string.digits) for _ in range(12)),
                                 'Arn': lambda_arn,
+                                'InputTransformer': {
+                                    'InputPathsMap': {
+                                        'time': '$.time',
+                                        'detail-type': '$.detail-type',
+                                        'source': '$.source',
+                                        'account': '$.account',
+                                        'region': '$.region',
+                                        'detail': '$.detail',
+                                        'version': '$.version',
+                                        'resources': '$.resources',
+                                        'id': '$.id'
+                                    },
+                                    'InputTemplate': input_template
+                                }
                             }
                         ]
                     )

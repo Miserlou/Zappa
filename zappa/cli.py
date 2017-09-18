@@ -313,6 +313,11 @@ class ZappaCLI(object):
             '--no-color', action='store_true',
             help=("Don't color the output")
         )
+        # This is explicitly added here because this is the only subcommand that doesn't inherit from env_parser
+        # https://github.com/Miserlou/Zappa/issues/1002
+        manage_parser.add_argument(
+            '-s', '--settings_file', help='The path to a Zappa settings file.'
+        )
 
         ##
         # Rollback
@@ -696,7 +701,7 @@ class ZappaCLI(object):
                 raise ClickException("Unable to upload handler to S3. Quitting.")
 
             # Copy the project zip to the current project zip
-            current_project_name = '{0!s}_current_project.tar.gz'.format(self.project_name)
+            current_project_name = '{0!s}_{1!s}_current_project.tar.gz'.format(self.api_stage, self.project_name)
             success = self.zappa.copy_on_s3(src_file_name=self.zip_path, dst_file_name=current_project_name,
                                             bucket_name=self.s3_bucket_name)
             if not success:  # pragma: no cover
@@ -2192,7 +2197,8 @@ class ZappaCLI(object):
 
             # If slim handler, path to project zip
             if self.stage_config.get('slim_handler', False):
-                settings_s += "ARCHIVE_PATH='s3://{0!s}/{1!s}_current_project.tar.gz'\n".format(self.s3_bucket_name, self.project_name)
+                settings_s += "ARCHIVE_PATH='s3://{0!s}/{1!s}_{2!s}_current_project.tar.gz'\n".format(
+                    self.s3_bucket_name, self.api_stage, self.project_name)
 
                 # since includes are for slim handler add the setting here by joining arbitrary list from zappa_settings file
                 # and tell the handler we are the slim_handler

@@ -318,6 +318,12 @@ class LambdaHandler(object):
         if settings.DEBUG:
             logger.debug('Zappa Event: {}'.format(event))
 
+        # Set any API Gateway defined Stage Variables
+        # as env vars
+        if event.get('stageVariables'):
+            for key in event['stageVariables'].keys():
+                os.environ[str(key)] = event['stageVariables'][key]
+
         # This is the result of a keep alive, recertify
         # or scheduled event.
         if event.get('detail-type') == u'Scheduled Event':
