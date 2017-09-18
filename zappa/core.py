@@ -792,7 +792,8 @@ class Zappa(object):
                 print("Problem while contacting PyPI: " + str(e))
                 return None
             with open(json_file_path, 'w') as metafile:
-                json.dump(data, metafile)
+                jsondata = json.dumps(data)
+                metafile.write(bytes(jsondata, "utf-8")) 
         for f in data['releases'][package_version]:
             if f['filename'].endswith(self.manylinux_wheel_file_suffix):
                 return f['url']
