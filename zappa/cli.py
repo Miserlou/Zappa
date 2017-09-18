@@ -1567,49 +1567,37 @@ class ZappaCLI(object):
                 global_deployment = False
                 break
 
-        if global_deployment:
-            regions = API_GATEWAY_REGIONS
-            if global_type.lower() in ["p", "primary"]:
-                envs = [{env + '_' + region.replace('-', '_'): { 'aws_region': region}} for region in regions if '-1' in region]
-            else:
-                envs = [{env + '_' + region.replace('-', '_'): { 'aws_region': region}} for region in regions]
-        else:
-            envs = [{env: {}}]
-
-        zappa_settings = {}
-        for each_env in envs:
-
-            # Honestly, this could be cleaner.
-            env_name = list(each_env.keys())[0]
-            env_dict = each_env[env_name]
-
-            env_bucket = bucket
-            if global_deployment:
-            # `zappa init` doesn't generate compatible s3_bucket names #828
-                env_bucket = (bucket + '-' + env_name).replace('_', '-')
-
-            env_zappa_settings = {
-                env_name: {
-                    's3_bucket': env_bucket,
-                    'runtime': 'python3.6' if sys.version_info[0] == 3 else 'python2.7',
-                    'project_name': self.get_project_name()
-                }
+        # The given environment name
+        zappa_settings = {
+            env: {
+                'profile_name': profile_name,
+                'aws_region': profile_region,
+                's3_bucket': bucket,
+                'runtime': 'python3.6' if sys.version_info[0] == 3 else 'python2.7',
+                'project_name': self.get_project_name()
             }
+        }
+        if has_django:
+            zappa_settings[env]['django_settings'] = django_settings
+        else:
+            zappa_settings[env]['app_function'] = app_function
 
-            if profile_name:
-                env_zappa_settings[env_name]['profile_name'] = profile_name
+        # Global Region Deployment
+        if global_deployment:
+            additional_regions = [r for r in API_GATEWAY_REGIONS if r != profile_region]
+            # Create additional stages
+            if global_type.lower() in ["p", "primary"]:
+                additional_regions = [r for r in additional_regions if '-1' in r]
 
-            if 'aws_region' in env_dict:
-                env_zappa_settings[env_name]['aws_region'] = env_dict.get('aws_region')
-            elif profile_region:
-                env_zappa_settings[env_name]['aws_region'] = profile_region
-
-            zappa_settings.update(env_zappa_settings)
-
-            if has_django:
-                zappa_settings[env_name]['django_settings'] = django_settings
-            else:
-                zappa_settings[env_name]['app_function'] = app_function
+            for region in additional_regions:
+                env_name = env + '_' + region.replace('-', '_')
+                g_env = {
+                    env_name: {
+                        'extends': env,
+                        'aws_region': region
+                    }
+                }
+                zappa_settings.update(g_env)
 
         import json as json # hjson is fine for loading, not fine for writing.
         zappa_settings_json = json.dumps(zappa_settings, sort_keys=True, indent=4)
