@@ -737,7 +737,7 @@ class Zappa(object):
         wheel_file = '{0!s}-{1!s}-{2!s}'.format(package_name, package_version, self.manylinux_wheel_file_suffix)
         wheel_path = os.path.join(cached_wheels_dir, wheel_file)
 
-        if not os.path.exists(wheel_path):
+        if not os.path.exists(wheel_path) or not zipfile.is_zipfile(wheel_path):
             # The file is not cached, download it.
             wheel_url = self.get_manylinux_wheel_url(package_name, package_version)
             if not wheel_url:
@@ -746,6 +746,9 @@ class Zappa(object):
             print(" - {}=={}: Downloading".format(package_name, package_version))
             with open(wheel_path, 'wb') as f:
                 self.download_url_with_progress(wheel_url, f, disable_progress)
+            
+            if not zipfile.is_zipfile(wheel_path):
+                return None
         else:
             print(" - {}=={}: Using locally cached manylinux wheel".format(package_name, package_version))
 
