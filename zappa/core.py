@@ -541,22 +541,13 @@ class Zappa(object):
                         print(" - %s==%s: Using precompiled lambda package " % (installed_package_name, installed_package_version,))
                         self.extract_lambda_package(installed_package_name, temp_project_path)
                     else:
-                        cached_wheel_path = self.get_cached_manylinux_wheel(installed_package_name, installed_package_version, force_install=False, disable_progress=disable_progress)
+                        cached_wheel_path = self.get_cached_manylinux_wheel(installed_package_name, installed_package_version, disable_progress)
                         if cached_wheel_path:
                             # Otherwise try to use manylinux packages from PyPi..
                             # Related: https://github.com/Miserlou/Zappa/issues/398
                             shutil.rmtree(os.path.join(temp_project_path, installed_package_name), ignore_errors=True)
-                            try:
-                                with zipfile.ZipFile(cached_wheel_path) as zfile:
-                                    zfile.extractall(temp_project_path)
-                            except BadZipfile as e:
-                                # Need to re-install wheel file.
-                                # Related: https://github.com/Miserlou/Zappa/issues/1104
-                                shutil.rmtree(cached_wheel_path, ignore_errors=True)
-                                cached_wheel_path = self.get_cached_manylinux_wheel(installed_package_name, installed_package_version, force_install=True, disable_progress=disable_progress)
-                                if cached_wheel_path:
-                                    with zipfile.ZipFile(cached_wheel_path) as zfile:
-                                        zfile.extractall(temp_project_path)
+                            with zipfile.ZipFile(cached_wheel_path) as zfile:
+                                zfile.extractall(temp_project_path)
 
                         elif self.have_any_lambda_package_version(installed_package_name):
                             # Finally see if we may have at least one version of the package in lambda packages
@@ -735,7 +726,7 @@ class Zappa(object):
 
         progress.close()
 
-    def get_cached_manylinux_wheel(self, package_name, package_version, force_install, disable_progress=False):
+    def get_cached_manylinux_wheel(self, package_name, package_version, disable_progress=False):
         """
         Gets the locally stored version of a manylinux wheel. If one does not exist, the function downloads it.
         """
@@ -746,7 +737,7 @@ class Zappa(object):
         wheel_file = '{0!s}-{1!s}-{2!s}'.format(package_name, package_version, self.manylinux_wheel_file_suffix)
         wheel_path = os.path.join(cached_wheels_dir, wheel_file)
 
-        if not os.path.exists(wheel_path) or force_install:
+        if not os.path.exists(wheel_path):
             # The file is not cached, download it.
             wheel_url = self.get_manylinux_wheel_url(package_name, package_version)
             if not wheel_url:
