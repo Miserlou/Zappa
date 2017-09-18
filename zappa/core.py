@@ -2112,6 +2112,7 @@ class Zappa(object):
             function = event['function']
             expression = event.get('expression', None) # single expression
             expressions = event.get('expressions', None) # multiple expression
+            kwargs = event.get('kwargs', {}) # optional dict of keyword arguments for the event
             event_source = event.get('event_source', None)
             description = event.get('description', function)
 
@@ -2149,13 +2150,41 @@ class Zappa(object):
                     # Specific permissions are necessary for any trigger to work.
                     self.create_event_permission(lambda_name, 'events.amazonaws.com', rule_response['RuleArn'])
 
+                    # Overwriting the input, supply the original values and add kwargs
+                    input_template = '{"time": <time>, ' \
+                                     '"detail-type": <detail-type>, ' \
+                                     '"source": <source>,' \
+                                     '"account": <account>, ' \
+                                     '"region": <region>,' \
+                                     '"detail": <detail>, ' \
+                                     '"version": <version>,' \
+                                     '"resources": <resources>,' \
+                                     '"id": <id>,' \
+                                     '"kwargs": %s' \
+                                     '}' % json.dumps(kwargs)
+
                     # Create the CloudWatch event ARN for this function.
+                    # https://github.com/Miserlou/Zappa/issues/359
                     target_response = self.events_client.put_targets(
                         Rule=rule_name,
                         Targets=[
                             {
                                 'Id': 'Id' + ''.join(random.choice(string.digits) for _ in range(12)),
                                 'Arn': lambda_arn,
+                                'InputTransformer': {
+                                    'InputPathsMap': {
+                                        'time': '$.time',
+                                        'detail-type': '$.detail-type',
+                                        'source': '$.source',
+                                        'account': '$.account',
+                                        'region': '$.region',
+                                        'detail': '$.detail',
+                                        'version': '$.version',
+                                        'resources': '$.resources',
+                                        'id': '$.id'
+                                    },
+                                    'InputTemplate': input_template
+                                }
                             }
                         ]
                     )
