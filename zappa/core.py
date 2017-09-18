@@ -777,20 +777,22 @@ class Zappa(object):
         # filename that includes the package's version. This helps in
         # invalidating the cached file if the user moves to a different
         # version of the package.
+        # Related: https://github.com/Miserlou/Zappa/issues/899
         json_file = '{0!s}-{1!s}.json'.format(package_name, package_version)
         json_file_path = os.path.join(cached_pypi_info_dir, json_file)
         if os.path.exists(json_file_path):
-            with open(json_file_path, 'r') as f_:
-                data = json.load(f_)
+            with open(json_file_path, 'r') as metafile:
+                data = json.load(metafile)
         else:
             url = 'https://pypi.python.org/pypi/{}/json'.format(package_name)
             try:
                 res = requests.get(url, timeout=1.5)
                 data = res.json()
             except Exception as e: # pragma: no cover
+                print("Problem while contacting PyPI: " + str(e))
                 return None
-            with open(json_file_path, 'w') as f_:
-                json.dump(data, f_)
+            with open(json_file_path, 'w') as metafile:
+                json.dump(data, metafile)
         for f in data['releases'][package_version]:
             if f['filename'].endswith(self.manylinux_wheel_file_suffix):
                 return f['url']
