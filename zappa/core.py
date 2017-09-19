@@ -794,6 +794,10 @@ class Zappa(object):
             with open(json_file_path, 'wb') as metafile:
                 jsondata = json.dumps(data)
                 metafile.write(bytes(jsondata, "utf-8")) 
+
+        if package_version not in data['releases']:
+            return None
+
         for f in data['releases'][package_version]:
             if f['filename'].endswith(self.manylinux_wheel_file_suffix):
                 return f['url']
