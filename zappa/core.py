@@ -781,7 +781,6 @@ class Zappa(object):
         json_file = '{0!s}-{1!s}.json'.format(package_name, package_version)
         json_file_path = os.path.join(cached_pypi_info_dir, json_file)
         if os.path.exists(json_file_path):
-            print(json_file_path)
             with open(json_file_path, 'rb') as metafile:
                 data = json.load(metafile)
         else:
@@ -794,6 +793,10 @@ class Zappa(object):
             with open(json_file_path, 'wb') as metafile:
                 jsondata = json.dumps(data)
                 metafile.write(bytes(jsondata, "utf-8")) 
+
+        if package_version not in data['releases']:
+            return None
+
         for f in data['releases'][package_version]:
             if f['filename'].endswith(self.manylinux_wheel_file_suffix):
                 return f['url']
