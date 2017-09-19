@@ -1,5 +1,8 @@
 # Zappa Changelog
 
+## 0.44.1
+* Packaging hotfix - thank Yunseop!
+
 ## 0.44.0
 * Async responses (thanks Sean!)
 * Remove setLevel call from common log
