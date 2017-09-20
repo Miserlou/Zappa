@@ -1,5 +1,8 @@
 # Zappa Changelog
 
+## 0.44.2
+* Non-Dynamo asynx hotfix - thanks @jwkvam!
+
 ## 0.44.1
 * Packaging hotfix - thank Yunseop!
 
