@@ -1001,7 +1001,7 @@ class ZappaCLI(object):
 
     def undeploy(self, no_confirm=False, remove_logs=False):
         """
-        Tear down an exiting deployment.
+        Tear down an existing deployment.
         """
 
         if not no_confirm: # pragma: no cover
