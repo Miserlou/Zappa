@@ -150,6 +150,8 @@ class LambdaAsyncResponse(object):
 
             else:
                 self.response_id = str(uuid.uuid4())
+        else:
+            self.response_id = None
 
         self.capture_response = capture_response
 
