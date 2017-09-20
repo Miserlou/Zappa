@@ -1,5 +1,8 @@
 # Zappa Changelog
 
+## 0.44.3
+* Slim handler packaging hotfix - thanks @mcrowson! 
+
 ## 0.44.2
 * Non-Dynamo asynx hotfix - thanks @jwkvam!
 
