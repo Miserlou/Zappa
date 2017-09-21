@@ -1,4 +1,12 @@
+"""
+Zappa core library. You may also want to look at `cli.py` and `util.py`.
+"""
+
 from __future__ import print_function
+
+##
+# Imports
+##
 
 import boto3
 import botocore
@@ -37,6 +45,9 @@ from .utilities import (copytree,
                     conflicts_with_a_neighbouring_module,
                     get_venv_from_python_version)
 
+# We lower-case lambda package keys to match lower-cased keys in get_installed_packages()
+lambda_packages = {package_name.lower(): val for package_name,val in lambda_packages_orig.items()}
+
 ##
 # Logging Config
 ##
@@ -45,10 +56,6 @@ logging.basicConfig(format='%(levelname)s:%(message)s')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-
-# We lower-case lambda package keys to match lower-cased keys in get_installed_packages()
-lambda_packages = {package_name.lower():val
-                   for package_name,val in lambda_packages_orig.items()}
 
 ##
 # Policies And Template Mappings
@@ -225,11 +232,15 @@ class Zappa(object):
             aws_region=None,
             load_credentials=True,
             desired_role_name=None,
-            runtime='python2.7',
+            runtime='python2.7', # Detected at runtime in CLI
             tags=(),
             endpoint_urls={},
             xray_tracing=False
         ):
+        """
+        Instantiate this new Zappa instance, loading any custom credentials if necessary.
+        """
+
         # Set aws_region to None to use the system's region instead
         if aws_region is None:
             # https://github.com/Miserlou/Zappa/issues/413
@@ -290,6 +301,7 @@ class Zappa(object):
         self.cf_parameters = {}
 
     def configure_boto_session_method_kwargs(self, service, kw):
+        """Allow for custom endpoint urls for non-AWS (testing and bootleg cloud) deployments"""
         if service in self.endpoint_urls and not 'endpoint_url' in kw:
             kw['endpoint_url'] = self.endpoint_urls[service]
         return kw
@@ -318,6 +330,7 @@ class Zappa(object):
     ##
     # Packaging
     ##
+
     def copy_editable_packages(self, egg_links, temp_package_path):
         """ """
         for egg_link in egg_links:
