@@ -2,11 +2,11 @@
 Zappa core library. You may also want to look at `cli.py` and `util.py`.
 """
 
-from __future__ import print_function
-
 ##
 # Imports
 ##
+
+from __future__ import print_function
 
 import boto3
 import botocore
@@ -35,7 +35,6 @@ from lambda_packages import lambda_packages as lambda_packages_orig
 from setuptools import find_packages
 from tqdm import tqdm
 
-# Zappa imports
 from .utilities import (copytree,
                     add_event_source,
                     remove_event_source,
@@ -46,7 +45,7 @@ from .utilities import (copytree,
                     get_venv_from_python_version)
 
 # We lower-case lambda package keys to match lower-cased keys in get_installed_packages()
-lambda_packages = {package_name.lower(): val for package_name,val in lambda_packages_orig.items()}
+lambda_packages = {package_name.lower(): val for package_name, val in lambda_packages_orig.items()}
 
 ##
 # Logging Config
@@ -55,7 +54,6 @@ lambda_packages = {package_name.lower(): val for package_name,val in lambda_pack
 logging.basicConfig(format='%(levelname)s:%(message)s')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
 
 ##
 # Policies And Template Mappings
@@ -209,9 +207,7 @@ class Zappa(object):
     # Configurables
     ##
 
-    http_methods = [
-        'ANY'
-    ]
+    http_methods = ['ANY']
     role_name = "ZappaLambdaExecution"
     extra_permissions = None
     assume_policy = ASSUME_POLICY
@@ -283,7 +279,7 @@ class Zappa(object):
             self.lambda_client = self.boto_client('lambda', config=long_config)
             self.events_client = self.boto_client('events')
             self.apigateway_client = self.boto_client('apigateway')
-            # acm certificates need to be created from us-east-1 to be used by API gateway
+            # AWS ACM certificates need to be created from us-east-1 to be used by API gateway
             east_config = botocore.client.Config(region_name='us-east-1')
             self.acm_client = self.boto_client('acm', config=east_config)
             self.logs_client = self.boto_client('logs')
