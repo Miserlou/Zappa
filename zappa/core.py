@@ -758,7 +758,7 @@ class Zappa(object):
             print(" - {}=={}: Downloading".format(package_name, package_version))
             with open(wheel_path, 'wb') as f:
                 self.download_url_with_progress(wheel_url, f, disable_progress)
-            
+
             if not zipfile.is_zipfile(wheel_path):
                 return None
         else:
@@ -801,7 +801,7 @@ class Zappa(object):
                 return None
             with open(json_file_path, 'wb') as metafile:
                 jsondata = json.dumps(data)
-                metafile.write(bytes(jsondata, "utf-8")) 
+                metafile.write(bytes(jsondata, "utf-8"))
 
         if package_version not in data['releases']:
             return None
@@ -944,7 +944,8 @@ class Zappa(object):
                                 runtime='python2.7',
                                 aws_environment_variables=None,
                                 aws_kms_key_arn=None,
-                                xray_tracing=False
+                                xray_tracing=False,
+                                local_zip=None
                             ):
         """
         Given a bucket and key of a valid Lambda-zip, a function name and a handler, register that Lambda function.
@@ -960,15 +961,11 @@ class Zappa(object):
         if not aws_kms_key_arn:
             aws_kms_key_arn = ''
 
-        response = self.lambda_client.create_function(
+        kwargs = dict(
             FunctionName=function_name,
             Runtime=runtime,
             Role=self.credentials_arn,
             Handler=handler,
-            Code={
-                'S3Bucket': bucket,
-                'S3Key': s3_key,
-            },
             Description=description,
             Timeout=timeout,
             MemorySize=memory_size,
@@ -981,6 +978,17 @@ class Zappa(object):
                 'Mode': 'Active' if self.xray_tracing else 'PassThrough'
             }
         )
+        if local_zip:
+            kwargs['Code'] = {
+                'ZipFile': local_zip
+            }
+        else:
+            kwargs['Code'] = {
+                'S3Bucket': bucket,
+                'S3Key': s3_key
+            }
+
+        response = self.lambda_client.create_function(**kwargs)
 
         resource_arn = response['FunctionArn']
 
@@ -989,18 +997,23 @@ class Zappa(object):
 
         return resource_arn
 
-    def update_lambda_function(self, bucket, s3_key, function_name, publish=True):
+    def update_lambda_function(self, bucket, s3_key, function_name, publish=True, local_zip=None):
         """
         Given a bucket and key of a valid Lambda-zip, a function name and a handler, update that Lambda function's code.
         """
         print("Updating Lambda function code..")
 
-        response = self.lambda_client.update_function_code(
+        kwargs = dict(
             FunctionName=function_name,
-            S3Bucket=bucket,
-            S3Key=s3_key,
             Publish=publish
         )
+        if local_zip:
+            kwargs['ZipFile'] = local_zip
+        else:
+            kwargs['S3Bucket'] = bucket
+            kwargs['S3Key'] = s3_key
+
+        response = self.lambda_client.update_function_code(**kwargs)
 
         return response['FunctionArn']
 

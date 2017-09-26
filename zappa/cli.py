@@ -248,6 +248,9 @@ class ZappaCLI(object):
         deploy_parser = subparsers.add_parser(
             'deploy', parents=[env_parser], help='Deploy application.'
         )
+        package_parser.add_argument(
+            '-z', '--zip', help='Deploy Lambda with specific local or S3 hosted zip package'
+        )
 
         ##
         # Init
@@ -412,6 +415,9 @@ class ZappaCLI(object):
         ##
         subparsers.add_parser(
             'update', parents=[env_parser], help='Update deployed application.'
+        )
+        package_parser.add_argument(
+            '-z', '--zip', help='Update Lambda with specific local or S3 hosted zip package'
         )
 
         ##
@@ -650,67 +656,67 @@ class ZappaCLI(object):
             with open(template_file, 'r') as out:
                 print(out.read())
 
-    def deploy(self):
+    def deploy(self, source_zip=None):
         """
         Package your project, upload it to S3, register the Lambda function
         and create the API Gateway routes.
 
         """
 
-        # Make sure we're in a venv.
-        self.check_venv()
+        if not source_zip:
+            # Make sure we're in a venv.
+            self.check_venv()
 
-        # Execute the prebuild script
-        if self.prebuild_script:
-            self.execute_prebuild_script()
+            # Execute the prebuild script
+            if self.prebuild_script:
+                self.execute_prebuild_script()
 
-        # Make sure this isn't already deployed.
-        deployed_versions = self.zappa.get_lambda_function_versions(self.lambda_name)
-        if len(deployed_versions) > 0:
-            raise ClickException("This application is " + click.style("already deployed", fg="red") +
-                                 " - did you mean to call " + click.style("update", bold=True) + "?")
+            # Make sure this isn't already deployed.
+            deployed_versions = self.zappa.get_lambda_function_versions(self.lambda_name)
+            if len(deployed_versions) > 0:
+                raise ClickException("This application is " + click.style("already deployed", fg="red") +
+                                     " - did you mean to call " + click.style("update", bold=True) + "?")
 
-        # Make sure the necessary IAM execution roles are available
-        if self.manage_roles:
-            try:
-                self.zappa.create_iam_roles()
-            except botocore.client.ClientError:
-                raise ClickException(
-                    click.style("Failed", fg="red") + " to " + click.style("manage IAM roles", bold=True) + "!\n" +
-                    "You may " + click.style("lack the necessary AWS permissions", bold=True) +
-                    " to automatically manage a Zappa execution role.\n" +
-                    "To fix this, see here: " +
-                    click.style("https://github.com/Miserlou/Zappa#using-custom-aws-iam-roles-and-policies", bold=True)
-                    + '\n')
+            # Make sure the necessary IAM execution roles are available
+            if self.manage_roles:
+                try:
+                    self.zappa.create_iam_roles()
+                except botocore.client.ClientError:
+                    raise ClickException(
+                        click.style("Failed", fg="red") + " to " + click.style("manage IAM roles", bold=True) + "!\n" +
+                        "You may " + click.style("lack the necessary AWS permissions", bold=True) +
+                        " to automatically manage a Zappa execution role.\n" +
+                        "To fix this, see here: " +
+                        click.style("https://github.com/Miserlou/Zappa#using-custom-aws-iam-roles-and-policies", bold=True)
+                        + '\n')
 
-        # Create the Lambda Zip
-        self.create_package()
-        self.callback('zip')
+            # Create the Lambda Zip
+            self.create_package()
+            self.callback('zip')
 
-        # Upload it to S3
-        success = self.zappa.upload_to_s3(
-                self.zip_path, self.s3_bucket_name, disable_progress=self.disable_progress)
-        if not success: # pragma: no cover
-            raise ClickException("Unable to upload to S3. Quitting.")
+            # Upload it to S3
+            success = self.zappa.upload_to_s3(
+                    self.zip_path, self.s3_bucket_name, disable_progress=self.disable_progress)
+            if not success: # pragma: no cover
+                raise ClickException("Unable to upload to S3. Quitting.")
 
-        # If using a slim handler, upload it to S3 and tell lambda to use this slim handler zip
-        if self.stage_config.get('slim_handler', False):
-            # https://github.com/Miserlou/Zappa/issues/510
-            success = self.zappa.upload_to_s3(self.handler_path, self.s3_bucket_name, disable_progress=self.disable_progress)
-            if not success:  # pragma: no cover
-                raise ClickException("Unable to upload handler to S3. Quitting.")
+            # If using a slim handler, upload it to S3 and tell lambda to use this slim handler zip
+            if self.stage_config.get('slim_handler', False):
+                # https://github.com/Miserlou/Zappa/issues/510
+                success = self.zappa.upload_to_s3(self.handler_path, self.s3_bucket_name, disable_progress=self.disable_progress)
+                if not success:  # pragma: no cover
+                    raise ClickException("Unable to upload handler to S3. Quitting.")
 
-            # Copy the project zip to the current project zip
-            current_project_name = '{0!s}_{1!s}_current_project.tar.gz'.format(self.api_stage, self.project_name)
-            success = self.zappa.copy_on_s3(src_file_name=self.zip_path, dst_file_name=current_project_name,
-                                            bucket_name=self.s3_bucket_name)
-            if not success:  # pragma: no cover
-                raise ClickException("Unable to copy the zip to be the current project. Quitting.")
+                # Copy the project zip to the current project zip
+                current_project_name = '{0!s}_{1!s}_current_project.tar.gz'.format(self.api_stage, self.project_name)
+                success = self.zappa.copy_on_s3(src_file_name=self.zip_path, dst_file_name=current_project_name,
+                                                bucket_name=self.s3_bucket_name)
+                if not success:  # pragma: no cover
+                    raise ClickException("Unable to copy the zip to be the current project. Quitting.")
 
-            handler_file = self.handler_path
-        else:
-            handler_file = self.zip_path
-
+                handler_file = self.handler_path
+            else:
+                handler_file = self.zip_path
 
         # Fixes https://github.com/Miserlou/Zappa/issues/613
         try:
@@ -719,9 +725,7 @@ class ZappaCLI(object):
         except botocore.client.ClientError:
             # Register the Lambda function with that zip as the source
             # You'll also need to define the path to your lambda_handler code.
-            self.lambda_arn = self.zappa.create_lambda_function(
-                bucket=self.s3_bucket_name,
-                s3_key=handler_file,
+            kwargs = dict(
                 function_name=self.lambda_name,
                 handler=self.lambda_handler,
                 description=self.lambda_description,
@@ -733,6 +737,17 @@ class ZappaCLI(object):
                 aws_environment_variables=self.aws_environment_variables,
                 aws_kms_key_arn=self.aws_kms_key_arn
             )
+            if source_zip and source_zip.startswith('s3://'):
+                bucket, key_name = parse_s3_url(source_zip)
+                kwargs['bucket'] = bucket
+                kwargs['s3_key'] = key_name
+            elif source_zip and not source_zip.startswith('s3://'):
+                kwargs['local_zip'] = source_zip
+            else:
+                kwargs['bucket'] = self.s3_bucket_name
+                kwargs['s3_key'] = handler_file
+
+            self.lambda_arn = self.zappa.create_lambda_function(**kwargs)
 
         # Schedule events for this deployment
         self.schedule()
@@ -784,94 +799,105 @@ class ZappaCLI(object):
             self.remove_local_zip()
 
         # Remove the project zip from S3.
-        self.remove_uploaded_zip()
+        if not source_zip:
+            self.remove_uploaded_zip()
 
         self.callback('post')
 
         click.echo(deployment_string)
 
-    def update(self):
+    def update(self, source_zip=None):
         """
         Repackage and update the function code.
         """
 
-        # Make sure we're in a venv.
-        self.check_venv()
+        if not source_zip:
+            # Make sure we're in a venv.
+            self.check_venv()
 
-        # Execute the prebuild script
-        if self.prebuild_script:
-            self.execute_prebuild_script()
+            # Execute the prebuild script
+            if self.prebuild_script:
+                self.execute_prebuild_script()
 
-        # Temporary version check
-        try:
-            updated_time = 1472581018
-            function_response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name)
-            conf = function_response['Configuration']
-            last_updated = parser.parse(conf['LastModified'])
-            last_updated_unix = time.mktime(last_updated.timetuple())
-        except botocore.exceptions.BotoCoreError as e:
-            click.echo(click.style(type(e).__name__, fg="red") + ": " + e.args[0])
-            sys.exit(-1)
-        except Exception as e:
-            click.echo(click.style("Warning!", fg="red") + " Couldn't get function " + self.lambda_name +
-                       " in " + self.zappa.aws_region + " - have you deployed yet?")
-            sys.exit(-1)
-
-        if last_updated_unix <= updated_time:
-            click.echo(click.style("Warning!", fg="red") +
-                       " You may have upgraded Zappa since deploying this application. You will need to " +
-                       click.style("redeploy", bold=True) + " for this deployment to work properly!")
-
-        # Make sure the necessary IAM execution roles are available
-        if self.manage_roles:
+            # Temporary version check
             try:
-                self.zappa.create_iam_roles()
-            except botocore.client.ClientError:
-                click.echo(click.style("Failed", fg="red") + " to " + click.style("manage IAM roles", bold=True) + "!")
-                click.echo("You may " + click.style("lack the necessary AWS permissions", bold=True) +
-                           " to automatically manage a Zappa execution role.")
-                click.echo("To fix this, see here: " +
-                           click.style("https://github.com/Miserlou/Zappa#using-custom-aws-iam-roles-and-policies",
-                                       bold=True))
+                updated_time = 1472581018
+                function_response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name)
+                conf = function_response['Configuration']
+                last_updated = parser.parse(conf['LastModified'])
+                last_updated_unix = time.mktime(last_updated.timetuple())
+            except botocore.exceptions.BotoCoreError as e:
+                click.echo(click.style(type(e).__name__, fg="red") + ": " + e.args[0])
+                sys.exit(-1)
+            except Exception as e:
+                click.echo(click.style("Warning!", fg="red") + " Couldn't get function " + self.lambda_name +
+                           " in " + self.zappa.aws_region + " - have you deployed yet?")
                 sys.exit(-1)
 
-        # Create the Lambda Zip,
-        self.create_package()
-        self.callback('zip')
+            if last_updated_unix <= updated_time:
+                click.echo(click.style("Warning!", fg="red") +
+                           " You may have upgraded Zappa since deploying this application. You will need to " +
+                           click.style("redeploy", bold=True) + " for this deployment to work properly!")
 
-        # Upload it to S3
-        success = self.zappa.upload_to_s3(self.zip_path, self.s3_bucket_name, disable_progress=self.disable_progress)
-        if not success:  # pragma: no cover
-            raise ClickException("Unable to upload project to S3. Quitting.")
+            # Make sure the necessary IAM execution roles are available
+            if self.manage_roles:
+                try:
+                    self.zappa.create_iam_roles()
+                except botocore.client.ClientError:
+                    click.echo(click.style("Failed", fg="red") + " to " + click.style("manage IAM roles", bold=True) + "!")
+                    click.echo("You may " + click.style("lack the necessary AWS permissions", bold=True) +
+                               " to automatically manage a Zappa execution role.")
+                    click.echo("To fix this, see here: " +
+                               click.style("https://github.com/Miserlou/Zappa#using-custom-aws-iam-roles-and-policies",
+                                           bold=True))
+                    sys.exit(-1)
 
-        # If using a slim handler, upload it to S3 and tell lambda to use this slim handler zip
-        if self.stage_config.get('slim_handler', False):
-            # https://github.com/Miserlou/Zappa/issues/510
-            success = self.zappa.upload_to_s3(self.handler_path, self.s3_bucket_name, disable_progress=self.disable_progress)
+            # Create the Lambda Zip,
+            self.create_package()
+            self.callback('zip')
+
+            # Upload it to S3
+            success = self.zappa.upload_to_s3(self.zip_path, self.s3_bucket_name, disable_progress=self.disable_progress)
             if not success:  # pragma: no cover
-                raise ClickException("Unable to upload handler to S3. Quitting.")
+                raise ClickException("Unable to upload project to S3. Quitting.")
 
-            # Copy the project zip to the current project zip
-            current_project_name = '{0!s}_{1!s}_current_project.tar.gz'.format(self.api_stage, self.project_name)
-            success = self.zappa.copy_on_s3(src_file_name=self.zip_path, dst_file_name=current_project_name,
-                                            bucket_name=self.s3_bucket_name)
-            if not success:  # pragma: no cover
-                raise ClickException("Unable to copy the zip to be the current project. Quitting.")
+            # If using a slim handler, upload it to S3 and tell lambda to use this slim handler zip
+            if self.stage_config.get('slim_handler', False):
+                # https://github.com/Miserlou/Zappa/issues/510
+                success = self.zappa.upload_to_s3(self.handler_path, self.s3_bucket_name, disable_progress=self.disable_progress)
+                if not success:  # pragma: no cover
+                    raise ClickException("Unable to upload handler to S3. Quitting.")
 
-            handler_file = self.handler_path
-        else:
-            handler_file = self.zip_path
+                # Copy the project zip to the current project zip
+                current_project_name = '{0!s}_{1!s}_current_project.tar.gz'.format(self.api_stage, self.project_name)
+                success = self.zappa.copy_on_s3(src_file_name=self.zip_path, dst_file_name=current_project_name,
+                                                bucket_name=self.s3_bucket_name)
+                if not success:  # pragma: no cover
+                    raise ClickException("Unable to copy the zip to be the current project. Quitting.")
+
+                handler_file = self.handler_path
+            else:
+                handler_file = self.zip_path
 
         # Register the Lambda function with that zip as the source
         # You'll also need to define the path to your lambda_handler code.
-        self.lambda_arn = self.zappa.update_lambda_function(
-                                        self.s3_bucket_name,
-                                        handler_file,
-                                        self.lambda_name
-                                    )
+        if source_zip:
+            bucket, key_name = parse_s3_url(source_zip)
+            self.lambda_arn = self.zappa.update_lambda_function(
+                                            bucket,
+                                            key_name,
+                                            self.lambda_name
+                                        )
+        else:
+            self.lambda_arn = self.zappa.update_lambda_function(
+                                            self.s3_bucket_name,
+                                            handler_file,
+                                            self.lambda_name
+                                        )
 
         # Remove the uploaded zip from S3, because it is now registered..
-        self.remove_uploaded_zip()
+        if not source_zip:
+            self.remove_uploaded_zip()
 
         # Update the configuration, in case there are changes.
         self.lambda_arn = self.zappa.update_lambda_configuration(
