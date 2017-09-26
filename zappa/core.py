@@ -932,9 +932,9 @@ class Zappa(object):
 
     def create_lambda_function( self,
                                 bucket,
-                                s3_key,
                                 function_name,
                                 handler,
+                                s3_key=None,
                                 description='Zappa Deployment',
                                 timeout=30,
                                 memory_size=512,
@@ -948,7 +948,7 @@ class Zappa(object):
                                 local_zip=None
                             ):
         """
-        Given a bucket and key of a valid Lambda-zip, a function name and a handler, register that Lambda function.
+        Given a bucket and key (or a local path) of a valid Lambda-zip, a function name and a handler, register that Lambda function.
         """
         if not vpc_config:
             vpc_config = {}
@@ -997,9 +997,9 @@ class Zappa(object):
 
         return resource_arn
 
-    def update_lambda_function(self, bucket, s3_key, function_name, publish=True, local_zip=None):
+    def update_lambda_function(self, bucket, function_name, s3_key=None, publish=True, local_zip=None):
         """
-        Given a bucket and key of a valid Lambda-zip, a function name and a handler, update that Lambda function's code.
+        Given a bucket and key (or a local path) of a valid Lambda-zip, a function name and a handler, update that Lambda function's code.
         """
         print("Updating Lambda function code..")
 
