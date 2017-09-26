@@ -931,9 +931,9 @@ class Zappa(object):
     ##
 
     def create_lambda_function( self,
-                                bucket,
-                                function_name,
-                                handler,
+                                bucket=None,
+                                function_name=None,
+                                handler=None,
                                 s3_key=None,
                                 description='Zappa Deployment',
                                 timeout=30,

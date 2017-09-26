@@ -248,7 +248,7 @@ class ZappaCLI(object):
         deploy_parser = subparsers.add_parser(
             'deploy', parents=[env_parser], help='Deploy application.'
         )
-        package_parser.add_argument(
+        deploy_parser.add_argument(
             '-z', '--zip', help='Deploy Lambda with specific local or S3 hosted zip package'
         )
 
@@ -413,10 +413,10 @@ class ZappaCLI(object):
         ##
         # Updating
         ##
-        subparsers.add_parser(
+        update_parser = subparsers.add_parser(
             'update', parents=[env_parser], help='Update deployed application.'
         )
-        package_parser.add_argument(
+        update_parser.add_argument(
             '-z', '--zip', help='Update Lambda with specific local or S3 hosted zip package'
         )
 
@@ -521,7 +521,7 @@ class ZappaCLI(object):
 
         # Hand it off
         if command == 'deploy': # pragma: no cover
-            self.deploy()
+            self.deploy(self.vargs['zip'])
         if command == 'package': # pragma: no cover
             self.package(self.vargs['output'])
         if command == 'template': # pragma: no cover
@@ -531,7 +531,7 @@ class ZappaCLI(object):
                                 json=self.vargs['json']
                             )
         elif command == 'update': # pragma: no cover
-            self.update()
+            self.update(self.vargs['zip'])
         elif command == 'rollback': # pragma: no cover
             self.rollback(self.vargs['num_rollback'])
         elif command == 'invoke': # pragma: no cover
@@ -726,7 +726,6 @@ class ZappaCLI(object):
             # Register the Lambda function with that zip as the source
             # You'll also need to define the path to your lambda_handler code.
             kwargs = dict(
-                function_name=self.lambda_name,
                 handler=self.lambda_handler,
                 description=self.lambda_description,
                 vpc_config=self.vpc_config,
@@ -739,11 +738,16 @@ class ZappaCLI(object):
             )
             if source_zip and source_zip.startswith('s3://'):
                 bucket, key_name = parse_s3_url(source_zip)
+                kwargs['function_name'] = self.lambda_name
                 kwargs['bucket'] = bucket
                 kwargs['s3_key'] = key_name
             elif source_zip and not source_zip.startswith('s3://'):
-                kwargs['local_zip'] = source_zip
+                with open(source_zip, mode='rb') as fh:
+                    byte_stream = fh.read()
+                kwargs['function_name'] = self.lambda_name
+                kwargs['local_zip'] = byte_stream
             else:
+                kwargs['function_name'] = self.lambda_name
                 kwargs['bucket'] = self.s3_bucket_name
                 kwargs['s3_key'] = handler_file
 
@@ -881,18 +885,26 @@ class ZappaCLI(object):
 
         # Register the Lambda function with that zip as the source
         # You'll also need to define the path to your lambda_handler code.
-        if source_zip:
+        if source_zip and source_zip.startswith('s3://'):
             bucket, key_name = parse_s3_url(source_zip)
             self.lambda_arn = self.zappa.update_lambda_function(
                                             bucket,
-                                            key_name,
-                                            self.lambda_name
+                                            self.lambda_name,
+                                            key_name
+                                        )
+        elif source_zip and not source_zip.startswith('s3://'):
+            with open(source_zip, mode='rb') as fh:
+                byte_stream = fh.read()
+            self.lambda_arn = self.zappa.update_lambda_function(
+                                            self.s3_bucket_name,
+                                            self.lambda_name,
+                                            local_zip=byte_stream
                                         )
         else:
             self.lambda_arn = self.zappa.update_lambda_function(
                                             self.s3_bucket_name,
-                                            handler_file,
-                                            self.lambda_name
+                                            self.lambda_name,
+                                            handler_file
                                         )
 
         # Remove the uploaded zip from S3, because it is now registered..
