@@ -110,6 +110,31 @@ class TestZappa(unittest.TestCase):
         )
 
     @placebo_session
+    def test_create_aliased_lambda_function(self, session):
+        bucket_name = 'lmbda'
+        zip_path = 'Spheres-dev-1454694878.zip'
+
+        z = Zappa(session)
+        z.aws_region = 'us-east-1'
+        z.load_credentials(session)
+        z.credentials_arn = 'arn:aws:iam::12345:role/ZappaLambdaExecution'
+
+        arn = z.create_lambda_function(
+            bucket=bucket_name,
+            s3_key=zip_path,
+            function_name='test_lmbda_function55',
+            handler='runme.lambda_handler',
+            alias="some_alias"
+        )
+
+        arn = z.update_lambda_function(
+            bucket=bucket_name,
+            s3_key=zip_path,
+            function_name='test_lmbda_function55',
+            alias="updated_alias"
+        )
+
+    @placebo_session
     def test_rollback_lambda_function_version(self, session):
         z = Zappa(session)
         z.credentials_arn = 'arn:aws:iam::724336686645:role/ZappaLambdaExecution'
@@ -393,7 +418,7 @@ class TestZappa(unittest.TestCase):
         zappa_cli.load_settings('test_settings.json', session)
         zappa_cli.zappa.credentials_arn = 'arn:aws:iam::12345:role/ZappaLambdaExecution'
         zappa_cli.deploy()
-        zappa_cli.update()
+        zappa_cli.update(alias="some_alias")
         zappa_cli.rollback(1)
         zappa_cli.tail(since=0, filter_pattern='', keep_open=False)
         zappa_cli.schedule()
