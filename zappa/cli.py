@@ -799,8 +799,9 @@ class ZappaCLI(object):
                 requests.get(endpoint_url)
 
         # Finally, delete the local copy our zip package
-        if self.stage_config.get('delete_local_zip', True):
-            self.remove_local_zip()
+        if not source_zip:
+            if self.stage_config.get('delete_local_zip', True):
+                self.remove_local_zip()
 
         # Remove the project zip from S3.
         if not source_zip:
@@ -926,8 +927,9 @@ class ZappaCLI(object):
                                                     )
 
         # Finally, delete the local copy our zip package
-        if self.stage_config.get('delete_local_zip', True):
-            self.remove_local_zip()
+        if not source_zip:
+            if self.stage_config.get('delete_local_zip', True):
+                self.remove_local_zip()
 
         if self.use_apigateway:
 
