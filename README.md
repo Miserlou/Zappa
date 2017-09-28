@@ -518,6 +518,10 @@ def order_pie():
 
 And that's it! Your API response will return immediately, while the `make_pie` function executes in a completely different Lambda instance.
 
+When calls to @task decorated functions or the zappa.async.run command occur outside of Lambda, such as your local dev environment,
+the functions will execute immediately and locally. The zappa async functionality only works
+when in the Lambda environment or when specifying [Remote Invocations](https://github.com/Miserlou/zappa#remote-invocations). 
+
 ### Task Sources
 
 By default, this feature uses direct AWS Lambda invocation. You can instead use AWS Simple Notification Service as the task event source by using the `task_sns` decorator, like so:
