@@ -907,7 +907,7 @@ However, it's now far easier to use Route 53-based DNS authentication, which wil
 ##### Deploying to a Domain With AWS Certificate Manager
 
 1. Verify your domain in the AWS Ceriticate Manager console.
-2. In the console, request a certificate for your domain or subdomain (`sub.yourdomain.tld`), or request a wildcard domain (`*.yourdomain.tld`).
+2. In the console, select the N. Virginia (us-east-1) region and request a certificate for your domain or subdomain (`sub.yourdomain.tld`), or request a wildcard domain (`*.yourdomain.tld`).
 3. Copy the entire ARN of that certificate and place it in the Zappa setting `certificate_arn`.
 4. Set your desired domain in the `domain` setting.
 5. Call `$ zappa certify` to create and associate the API Gateway distribution using that ceritficate.
