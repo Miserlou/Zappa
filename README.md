@@ -881,6 +881,10 @@ You can also use AWS Cognito User Pool Authorizer by adding:
 
 #### Deploying to a Custom Domain Name with SSL Certificates
 
+Zappa can be deployed with custom certificates, Let's Encrypt certificates, and [AWS Certificate Manager](https://aws.amazon.com/certificate-manager/) certificates.
+
+Currently, the easiest of these to use are the AWS Certificate Manager certificates, as they are free, self-renewing, and require the least amount of work.
+
 ##### Deploying to a Domain With a Let's Encrypt Certificate (DNS Auth)
 
 If you want to use Zappa on a domain with a free Let's Encrypt certificate using automatic Route 53 based DNS Authentication, you can follow [this handy guide](https://github.com/Miserlou/Zappa/blob/master/docs/domain_with_free_ssl_dns.md).
@@ -901,6 +905,8 @@ However, it's now far easier to use Route 53-based DNS authentication, which wil
 6. Run `$ zappa certify` to upload your certificates and register the custom domain name with your API gateway.
 
 ##### Deploying to a Domain With AWS Certificate Manager
+
+Amazon also provides their own free alternative to Let's Encrypt called [AWS Certificate Manager](https://aws.amazon.com/certificate-manager/).
 
 1. Verify your domain in the AWS Ceriticate Manager console.
 2. In the console, request a certificate for your domain or subdomain (`sub.yourdomain.tld`), or request a wildcard domain (`*.yourdomain.tld`).
