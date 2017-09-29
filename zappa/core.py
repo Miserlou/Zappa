@@ -1057,7 +1057,12 @@ class Zappa(object):
             }
         )
 
-        return response['FunctionArn']
+        resource_arn = response['FunctionArn']
+
+        if self.tags:
+            self.lambda_client.tag_resource(Resource=resource_arn, Tags=self.tags)
+
+        return resource_arn
 
     def invoke_lambda_function( self,
                                 function_name,
