@@ -376,7 +376,7 @@ _(Please note that commands which take over 30 seconds to execute may time-out. 
 
 If you want to use Zappa applications on a custom domain or subdomain, you'll need to supply a valid SSL certificate.
 
-Zappa gives you three options here: Custom SSL certificates, AWS Certificate Manager-generated certificates, and Let's Encrypt certificates.
+Zappa gives you three options here: Custom SSL certificates, AWS Certificate Manager-generated certificates (ACM), and Let's Encrypt certificates.
 
 If your domain is located within an AWS Route 53 Hosted Zone and you've defined settings for `domain` and either `certificate`, `certificate_arn` or `lets_encrypt_key` (ex: `openssl genrsa 2048 > account.key`), all you need to do is:
 
@@ -885,7 +885,7 @@ You can also use AWS Cognito User Pool Authorizer by adding:
 
 #### Deploying to a Custom Domain Name with SSL Certificates
 
-Zappa can be deployed with custom certificates, Let's Encrypt certificates, and [AWS Certificate Manager](https://aws.amazon.com/certificate-manager/) certificates.
+Zappa can be deployed with custom certificates, Let's Encrypt certificates, and [AWS Certificate Manager](https://aws.amazon.com/certificate-manager/) (ACM) certificates.
 
 Currently, the easiest of these to use are the AWS Certificate Manager certificates, as they are free, self-renewing, and require the least amount of work.
 
@@ -910,7 +910,7 @@ However, it's now far easier to use Route 53-based DNS authentication, which wil
 
 ##### Deploying to a Domain With AWS Certificate Manager
 
-Amazon also provides their own free alternative to Let's Encrypt called [AWS Certificate Manager](https://aws.amazon.com/certificate-manager/).
+Amazon also provides their own free alternative to Let's Encrypt called [AWS Certificate Manager](https://aws.amazon.com/certificate-manager/) (ACM).
 
 1. Verify your domain in the AWS Ceriticate Manager console.
 2. In the console, select the N. Virginia (us-east-1) region and request a certificate for your domain or subdomain (`sub.yourdomain.tld`), or request a wildcard domain (`*.yourdomain.tld`).
