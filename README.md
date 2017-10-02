@@ -591,7 +591,7 @@ All of this code is still backwards-compatible with non-Lambda environments - it
 
 ### Running Tasks in a VPC
 
-If you're running Zappa in a VPC you'll need to configure your subnets to allow your lambda to communicate with services inside your VPC as well as the public Internet. A minimal setup requires two subnets.
+If you're running Zappa in a Virtual Private Cloud (VPC), you'll need to configure your subnets to allow your lambda to communicate with services inside your VPC as well as the public Internet. A minimal setup requires two subnets.
 
 In __subnet-a__:
 * Create a NAT
@@ -604,7 +604,7 @@ In __subnet-b__:
 
 You can place your lambda in multiple subnets that are configured the same way as __subnet-b__ for high availability.
 
-Some helpful resources are [this tutorial](https://gist.github.com/reggi/dc5f2620b7b4f515e68e46255ac042a7) and [this AWS doc page](http://docs.aws.amazon.com/lambda/latest/dg/vpc.html#vpc-internet).
+Some helpful resources are [this tutorial](http://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_Tutorials.WebServerDB.CreateVPC.html), [this other tutorial](https://gist.github.com/reggi/dc5f2620b7b4f515e68e46255ac042a7) and [this AWS doc page](http://docs.aws.amazon.com/lambda/latest/dg/vpc.html#vpc-internet).
 
 ### Responses
 
@@ -761,7 +761,7 @@ to change Zappa's behavior. Use these at your own risk!
         "timeout_seconds": 30, // Maximum lifespan for the Lambda function (default 30, max 300.)
         "touch": true, // GET the production URL upon initial deployment (default True)
         "use_precompiled_packages": true, // If possible, use C-extension packages which have been pre-compiled for AWS Lambda. Default true.
-        "vpc_config": { // Optional VPC configuration for Lambda function
+        "vpc_config": { // Optional Virtual Private Cloud (VPC) configuration for Lambda function
             "SubnetIds": [ "subnet-12345678" ], // Note: not all availability zones support Lambda!
             "SecurityGroupIds": [ "sg-12345678" ]
         },
