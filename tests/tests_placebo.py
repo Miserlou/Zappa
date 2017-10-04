@@ -41,7 +41,6 @@ class TestZappa(unittest.TestCase):
         z = Zappa(session)
         zip_path = z.create_lambda_zip(minify=False)
         res = z.upload_to_s3(zip_path, bucket_name)
-        os.remove(zip_path)
         self.assertTrue(res)
         s3 = session.resource('s3')
 
@@ -58,6 +57,34 @@ class TestZappa(unittest.TestCase):
 
         fail = z.upload_to_s3('/tmp/this_isnt_real', bucket_name)
         self.assertFalse(fail)
+
+        #Will graciouly handle quirky S3 behavior on 'us-east-1' region name'
+        z.aws_region = 'us-east-1'
+        res = z.upload_to_s3(zip_path, bucket_name)
+        os.remove(zip_path)
+        self.assertTrue(res)
+
+    @placebo_session
+    def test_copy_on_s3(self, session):
+        bucket_name = 'test_zappa_upload_s3'
+        z = Zappa(session)
+        zip_path = z.create_lambda_zip(minify=False)
+        res = z.upload_to_s3(zip_path, bucket_name)
+        self.assertTrue(res)
+        s3 = session.resource('s3')
+
+        # will throw ClientError with 404 if bucket doesn't exist
+        s3.meta.client.head_bucket(Bucket=bucket_name)
+
+        # will throw ClientError with 404 if object doesn't exist
+        s3.meta.client.head_object(
+            Bucket=bucket_name,
+            Key=zip_path,
+        )
+        zp = 'copy_' + zip_path
+        res = z.copy_on_s3(zip_path, zp, bucket_name)
+        os.remove(zip_path)
+        self.assertTrue(res)
 
     @placebo_session
     def test_create_lambda_function(self, session):
@@ -251,6 +278,37 @@ class TestZappa(unittest.TestCase):
             ]
         }
         self.assertEqual("AWS SNS EVENT", lh.handler(event, None))
+
+        # Test AWS SNS event
+        event = {
+            u'account': u'72333333333',
+            u'region': u'us-east-1',
+            u'detail': {},
+            u'Records': [
+                {
+                    u'EventVersion': u'1.0',
+                    u'EventSource': u'aws:sns',
+                    u'EventSubscriptionArn': u'arn:aws:sns:EXAMPLE',
+                    u'Sns': {
+                        u'SignatureVersion': u'1',
+                        u'Timestamp': u'1970-01-01T00:00:00.000Z',
+                        u'Signature': u'EXAMPLE',
+                        u'SigningCertUrl': u'EXAMPLE',
+                        u'MessageId': u'95df01b4-ee98-5cb9-9903-4c221d41eb5e',
+                        u'Message': u'{"args": ["arg1", "arg2"], "command": "zappa.async.route_sns_task", '
+                                    u'"task_path": "test_settings.aws_async_sns_event", "kwargs": {"arg3": "varg3"}}',
+                        u'Subject': u'TestInvoke',
+                        u'Type': u'Notification',
+                        u'UnsubscribeUrl': u'EXAMPLE',
+                        u'MessageAttributes': {
+                            u'Test': {u'Type': u'String', u'Value': u'TestString'},
+                            u'TestBinary': {u'Type': u'Binary', u'Value': u'TestBinary'}
+                        }
+                    }
+                }
+            ]
+        }
+        self.assertEqual("AWS ASYNC SNS EVENT", lh.handler(event, None))
 
         # Test AWS DynamoDB event
         event = {

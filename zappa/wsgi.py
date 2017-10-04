@@ -29,7 +29,8 @@ def create_wsgi_request(event_info,
                         server_name='zappa',
                         script_name=None,
                         trailing_slash=True,
-                        binary_support=False
+                        binary_support=False,
+                        context_header_mappings={}
                         ):
         """
         Given some event_info via API Gateway,
@@ -39,6 +40,19 @@ def create_wsgi_request(event_info,
         params = event_info['pathParameters']
         query = event_info['queryStringParameters'] # APIGW won't allow multiple entries, ex ?id=a&id=b
         headers = event_info['headers'] or {} # Allow for the AGW console 'Test' button to work (Pull #735)
+
+        if context_header_mappings:
+            for key, value in context_header_mappings.items():
+                parts = value.split('.')
+                header_val = event_info['requestContext']
+                for part in parts:
+                    if part not in header_val:
+                        header_val = None
+                        break
+                    else:
+                        header_val = header_val[part]
+                if header_val is not None:
+                    headers[key] = header_val
 
         # Extract remote user from context if Authorizer is enabled
         remote_user = None
@@ -106,7 +120,7 @@ def create_wsgi_request(event_info,
         }
 
         # Input processing
-        if method in ["POST", "PUT", "PATCH"]:
+        if method in ["POST", "PUT", "PATCH", "DELETE"]:
             if 'Content-Type' in headers:
                 environ['CONTENT_TYPE'] = headers['Content-Type']
 
@@ -145,7 +159,6 @@ def common_log(environ, response, response_time=None):
     """
 
     logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
 
     if response_time:
         formatter = ApacheFormatter(with_response_time=True)

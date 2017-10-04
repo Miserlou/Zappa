@@ -10,8 +10,10 @@ import json
 import logging
 import os
 import sys
+import tempfile
 import traceback
 import zipfile
+import tarfile
 
 from builtins import str
 from werkzeug.wrappers import Response
@@ -97,9 +99,9 @@ class LambdaHandler(object):
                 os.environ[str(key)] = self.settings.ENVIRONMENT_VARIABLES[key]
 
             # Pulling from S3 if given a zip path
-            project_zip_path = getattr(self.settings, 'ZIP_PATH', None)
-            if project_zip_path:
-                self.load_remote_project_zip(project_zip_path)
+            project_archive_path = getattr(self.settings, 'ARCHIVE_PATH', None)
+            if project_archive_path:
+                self.load_remote_project_archive(project_archive_path)
 
 
             # Load compliled library to the PythonPath
@@ -135,7 +137,7 @@ class LambdaHandler(object):
             else:
 
                 try:  # Support both for tests
-                    from zappa.ext.django import get_django_wsgi
+                    from zappa.ext.django_zappa import get_django_wsgi
                 except ImportError:  # pragma: no cover
                     from django_zappa_app import get_django_wsgi
 
@@ -145,7 +147,7 @@ class LambdaHandler(object):
 
             self.wsgi_app = ZappaWSGIMiddleware(wsgi_app_function)
 
-    def load_remote_project_zip(self, project_zip_path):
+    def load_remote_project_archive(self, project_zip_path):
         """
         Puts the project files from S3 in /tmp and adds to path
         """
@@ -157,16 +159,13 @@ class LambdaHandler(object):
             else:
                 boto_session = self.session
 
-            # Download the zip
-            remote_bucket, remote_file = project_zip_path.lstrip('s3://').split('/', 1)
+            # Download zip file from S3
+            remote_bucket, remote_file = parse_s3_url(project_zip_path)
             s3 = boto_session.resource('s3')
+            archive_on_s3 = s3.Object(remote_bucket, remote_file).get()
 
-            zip_path = '/tmp/{0!s}'.format(remote_file)
-            s3.Object(remote_bucket, remote_file).download_file(zip_path)
-
-            # Unzip contents to project folder
-            with zipfile.ZipFile(zip_path, 'r') as z:
-                z.extractall(path=project_folder)
+            with tarfile.open(fileobj=archive_on_s3['Body'], mode="r|gz") as t:
+                t.extractall(project_folder)
 
         # Add to project path
         sys.path.insert(0, project_folder)
@@ -291,6 +290,12 @@ class LambdaHandler(object):
 
         arn = None
         if 'Sns' in record:
+            try:
+                message = json.loads(record['Sns']['Message'])
+                if message.get('command'):
+                    return message['command']
+            except ValueError:
+                pass
             arn = record['Sns'].get('TopicArn')
         elif 'dynamodb' in record or 'kinesis' in record:
             arn = record.get('eventSourceARN')
@@ -312,6 +317,12 @@ class LambdaHandler(object):
         # If in DEBUG mode, log all raw incoming events.
         if settings.DEBUG:
             logger.debug('Zappa Event: {}'.format(event))
+
+        # Set any API Gateway defined Stage Variables
+        # as env vars
+        if event.get('stageVariables'):
+            for key in event['stageVariables'].keys():
+                os.environ[str(key)] = event['stageVariables'][key]
 
         # This is the result of a keep alive, recertify
         # or scheduled event.
@@ -400,22 +411,38 @@ class LambdaHandler(object):
             # This is a normal HTTP request
             if event.get('httpMethod', None):
 
-                if settings.DOMAIN:
-                    # If we're on a domain, we operate normally
-                    script_name = ''
+                script_name = ''
+                headers = event.get('headers')
+                if headers:
+                    host = headers.get('Host')
                 else:
-                    # But if we're not, then our base URL
-                    # will be something like
-                    # https://blahblahblah.execute-api.us-east-1.amazonaws.com/dev
-                    # So, we need to make sure the WSGI app knows this.
-                    script_name = '/' + settings.API_STAGE
+                    host = None
+
+                if host:
+                    if 'amazonaws.com' in host:
+                        # The path provided in th event doesn't include the
+                        # stage, so we must tell Flask to include the API
+                        # stage in the url it calculates. See https://github.com/Miserlou/Zappa/issues/1014
+                        script_name = '/' + settings.API_STAGE
+                else:
+                    # This is a test request sent from the AWS console
+                    if settings.DOMAIN:
+                        # Assume the requests received will be on the specified
+                        # domain. No special handling is required
+                        pass
+                    else:
+                        # Assume the requests received will be to the
+                        # amazonaws.com endpoint, so tell Flask to include the
+                        # API stage
+                        script_name = '/' + settings.API_STAGE
 
                 # Create the environment for WSGI and handle the request
                 environ = create_wsgi_request(
                     event,
                     script_name=script_name,
                     trailing_slash=self.trailing_slash,
-                    binary_support=settings.BINARY_SUPPORT
+                    binary_support=settings.BINARY_SUPPORT,
+                    context_header_mappings=settings.CONTEXT_HEADER_MAPPINGS
                 )
 
                 # We are always on https on Lambda, so tell our wsgi app that.
@@ -439,7 +466,7 @@ class LambdaHandler(object):
                         else:
                             zappa_returndict['body'] = response.data
                     else:
-                        zappa_returndict['body'] = response.data
+                        zappa_returndict['body'] = response.get_data(as_text=True)
 
                 zappa_returndict['statusCode'] = response.status_code
                 zappa_returndict['headers'] = {}

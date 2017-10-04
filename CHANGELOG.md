@@ -1,5 +1,73 @@
 # Zappa Changelog
 
+## 0.44.3
+* Slim handler packaging hotfix - thanks @mcrowson! 
+
+## 0.44.2
+* Non-Dynamo asynx hotfix - thanks @jwkvam!
+
+## 0.44.1
+* Packaging hotfix - thank Yunseop!
+
+## 0.44.0
+* Async responses (thanks Sean!)
+* Remove setLevel call from common log
+* Fix #1023
+* Merge #1058, 1059, 1073
+* Allow overriding of endpoint_url arg
+* Add support for API Gateway stage variables
+* Add AWS X-Ray support (thanks @mathom!)
+* Events take kwargs (Thanks @mcrowson!)
+* Detect P2/3 during `init`
+* Include stage names in `slim_handler` zips
+* Allow `-s` with `manage`
+* Use same S3 bucket for global endpoints
+* Fix bug with mixed-case packages
+* Cache wheels, fix 0-byte wheels
+
+## 0.43.2
+* Add index prefix to each subsequent schedule expression for the same event (#1051)
+* fix/Only update CORS on resources which have an OPTIONS method (#1036)
+* Support for binary support and cors simultaneously (#1011)
+* Set Flask script name based on domain which the request was made to (#1015)
+* Fix SNS Async (#1055)
+* GZip for slim handler
+* Force color option
+* Various dep bumps 
+
+## 0.43.1
+* Fixes #1001, don't override AWS env vars if k:v not set. Thanks Nik and Sean!
+
+## 0.43.0
+* Checks for the key 'Environment' when fetching remote lambda env vars (#988)
+* except BotoCoreError before general exception in zappa.cli.update
+* make cookie hack case-insensitive
+* Fix #998 - Make environment variable keys strings instead of byte arrays in python 3.6
+* Add --disable_progress command line parameter
+* #946 - Allow setting cors to false.
+* #870 Lambda from outside
+* Implement context header mappings - Feature Request Issue #939
+* Separating out native AWS environment variables ##962
+* Rule name shortening
+* Splintering aws_environment_variables from environment_variables (to avoid overwriting AWS native env vars).
+
+## 0.42.2
+* Add exclude for __pycache__ contents (#943)
+* Fix #937 - Use get_data
+* Add support for configuring APIGW cache TTL and encryption #942
+* Addressing #909: Don't load credentials for 'package' command
+
+## 0.42.1
+* Small fixes for #918, #922, #803, #802, #799, #888, #903, #893, #828, #874, and others.
+* Support for manylinux wheels Python 3.6 package downloading.
+* Py3 `certify` fixes.
+* Add support for multiple expressions when scheduling
+* Fix content-type headers not passing through on DELETE
+* Avoid creating __init__.py in a directory next to a module (.py file) with the same name
+* Check recursively if there is any .py{,c} file in a directory before creating __init__.py
+* Fix SNS event tasks
+* Bump lambda-packages
+
 ## 0.42.0
 * Cached manylinux wheel installed
 * New dependency installation formatting

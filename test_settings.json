@@ -13,6 +13,13 @@
        "debug": true,
        "parameter_depth": 2,
        "prebuild_script": "tests.test_app.prebuild_me",
+       "environment_variables": {
+           "TEST_ENV_VAR": "test_value"
+       },
+       "context_header_mappings": {
+           "CognitoIdentityId": "identity.cognitoIdentityId",
+           "APIStage": "stage"
+       },
        "events": [
            {
                "function": "tests.test_app.schedule_me",
@@ -63,7 +70,7 @@
        "slim_handler": true,
        "delete_local_zip": true
     },
-    "depricated_remote_env": {
+    "deprecated_remote_env": {
        "s3_bucket": "lmbda",
        "remote_env_bucket": "lmbda-env",
        "remote_env_file": "dev/env.json"
