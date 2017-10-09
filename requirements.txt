@@ -15,7 +15,7 @@ python-slugify==1.2.4
 PyYAML==3.12
 requests>=2.10.0
 six==1.11.0
-toml==0.9.3.1
+toml>=0.9.3
 tqdm==4.19.1
 troposphere>=1.9.0
 Werkzeug==0.12
