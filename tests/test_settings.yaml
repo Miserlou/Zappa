@@ -1,0 +1,57 @@
+---
+ttt888:
+  touch: false
+  s3_bucket: lmbda
+  app_function: tests.test_app.hello_world
+  callbacks:
+    settings: test_settings.callback
+    post: test_settings.callback
+    zip: test_settings.callback
+  delete_local_zip: true
+  debug: true
+  parameter_depth: 2
+  prebuild_script: test_settings.prebuild_me
+  events:
+  - function: tests.test_app.schedule_me
+    expression: rate(1 minute)
+  - function: test.test_app.method
+    event_source:
+      arn: arn:aws:sns:::1
+      events:
+      - sns:Publish
+devor:
+  s3_bucket: lmbda
+  app_function: tests.test_app.hello_world
+  callbacks:
+    settings: tests.test_app.callback
+    post: tests.test_app.callback
+    zip: test_settings.callback
+  delete_local_zip: true
+  debug: true
+  parameter_depth: 2
+  prebuild_script: test_settings.prebuild_me
+  events:
+  - function: tests.test_app.schedule_me
+    expression: rate(1 minute)
+extendo:
+  extends: ttt888
+  touch: true
+  prebuild_script: test_settings.prebuild_me
+  environment_variables:
+    EXTENDO: You bet
+extendo2:
+  extends: extendo
+  s3_bucket: lmbda2
+deprecated_remote_env:
+  s3_bucket: lmbda
+  remote_env_bucket: lmbda-env
+  remote_env_file: dev/env.json
+remote_env:
+  s3_bucket: lmbda
+  remote_env: s3://lmbda-env/prod/env.json
+extendofail:
+  extends: failfail
+  prebuild_script: test_settings.prebuild_me
+  environment_variables:
+    EXTENDO: You bet
+
