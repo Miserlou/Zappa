@@ -1974,11 +1974,13 @@ class ZappaCLI(object):
         Return zappa_settings path as JSON or YAML (or TOML), as appropriate.
         """
         zs_json = settings_name + ".json"
-        zs_yaml = settings_name + ".yml"
+        zs_yml = settings_name + ".yml"
+        zs_yaml = settings_name + ".yaml"
         zs_toml = settings_name + ".toml"
 
         # Must have at least one
         if not os.path.isfile(zs_json) \
+            and not os.path.isfile(zs_yml) \
             and not os.path.isfile(zs_yaml) \
             and not os.path.isfile(zs_toml):
             raise ClickException("Please configure a zappa_settings file or call `zappa init`.")
@@ -1988,6 +1990,8 @@ class ZappaCLI(object):
             settings_file = zs_json
         elif os.path.isfile(zs_toml):
             settings_file = zs_toml
+        elif os.path.isfile(zs_yml):
+            settings_file = zs_yml
         else:
             settings_file = zs_yaml
 
@@ -2003,13 +2007,14 @@ class ZappaCLI(object):
         if not os.path.isfile(settings_file):
             raise ClickException("Please configure your zappa_settings file or call `zappa init`.")
 
-        if '.yml' in settings_file:
+        path, ext = os.path.splitext(settings_file)
+        if ext == '.yml' or ext == '.yaml':
             with open(settings_file) as yaml_file:
                 try:
                     self.zappa_settings = yaml.load(yaml_file)
                 except ValueError: # pragma: no cover
                     raise ValueError("Unable to load the Zappa settings YAML. It may be malformed.")
-        elif '.toml' in settings_file:
+        elif ext == '.toml':
             with open(settings_file) as toml_file:
                 try:
                     self.zappa_settings = toml.load(toml_file)
