@@ -248,6 +248,10 @@ class ZappaCLI(object):
         deploy_parser = subparsers.add_parser(
             'deploy', parents=[env_parser], help='Deploy application.'
         )
+        # https://github.com/Miserlou/Zappa/issues/700
+        deploy_parser.add_argument(
+            '--alias', help='Alias to add to deployed version.'
+        )
 
         ##
         # Init
@@ -410,8 +414,12 @@ class ZappaCLI(object):
         ##
         # Updating
         ##
-        subparsers.add_parser(
+        update_parser = subparsers.add_parser(
             'update', parents=[env_parser], help='Update deployed application.'
+        )
+        # https://github.com/Miserlou/Zappa/issues/700
+        update_parser.add_argument(
+            '--alias', help='Alias to add to deployed version. If the alias already exists, it will be deleted.'
         )
 
         ##
@@ -424,6 +432,7 @@ class ZappaCLI(object):
         argcomplete.autocomplete(parser)
         args = parser.parse_args(argv)
         self.vargs = vars(args)
+
 
         # Parse the input
         # NOTE(rmoe): Special case for manage command
@@ -515,7 +524,7 @@ class ZappaCLI(object):
 
         # Hand it off
         if command == 'deploy': # pragma: no cover
-            self.deploy()
+            self.deploy(self.vargs['alias'])
         if command == 'package': # pragma: no cover
             self.package(self.vargs['output'])
         if command == 'template': # pragma: no cover
@@ -525,7 +534,7 @@ class ZappaCLI(object):
                                 json=self.vargs['json']
                             )
         elif command == 'update': # pragma: no cover
-            self.update()
+            self.update(self.vargs['alias'])
         elif command == 'rollback': # pragma: no cover
             self.rollback(self.vargs['num_rollback'])
         elif command == 'invoke': # pragma: no cover
@@ -650,7 +659,7 @@ class ZappaCLI(object):
             with open(template_file, 'r') as out:
                 print(out.read())
 
-    def deploy(self):
+    def deploy(self, alias=None):
         """
         Package your project, upload it to S3, register the Lambda function
         and create the API Gateway routes.
@@ -731,7 +740,8 @@ class ZappaCLI(object):
                 memory_size=self.memory_size,
                 runtime=self.runtime,
                 aws_environment_variables=self.aws_environment_variables,
-                aws_kms_key_arn=self.aws_kms_key_arn
+                aws_kms_key_arn=self.aws_kms_key_arn,
+                alias=alias
             )
 
         # Schedule events for this deployment
@@ -790,7 +800,7 @@ class ZappaCLI(object):
 
         click.echo(deployment_string)
 
-    def update(self):
+    def update(self, alias=None):
         """
         Repackage and update the function code.
         """
@@ -867,7 +877,8 @@ class ZappaCLI(object):
         self.lambda_arn = self.zappa.update_lambda_function(
                                         self.s3_bucket_name,
                                         handler_file,
-                                        self.lambda_name
+                                        self.lambda_name,
+                                        alias=alias
                                     )
 
         # Remove the uploaded zip from S3, because it is now registered..

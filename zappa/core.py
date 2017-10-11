@@ -758,7 +758,7 @@ class Zappa(object):
             print(" - {}=={}: Downloading".format(package_name, package_version))
             with open(wheel_path, 'wb') as f:
                 self.download_url_with_progress(wheel_url, f, disable_progress)
-            
+
             if not zipfile.is_zipfile(wheel_path):
                 return None
         else:
@@ -801,7 +801,7 @@ class Zappa(object):
                 return None
             with open(json_file_path, 'wb') as metafile:
                 jsondata = json.dumps(data)
-                metafile.write(bytes(jsondata, "utf-8")) 
+                metafile.write(bytes(jsondata, "utf-8"))
 
         if package_version not in data['releases']:
             return None
@@ -926,10 +926,6 @@ class Zappa(object):
         except botocore.exceptions.ClientError:  # pragma: no cover
             return False
 
-    ##
-    # Lambda
-    ##
-
     def create_lambda_function( self,
                                 bucket,
                                 s3_key,
@@ -944,7 +940,8 @@ class Zappa(object):
                                 runtime='python2.7',
                                 aws_environment_variables=None,
                                 aws_kms_key_arn=None,
-                                xray_tracing=False
+                                xray_tracing=False,
+                                alias=None
                             ):
         """
         Given a bucket and key of a valid Lambda-zip, a function name and a handler, register that Lambda function.
@@ -983,13 +980,21 @@ class Zappa(object):
         )
 
         resource_arn = response['FunctionArn']
+        function_version = response['Version']
 
         if self.tags:
             self.lambda_client.tag_resource(Resource=resource_arn, Tags=self.tags)
 
+        if alias:
+            self.alias_lambda_version(
+                function_name=function_name,
+                function_version=function_version,
+                alias=alias
+            )
+
         return resource_arn
 
-    def update_lambda_function(self, bucket, s3_key, function_name, publish=True):
+    def update_lambda_function(self, bucket, s3_key, function_name, publish=True, alias=None):
         """
         Given a bucket and key of a valid Lambda-zip, a function name and a handler, update that Lambda function's code.
         """
@@ -1002,7 +1007,47 @@ class Zappa(object):
             Publish=publish
         )
 
-        return response['FunctionArn']
+        resource_arn = response['FunctionArn']
+        function_version = response['Version']
+
+        if self.tags:
+            self.lambda_client.tag_resource(Resource=resource_arn, Tags=self.tags)
+
+        if alias:
+            self.alias_lambda_version(
+                function_name=function_name,
+                function_version=function_version,
+                alias=alias
+            )
+
+        return resource_arn
+
+    def alias_lambda_version( self,
+                              function_name,
+                              function_version,
+                              alias,
+                              preserve_existing=False
+                            ):
+        """
+        Given an existing Lambda function name, version, and alias, assign the alias to that Lambda version
+        """
+
+        try:
+            self.lambda_client.create_alias(
+                FunctionName=function_name,
+                Name=alias,
+                FunctionVersion=function_version
+            )
+        except botocore.client.ClientError as e:
+            if e.response['Error']['Code'] == 'ResourceConflictException' and preserve_existing is False:
+                print('Alias already exists for {}; deleting existing alias.'.format(function_name))
+                self.lambda_client.delete_alias(
+                    FunctionName=function_name,
+                    Name=alias
+                )
+                self.alias_lambda_version(function_name, function_version, alias, preserve_existing)
+            else:
+                raise
 
     def update_lambda_configuration(    self,
                                         lambda_arn,
