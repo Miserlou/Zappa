@@ -38,7 +38,9 @@ import toml
 import yaml
 import zipfile
 
+from click import Context, BaseCommand
 from click.exceptions import ClickException
+from click.globals import push_context
 from dateutil import parser
 from datetime import datetime, timedelta
 
@@ -190,7 +192,9 @@ class ZappaCLI(object):
             version=pkg_resources.get_distribution("zappa").version,
             help='Print the zappa version'
         )
-
+        parser.add_argument(
+            '--color', default='auto', choices=['auto','never','always']
+        )
 
         env_parser = argparse.ArgumentParser(add_help=False)
         me_group = env_parser.add_mutually_exclusive_group()
@@ -383,7 +387,7 @@ class ZappaCLI(object):
         )
         tail_parser.add_argument(
             '--force-color', action='store_true',
-            help='Force coloring log tail output even if coloring support is note auto-detected. (example: piping)'
+            help='Force coloring log tail output even if coloring support is not auto-detected. (example: piping)'
         )
 
         ##
@@ -424,6 +428,14 @@ class ZappaCLI(object):
         argcomplete.autocomplete(parser)
         args = parser.parse_args(argv)
         self.vargs = vars(args)
+
+        if args.color == 'never':
+            disable_click_colors()
+        elif args.color == 'always':
+            #TODO: Support aggressive coloring like "--force-color" on all commands
+            pass
+        elif args.color == 'auto':
+            pass
 
         # Parse the input
         # NOTE(rmoe): Special case for manage command
@@ -2519,6 +2531,19 @@ def shamelessly_promote():
                + click.style("https://slack.zappa.io", fg='cyan', bold=True))
     click.echo("Love!,")
     click.echo(" ~ Team " + click.style("Zappa", bold=True) + "!")
+
+def disable_click_colors():
+    """
+    Set a Click context where colors are disabled. Creates a throwaway BaseCommand
+    to play nicely with the Context constructor.
+    The intended side-effect here is that click.echo() checks this context and will
+    suppress colors.
+    https://github.com/pallets/click/blob/e1aa43a3/click/globals.py#L39
+    """
+
+    ctx = Context(BaseCommand('AllYourBaseAreBelongToUs'))
+    ctx.color = False
+    push_context(ctx)
 
 def handle(): # pragma: no cover
     """
