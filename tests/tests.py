@@ -14,9 +14,10 @@ import shutil
 import sys
 import tempfile
 
+from click.globals import resolve_color_default
 from click.exceptions import ClickException
 
-from zappa.cli import ZappaCLI, shamelessly_promote
+from zappa.cli import ZappaCLI, shamelessly_promote, disable_click_colors
 from zappa.ext.django_zappa import get_django_wsgi
 from zappa.letsencrypt import get_cert_and_update_domain, create_domain_key, create_domain_csr, \
     create_chained_certificate, cleanup, parse_account_key, parse_csr, sign_certificate, encode_certificate,\
@@ -65,6 +66,10 @@ class TestZappa(unittest.TestCase):
     def test_zappa(self):
         self.assertTrue(True)
         Zappa()
+
+    def test_disable_click_colors(self):
+        disable_click_colors()
+        assert resolve_color_default() is False
 
     # @mock.patch('zappa.zappa.find_packages')
     # @mock.patch('os.remove')
