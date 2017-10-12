@@ -475,7 +475,7 @@ class ZappaCLI(object):
                 if len(self.zappa_settings.keys()) == 1:
                     stages.append(list(self.zappa_settings.keys())[0])
                 else:
-                    parser.error("Please supply an stage to interact with.")
+                    parser.error("Please supply a stage to interact with.")
             else:
                 stages.append(self.stage_env)
 
