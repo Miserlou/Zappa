@@ -1,0 +1,21 @@
+{
+    "status_code": 200, 
+    "data": {
+        "CodeSha256": "q4duEOI611sqtkU+YbdNkjH5qGRlgmvc9+FhpdykYuk=", 
+        "FunctionName": "test_lmbda_function55", 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "RequestId": "153e09be-e226-11e5-a3b8-7b263f053e5a"
+        }, 
+        "CodeSize": 26585626, 
+        "MemorySize": 512, 
+        "FunctionArn": "arn:aws:lambda:us-east-1:12345:function:test_lmbda_function55:1", 
+        "Version": "1", 
+        "Role": "arn:aws:iam::12345:role/ZappaLambdaExecution", 
+        "Timeout": 30, 
+        "LastModified": "2016-03-04T16:28:06.633+0000", 
+        "Handler": "runme.lambda_handler", 
+        "Runtime": "python2.7", 
+        "Description": "Zappa Deployment"
+    }
+}
