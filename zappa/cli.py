@@ -923,14 +923,15 @@ class ZappaCLI(object):
 
             api_id = self.zappa.get_api_id(self.lambda_name)
 
-            # update binary support
+            # Update binary support
             if self.binary_support:
                 self.zappa.add_binary_support(api_id=api_id, cors=self.cors)
             else:
                 self.zappa.remove_binary_support(api_id=api_id, cors=self.cors)
 
+            # It looks a bit like we might actually be using this just to get the URL,
+            # but we're also updating a few of the APIGW settings.
             endpoint_url = self.deploy_api_gateway(api_id)
-
 
             if self.stage_config.get('domain', None):
                 endpoint_url = self.stage_config.get('domain')
