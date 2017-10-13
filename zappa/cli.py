@@ -423,6 +423,9 @@ class ZappaCLI(object):
         update_parser.add_argument(
             '-z', '--zip', help='Update Lambda with specific local or S3 hosted zip package'
         )
+        update_parser.add_argument(
+            '-n', '--no-upload', help="Update configuration where appropriate, but don't upload new code"
+        )
 
         ##
         # Debug
@@ -543,7 +546,7 @@ class ZappaCLI(object):
                                 json=self.vargs['json']
                             )
         elif command == 'update': # pragma: no cover
-            self.update(self.vargs['zip'])
+            self.update(self.vargs['zip'], self.vargs['no_upload'])
         elif command == 'rollback': # pragma: no cover
             self.rollback(self.vargs['num_rollback'])
         elif command == 'invoke': # pragma: no cover
@@ -823,7 +826,7 @@ class ZappaCLI(object):
 
         click.echo(deployment_string)
 
-    def update(self, source_zip=None):
+    def update(self, source_zip=None, no_upload=False):
         """
         Repackage and update the function code.
         """
@@ -870,31 +873,33 @@ class ZappaCLI(object):
                     sys.exit(-1)
 
             # Create the Lambda Zip,
-            self.create_package()
-            self.callback('zip')
+            if not no_upload:
+                self.create_package()
+                self.callback('zip')
 
             # Upload it to S3
-            success = self.zappa.upload_to_s3(self.zip_path, self.s3_bucket_name, disable_progress=self.disable_progress)
-            if not success:  # pragma: no cover
-                raise ClickException("Unable to upload project to S3. Quitting.")
-
-            # If using a slim handler, upload it to S3 and tell lambda to use this slim handler zip
-            if self.stage_config.get('slim_handler', False):
-                # https://github.com/Miserlou/Zappa/issues/510
-                success = self.zappa.upload_to_s3(self.handler_path, self.s3_bucket_name, disable_progress=self.disable_progress)
+            if not no_upload:
+                success = self.zappa.upload_to_s3(self.zip_path, self.s3_bucket_name, disable_progress=self.disable_progress)
                 if not success:  # pragma: no cover
-                    raise ClickException("Unable to upload handler to S3. Quitting.")
+                    raise ClickException("Unable to upload project to S3. Quitting.")
 
-                # Copy the project zip to the current project zip
-                current_project_name = '{0!s}_{1!s}_current_project.tar.gz'.format(self.api_stage, self.project_name)
-                success = self.zappa.copy_on_s3(src_file_name=self.zip_path, dst_file_name=current_project_name,
-                                                bucket_name=self.s3_bucket_name)
-                if not success:  # pragma: no cover
-                    raise ClickException("Unable to copy the zip to be the current project. Quitting.")
+                # If using a slim handler, upload it to S3 and tell lambda to use this slim handler zip
+                if self.stage_config.get('slim_handler', False):
+                    # https://github.com/Miserlou/Zappa/issues/510
+                    success = self.zappa.upload_to_s3(self.handler_path, self.s3_bucket_name, disable_progress=self.disable_progress)
+                    if not success:  # pragma: no cover
+                        raise ClickException("Unable to upload handler to S3. Quitting.")
 
-                handler_file = self.handler_path
-            else:
-                handler_file = self.zip_path
+                    # Copy the project zip to the current project zip
+                    current_project_name = '{0!s}_{1!s}_current_project.tar.gz'.format(self.api_stage, self.project_name)
+                    success = self.zappa.copy_on_s3(src_file_name=self.zip_path, dst_file_name=current_project_name,
+                                                    bucket_name=self.s3_bucket_name)
+                    if not success:  # pragma: no cover
+                        raise ClickException("Unable to copy the zip to be the current project. Quitting.")
+
+                    handler_file = self.handler_path
+                else:
+                    handler_file = self.zip_path
 
         # Register the Lambda function with that zip as the source
         # You'll also need to define the path to your lambda_handler code.
@@ -914,14 +919,15 @@ class ZappaCLI(object):
                                             local_zip=byte_stream
                                         )
         else:
-            self.lambda_arn = self.zappa.update_lambda_function(
-                                            self.s3_bucket_name,
-                                            self.lambda_name,
-                                            handler_file
-                                        )
+            if not no_upload
+                self.lambda_arn = self.zappa.update_lambda_function(
+                                                self.s3_bucket_name,
+                                                self.lambda_name,
+                                                handler_file
+                                            )
 
         # Remove the uploaded zip from S3, because it is now registered..
-        if not source_zip:
+        if not source_zip and not no_upload:
             self.remove_uploaded_zip()
 
         # Update the configuration, in case there are changes.
@@ -939,7 +945,7 @@ class ZappaCLI(object):
                                                     )
 
         # Finally, delete the local copy our zip package
-        if not source_zip:
+        if not source_zip and not no_upload:
             if self.stage_config.get('delete_local_zip', True):
                 self.remove_local_zip()
 
