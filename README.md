@@ -916,7 +916,7 @@ Amazon also provides their own free alternative to Let's Encrypt called [AWS Cer
 2. In the console, select the N. Virginia (us-east-1) region and request a certificate for your domain or subdomain (`sub.yourdomain.tld`), or request a wildcard domain (`*.yourdomain.tld`).
 3. Copy the entire ARN of that certificate and place it in the Zappa setting `certificate_arn`.
 4. Set your desired domain in the `domain` setting.
-5. Call `$ zappa certify` to create and associate the API Gateway distribution using that ceritficate.
+5. Call `$ zappa certify` to create and associate the API Gateway distribution using that certificate.
 
 #### Setting Environment Variables
 
