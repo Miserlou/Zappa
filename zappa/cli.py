@@ -919,7 +919,7 @@ class ZappaCLI(object):
                                             local_zip=byte_stream
                                         )
         else:
-            if not no_upload
+            if not no_upload:
                 self.lambda_arn = self.zappa.update_lambda_function(
                                                 self.s3_bucket_name,
                                                 self.lambda_name,
