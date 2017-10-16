@@ -45,7 +45,7 @@ Executing in Response to AWS Events
 
 Similarly, you can have your functions execute in response to events that happen in the AWS ecosystem, such as S3 uploads, DynamoDB entries, Kinesis streams, and SNS messages.
 
-In your *zappa_settings.json* file, define your `event sources <http://docs.aws.amazon.com/lambda/latest/dg/invoking-lambda-function.html>`_ and the function you wish to execute. For instance, this will execute *your_module.your_function* in response to new objects in your *my-bucket* S3 bucket. Note that *your_function* must accept *event* and *context* paramaters.
+In your *zappa_settings.json* file, define your `event sources <http://docs.aws.amazon.com/lambda/latest/dg/invoking-lambda-function.html>`_ and the function you wish to execute. For instance, this will execute *your_module.your_function* in response to new objects in your *my-bucket* S3 bucket. Note that *your_function* must accept *event* and *context* parameters.
 
 ::
 

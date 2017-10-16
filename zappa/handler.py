@@ -93,7 +93,7 @@ class LambdaHandler(object):
                 pass
 
             # Set any locally defined env vars
-            # Environement variable keys can't be Unicode
+            # Environment variable keys can't be Unicode
             # https://github.com/Miserlou/Zappa/issues/604
             for key in self.settings.ENVIRONMENT_VARIABLES.keys():
                 os.environ[str(key)] = self.settings.ENVIRONMENT_VARIABLES[key]
@@ -215,7 +215,7 @@ class LambdaHandler(object):
                     key,
                     value
                 ))
-            # Environement variable keys can't be Unicode
+            # Environment variable keys can't be Unicode
             # https://github.com/Miserlou/Zappa/issues/604
             try:
                 os.environ[str(key)] = value

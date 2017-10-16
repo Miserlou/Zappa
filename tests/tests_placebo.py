@@ -87,7 +87,7 @@ class TestZappa(unittest.TestCase):
         self.assertTrue(res)
 
     @placebo_session
-    def test_create_lambda_function(self, session):
+    def test_create_lambda_function_s3(self, session):
         bucket_name = 'lmbda'
         zip_path = 'Spheres-dev-1454694878.zip'
 
@@ -106,6 +106,29 @@ class TestZappa(unittest.TestCase):
         arn = z.update_lambda_function(
             bucket=bucket_name,
             s3_key=zip_path,
+            function_name='test_lmbda_function55',
+        )
+
+    @placebo_session
+    def test_create_lambda_function_local(self, session):
+        bucket_name = 'lmbda'
+        local_file = 'Spheres-dev-1454694878.zip'
+
+        z = Zappa(session)
+        z.aws_region = 'us-east-1'
+        z.load_credentials(session)
+        z.credentials_arn = 'arn:aws:iam::12345:role/ZappaLambdaExecution'
+
+        arn = z.create_lambda_function(
+            bucket=bucket_name,
+            local_zip=local_file,
+            function_name='test_lmbda_function55',
+            handler='runme.lambda_handler'
+        )
+
+        arn = z.update_lambda_function(
+            bucket=bucket_name,
+            local_zip=local_file,
             function_name='test_lmbda_function55',
         )
 

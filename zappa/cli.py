@@ -38,7 +38,9 @@ import toml
 import yaml
 import zipfile
 
+from click import Context, BaseCommand
 from click.exceptions import ClickException
+from click.globals import push_context
 from dateutil import parser
 from datetime import datetime, timedelta
 
@@ -190,7 +192,9 @@ class ZappaCLI(object):
             version=pkg_resources.get_distribution("zappa").version,
             help='Print the zappa version'
         )
-
+        parser.add_argument(
+            '--color', default='auto', choices=['auto','never','always']
+        )
 
         env_parser = argparse.ArgumentParser(add_help=False)
         me_group = env_parser.add_mutually_exclusive_group()
@@ -247,6 +251,9 @@ class ZappaCLI(object):
         ##
         deploy_parser = subparsers.add_parser(
             'deploy', parents=[env_parser], help='Deploy application.'
+        )
+        deploy_parser.add_argument(
+            '-z', '--zip', help='Deploy Lambda with specific local or S3 hosted zip package'
         )
 
         ##
@@ -383,7 +390,7 @@ class ZappaCLI(object):
         )
         tail_parser.add_argument(
             '--force-color', action='store_true',
-            help='Force coloring log tail output even if coloring support is note auto-detected. (example: piping)'
+            help='Force coloring log tail output even if coloring support is not auto-detected. (example: piping)'
         )
 
         ##
@@ -410,8 +417,14 @@ class ZappaCLI(object):
         ##
         # Updating
         ##
-        subparsers.add_parser(
+        update_parser = subparsers.add_parser(
             'update', parents=[env_parser], help='Update deployed application.'
+        )
+        update_parser.add_argument(
+            '-z', '--zip', help='Update Lambda with specific local or S3 hosted zip package'
+        )
+        update_parser.add_argument(
+            '-n', '--no-upload', help="Update configuration where appropriate, but don't upload new code"
         )
 
         ##
@@ -424,6 +437,14 @@ class ZappaCLI(object):
         argcomplete.autocomplete(parser)
         args = parser.parse_args(argv)
         self.vargs = vars(args)
+
+        if args.color == 'never':
+            disable_click_colors()
+        elif args.color == 'always':
+            #TODO: Support aggressive coloring like "--force-color" on all commands
+            pass
+        elif args.color == 'auto':
+            pass
 
         # Parse the input
         # NOTE(rmoe): Special case for manage command
@@ -475,7 +496,7 @@ class ZappaCLI(object):
                 if len(self.zappa_settings.keys()) == 1:
                     stages.append(list(self.zappa_settings.keys())[0])
                 else:
-                    parser.error("Please supply an stage to interact with.")
+                    parser.error("Please supply a stage to interact with.")
             else:
                 stages.append(self.stage_env)
 
@@ -515,7 +536,7 @@ class ZappaCLI(object):
 
         # Hand it off
         if command == 'deploy': # pragma: no cover
-            self.deploy()
+            self.deploy(self.vargs['zip'])
         if command == 'package': # pragma: no cover
             self.package(self.vargs['output'])
         if command == 'template': # pragma: no cover
@@ -525,7 +546,7 @@ class ZappaCLI(object):
                                 json=self.vargs['json']
                             )
         elif command == 'update': # pragma: no cover
-            self.update()
+            self.update(self.vargs['zip'], self.vargs['no_upload'])
         elif command == 'rollback': # pragma: no cover
             self.rollback(self.vargs['num_rollback'])
         elif command == 'invoke': # pragma: no cover
@@ -650,67 +671,67 @@ class ZappaCLI(object):
             with open(template_file, 'r') as out:
                 print(out.read())
 
-    def deploy(self):
+    def deploy(self, source_zip=None):
         """
         Package your project, upload it to S3, register the Lambda function
         and create the API Gateway routes.
 
         """
 
-        # Make sure we're in a venv.
-        self.check_venv()
+        if not source_zip:
+            # Make sure we're in a venv.
+            self.check_venv()
 
-        # Execute the prebuild script
-        if self.prebuild_script:
-            self.execute_prebuild_script()
+            # Execute the prebuild script
+            if self.prebuild_script:
+                self.execute_prebuild_script()
 
-        # Make sure this isn't already deployed.
-        deployed_versions = self.zappa.get_lambda_function_versions(self.lambda_name)
-        if len(deployed_versions) > 0:
-            raise ClickException("This application is " + click.style("already deployed", fg="red") +
-                                 " - did you mean to call " + click.style("update", bold=True) + "?")
+            # Make sure this isn't already deployed.
+            deployed_versions = self.zappa.get_lambda_function_versions(self.lambda_name)
+            if len(deployed_versions) > 0:
+                raise ClickException("This application is " + click.style("already deployed", fg="red") +
+                                     " - did you mean to call " + click.style("update", bold=True) + "?")
 
-        # Make sure the necessary IAM execution roles are available
-        if self.manage_roles:
-            try:
-                self.zappa.create_iam_roles()
-            except botocore.client.ClientError:
-                raise ClickException(
-                    click.style("Failed", fg="red") + " to " + click.style("manage IAM roles", bold=True) + "!\n" +
-                    "You may " + click.style("lack the necessary AWS permissions", bold=True) +
-                    " to automatically manage a Zappa execution role.\n" +
-                    "To fix this, see here: " +
-                    click.style("https://github.com/Miserlou/Zappa#using-custom-aws-iam-roles-and-policies", bold=True)
-                    + '\n')
+            # Make sure the necessary IAM execution roles are available
+            if self.manage_roles:
+                try:
+                    self.zappa.create_iam_roles()
+                except botocore.client.ClientError:
+                    raise ClickException(
+                        click.style("Failed", fg="red") + " to " + click.style("manage IAM roles", bold=True) + "!\n" +
+                        "You may " + click.style("lack the necessary AWS permissions", bold=True) +
+                        " to automatically manage a Zappa execution role.\n" +
+                        "To fix this, see here: " +
+                        click.style("https://github.com/Miserlou/Zappa#using-custom-aws-iam-roles-and-policies", bold=True)
+                        + '\n')
 
-        # Create the Lambda Zip
-        self.create_package()
-        self.callback('zip')
+            # Create the Lambda Zip
+            self.create_package()
+            self.callback('zip')
 
-        # Upload it to S3
-        success = self.zappa.upload_to_s3(
-                self.zip_path, self.s3_bucket_name, disable_progress=self.disable_progress)
-        if not success: # pragma: no cover
-            raise ClickException("Unable to upload to S3. Quitting.")
+            # Upload it to S3
+            success = self.zappa.upload_to_s3(
+                    self.zip_path, self.s3_bucket_name, disable_progress=self.disable_progress)
+            if not success: # pragma: no cover
+                raise ClickException("Unable to upload to S3. Quitting.")
 
-        # If using a slim handler, upload it to S3 and tell lambda to use this slim handler zip
-        if self.stage_config.get('slim_handler', False):
-            # https://github.com/Miserlou/Zappa/issues/510
-            success = self.zappa.upload_to_s3(self.handler_path, self.s3_bucket_name, disable_progress=self.disable_progress)
-            if not success:  # pragma: no cover
-                raise ClickException("Unable to upload handler to S3. Quitting.")
+            # If using a slim handler, upload it to S3 and tell lambda to use this slim handler zip
+            if self.stage_config.get('slim_handler', False):
+                # https://github.com/Miserlou/Zappa/issues/510
+                success = self.zappa.upload_to_s3(self.handler_path, self.s3_bucket_name, disable_progress=self.disable_progress)
+                if not success:  # pragma: no cover
+                    raise ClickException("Unable to upload handler to S3. Quitting.")
 
-            # Copy the project zip to the current project zip
-            current_project_name = '{0!s}_{1!s}_current_project.tar.gz'.format(self.api_stage, self.project_name)
-            success = self.zappa.copy_on_s3(src_file_name=self.zip_path, dst_file_name=current_project_name,
-                                            bucket_name=self.s3_bucket_name)
-            if not success:  # pragma: no cover
-                raise ClickException("Unable to copy the zip to be the current project. Quitting.")
+                # Copy the project zip to the current project zip
+                current_project_name = '{0!s}_{1!s}_current_project.tar.gz'.format(self.api_stage, self.project_name)
+                success = self.zappa.copy_on_s3(src_file_name=self.zip_path, dst_file_name=current_project_name,
+                                                bucket_name=self.s3_bucket_name)
+                if not success:  # pragma: no cover
+                    raise ClickException("Unable to copy the zip to be the current project. Quitting.")
 
-            handler_file = self.handler_path
-        else:
-            handler_file = self.zip_path
-
+                handler_file = self.handler_path
+            else:
+                handler_file = self.zip_path
 
         # Fixes https://github.com/Miserlou/Zappa/issues/613
         try:
@@ -719,10 +740,7 @@ class ZappaCLI(object):
         except botocore.client.ClientError:
             # Register the Lambda function with that zip as the source
             # You'll also need to define the path to your lambda_handler code.
-            self.lambda_arn = self.zappa.create_lambda_function(
-                bucket=self.s3_bucket_name,
-                s3_key=handler_file,
-                function_name=self.lambda_name,
+            kwargs = dict(
                 handler=self.lambda_handler,
                 description=self.lambda_description,
                 vpc_config=self.vpc_config,
@@ -733,6 +751,22 @@ class ZappaCLI(object):
                 aws_environment_variables=self.aws_environment_variables,
                 aws_kms_key_arn=self.aws_kms_key_arn
             )
+            if source_zip and source_zip.startswith('s3://'):
+                bucket, key_name = parse_s3_url(source_zip)
+                kwargs['function_name'] = self.lambda_name
+                kwargs['bucket'] = bucket
+                kwargs['s3_key'] = key_name
+            elif source_zip and not source_zip.startswith('s3://'):
+                with open(source_zip, mode='rb') as fh:
+                    byte_stream = fh.read()
+                kwargs['function_name'] = self.lambda_name
+                kwargs['local_zip'] = byte_stream
+            else:
+                kwargs['function_name'] = self.lambda_name
+                kwargs['bucket'] = self.s3_bucket_name
+                kwargs['s3_key'] = handler_file
+
+            self.lambda_arn = self.zappa.create_lambda_function(**kwargs)
 
         # Schedule events for this deployment
         self.schedule()
@@ -780,98 +814,121 @@ class ZappaCLI(object):
                 requests.get(endpoint_url)
 
         # Finally, delete the local copy our zip package
-        if self.stage_config.get('delete_local_zip', True):
-            self.remove_local_zip()
+        if not source_zip:
+            if self.stage_config.get('delete_local_zip', True):
+                self.remove_local_zip()
 
         # Remove the project zip from S3.
-        self.remove_uploaded_zip()
+        if not source_zip:
+            self.remove_uploaded_zip()
 
         self.callback('post')
 
         click.echo(deployment_string)
 
-    def update(self):
+    def update(self, source_zip=None, no_upload=False):
         """
         Repackage and update the function code.
         """
 
-        # Make sure we're in a venv.
-        self.check_venv()
+        if not source_zip:
+            # Make sure we're in a venv.
+            self.check_venv()
 
-        # Execute the prebuild script
-        if self.prebuild_script:
-            self.execute_prebuild_script()
+            # Execute the prebuild script
+            if self.prebuild_script:
+                self.execute_prebuild_script()
 
-        # Temporary version check
-        try:
-            updated_time = 1472581018
-            function_response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name)
-            conf = function_response['Configuration']
-            last_updated = parser.parse(conf['LastModified'])
-            last_updated_unix = time.mktime(last_updated.timetuple())
-        except botocore.exceptions.BotoCoreError as e:
-            click.echo(click.style(type(e).__name__, fg="red") + ": " + e.args[0])
-            sys.exit(-1)
-        except Exception as e:
-            click.echo(click.style("Warning!", fg="red") + " Couldn't get function " + self.lambda_name +
-                       " in " + self.zappa.aws_region + " - have you deployed yet?")
-            sys.exit(-1)
-
-        if last_updated_unix <= updated_time:
-            click.echo(click.style("Warning!", fg="red") +
-                       " You may have upgraded Zappa since deploying this application. You will need to " +
-                       click.style("redeploy", bold=True) + " for this deployment to work properly!")
-
-        # Make sure the necessary IAM execution roles are available
-        if self.manage_roles:
+            # Temporary version check
             try:
-                self.zappa.create_iam_roles()
-            except botocore.client.ClientError:
-                click.echo(click.style("Failed", fg="red") + " to " + click.style("manage IAM roles", bold=True) + "!")
-                click.echo("You may " + click.style("lack the necessary AWS permissions", bold=True) +
-                           " to automatically manage a Zappa execution role.")
-                click.echo("To fix this, see here: " +
-                           click.style("https://github.com/Miserlou/Zappa#using-custom-aws-iam-roles-and-policies",
-                                       bold=True))
+                updated_time = 1472581018
+                function_response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name)
+                conf = function_response['Configuration']
+                last_updated = parser.parse(conf['LastModified'])
+                last_updated_unix = time.mktime(last_updated.timetuple())
+            except botocore.exceptions.BotoCoreError as e:
+                click.echo(click.style(type(e).__name__, fg="red") + ": " + e.args[0])
+                sys.exit(-1)
+            except Exception as e:
+                click.echo(click.style("Warning!", fg="red") + " Couldn't get function " + self.lambda_name +
+                           " in " + self.zappa.aws_region + " - have you deployed yet?")
                 sys.exit(-1)
 
-        # Create the Lambda Zip,
-        self.create_package()
-        self.callback('zip')
+            if last_updated_unix <= updated_time:
+                click.echo(click.style("Warning!", fg="red") +
+                           " You may have upgraded Zappa since deploying this application. You will need to " +
+                           click.style("redeploy", bold=True) + " for this deployment to work properly!")
 
-        # Upload it to S3
-        success = self.zappa.upload_to_s3(self.zip_path, self.s3_bucket_name, disable_progress=self.disable_progress)
-        if not success:  # pragma: no cover
-            raise ClickException("Unable to upload project to S3. Quitting.")
+            # Make sure the necessary IAM execution roles are available
+            if self.manage_roles:
+                try:
+                    self.zappa.create_iam_roles()
+                except botocore.client.ClientError:
+                    click.echo(click.style("Failed", fg="red") + " to " + click.style("manage IAM roles", bold=True) + "!")
+                    click.echo("You may " + click.style("lack the necessary AWS permissions", bold=True) +
+                               " to automatically manage a Zappa execution role.")
+                    click.echo("To fix this, see here: " +
+                               click.style("https://github.com/Miserlou/Zappa#using-custom-aws-iam-roles-and-policies",
+                                           bold=True))
+                    sys.exit(-1)
 
-        # If using a slim handler, upload it to S3 and tell lambda to use this slim handler zip
-        if self.stage_config.get('slim_handler', False):
-            # https://github.com/Miserlou/Zappa/issues/510
-            success = self.zappa.upload_to_s3(self.handler_path, self.s3_bucket_name, disable_progress=self.disable_progress)
-            if not success:  # pragma: no cover
-                raise ClickException("Unable to upload handler to S3. Quitting.")
+            # Create the Lambda Zip,
+            if not no_upload:
+                self.create_package()
+                self.callback('zip')
 
-            # Copy the project zip to the current project zip
-            current_project_name = '{0!s}_{1!s}_current_project.tar.gz'.format(self.api_stage, self.project_name)
-            success = self.zappa.copy_on_s3(src_file_name=self.zip_path, dst_file_name=current_project_name,
-                                            bucket_name=self.s3_bucket_name)
-            if not success:  # pragma: no cover
-                raise ClickException("Unable to copy the zip to be the current project. Quitting.")
+            # Upload it to S3
+            if not no_upload:
+                success = self.zappa.upload_to_s3(self.zip_path, self.s3_bucket_name, disable_progress=self.disable_progress)
+                if not success:  # pragma: no cover
+                    raise ClickException("Unable to upload project to S3. Quitting.")
 
-            handler_file = self.handler_path
-        else:
-            handler_file = self.zip_path
+                # If using a slim handler, upload it to S3 and tell lambda to use this slim handler zip
+                if self.stage_config.get('slim_handler', False):
+                    # https://github.com/Miserlou/Zappa/issues/510
+                    success = self.zappa.upload_to_s3(self.handler_path, self.s3_bucket_name, disable_progress=self.disable_progress)
+                    if not success:  # pragma: no cover
+                        raise ClickException("Unable to upload handler to S3. Quitting.")
+
+                    # Copy the project zip to the current project zip
+                    current_project_name = '{0!s}_{1!s}_current_project.tar.gz'.format(self.api_stage, self.project_name)
+                    success = self.zappa.copy_on_s3(src_file_name=self.zip_path, dst_file_name=current_project_name,
+                                                    bucket_name=self.s3_bucket_name)
+                    if not success:  # pragma: no cover
+                        raise ClickException("Unable to copy the zip to be the current project. Quitting.")
+
+                    handler_file = self.handler_path
+                else:
+                    handler_file = self.zip_path
 
         # Register the Lambda function with that zip as the source
         # You'll also need to define the path to your lambda_handler code.
-        self.lambda_arn = self.zappa.update_lambda_function(
-                                        self.s3_bucket_name,
-                                        handler_file,
-                                        self.lambda_name
-                                    )
+        if source_zip and source_zip.startswith('s3://'):
+            bucket, key_name = parse_s3_url(source_zip)
+            self.lambda_arn = self.zappa.update_lambda_function(
+                                            bucket,
+                                            self.lambda_name,
+                                            key_name
+                                        )
+        elif source_zip and not source_zip.startswith('s3://'):
+            with open(source_zip, mode='rb') as fh:
+                byte_stream = fh.read()
+            self.lambda_arn = self.zappa.update_lambda_function(
+                                            self.s3_bucket_name,
+                                            self.lambda_name,
+                                            local_zip=byte_stream
+                                        )
+        else:
+            if not no_upload:
+                self.lambda_arn = self.zappa.update_lambda_function(
+                                                self.s3_bucket_name,
+                                                self.lambda_name,
+                                                handler_file
+                                            )
 
         # Remove the uploaded zip from S3, because it is now registered..
-        self.remove_uploaded_zip()
+        if not source_zip and not no_upload:
+            self.remove_uploaded_zip()
 
         # Update the configuration, in case there are changes.
         self.lambda_arn = self.zappa.update_lambda_configuration(
@@ -888,8 +945,9 @@ class ZappaCLI(object):
                                                     )
 
         # Finally, delete the local copy our zip package
-        if self.stage_config.get('delete_local_zip', True):
-            self.remove_local_zip()
+        if not source_zip and not no_upload:
+            if self.stage_config.get('delete_local_zip', True):
+                self.remove_local_zip()
 
         if self.use_apigateway:
 
@@ -911,14 +969,15 @@ class ZappaCLI(object):
 
             api_id = self.zappa.get_api_id(self.lambda_name)
 
-            # update binary support
+            # Update binary support
             if self.binary_support:
                 self.zappa.add_binary_support(api_id=api_id, cors=self.cors)
             else:
                 self.zappa.remove_binary_support(api_id=api_id, cors=self.cors)
 
+            # It looks a bit like we might actually be using this just to get the URL,
+            # but we're also updating a few of the APIGW settings.
             endpoint_url = self.deploy_api_gateway(api_id)
-
 
             if self.stage_config.get('domain', None):
                 endpoint_url = self.stage_config.get('domain')
@@ -1974,11 +2033,13 @@ class ZappaCLI(object):
         Return zappa_settings path as JSON or YAML (or TOML), as appropriate.
         """
         zs_json = settings_name + ".json"
-        zs_yaml = settings_name + ".yml"
+        zs_yml = settings_name + ".yml"
+        zs_yaml = settings_name + ".yaml"
         zs_toml = settings_name + ".toml"
 
         # Must have at least one
         if not os.path.isfile(zs_json) \
+            and not os.path.isfile(zs_yml) \
             and not os.path.isfile(zs_yaml) \
             and not os.path.isfile(zs_toml):
             raise ClickException("Please configure a zappa_settings file or call `zappa init`.")
@@ -1988,6 +2049,8 @@ class ZappaCLI(object):
             settings_file = zs_json
         elif os.path.isfile(zs_toml):
             settings_file = zs_toml
+        elif os.path.isfile(zs_yml):
+            settings_file = zs_yml
         else:
             settings_file = zs_yaml
 
@@ -2003,13 +2066,14 @@ class ZappaCLI(object):
         if not os.path.isfile(settings_file):
             raise ClickException("Please configure your zappa_settings file or call `zappa init`.")
 
-        if '.yml' in settings_file:
+        path, ext = os.path.splitext(settings_file)
+        if ext == '.yml' or ext == '.yaml':
             with open(settings_file) as yaml_file:
                 try:
                     self.zappa_settings = yaml.load(yaml_file)
                 except ValueError: # pragma: no cover
                     raise ValueError("Unable to load the Zappa settings YAML. It may be malformed.")
-        elif '.toml' in settings_file:
+        elif ext == '.toml':
             with open(settings_file) as toml_file:
                 try:
                     self.zappa_settings = toml.load(toml_file)
@@ -2514,6 +2578,19 @@ def shamelessly_promote():
                + click.style("https://slack.zappa.io", fg='cyan', bold=True))
     click.echo("Love!,")
     click.echo(" ~ Team " + click.style("Zappa", bold=True) + "!")
+
+def disable_click_colors():
+    """
+    Set a Click context where colors are disabled. Creates a throwaway BaseCommand
+    to play nicely with the Context constructor.
+    The intended side-effect here is that click.echo() checks this context and will
+    suppress colors.
+    https://github.com/pallets/click/blob/e1aa43a3/click/globals.py#L39
+    """
+
+    ctx = Context(BaseCommand('AllYourBaseAreBelongToUs'))
+    ctx.color = False
+    push_context(ctx)
 
 def handle(): # pragma: no cover
     """
