@@ -1269,12 +1269,20 @@ class ZappaCLI(object):
             try:
                 for token in ['START', 'END', 'REPORT', '[DEBUG]']:
                     if token in final_string:
-                        format_string = '{}' if token == '[DEBUG]' else '[{}]'
-                        final_string = final_string.replace(token, click.style(
+                        format_string = '[{}]'
+                        # match whole words only
+                        pattern = r'\b{}\b'
+                        if token == '[DEBUG]':
+                            format_string = '{}'
+                            pattern = re.escape(token)
+                        repl = click.style(
                             format_string.format(token),
                             bold=True,
                             fg='cyan'
-                        ))
+                        )
+                        final_string = re.sub(
+                            pattern.format(token), repl, final_string
+                        )
             except Exception: # pragma: no cover
                 pass
 
