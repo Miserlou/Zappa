@@ -351,7 +351,7 @@ class LambdaHandler(object):
 
         # This is a direct, raw python invocation.
         # It's _extremely_ important we don't allow this event source
-        # to be overriden by unsanitized, non-admin user input.
+        # to be overridden by unsanitized, non-admin user input.
         elif event.get('raw_command', None):
 
             raw_command = event['raw_command']
