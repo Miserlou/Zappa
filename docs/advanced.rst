@@ -115,7 +115,7 @@ Obviously, this only works for Django projects which have their settings properl
 Keeping The Server Warm
 =======================
 
-Zappa will automatically set up a regularly occuring execution of your application in order to keep the Lambda function warm. This can be disabled via the 'keep_warm' setting.
+Zappa will automatically set up a regularly occurring execution of your application in order to keep the Lambda function warm. This can be disabled via the 'keep_warm' setting.
 
 Enabling CORS
 =============

@@ -1228,8 +1228,8 @@ class ZappaCLI(object):
                 print(base64.b64decode(response['LogResult']))
             else:
                 decoded = base64.b64decode(response['LogResult']).decode()
-                formated = self.format_invoke_command(decoded)
-                colorized = self.colorize_invoke_command(formated)
+                formatted = self.format_invoke_command(decoded)
+                colorized = self.colorize_invoke_command(formatted)
                 print(colorized)
         else:
             print(response)
@@ -1410,7 +1410,7 @@ class ZappaCLI(object):
                 status_dict["API Gateway x-api-key"] = api_key
 
             # There literally isn't a better way to do this.
-            # AWS provides no way to tie a APIGW domain name to its Lambda funciton.
+            # AWS provides no way to tie a APIGW domain name to its Lambda function.
             domain_url = self.stage_config.get('domain', None)
             if domain_url:
                 status_dict["Domain URL"] = 'https://' + domain_url
