@@ -1273,7 +1273,7 @@ class TestZappa(unittest.TestCase):
                 def get_lambda_function_versions(self, function_name):
                     return self.function_versions
 
-                def get_domain_name(self, domain):
+                def get_route53_domain(self, domain):
                     return self.domain_names.get(domain)
 
                 def create_domain_name(self, *args, **kw):

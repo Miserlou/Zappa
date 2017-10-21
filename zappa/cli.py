@@ -43,6 +43,7 @@ from click.exceptions import ClickException
 from click.globals import push_context
 from dateutil import parser
 from datetime import datetime, timedelta
+from shutil import copyfile
 
 from .core import Zappa, logger, API_GATEWAY_REGIONS
 from .utilities import (check_new_version_available, detect_django_settings,
@@ -231,6 +232,12 @@ class ZappaCLI(object):
         cert_parser = subparsers.add_parser(
             'certify', parents=[env_parser],
             help='Create and install SSL certificate'
+        )
+        cert_parser.add_argument(
+            '--domain-name',
+            dest='domain_name',
+            required=True,
+            help=("The domain name to certify.")
         )
         cert_parser.add_argument(
             '--no-cleanup', action='store_true',
@@ -602,6 +609,7 @@ class ZappaCLI(object):
             self.status(return_json=self.vargs['json'])
         elif command == 'certify': # pragma: no cover
             self.certify(
+                self.vargs['domain_name'],
                 no_cleanup=self.vargs['no_cleanup'],
                 no_confirm=self.vargs['yes'],
                 manual=self.vargs['manual']
@@ -971,9 +979,8 @@ class ZappaCLI(object):
 
             endpoint_url = self.deploy_api_gateway(api_id)
 
-
-            if self.stage_config.get('domain', None):
-                endpoint_url = self.stage_config.get('domain')
+            #if self.stage_config.get('domains', None):
+            #    endpoint_url = self.stage_config.get('domain')
 
         else:
             endpoint_url = None
@@ -982,29 +989,42 @@ class ZappaCLI(object):
 
         self.callback('post')
 
-        if endpoint_url and 'https://' not in endpoint_url:
-            endpoint_url = 'https://' + endpoint_url
+        #if endpoint_url and 'https://' not in endpoint_url:
+        #    endpoint_url = 'https://' + endpoint_url
+        custom_domain_urls = []
+        for domain in self.domains:
+            url = domain['name']
+            if not url.startswith('https://'):
+                url = 'https://{url}'.format(url=url)
+            custom_domain_urls.append(url)
 
-        deployed_string = "Your updated Zappa deployment is " + click.style("live", fg='green', bold=True) + "!"
+        deployed_string = "Your updated Zappa deployment is: " + click.style("live", fg='green', bold=True) + "!"
         if self.use_apigateway:
             deployed_string = deployed_string + ": " + click.style("{}".format(endpoint_url), bold=True)
-
-            api_url = None
-            if endpoint_url and 'amazonaws.com' not in endpoint_url:
-                api_url = self.zappa.get_api_url(
-                    self.lambda_name,
-                    self.api_stage)
-
-                if endpoint_url != api_url:
-                    deployed_string = deployed_string + " (" + api_url + ")"
-
-            if self.stage_config.get('touch', True):
-                if api_url:
-                    requests.get(api_url)
-                elif endpoint_url:
-                    requests.get(endpoint_url)
-
         click.echo(deployed_string)
+
+        # The expected apigateway url
+        apigateway_url = self.zappa.get_api_url(
+            self.lambda_name,
+            self.api_stage)
+
+        # We have custom domains, and endpoint url is probably a filefront
+        # distribution.
+        if custom_domain_urls and endpoint_url != apigateway_url:
+            for url in custom_domain_urls:
+                click.echo("{url} ({endpoint_url})".format(
+                    url=click.style(url, fg='magenta', bold=True),
+                    endpoint_url=endpoint_url,
+                ))
+
+        # Request any urls if specified
+        if self.stage_config.get('touch', True):
+            urls_to_touch = set([
+                apigateway_url,
+                endpoint_url,
+            ] + custom_domain_urls)
+            for url in urls_to_touch:
+                requests.get(url)
 
     def rollback(self, revision):
         """
@@ -1065,7 +1085,10 @@ class ZappaCLI(object):
             if remove_logs:
                 self.zappa.remove_api_gateway_logs(self.lambda_name)
 
-            domain_name = self.stage_config.get('domain', None)
+            domain_names = map(
+                lambda x: x['name'],
+                self.domains,
+            )
 
             # Only remove the api key when not specified
             if self.api_key_required and self.api_key is None:
@@ -1074,7 +1097,7 @@ class ZappaCLI(object):
 
             gateway_id = self.zappa.undeploy_api_gateway(
                 self.lambda_name,
-                domain_name=domain_name
+                domain_names=domain_names
             )
 
         self.unschedule()  # removes event triggers, including warm up event.
@@ -1396,9 +1419,13 @@ class ZappaCLI(object):
 
             # There literally isn't a better way to do this.
             # AWS provides no way to tie a APIGW domain name to its Lambda funciton.
-            domain_url = self.stage_config.get('domain', None)
-            if domain_url:
-                status_dict["Domain URL"] = 'https://' + domain_url
+            domain_urls = map(
+                lambda x: 'https://{}'.format(x['name']),
+                self.domains,
+            )
+            if domain_urls:
+                for index, domain_url in enumerate(domain_urls):
+                    status_dict["Domain URL {}".format(index)] = domain_url
             else:
                 status_dict["Domain URL"] = "None Supplied"
 
@@ -1688,19 +1715,30 @@ class ZappaCLI(object):
 
         return
 
-    def certify(self, no_cleanup=False, no_confirm=True, manual=False):
+    def certify(self, domain_name, no_cleanup=False, no_confirm=True, manual=False):
         """
         Register or update a domain certificate for this env.
         """
+        if not self.domains:
+            raise ClickException("Can't certify a domain without " + click.style("domains", fg="red", bold=True) + " configured!")
 
-        if not self.domain:
-            raise ClickException("Can't certify a domain without " + click.style("domain", fg="red", bold=True) + " configured!")
+
+        domains = dict((domain['name'], domain) for domain in self.domains)
+        if domain_name not in domains.keys():
+            raise ClickException("You cannot certify a domain that is not "
+                "configured in {setting}!".format(
+                    setting=click.style("domains", fg="red", bold=True)
+                )
+            )
+
+        domain_settings = domains[domain_name]
 
         if not no_confirm: # pragma: no cover
             confirm = input("Are you sure you want to certify? [y/n] ")
             if confirm != 'y':
                 return
 
+        # TODO(cleanup this no_cleanup/clean_up)
         # Give warning on --no-cleanup
         if no_cleanup:
             clean_up = False
@@ -1716,105 +1754,93 @@ class ZappaCLI(object):
             raise ClickException("This application " + click.style("isn't deployed yet", fg="red") +
                                  " - did you mean to call " + click.style("deploy", bold=True) + "?")
 
+        self._create_or_update_domain(
+            domain_settings,
+            clean_up,
+            manual,
+        )
 
-        account_key_location = self.stage_config.get('lets_encrypt_key', None)
-        cert_location = self.stage_config.get('certificate', None)
-        cert_key_location = self.stage_config.get('certificate_key', None)
-        cert_chain_location = self.stage_config.get('certificate_chain', None)
-        cert_arn = self.stage_config.get('certificate_arn', None)
+    def _create_or_update_domain(self, domain_dict,clean_up,manual):
+        domain_name = domain_dict['name']
 
-        # These are sensitive
-        certificate_body = None
-        certificate_private_key = None
-        certificate_chain = None
+        lets_encrypt_key = domain_dict.get('lets_encrypt_key', None)
+        cert_location = domain_dict.get('certificate', None)
+        cert_key_location = domain_dict.get('certificate_key', None)
+        cert_chain_location = domain_dict.get('certificate_chain', None)
+        cert_arn = domain_dict.get('certificate_arn', None)
 
         # Prepare for custom Let's Encrypt
-        if not cert_location and not cert_arn:
-            if not account_key_location:
-                raise ClickException("Can't certify a domain without " + click.style("lets_encrypt_key", fg="red", bold=True) +
-                                     " or " + click.style("certificate", fg="red", bold=True)+
-                                     " or " + click.style("certificate_arn", fg="red", bold=True) + " configured!")
+        if not cert_location and not cert_arn and not lets_encrypt_key:
+            raise ClickException("Can't certify a domain "
+                "without {} or {} or {} configured!".format(
+                    click.style("lets_encrypt_key", fg="red", bold=True),
+                    click.style("certificate", fg="red", bold=True),
+                    click.style("certificate_arn", fg="red", bold=True),
+                )
+            )
+        
+        click.echo(
+            "Certifying domain {domain_name} ..".format(
+                domain_name=click.style(domain_name, fg="green", bold=True),
+            )
+        )
 
+        # Lets Encrypt
+        if lets_encrypt_key:
             # Get install account_key to /tmp/account_key.pem
-            if account_key_location.startswith('s3://'):
-                bucket, key_name = parse_s3_url(account_key_location)
+            if lets_encrypt_key.startswith('s3://'):
+                bucket, key_name = parse_s3_url(lets_encrypt_key)
                 self.zappa.s3_client.download_file(bucket, key_name, '{}/account.key'.format(tempfile.gettempdir()))
             else:
-                from shutil import copyfile
-                copyfile(account_key_location, '{}/account.key'.format(tempfile.gettempdir()))
+                copyfile(lets_encrypt_key, '{}/account.key'.format(tempfile.gettempdir()))
+            cert_success = self._lets_encrypt(
+                domain_name=domain_name,
+                clean_up=clean_up,
+                manual=manual,
+                route53_enabled=self.stage_config.get('route53_enabled', True),
+            )
 
-        # Prepare for Custom SSL
-        elif not account_key_location and not cert_arn:
-            if not cert_location or not cert_key_location or not cert_chain_location:
-                raise ClickException("Can't certify a domain without " +
-                                     click.style("certificate, certificate_key and certificate_chain", fg="red", bold=True) + " configured!")
-
-            # Read the supplied certificates.
-            with open(cert_location) as f:
-                certificate_body = f.read()
-
-            with open(cert_key_location) as f:
-                certificate_private_key = f.read()
-
-            with open(cert_chain_location) as f:
-                certificate_chain = f.read()
-
-
-        click.echo("Certifying domain " + click.style(self.domain, fg="green", bold=True) + "..")
-
-        # Get cert and update domain.
-
-        # Let's Encrypt
-        if not cert_location and not cert_arn:
-            from .letsencrypt import get_cert_and_update_domain, cleanup
-            cert_success = get_cert_and_update_domain(
-                    self.zappa,
-                    self.lambda_name,
-                    self.api_stage,
-                    self.domain,
-                    clean_up,
-                    manual
-                )
-
-            # Deliberately undocumented feature (for now, at least.)
-            # We are giving the user the ability to shoot themselves in the foot.
-            # _This is probably not a good idea._
-            # However, I am sick and tired of hitting the Let's Encrypt cert
-            # limit while testing.
-            if clean_up:
-                cleanup()
-
-        # Custom SSL / ACM
         else:
-            if not self.zappa.get_domain_name(self.domain):
-                dns_name = self.zappa.create_domain_name(
-                    domain_name=self.domain,
-                    certificate_name=self.domain + "-Zappa-Cert",
-                    certificate_body=certificate_body,
-                    certificate_private_key=certificate_private_key,
-                    certificate_chain=certificate_chain,
-                    certificate_arn=cert_arn,
-                    lambda_name=self.lambda_name,
-                    stage=self.api_stage,
-                )
-                if self.stage_config.get('route53_enabled', True):
-                    self.zappa.update_route53_records(self.domain, dns_name)
-                print("Created a new domain name with supplied certificate. Please note that it can take up to 40 minutes for this domain to be "
-                      "created and propagated through AWS, but it requires no further work on your part.")
-            else:
-                self.zappa.update_domain_name(
-                    domain_name=self.domain,
-                    certificate_name=self.domain + "-Zappa-Cert",
-                    certificate_body=certificate_body,
-                    certificate_private_key=certificate_private_key,
-                    certificate_chain=certificate_chain,
-                    certificate_arn=cert_arn,
-                    lambda_name=self.lambda_name,
-                    stage=self.api_stage,
-                    route53=self.stage_config.get('route53_enabled', True)
+            # Prepare for Custom SSL
+            if not cert_arn and(
+                not cert_location or
+                not cert_key_location or
+                not cert_chain_location
+            ):
+                raise ClickException(
+                    "Can't certify a domain without {} configured!".format(
+                        click.style("certificate, certificate_key and "
+                            "certificate_chain",
+                            fg="red",
+                            bold=True,
+                        ),
+                    )
                 )
 
-            cert_success = True
+            # These are sensitive
+            certificate_body = None
+            certificate_private_key = None
+            certificate_chain = None
+
+            if not cert_arn:
+                # Read the supplied certificates.
+                with open(cert_location) as f:
+                    certificate_body = f.read()
+
+                with open(cert_key_location) as f:
+                    certificate_private_key = f.read()
+
+                with open(cert_chain_location) as f:
+                    certificate_chain = f.read()
+
+            cert_success = self._update_domain(
+                domain_name=domain_name,
+                cert_arn=cert_arn,
+                certificate_body=certificate_body,
+                certificate_private_key=certificate_private_key,
+                certificate_chain=certificate_chain,
+            )
+
 
         if cert_success:
             click.echo("Certificate " + click.style("updated", fg="green", bold=True) + "!")
@@ -1822,6 +1848,72 @@ class ZappaCLI(object):
             click.echo(click.style("Failed", fg="red", bold=True) + " to generate or install certificate! :(")
             click.echo("\n==============\n")
             shamelessly_promote()
+
+    def _lets_encrypt(
+        self,
+        domain_name,
+        clean_up,
+        manual,
+        route53_enabled,
+    ):
+        from .letsencrypt import get_cert_and_update_domain, cleanup
+        cert_success = get_cert_and_update_domain(
+                self.zappa,
+                self.lambda_name,
+                self.api_stage,
+                domain_name,
+                clean_up,
+                manual,
+                route53_enabled,
+            )
+
+        # Deliberately undocumented feature (for now, at least.)
+        # We are giving the user the ability to shoot themselves in the foot.
+        # _This is probably not a good idea._
+        # However, I am sick and tired of hitting the Let's Encrypt cert
+        # limit while testing.
+        if clean_up:
+            cleanup()
+
+        return cert_success
+
+    def _update_domain(
+        self,
+        domain_name=None,
+        cert_arn=None,
+        certificate_body=None,
+        certificate_private_key=None,
+        certificate_chain=None,
+    ):
+        if not self.zappa.get_apigateway_domain(domain_name):
+            dns_name = self.zappa.create_domain_name(
+                domain_name=domain_name,
+                certificate_name=domain_name + "-Zappa-Cert",
+                certificate_body=certificate_body,
+                certificate_private_key=certificate_private_key,
+                certificate_chain=certificate_chain,
+                certificate_arn=cert_arn,
+                lambda_name=self.lambda_name,
+                stage=self.api_stage,
+            )
+            print("Created a new domain name with supplied certificate. Please note that it can take up to 40 minutes for this domain to be "
+                  "created and propagated through AWS, but it requires no further work on your part.")
+        else:
+            dns_name = self.zappa.update_domain_name(
+                domain_name=domain_name,
+                certificate_name=domain_name + "-Zappa-Cert",
+                certificate_body=certificate_body,
+                certificate_private_key=certificate_private_key,
+                certificate_chain=certificate_chain,
+                certificate_arn=cert_arn,
+                lambda_name=self.lambda_name,
+                stage=self.api_stage,
+                route53=self.stage_config.get('route53_enabled', True)
+            )
+        if self.stage_config.get('route53_enabled', True):
+            self.zappa.update_route53_records(domain_name, dns_name)
+
+        return True
 
     ##
     # Shell
@@ -1952,7 +2044,7 @@ class ZappaCLI(object):
         self.prebuild_script = self.stage_config.get('prebuild_script', None)
         self.profile_name = self.stage_config.get('profile_name', None)
         self.log_level = self.stage_config.get('log_level', "DEBUG")
-        self.domain = self.stage_config.get('domain', None)
+        self.domains = self.stage_config.get('domains', [])
         self.timeout_seconds = self.stage_config.get('timeout_seconds', 30)
         dead_letter_arn = self.stage_config.get('dead_letter_arn', '')
         self.dead_letter_config = {'TargetArn': dead_letter_arn} if dead_letter_arn else {}
@@ -2204,10 +2296,10 @@ class ZappaCLI(object):
 
             # If we're on a domain, we don't need to define the /<<env>> in
             # the WSGI PATH
-            if self.domain:
-                settings_s = settings_s + "DOMAIN='{0!s}'\n".format((self.domain))
+            if self.domains:
+                settings_s = settings_s + "DOMAINS='{0!s}'\n".format((self.domains))
             else:
-                settings_s = settings_s + "DOMAIN=None\n"
+                settings_s = settings_s + "DOMAINS=[]\n"
 
             # Pass through remote config bucket and path
             if self.remote_env:
