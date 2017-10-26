@@ -5,7 +5,7 @@ def all_casings(input_string):
     """
     Permute all casings of a given string.
 
-    A pretty algoritm, via @Amber
+    A pretty algorithm, via @Amber
     http://stackoverflow.com/questions/6792803/finding-all-possible-case-permutations-in-python
     """
     if not input_string:

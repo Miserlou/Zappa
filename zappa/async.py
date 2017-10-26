@@ -65,7 +65,7 @@ Discussion of this comes from:
 
 5. The new lambda instance is invoked with the message above,
    and Zappa runs its usual bootstrapping context, and inside
-   zappa.handler, the existance of the 'command' key in the message
+   zappa.handler, the existence of the 'command' key in the message
    dispatches the full message to zappa.async.route_lambda_task, which
    in turn calls `run_message(message)`
 
