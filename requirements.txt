@@ -6,7 +6,7 @@ docutils>=0.12
 durationpy==0.5
 future==0.16.0
 futures==3.1.1
-hjson==3.0.0
+hjson==3.0.1
 jmespath==0.9.3
 kappa==0.6.0
 lambda-packages==0.17.0
