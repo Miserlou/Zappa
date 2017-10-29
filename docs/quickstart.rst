@@ -31,13 +31,13 @@ Running the Initial Setup / Settings
 This will automatically detect your application type and help you define your deployment configuration settings. Once you finish initialization, you'll have a file named *zappa_settings.json* in your project directory defining your deployment settings. It will probably look something like this: ::
 
     {
-        "dev": { // The name of your environment
+        "dev": { // The name of your stage
             "s3_bucket": "lmbda", // The name of your S3 bucket
             "app_function": "your_module.app" // The python path to your WSGI application function. In Flask, this is your 'app' object.
         }
     }
 
-You can define as many environments as you like. We recommend having dev, staging, and production.
+You can define as many stages as you like. We recommend having dev, staging, and production.
 
 Now, you're ready to deploy!
 
@@ -47,7 +47,7 @@ Basic Usage
 Initial Deployments
 -------------------
 
-Once your settings are configured, you can package and deploy your application to an environment called "production" with a single command: ::
+Once your settings are configured, you can package and deploy your application to a stage called "production" with a single command: ::
 
     $ zappa deploy production
     Deploying..

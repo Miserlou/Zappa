@@ -42,6 +42,9 @@ def aws_s3_event(event, content):
 def aws_sns_event(event, content):
     return "AWS SNS EVENT"
 
+def aws_async_sns_event(arg1, arg2, arg3):
+    return "AWS ASYNC SNS EVENT"
+
 
 def aws_dynamodb_event(event, content):
     return "AWS DYNAMODB EVENT"
@@ -50,8 +53,10 @@ def aws_dynamodb_event(event, content):
 def aws_kinesis_event(event, content):
     return "AWS KINESIS EVENT"
 
+
 def authorizer_event(event, content):
     return "AUTHORIZER_EVENT"
+
 
 def command():
     print("command")

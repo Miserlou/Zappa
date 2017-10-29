@@ -41,6 +41,7 @@ pip-delete-this-directory.txt
 htmlcov/
 .tox/
 .coverage
+.coveragerc
 .coverage.*
 .cache
 nosetests.xml
@@ -61,6 +62,9 @@ docs/_build/
 # PyBuilder
 target/
 
+# pyenv
+.python-version
+
 # PyCharm
 #  Project settings from the PyCharm IDE are stored in the .idea folder
 .idea/
@@ -74,3 +78,10 @@ target/
 *~
 tests/zappa_settings.json
 tests/example_template_outputs
+
+# Locally generated settings file
+zappa_settings.json
+
+# Sublime Text stuff
+*.sublime-project
+*.sublime-workspace

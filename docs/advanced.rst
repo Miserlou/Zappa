@@ -45,7 +45,7 @@ Executing in Response to AWS Events
 
 Similarly, you can have your functions execute in response to events that happen in the AWS ecosystem, such as S3 uploads, DynamoDB entries, Kinesis streams, and SNS messages.
 
-In your *zappa_settings.json* file, define your `event sources <http://docs.aws.amazon.com/lambda/latest/dg/invoking-lambda-function.html>`_ and the function you wish to execute. For instance, this will execute *your_module.your_function* in response to new objects in your *my-bucket* S3 bucket. Note that *your_function* must accept *event* and *context* paramaters.
+In your *zappa_settings.json* file, define your `event sources <http://docs.aws.amazon.com/lambda/latest/dg/invoking-lambda-function.html>`_ and the function you wish to execute. For instance, this will execute *your_module.your_function* in response to new objects in your *my-bucket* S3 bucket. Note that *your_function* must accept *event* and *context* parameters.
 
 ::
 
@@ -115,7 +115,7 @@ Obviously, this only works for Django projects which have their settings properl
 Keeping The Server Warm
 =======================
 
-Zappa will automatically set up a regularly occuring execution of your application in order to keep the Lambda function warm. This can be disabled via the 'keep_warm' setting.
+Zappa will automatically set up a regularly occurring execution of your application in order to keep the Lambda function warm. This can be disabled via the 'keep_warm' setting.
 
 Enabling CORS
 =============
@@ -167,3 +167,20 @@ Now in your application you can use:
 
     import os
     db_string = os.environ.get('DB_CONNECTION_STRING')
+
+Linking to a Dead Letter Queue
+==============================
+
+If you want to utilise `AWS Lambda's Dead Letter Queue feature <http://docs.aws.amazon.com/lambda/latest/dg/dlq.html>`_, you can set them in your ``zappa_settings.json``:
+
+::
+ 
+    {
+        "dev": {
+            ...
+            "dead_letter_arn": "your_sns_or_sqs_arn"
+        },
+        ...
+    }
+
+You must have already created the corresponding SNS/SQS topic/queue, and the Lambda function execution role must have been provisioned with read/publish/sendMessage access to the DLQ resource.

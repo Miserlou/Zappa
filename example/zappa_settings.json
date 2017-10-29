@@ -5,11 +5,11 @@
        "debug": true,
        "log_level": "DEBUG",
        "events": [{
-         "function": "dev_event_zappa_test_flask_app",
+         "function": "mymodule.myfunc",
          "expression": "rate(1 minute)"
          }],
        "aws_region": "us-west-2",
-       "s3_bucket": "zappa-test-bucket",
+       "s3_bucket": "zappa-81el19pq9-dev-us-west-2",
        "lambda_handler": "app.lambda_handler",
        "use_apigateway": false,
        "http_methods": ["GET"],
@@ -24,7 +24,7 @@
        "debug": true,
        "log_level": "DEBUG",
        "aws_region": "us-west-2",
-       "s3_bucket": "zappa-test-bucket",
+       "s3_bucket": "zappa-81el19pq9-dev-us-west-2",
        "app_function": "app.app",
        "http_methods": ["GET"],
        "parameter_depth": 1,

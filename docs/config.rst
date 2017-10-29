@@ -2,7 +2,7 @@
 Configuration Reference
 =======================
 
-Envirnments, such as *dev*, *staging*, and *production* are configured in the *zappa_settings.json* file.  Here is an example of defining many of the available settings:
+Stages, such as *dev*, *staging*, and *production* are configured in the *zappa_settings.json* file.  Here is an example of defining many of the available settings:
 
 ::
 
@@ -18,8 +18,9 @@ Envirnments, such as *dev*, *staging*, and *production* are configured in the *z
             "callbacks": { // Call custom functions during the local Zappa deployment/update process
                 "settings": "my_app.settings_callback", // After loading the settings
                 "zip": "my_app.zip_callback", // After creating the package
-                "post": "my_app.post_callback", // After command has excuted
+                "post": "my_app.post_callback", // After command has executed
             },
+            "dead_letter_arn": "arn:aws:<sns/sqs>:::my-topic/queue", // Optional Dead Letter configuration for when Lambda async invoke fails thrice
             "debug": true
             "delete_zip": true
             "domain": "yourapp.yourdomain.com",
