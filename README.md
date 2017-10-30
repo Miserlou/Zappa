@@ -644,7 +644,7 @@ def response(response_id):
 
     return "Not yet ready. Redirecting.", 302, {
         'Content-Type': 'text/plain; charset=utf-8',
-        'Location': url_for('response', response_id=response_id, backoff=5)),
+        'Location': url_for('response', response_id=response_id, backoff=5),
         'X-redirect-reason': "Not yet ready.",
     }
 
