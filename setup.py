@@ -12,7 +12,17 @@ except ImportError:
     README = open(os.path.join(os.path.dirname(__file__), 'README.md'), 'r', encoding="utf-8").read()
 
 with open(os.path.join(os.path.dirname(__file__), 'requirements.txt')) as f:
-    required = f.read().splitlines()
+    if sys.version_info[0] == 2:
+        required = f.read().splitlines()
+    else:
+        # This logic is intended to prevent the futures package from being installed in python 3 environments
+        # as it can cause unexpected syntax errors in other packages. Futures is in the standard library in python 3
+        # and is should never be installed in these environments.
+        # Related: https://github.com/Miserlou/Zappa/issues/1179
+        required = []
+        for package in f.read().splitlines():
+            if 'futures' not in package:
+                required.append(package)
 
 with open(os.path.join(os.path.dirname(__file__), 'test_requirements.txt')) as f:
     test_required = f.read().splitlines()

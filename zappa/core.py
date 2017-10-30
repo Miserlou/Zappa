@@ -777,7 +777,7 @@ class Zappa(object):
         This function downloads metadata JSON of `package_name` from Pypi
         and examines if the package has a manylinux wheel. This function
         also caches the JSON file so that we don't have to poll Pypi
-        everytime.
+        every time.
         """
         cached_pypi_info_dir = os.path.join(tempfile.gettempdir(), 'cached_pypi_info')
         if not os.path.isdir(cached_pypi_info_dir):
@@ -2640,7 +2640,7 @@ class Zappa(object):
     @staticmethod
     def get_dns_challenge_change_batch(action, domain, txt_challenge):
         """
-        Given action, domain and challege, return a change batch to use with
+        Given action, domain and challenge, return a change batch to use with
         route53 call.
 
         :param action: DELETE | UPSERT

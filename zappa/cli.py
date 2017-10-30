@@ -1228,8 +1228,8 @@ class ZappaCLI(object):
                 print(base64.b64decode(response['LogResult']))
             else:
                 decoded = base64.b64decode(response['LogResult']).decode()
-                formated = self.format_invoke_command(decoded)
-                colorized = self.colorize_invoke_command(formated)
+                formatted = self.format_invoke_command(decoded)
+                colorized = self.colorize_invoke_command(formatted)
                 print(colorized)
         else:
             print(response)
@@ -1269,12 +1269,20 @@ class ZappaCLI(object):
             try:
                 for token in ['START', 'END', 'REPORT', '[DEBUG]']:
                     if token in final_string:
-                        format_string = '{}' if token == '[DEBUG]' else '[{}]'
-                        final_string = final_string.replace(token, click.style(
+                        format_string = '[{}]'
+                        # match whole words only
+                        pattern = r'\b{}\b'
+                        if token == '[DEBUG]':
+                            format_string = '{}'
+                            pattern = re.escape(token)
+                        repl = click.style(
                             format_string.format(token),
                             bold=True,
                             fg='cyan'
-                        ))
+                        )
+                        final_string = re.sub(
+                            pattern.format(token), repl, final_string
+                        )
             except Exception: # pragma: no cover
                 pass
 
@@ -1402,7 +1410,7 @@ class ZappaCLI(object):
                 status_dict["API Gateway x-api-key"] = api_key
 
             # There literally isn't a better way to do this.
-            # AWS provides no way to tie a APIGW domain name to its Lambda funciton.
+            # AWS provides no way to tie a APIGW domain name to its Lambda function.
             domain_url = self.stage_config.get('domain', None)
             if domain_url:
                 status_dict["Domain URL"] = 'https://' + domain_url

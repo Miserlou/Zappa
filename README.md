@@ -494,7 +494,7 @@ You can find more [example event sources here](http://docs.aws.amazon.com/lambda
 
 Zappa also now offers the ability to seamlessly execute functions asynchronously in a completely separate AWS Lambda instance!
 
-For example, if you have a Flask API for ordering a pie, you can call your `bake` function seamlessly in a completely seperate Lambda instance by using the `zappa.async.task` decorator like so:
+For example, if you have a Flask API for ordering a pie, you can call your `bake` function seamlessly in a completely separate Lambda instance by using the `zappa.async.task` decorator like so:
 
 ```python
 from flask import Flask
@@ -821,7 +821,7 @@ Similarly, you may want to design your application so that static binary uploads
 
 The simplest way to enable CORS (Cross-Origin Resource Sharing) for in your Zappa application is to set `cors` to `true` in your Zappa settings file and updating, which is the equivalent of pushing the "Enable CORS" button in the AWS API Gateway console. This is disabled by default, but you may wish to enable it for APIs which are accessed from other domains, etc. It may also conflict with `binary_support`, so you should set that to `false` in your settings.
 
-You can also simply handle CORS directly in your application. Your web framework will probably have an extention to do this, such as [django-cors-headers](https://github.com/ottoyiu/django-cors-headers) or [Flask-CORS](https://github.com/corydolphin/flask-cors). Using these will make your code more portable.
+You can also simply handle CORS directly in your application. Your web framework will probably have an extension to do this, such as [django-cors-headers](https://github.com/ottoyiu/django-cors-headers) or [Flask-CORS](https://github.com/corydolphin/flask-cors). Using these will make your code more portable.
 
 #### Large Projects
 
@@ -916,7 +916,7 @@ Amazon also provides their own free alternative to Let's Encrypt called [AWS Cer
 2. In the console, select the N. Virginia (us-east-1) region and request a certificate for your domain or subdomain (`sub.yourdomain.tld`), or request a wildcard domain (`*.yourdomain.tld`).
 3. Copy the entire ARN of that certificate and place it in the Zappa setting `certificate_arn`.
 4. Set your desired domain in the `domain` setting.
-5. Call `$ zappa certify` to create and associate the API Gateway distribution using that ceritficate.
+5. Call `$ zappa certify` to create and associate the API Gateway distribution using that certificate.
 
 #### Setting Environment Variables
 
@@ -1240,7 +1240,7 @@ Please file tickets for discussion before submitting patches. Pull requests shou
 
 If you are adding a non-trivial amount of new code, please include a functioning test in your PR. For AWS calls, we use the `placebo` library, which you can learn to use [in their README](https://github.com/garnaat/placebo#usage-as-a-decorator). The test suite will be run by [Travis CI](https://travis-ci.org/Miserlou/Zappa) once you open a pull request.
 
-Please include the GitHub issue or pull request URL that has discussion related to your changes as a comment in the code ([example](https://github.com/Miserlou/Zappa/blob/fae2925431b820eaedf088a632022e4120a29f89/zappa/zappa.py#L241-L243)). This greatly helps for project maintainability, as it allows us to trace back use cases and explain decision making. Similarly, please make sure that you meet all of the requiments listed in the [pull request template](https://raw.githubusercontent.com/Miserlou/Zappa/master/.github/PULL_REQUEST_TEMPLATE.md).
+Please include the GitHub issue or pull request URL that has discussion related to your changes as a comment in the code ([example](https://github.com/Miserlou/Zappa/blob/fae2925431b820eaedf088a632022e4120a29f89/zappa/zappa.py#L241-L243)). This greatly helps for project maintainability, as it allows us to trace back use cases and explain decision making. Similarly, please make sure that you meet all of the requirements listed in the [pull request template](https://raw.githubusercontent.com/Miserlou/Zappa/master/.github/PULL_REQUEST_TEMPLATE.md).
 
 Please feel free to work on any open ticket, especially any ticket marked with the "help-wanted" label. If you get stuck or want to discuss an issue further, please join [our Slack channel](https://slack.zappa.io), where you'll find a community of smart and interesting people working dilligently on hard problems.
 

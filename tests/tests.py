@@ -867,6 +867,14 @@ class TestZappa(unittest.TestCase):
         colorized_string = zappa_cli.colorize_invoke_command(plain_string)
         self.assertEqual(final_string, colorized_string)
 
+    def test_cli_colorize_whole_words_only(self):
+        zappa_cli = ZappaCLI()
+        plain_string = "START RESTART END RENDER report [DEBUG] TEXT[DEBUG]TEXT"
+        final_string = "\x1b[36m\x1b[1m[START]\x1b[0m RESTART \x1b[36m\x1b[1m[END]\x1b[0m RENDER report \x1b[36m\x1b[1m[DEBUG]\x1b[0m TEXT\x1b[36m\x1b[1m[DEBUG]\x1b[0mTEXT"
+
+        colorized_string = zappa_cli.colorize_invoke_command(plain_string)
+        self.assertEqual(final_string, colorized_string)
+
     def test_cli_colorize_invoke_command_bad_string(self):
         zappa_cli = ZappaCLI()
         plain_string = "Hey, I'm a plain string, won't be colorized"

@@ -244,7 +244,7 @@ from nikbora
 
 ## 0.28.1
 * Add "global" mode to init. Expect a blog post soon!
-* Small refactors and dependancy upgrades.
+* Small refactors and dependency upgrades.
 
 ## 0.28.0
 * `--json` for machine readable status output
@@ -268,7 +268,7 @@ from nikbora
 * Remove many hacks using new API Gateway features.
     * Closes #303, #363, #361
     * See the [blog post](https://blog.zappa.io/posts/unhacking-zappa-with-new-apigateway-features) for more details!
-* Bump dependancies - make sure you reinstall your requirements!
+* Bump dependencies - make sure you reinstall your requirements!
 * Improved stack update handling.
 
 ### 0.26.1 (Never Published)
