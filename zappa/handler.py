@@ -10,9 +10,7 @@ import json
 import logging
 import os
 import sys
-import tempfile
 import traceback
-import zipfile
 import tarfile
 
 from builtins import str
