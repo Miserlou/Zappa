@@ -67,6 +67,7 @@
     - [Raising AWS Service Limits](#raising-aws-service-limits)
     - [Using Zappa With Docker](#using-zappa-with-docker)
     - [Dead Letter Queues](#dead-letter-queues)
+    - [Unique Deployment ID](#deployment-id)
 - [Zappa Guides](#zappa-guides)
 - [Zappa in the Press](#zappa-in-the-press)
 - [Sites Using Zappa](#sites-using-zappa)
@@ -1156,6 +1157,10 @@ If Docker is part of your team's CI, testing, or deployments, you may want to ch
 If you want to utilise [AWS Lambda's Dead Letter Queue feature](http://docs.aws.amazon.com/lambda/latest/dg/dlq.html) simply add the key `dead_letter_arn`, with the value being the complete ARN to the corresponding SNS topic or SQS queue in your `zappa_settings.json`.
 
 You must have already created the corresponding SNS/SQS topic/queue, and the Lambda function execution role must have been provisioned with read/publish/sendMessage access to the DLQ resource.
+
+### Unique Deployment ID
+
+For monitoring of different deployments, a unique UUID for each deployment is available in "deployment_id.file" in the root directory of your application's path.  You can use this ID or a hash of this file for such things as tracking errors across different deployments, monitoring status of deployments and other such things on services such as Sentry and New Relic.
 
 ## Zappa Guides
 
