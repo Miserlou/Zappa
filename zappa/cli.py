@@ -2101,8 +2101,8 @@ class ZappaCLI(object):
 
     def verify_settings(self):
         """
-        Verify that all keys used in the settings are valid by looking them up in a whitelist.
-        Verify dictionaries and lists recursively
+        Verify that all keys used in the settings are valid by looking them up in a whitelist (VALID_SETTINGS).
+        Tries to suggest a correction for wrong settings by finding the closest known option.
         """
         def _verify_settings(settings, allowed_keys, path_to_key):
             """
@@ -2128,7 +2128,7 @@ class ZappaCLI(object):
                     return val in d
 
             for key, value in settings.items():
-                if allowed_keys is None or not _in(allowed_keys, key):
+                if not _in(allowed_keys, key):
                     context = " → ".join(path_to_key + [click.style(key, bold=True)])
                     if allowed_keys:
                         most_likely_replacement = click.style(min(allowed_keys.keys(), key=lambda word: pylev.levenshtein(key, word)), bold=True)
@@ -2143,7 +2143,7 @@ class ZappaCLI(object):
                         print(click.style("Warning!", fg="red", bold=True) + " Deprecated option '{}', please use 'remote_env' instead.".format(key))
 
                     if type(value) in [dict, collections.OrderedDict]:
-                        _verify_settings(value, allowed_keys.get(key), path_to_key + [key])
+                        _verify_settings(value, allowed_keys[key], path_to_key + [key])
                     elif type(value) is list:
                         for subvalue in value:
                             if type(subvalue) in [dict, collections.OrderedDict]:
