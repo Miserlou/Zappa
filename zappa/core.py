@@ -512,7 +512,10 @@ class Zappa(object):
         # Create deployment ID file and write to temp project path
         deployment_uuid = str(uuid.uuid4())
         deployment_id_file = open(os.path.join(temp_project_path, 'deployment_id.file'), 'w')
-        deployment_id_file.write(deployment_uuid)
+        try:
+            deployment_id_file.write(deployment_uuid)
+        except TypeError:
+            deployment_id_file.write(unicode(deployment_uuid))
         deployment_id_file.close()
 
         # Then, do site site-packages..
