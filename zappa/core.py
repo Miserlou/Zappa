@@ -10,6 +10,7 @@ from __future__ import print_function
 
 import boto3
 import botocore
+import getpass
 import glob
 import hashlib
 import json
@@ -448,12 +449,13 @@ class Zappa(object):
         if not venv:
             venv = self.get_current_venv()
 
+        build_time = str(int(time.time()))
         cwd = os.getcwd()
         if not output:
             if archive_format == 'zip':
-                archive_fname = prefix + '-' + str(int(time.time())) + '.zip'
+                archive_fname = prefix + '-' + build_time + '.zip'
             elif archive_format == 'tarball':
-                archive_fname = prefix + '-' + str(int(time.time())) + '.tar.gz'
+                archive_fname = prefix + '-' + build_time + '.tar.gz'
         else:
             archive_fname = output
         archive_path = os.path.join(cwd, archive_fname)
@@ -509,14 +511,51 @@ class Zappa(object):
             filename = handler_file.split(os.sep)[-1]
             shutil.copy(handler_file, os.path.join(temp_project_path, filename))
 
-        # Create deployment ID file and write to temp project path
-        deployment_uuid = str(uuid.uuid4())
-        deployment_id_file = open(os.path.join(temp_project_path, 'deployment_id.file'), 'w')
+        # Create and populate package ID file and write to temp project path
+        package_info = {}
+        package_info['uuid'] = str(uuid.uuid4())
+        package_info['build_time'] = build_time
+        package_info['build_platform'] = os.sys.platform
+        package_info['build_user'] = getpass.getuser()
+        # TODO: Add git head and info?
+
+        # Ex, from @scoates:
+        # def _get_git_branch():
+        #     chdir(DIR)
+        #     out = check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD']).strip()
+        #     lambci_branch = environ.get('LAMBCI_BRANCH', None)
+        #     if out == "HEAD" and lambci_branch:
+        #         out += " lambci:{}".format(lambci_branch)
+        #     return out
+
+        # def _get_git_hash():
+        #     chdir(DIR)
+        #     return check_output(['git', 'rev-parse', 'HEAD']).strip()
+
+        # def _get_uname():
+        #     return check_output(['uname', '-a']).strip()
+
+        # def _get_user():
+        #     return check_output(['whoami']).strip()
+
+        # def set_id_info(zappa_cli):
+        #     build_info = {
+        #         'branch': _get_git_branch(),
+        #         'hash': _get_git_hash(),
+        #         'build_uname': _get_uname(),
+        #         'build_user': _get_user(),
+        #         'build_time': datetime.datetime.utcnow().isoformat(),
+        #     }
+        #     with open(path.join(DIR, 'id_info.json'), 'w') as f:
+        #         json.dump(build_info, f)
+        #     return True
+
+        package_id_file = open(os.path.join(temp_project_path, 'package_info.json'), 'w')
         try:
-            deployment_id_file.write(deployment_uuid)
-        except TypeError:
-            deployment_id_file.write(unicode(deployment_uuid))
-        deployment_id_file.close()
+            package_id_file.write(json.dumps(package_info, indent=4))
+        except TypeError: # This is a Python 2/3 issue. TODO: Make pretty!
+            package_id_file.write(unicode(package_info))
+        package_id_file.close()
 
         # Then, do site site-packages..
         egg_links = []

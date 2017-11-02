@@ -476,7 +476,7 @@ Events can also take keyword arguments.
                 "function": "your_module.your_recurring_function", // The function to execute
                 "kwargs": {"key": "val", "key2": "val2"},  // Keyword arguments to pass. These are available in the event
                 "expression": "rate(1 minute)" // When to execute it (in cron or rate format)
-            }    
+            }
        ]
 ```
 
@@ -521,7 +521,7 @@ And that's it! Your API response will return immediately, while the `make_pie` f
 
 When calls to @task decorated functions or the zappa.async.run command occur outside of Lambda, such as your local dev environment,
 the functions will execute immediately and locally. The zappa async functionality only works
-when in the Lambda environment or when specifying [Remote Invocations](https://github.com/Miserlou/zappa#remote-invocations). 
+when in the Lambda environment or when specifying [Remote Invocations](https://github.com/Miserlou/zappa#remote-invocations).
 
 ### Task Sources
 
@@ -1158,9 +1158,9 @@ If you want to utilise [AWS Lambda's Dead Letter Queue feature](http://docs.aws.
 
 You must have already created the corresponding SNS/SQS topic/queue, and the Lambda function execution role must have been provisioned with read/publish/sendMessage access to the DLQ resource.
 
-### Unique Deployment ID
+### Unique Package ID
 
-For monitoring of different deployments, a unique UUID for each deployment is available in "deployment_id.file" in the root directory of your application's path.  You can use this ID or a hash of this file for such things as tracking errors across different deployments, monitoring status of deployments and other such things on services such as Sentry and New Relic.
+For monitoring of different deployments, a unique UUID for each package is available in `package_info.json` in the root directory of your application's package.  You can use this information or a hash of this file for such things as tracking errors across different deployments, monitoring status of deployments and other such things on services such as Sentry and New Relic.
 
 ## Zappa Guides
 
@@ -1221,7 +1221,7 @@ Are you using Zappa? Let us know and we'll list your site here!
 * [zappa-dashing](https://github.com/nikos/zappa-dashing) - Monitor your AWS environment (health/metrics) with Zappa and CloudWatch.
 * [s3env](https://github.com/cameronmaske/s3env) - Manipulate a remote Zappa environment variable key/value JSON object file in an S3 bucket through the CLI.
 * [zappa_resize_image_on_fly](https://github.com/wobeng/zappa_resize_image_on_fly) - Resize images on the fly using Flask, Zappa, Pillow, and OpenCV-python.
-* [zappa-ffmpeg](https://github.com/ubergarm/zappa-ffmpeg) - Run ffmpeg inside a lambda for serverless transformations. 
+* [zappa-ffmpeg](https://github.com/ubergarm/zappa-ffmpeg) - Run ffmpeg inside a lambda for serverless transformations.
 * [gdrive-lambda](https://github.com/richiverse/gdrive-lambda) - pass json data to a csv file for end users who use Gdrive across the organization.
 * [travis-build-repeat](https://github.com/bcongdon/travis-build-repeat) - Repeat TravisCI builds to avoid stale test results.
 * [wunderskill-alexa-skill](https://github.com/mcrowson/wunderlist-alexa-skill) - An Alexa skill for adding to a Wunderlist.

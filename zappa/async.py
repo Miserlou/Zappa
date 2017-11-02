@@ -452,6 +452,9 @@ def get_func_task_path(func):
 
 
 def get_async_response(response_id):
+    """
+    Get the response from the async table
+    """
     response = DYNAMODB_CLIENT.get_item(
         TableName=ASYNC_RESPONSE_TABLE,
         Key={'id': {'S': str(response_id)}}
