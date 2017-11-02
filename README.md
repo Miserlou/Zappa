@@ -1265,6 +1265,8 @@ Zappa is currently supported by these awesome individuals and companies:
   * LaunchLab
   * Sean Paley
   * Theo Chitayat
+  * George Sibble
+  * Joe Weiss
 
 Thank you very, very much!
 
