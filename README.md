@@ -67,7 +67,7 @@
     - [Raising AWS Service Limits](#raising-aws-service-limits)
     - [Using Zappa With Docker](#using-zappa-with-docker)
     - [Dead Letter Queues](#dead-letter-queues)
-    - [Unique Deployment ID](#deployment-id)
+    - [Unique Package ID](#unique-package-id)
 - [Zappa Guides](#zappa-guides)
 - [Zappa in the Press](#zappa-in-the-press)
 - [Sites Using Zappa](#sites-using-zappa)
@@ -1158,7 +1158,7 @@ If you want to utilise [AWS Lambda's Dead Letter Queue feature](http://docs.aws.
 
 You must have already created the corresponding SNS/SQS topic/queue, and the Lambda function execution role must have been provisioned with read/publish/sendMessage access to the DLQ resource.
 
-### Unique Package ID
+#### Unique Package ID
 
 For monitoring of different deployments, a unique UUID for each package is available in `package_info.json` in the root directory of your application's package.  You can use this information or a hash of this file for such things as tracking errors across different deployments, monitoring status of deployments and other such things on services such as Sentry and New Relic.
 

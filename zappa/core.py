@@ -614,6 +614,13 @@ class Zappa(object):
                             print(" - %s==%s: Warning! Using precompiled lambda package version %s instead!" % (installed_package_name, installed_package_version, lambda_version, ))
                             self.extract_lambda_package(installed_package_name, temp_project_path)
 
+                # This is a special case!
+                # SQLite3 is part of the _system_ Python, not a package. Still, it lives in `lambda-packages`.
+                # Everybody on Python3 gets it!
+                if self.runtime == "python3.6":
+                    print(" - sqlite==python36: Using precompiled lambda package")
+                    self.extract_lambda_package('sqlite3', temp_project_path)
+
             except Exception as e:
                 print(e)
                 # XXX - What should we do here?
