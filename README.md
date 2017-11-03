@@ -1164,10 +1164,10 @@ For monitoring of different deployments, a unique UUID for each package is avail
 
 ```json
 {
-  'build_platform': 'darwin',
-  'build_user': 'frank',
-  'build_time': '1509732511',
-  'uuid': '9c2df9e6-30f4-4c0a-ac4d-4ecb51831a74'
+  "build_platform": "darwin",
+  "build_user": "frank",
+  "build_time": "1509732511",
+  "uuid": "9c2df9e6-30f4-4c0a-ac4d-4ecb51831a74"
 }
 ```
 

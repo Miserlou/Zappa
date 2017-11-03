@@ -554,7 +554,7 @@ class Zappa(object):
         try:
             package_id_file.write(json.dumps(package_info, indent=4))
         except TypeError: # This is a Python 2/3 issue. TODO: Make pretty!
-            package_id_file.write(unicode(package_info))
+            package_id_file.write(unicode(json.dumps(package_info, indent=4)))
         package_id_file.close()
 
         # Then, do site site-packages..
