@@ -551,10 +551,11 @@ class Zappa(object):
         #     return True
 
         package_id_file = open(os.path.join(temp_project_path, 'package_info.json'), 'w')
+        dumped = json.dumps(package_info, indent=4)
         try:
-            package_id_file.write(json.dumps(package_info, indent=4))
+            package_id_file.write(dumped)
         except TypeError: # This is a Python 2/3 issue. TODO: Make pretty!
-            package_id_file.write(unicode(json.dumps(package_info, indent=4)))
+            package_id_file.write(unicode(dumped))
         package_id_file.close()
 
         # Then, do site site-packages..
