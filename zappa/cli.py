@@ -20,6 +20,7 @@ import pkgutil
 import botocore
 import click
 import collections
+import fnmatch
 import hjson as json
 import inspect
 import importlib
@@ -2094,6 +2095,15 @@ class ZappaCLI(object):
                 except ValueError: # pragma: no cover
                     raise ValueError("Unable to load the Zappa settings JSON. It may be malformed.")
 
+    def override_excludes(self, defaults):
+        """
+        Returns a list of excludes filtered by any overrides that might be provided. `fnmatch` is
+        is used to support globs, such as `boto*` removing `boto3`.
+        """
+        overrides = self.stage_config.get('override_default_exclude', [])
+        return [default for default in defaults if all(not fnmatch.fnmatch(default, override) for override in overrides)]
+
+
     def create_package(self, output=None):
         """
         Ensure that the package can be properly configured,
@@ -2141,7 +2151,7 @@ class ZappaCLI(object):
                 # Exclude packages already builtin to the python lambda environment
                 # Related: https://github.com/Miserlou/Zappa/issues/556
                 exclude = self.stage_config.get(
-                        'exclude', [
+                        'exclude', self.override_excludes([
                                         "boto3",
                                         "dateutil",
                                         "botocore",
@@ -2149,17 +2159,17 @@ class ZappaCLI(object):
                                         "six.py",
                                         "jmespath",
                                         "concurrent"
-                                    ])
+                                    ]))
             else:
                 # This could be python3.6 optimized.
                 exclude = self.stage_config.get(
-                        'exclude', [
+                        'exclude', self.override_excludes([
                                         "boto3",
                                         "dateutil",
                                         "botocore",
                                         "s3transfer",
                                         "concurrent"
-                                    ])
+                                    ]))
 
             # Create a single zip that has the handler and application
             self.zip_path = self.zappa.create_lambda_zip(

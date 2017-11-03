@@ -162,6 +162,29 @@ exclude
 
 This is an array of regex string patterns to exclude from the archive.
 
+override_default_exclude
+================
+
+Some modules are excluded by default from the archive because they are already provided by AWS in the Lambda environment. This settings lets you provide a list of UNIX filename-style globs to filter that list. For example ``["boto*"]`` would prevent ``boto3`` from being excluded, and thus allow overriding the version that is provided by AWS (e.g. when it lags behind a version that's needed for a bug fix).
+
+The default excluded modules for Python 2.x are:
+
+- ``boto3``
+- ``dateutil``
+- ``botocore``
+- ``s3transfer``
+- ``six.py``
+- ``jmespath``
+- ``concurrent``
+
+For Python 3+ they are:
+
+- ``boto3``
+- ``dateutil``
+- ``botocore``
+- ``s3transfer``
+- ``concurrent``
+
 
 http_methods
 ============
