@@ -1160,7 +1160,16 @@ You must have already created the corresponding SNS/SQS topic/queue, and the Lam
 
 #### Unique Package ID
 
-For monitoring of different deployments, a unique UUID for each package is available in `package_info.json` in the root directory of your application's package.  You can use this information or a hash of this file for such things as tracking errors across different deployments, monitoring status of deployments and other such things on services such as Sentry and New Relic.
+For monitoring of different deployments, a unique UUID for each package is available in `package_info.json` in the root directory of your application's package.  You can use this information or a hash of this file for such things as tracking errors across different deployments, monitoring status of deployments and other such things on services such as Sentry and New Relic. The package will contain:
+
+```json
+{
+  'build_platform': 'darwin',
+  'build_user': 'frank',
+  'build_time': '1509732511',
+  'uuid': '9c2df9e6-30f4-4c0a-ac4d-4ecb51831a74'
+}
+```
 
 ## Zappa Guides
 
