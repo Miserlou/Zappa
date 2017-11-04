@@ -1,9 +1,11 @@
 # Zappa Changelog
 
+## 0.46.0
+* Add `role_arn` settings variable
+
 ## 0.45.1
 * Make `package_info.json` consistent across Python versions
 * Fixes to `task_sns`
-* Add `role_arn` settings variable
 
 ## 0.45.0
 * Add support for SQLite on Python 3.6 (LP bump)
