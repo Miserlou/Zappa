@@ -2002,6 +2002,7 @@ class ZappaCLI(object):
         self.aws_kms_key_arn = self.stage_config.get('aws_kms_key_arn', '')
         self.context_header_mappings = self.stage_config.get('context_header_mappings', {})
         self.xray_tracing = self.stage_config.get('xray_tracing', False)
+        self.desired_role_arn = self.stage_config.get('role_arn')
 
         # Additional tags
         self.tags = self.stage_config.get('tags', {})
@@ -2012,6 +2013,7 @@ class ZappaCLI(object):
                             aws_region=self.aws_region,
                             load_credentials=self.load_credentials,
                             desired_role_name=desired_role_name,
+                            desired_role_arn=self.desired_role_arn,
                             runtime=self.runtime,
                             tags=self.tags,
                             endpoint_urls=self.stage_config.get('aws_endpoint_urls',{}),
