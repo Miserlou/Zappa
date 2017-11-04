@@ -230,6 +230,7 @@ class Zappa(object):
             aws_region=None,
             load_credentials=True,
             desired_role_name=None,
+            desired_role_arn=None,
             runtime='python2.7', # Detected at runtime in CLI
             tags=(),
             endpoint_urls={},
@@ -249,6 +250,9 @@ class Zappa(object):
 
         if desired_role_name:
             self.role_name = desired_role_name
+
+        if desired_role_arn:
+            self.credentials_arn = desired_role_arn
 
         self.runtime = runtime
 
