@@ -870,6 +870,23 @@ If you are wondering for what you would use an Authorizer, here are some potenti
 
 Zappa can be configured to call a function inside your code to do the authorization, or to call some other existing lambda function (which lets you share the authorizer between multiple lambdas). You control the behavior by specifying either the `arn` or `function_name` values in the `authorizer` settings block.
 
+Fr example, to get the Cognito identity, add this to a `zappa_settings.yaml`:
+
+```yaml
+  context_header_mappings:
+    user_id: authorizer.user_id
+```
+
+Which can now be accessed in Flask like this:
+
+```python
+from flask import request
+
+@route('/hello')
+def hello_world:
+   print(request.headers.get('user_id'))
+```
+
 ##### Cognito User Pool Authorizer
 
 You can also use AWS Cognito User Pool Authorizer by adding:
