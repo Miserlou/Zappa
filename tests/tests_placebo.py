@@ -177,6 +177,10 @@ class TestZappa(unittest.TestCase):
 
     @placebo_session
     def test_handler(self, session):
+        # The LambdaHandler only loads settings when its created for the
+        # first time, so lets remove the previous instance if it exists.
+        LambdaHandler._LambdaHandler__instance = None
+
         # Init will test load_remote_settings
         lh = LambdaHandler('test_settings', session=session)
 
