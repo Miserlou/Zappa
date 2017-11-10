@@ -1264,6 +1264,9 @@ Zappa goes quite far beyond what Lambda and API Gateway were ever intended to ha
 * Forcing the case permutations of "Set-Cookie" in order to return multiple headers at the same time.
 * ~~~Turning cookie-setting 301/302 responses into 200 responses with HTML redirects, because we have no way to set headers on redirects.~~~
 
+## Testing
+Zappa uses **tox** for testing. Checkout the [tox documentation](https://tox.readthedocs.io/en/latest/) for more information.
+
 ## Contributing
 
 This project is still young, so there is still plenty to be done. Contributions are more than welcome!
