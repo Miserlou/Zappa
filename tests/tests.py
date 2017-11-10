@@ -1260,9 +1260,9 @@ class TestZappa(unittest.TestCase):
 
         try:
             zappa_cli = ZappaCLI()
-            zappa_cli.domain = "test.example.com"
+            zappa_cli.domains = [{"name": "test.example.com"}]
             try:
-                zappa_cli.certify(no_cleanup=True)
+                zappa_cli.certify('test.example.com', no_cleanup=True)
             except AttributeError:
                 # Since zappa_cli.zappa isn't initalized, the certify() call
                 # fails when it tries to inspect what Zappa has deployed.
