@@ -73,6 +73,7 @@
 - [Sites Using Zappa](#sites-using-zappa)
 - [Related Projects](#related-projects)
 - [Hacks](#hacks)
+- [Testing](#testing)
 - [Contributing](#contributing)
     - [Using a Local Repo](#using-a-local-repo)
 - [Patrons](#patrons)
