@@ -24,7 +24,7 @@ with open(os.path.join(os.path.dirname(__file__), 'requirements.txt')) as f:
             if 'futures' not in package:
                 required.append(package)
 
-with open(os.path.join(os.path.dirname(__file__), 'test_requirements.txt')) as f:
+with open(os.path.join(os.path.dirname(__file__), 'requirements-test.txt')) as f:
     test_required = f.read().splitlines()
 
 setup(

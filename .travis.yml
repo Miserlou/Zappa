@@ -1,23 +1,32 @@
+sudo: false
+
 language: python
+
 python:
   - "2.7"
   - "3.6"
-# command to install dependencies
+
 cache:
   - pip
+
+before_install:
+  - pip install coveralls>=1.1
+
 install:
-  - "pip install setuptools --upgrade; pip install -r test_requirements.txt; pip install -e git+https://github.com/django/django-contrib-comments.git#egg=django-contrib-comments; python setup.py install" 
-# command to run tests
+  - pip install tox-travis
+
 env:
   - TESTCASE=tests/test_handler.py
   - TESTCASE=tests/tests_middleware.py
   - TESTCASE=tests/tests_placebo.py
   - TESTCASE=tests/tests_async.py
   - TESTCASE=tests/tests.py
-script: 
-  - nosetests $TESTCASE --with-coverage --cover-package=zappa --with-timer
-    #  - coverage combine --append
+
+script:
+  - tox -- $TESTCASE
+
 after_success:
   coveralls
+
 notifications:
   slack: zappateam:TTJ0mfHunDK0IBweKkEXjGpR
