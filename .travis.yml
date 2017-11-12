@@ -2,6 +2,10 @@ sudo: false
 
 language: python
 
+python:
+  - "2.7"
+  - "3.6"
+
 cache:
   - pip
 
@@ -11,11 +15,6 @@ before_install:
 install:
   - pip install tox-travis
 
-
-python:
-  - "2.7"
-  - "3.6"
-
 env:
   - TESTCASE=tests/test_handler.py
   - TESTCASE=tests/tests_middleware.py
@@ -24,7 +23,7 @@ env:
   - TESTCASE=tests/tests.py
 
 script:
-  - tox
+  - tox -- $TESTCASE
 
 after_success:
   coveralls
