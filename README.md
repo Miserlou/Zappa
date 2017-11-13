@@ -942,7 +942,7 @@ However, it's now far easier to use Route 53-based DNS authentication, which wil
 
 Amazon also provides their own free alternative to Let's Encrypt called [AWS Certificate Manager](https://aws.amazon.com/certificate-manager/) (ACM).
 
-1. Verify your domain in the AWS Ceriticate Manager console.
+1. Verify your domain in the AWS Certificate Manager console.
 2. In the console, select the N. Virginia (us-east-1) region and request a certificate for your domain or subdomain (`sub.yourdomain.tld`), or request a wildcard domain (`*.yourdomain.tld`).
 3. Copy the entire ARN of that certificate and place it in the Zappa setting `certificate_arn`.
 4. Set your desired domain in the `domain` setting.
