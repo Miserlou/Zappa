@@ -23,6 +23,7 @@
     - [Updates](#updates)
     - [Rollback](#rollback)
     - [Scheduling](#scheduling)
+      - [Advanced Scheduling](#advanced-scheduling)
     - [Undeploy](#undeploy)
     - [Package](#package)
     - [Template](#template)
@@ -35,6 +36,7 @@
 - [Asynchronous Task Execution](#asynchronous-task-execution)
   - [Task Sources](#task-sources)
   - [Direct Invocation](#direct-invocation)
+  - [Remote Invocations](#remote-invocations)
   - [Restrictions](#restrictions)
   - [Running Tasks in a VPC](#running-tasks-in-a-vpc)
   - [Responses](#responses)
@@ -58,10 +60,14 @@
       - [Deploying to a Domain With AWS Certificate Manager](#deploying-to-a-domain-with-aws-certificate-manager)
     - [Setting Environment Variables](#setting-environment-variables)
       - [Local Environment Variables](#local-environment-variables)
+      - [Remote AWS Environment Variables](#remote-aws-environment-variables)
       - [Remote Environment Variables](#remote-environment-variables)
+      - [Remote Environment Variables (via an S3 file)](#remote-environment-variables-via-an-s3-file)
+      - [](#)
     - [API Gateway Context Variables](#api-gateway-context-variables)
     - [Catching Unhandled Exceptions](#catching-unhandled-exceptions)
-    - [Using Custom AWS IAM Roles and Policies](#using-custom-aws-iam-roles-and-policies)
+    - [Using Custom AWS IAM Roles and Policies for Deployment](#using-custom-aws-iam-roles-and-policies-for-deployment)
+    - [Using Custom AWS IAM Roles and Policies for Execution](#using-custom-aws-iam-roles-and-policies-for-execution)
     - [AWS X-Ray](#aws-x-ray)
     - [Globally Available Server-less Architectures](#globally-available-server-less-architectures)
     - [Raising AWS Service Limits](#raising-aws-service-limits)
@@ -76,6 +82,7 @@
 - [Contributing](#contributing)
     - [Using a Local Repo](#using-a-local-repo)
 - [Patrons](#patrons)
+- [Merch](#merch)
 - [Support / Development / Training / Consulting](#support--development--training--consulting)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -191,6 +198,10 @@ Once your settings are configured, you can package and deploy your application t
 And now your app is **live!** How cool is that?!
 
 To explain what's going on, when you call `deploy`, Zappa will automatically package up your application and local virtual environment into a Lambda-compatible archive, replace any dependencies with versions [precompiled for Lambda](https://github.com/Miserlou/lambda-packages), set up the function handler and necessary WSGI Middleware, upload the archive to S3, create and manage the necessary Amazon IAM policies and roles, register it as a new Lambda function, create a new API Gateway resource, create WSGI-compatible routes for it, link it to the new Lambda function, and finally delete the archive from your S3 bucket. Handy!
+
+Be aware that the default IAM role and policy created for executing Lambda applies a liberal set of permissions.  
+These are most likely not appropriate for production deployment of important applications.  See the section 
+[Using Custom AWS IAM Roles and Policies for Execution](#using-custom-aws-iam-roles-and-policies-for-Execution) for more detail.
 
 #### Updates
 
@@ -1080,18 +1091,31 @@ You may still need a similar exception handler inside your application, this is 
 
 By default, AWS Lambda will attempt to retry an event based (non-API Gateway, e.g. CloudWatch) invocation if an exception has been thrown. However, you can prevent this by returning True, as in example above, so Zappa that will not re-raise the uncaught exception, thus preventing AWS Lambda from retrying the current invocation.
 
-#### Using Custom AWS IAM Roles and Policies
+#### Using Custom AWS IAM Roles and Policies for Deployment
 
-By default, the Zappa client will create and manage the necessary IAM policies and roles to execute Zappa applications. However, if you're using Zappa in a corporate environment or as part of a continuous integration, you may instead want to manually manage your remote execution policies instead. (You can specify which _local_ profile to use for deploying your Zappa application by defining the `profile_name` setting, which will correspond to a profile in your AWS credentials file.)
+You can specify which _local_ profile to use for deploying your Zappa application by defining 
+the `profile_name` setting, which will correspond to a profile in your AWS credentials file.
 
-To manually define the permissions policy of your Zappa execution role, you must define the following in your *zappa_settings.json*:
+#### Using Custom AWS IAM Roles and Policies for Execution
+
+The default IAM policy created by Zappa for executing the Lambda is very permissive.  
+It grants access to all actions for 
+all resources for types CloudWatch, S3, Kinesis, SNS, SQS, DynamoDB, and Route53; lambda:InvokeFunction 
+for all Lambda resources; Put to all X-Ray resources; and all Network Interface operations to all EC2 
+resources. While this allows most Lambdas to work correctly with no extra permissions, it is 
+generally not an acceptable set of permissions for most continuous integration pipelines or 
+production deployments. Instead, you will probably want to manually manage your IAM policies. 
+
+To manually define the policy of your Lambda execution role, you must set *manage_roles* to false and define 
+either the *role_name* or *role_arn* in your Zappa settings file. 
 
 ```javascript
 {
     "dev": {
         ...
         "manage_roles": false, // Disable Zappa client managing roles.
-        "role_name": "MyLambdaRole", // Name of your Zappa execution role. Default <project_name>-<env>-ZappaExecutionRole.
+        "role_name": "MyLambdaRole", // Name of your Zappa execution role. Optional, default: <project_name>-<env>-ZappaExecutionRole.
+        "role_arn": "arn:aws:iam::12345:role/app-ZappaLambdaExecutionRole", // ARN of your Zappa execution role. Optional.
         ...
     },
     ...
@@ -1099,8 +1123,9 @@ To manually define the permissions policy of your Zappa execution role, you must
 ```
 
 Ongoing discussion about the minimum policy requirements necessary for a Zappa deployment [can be found here](https://github.com/Miserlou/Zappa/issues/244).
+A more robust solution to managing these entitlements will likely be implemented soon. 
 
-If you only need to add a few permissions to the default Zappa execution policy, you can use the `extra_permissions` setting like so:
+To add permissions to the default Zappa execution policy, use the `extra_permissions` setting:
 
 ```javascript
 {
