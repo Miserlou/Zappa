@@ -1268,7 +1268,7 @@ Zappa goes quite far beyond what Lambda and API Gateway were ever intended to ha
 ## Testing
 Zappa uses `tox` for testing. Checkout the [tox documentation](https://tox.readthedocs.io/en/latest/) for more information.
 
-You can run a specific test file via `tox -- path/to/tests.py`.
+You can run a specific test file via `tox -- path/to/tests.py`, or a specific test via `tox -- tests.tests:TestZappa.test_lets_encrypt_sanity -s`
 
 You can run all tests for both python environments via `tox`.
 
