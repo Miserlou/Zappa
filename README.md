@@ -32,6 +32,10 @@
     - [Remote Function Invocation](#remote-function-invocation)
     - [Django Management Commands](#django-management-commands)
     - [SSL Certification](#ssl-certification)
+      - [Deploying to a Domain With AWS Certificate Manager](#deploying-to-a-domain-with-aws-certificate-manager)
+      - [Deploying to a Domain With a Let's Encrypt Certificate (DNS Auth)](#deploying-to-a-domain-with-a-lets-encrypt-certificate-dns-auth)
+      - [Deploying to a Domain With a Let's Encrypt Certificate (HTTP Auth)](#deploying-to-a-domain-with-a-lets-encrypt-certificate-http-auth)
+      - [Deploying to a Domain With Your Own SSL Certs](#deploying-to-a-domain-with-your-own-ssl-certs)
 - [Executing in Response to AWS Events](#executing-in-response-to-aws-events)
 - [Asynchronous Task Execution](#asynchronous-task-execution)
   - [Task Sources](#task-sources)
@@ -53,11 +57,6 @@
       - [IAM Policy](#iam-policy)
       - [API Gateway Authorizers](#api-gateway-authorizers)
       - [Cognito User Pool Authorizer](#cognito-user-pool-authorizer)
-    - [Deploying to a Custom Domain Name with SSL Certificates](#deploying-to-a-custom-domain-name-with-ssl-certificates)
-      - [Deploying to a Domain With a Let's Encrypt Certificate (DNS Auth)](#deploying-to-a-domain-with-a-lets-encrypt-certificate-dns-auth)
-      - [Deploying to a Domain With a Let's Encrypt Certificate (HTTP Auth)](#deploying-to-a-domain-with-a-lets-encrypt-certificate-http-auth)
-      - [Deploying to a Domain With Your Own SSL Certs](#deploying-to-a-domain-with-your-own-ssl-certs)
-      - [Deploying to a Domain With AWS Certificate Manager](#deploying-to-a-domain-with-aws-certificate-manager)
     - [Setting Environment Variables](#setting-environment-variables)
       - [Local Environment Variables](#local-environment-variables)
       - [Remote AWS Environment Variables](#remote-aws-environment-variables)
@@ -199,8 +198,8 @@ And now your app is **live!** How cool is that?!
 
 To explain what's going on, when you call `deploy`, Zappa will automatically package up your application and local virtual environment into a Lambda-compatible archive, replace any dependencies with versions [precompiled for Lambda](https://github.com/Miserlou/lambda-packages), set up the function handler and necessary WSGI Middleware, upload the archive to S3, create and manage the necessary Amazon IAM policies and roles, register it as a new Lambda function, create a new API Gateway resource, create WSGI-compatible routes for it, link it to the new Lambda function, and finally delete the archive from your S3 bucket. Handy!
 
-Be aware that the default IAM role and policy created for executing Lambda applies a liberal set of permissions.  
-These are most likely not appropriate for production deployment of important applications.  See the section 
+Be aware that the default IAM role and policy created for executing Lambda applies a liberal set of permissions.
+These are most likely not appropriate for production deployment of important applications.  See the section
 [Using Custom AWS IAM Roles and Policies for Execution](#using-custom-aws-iam-roles-and-policies-for-Execution) for more detail.
 
 #### Updates
@@ -386,17 +385,38 @@ _(Please note that commands which take over 30 seconds to execute may time-out. 
 
 #### SSL Certification
 
-If you want to use Zappa applications on a custom domain or subdomain, you'll need to supply a valid SSL certificate.
+Zappa can be deployed to custom domain names and subdomains with custom SSL certificates, Let's Encrypt certificates, and [AWS Certificate Manager](https://aws.amazon.com/certificate-manager/) (ACM) certificates.
 
-Zappa gives you three options here: Custom SSL certificates, AWS Certificate Manager-generated certificates (ACM), and Let's Encrypt certificates.
+Currently, the easiest of these to use are the AWS Certificate Manager certificates, as they are free, self-renewing, and require the least amount of work.
 
-If your domain is located within an AWS Route 53 Hosted Zone and you've defined settings for `domain` and either `certificate`, `certificate_arn` or `lets_encrypt_key` (ex: `openssl genrsa 2048 > account.key`), all you need to do is:
+##### Deploying to a Domain With AWS Certificate Manager
 
-    $ zappa certify production
+Amazon provides their own free alternative to Let's Encrypt called [AWS Certificate Manager](https://aws.amazon.com/certificate-manager/) (ACM). To use this service with Zappa:
 
-And your domain will be verified, certified and registered!
+1. Verify your domain in the AWS Certificate Manager console.
+2. In the console, select the N. Virginia (us-east-1) region and request a certificate for your domain or subdomain (`sub.yourdomain.tld`), or request a wildcard domain (`*.yourdomain.tld`).
+3. Copy the entire ARN of that certificate and place it in the Zappa setting `certificate_arn`.
+4. Set your desired domain in the `domain` setting.
+5. Call `$ zappa certify` to create and associate the API Gateway distribution using that certificate.
 
-More detailed instructions are available [in this handy guide](https://github.com/Miserlou/Zappa/blob/master/docs/domain_with_free_ssl_dns.md) and lower down in this README file.
+##### Deploying to a Domain With a Let's Encrypt Certificate (DNS Auth)
+
+If you want to use Zappa on a domain with a free Let's Encrypt certificate using automatic Route 53 based DNS Authentication, you can follow [this handy guide](https://github.com/Miserlou/Zappa/blob/master/docs/domain_with_free_ssl_dns.md).
+
+##### Deploying to a Domain With a Let's Encrypt Certificate (HTTP Auth)
+
+If you want to use Zappa on a domain with a free Let's Encrypt certificate using HTTP Authentication, you can follow [this guide](https://github.com/Miserlou/Zappa/blob/master/docs/domain_with_free_ssl_http.md).
+
+However, it's now far easier to use Route 53-based DNS authentication, which will allow you to use a Let's Encrypt certificate with a single `$ zappa certify` command.
+
+##### Deploying to a Domain With Your Own SSL Certs
+
+1. The first step is to create a custom domain and obtain your SSL cert / key / bundle.
+2. Ensure you have set the `domain` setting within your Zappa settings JSON - this will avoid problems with the Base Path mapping between the Custom Domain and the API invoke URL, which gets the Stage Name appended in the URI
+3. Add the paths to your SSL cert / key / bundle to the `certificate`, `certificate_key`, and `certificate_chain` settings, respectively, in your Zappa settings JSON
+4. Set `route53_enabled` to `false` if you plan on using your own DNS provider, and not an AWS Route53 Hosted zone.
+5. Deploy or update your app using Zappa
+6. Run `$ zappa certify` to upload your certificates and register the custom domain name with your API gateway.
 
 ## Executing in Response to AWS Events
 
@@ -913,41 +933,6 @@ You can also use AWS Cognito User Pool Authorizer by adding:
 }
 ```
 
-#### Deploying to a Custom Domain Name with SSL Certificates
-
-Zappa can be deployed with custom certificates, Let's Encrypt certificates, and [AWS Certificate Manager](https://aws.amazon.com/certificate-manager/) (ACM) certificates.
-
-Currently, the easiest of these to use are the AWS Certificate Manager certificates, as they are free, self-renewing, and require the least amount of work.
-
-##### Deploying to a Domain With a Let's Encrypt Certificate (DNS Auth)
-
-If you want to use Zappa on a domain with a free Let's Encrypt certificate using automatic Route 53 based DNS Authentication, you can follow [this handy guide](https://github.com/Miserlou/Zappa/blob/master/docs/domain_with_free_ssl_dns.md).
-
-##### Deploying to a Domain With a Let's Encrypt Certificate (HTTP Auth)
-
-If you want to use Zappa on a domain with a free Let's Encrypt certificate using HTTP Authentication, you can follow [this guide](https://github.com/Miserlou/Zappa/blob/master/docs/domain_with_free_ssl_http.md).
-
-However, it's now far easier to use Route 53-based DNS authentication, which will allow you to use a Let's Encrypt certificate with a single `$ zappa certify` command.
-
-##### Deploying to a Domain With Your Own SSL Certs
-
-1. The first step is to create a custom domain and obtain your SSL cert / key / bundle.
-2. Ensure you have set the `domain` setting within your Zappa settings JSON - this will avoid problems with the Base Path mapping between the Custom Domain and the API invoke URL, which gets the Stage Name appended in the URI
-3. Add the paths to your SSL cert / key / bundle to the `certificate`, `certificate_key`, and `certificate_chain` settings, respectively, in your Zappa settings JSON
-4. Set `route53_enabled` to `false` if you plan on using your own DNS provider, and not an AWS Route53 Hosted zone.
-5. Deploy or update your app using Zappa
-6. Run `$ zappa certify` to upload your certificates and register the custom domain name with your API gateway.
-
-##### Deploying to a Domain With AWS Certificate Manager
-
-Amazon also provides their own free alternative to Let's Encrypt called [AWS Certificate Manager](https://aws.amazon.com/certificate-manager/) (ACM).
-
-1. Verify your domain in the AWS Certificate Manager console.
-2. In the console, select the N. Virginia (us-east-1) region and request a certificate for your domain or subdomain (`sub.yourdomain.tld`), or request a wildcard domain (`*.yourdomain.tld`).
-3. Copy the entire ARN of that certificate and place it in the Zappa setting `certificate_arn`.
-4. Set your desired domain in the `domain` setting.
-5. Call `$ zappa certify` to create and associate the API Gateway distribution using that certificate.
-
 #### Setting Environment Variables
 
 ##### Local Environment Variables
@@ -1093,21 +1078,21 @@ By default, AWS Lambda will attempt to retry an event based (non-API Gateway, e.
 
 #### Using Custom AWS IAM Roles and Policies for Deployment
 
-You can specify which _local_ profile to use for deploying your Zappa application by defining 
+You can specify which _local_ profile to use for deploying your Zappa application by defining
 the `profile_name` setting, which will correspond to a profile in your AWS credentials file.
 
 #### Using Custom AWS IAM Roles and Policies for Execution
 
-The default IAM policy created by Zappa for executing the Lambda is very permissive.  
-It grants access to all actions for 
-all resources for types CloudWatch, S3, Kinesis, SNS, SQS, DynamoDB, and Route53; lambda:InvokeFunction 
-for all Lambda resources; Put to all X-Ray resources; and all Network Interface operations to all EC2 
-resources. While this allows most Lambdas to work correctly with no extra permissions, it is 
-generally not an acceptable set of permissions for most continuous integration pipelines or 
-production deployments. Instead, you will probably want to manually manage your IAM policies. 
+The default IAM policy created by Zappa for executing the Lambda is very permissive.
+It grants access to all actions for
+all resources for types CloudWatch, S3, Kinesis, SNS, SQS, DynamoDB, and Route53; lambda:InvokeFunction
+for all Lambda resources; Put to all X-Ray resources; and all Network Interface operations to all EC2
+resources. While this allows most Lambdas to work correctly with no extra permissions, it is
+generally not an acceptable set of permissions for most continuous integration pipelines or
+production deployments. Instead, you will probably want to manually manage your IAM policies.
 
-To manually define the policy of your Lambda execution role, you must set *manage_roles* to false and define 
-either the *role_name* or *role_arn* in your Zappa settings file. 
+To manually define the policy of your Lambda execution role, you must set *manage_roles* to false and define
+either the *role_name* or *role_arn* in your Zappa settings file.
 
 ```javascript
 {
@@ -1123,7 +1108,7 @@ either the *role_name* or *role_arn* in your Zappa settings file.
 ```
 
 Ongoing discussion about the minimum policy requirements necessary for a Zappa deployment [can be found here](https://github.com/Miserlou/Zappa/issues/244).
-A more robust solution to managing these entitlements will likely be implemented soon. 
+A more robust solution to managing these entitlements will likely be implemented soon.
 
 To add permissions to the default Zappa execution policy, use the `extra_permissions` setting:
 
