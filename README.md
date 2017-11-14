@@ -141,7 +141,7 @@ _(If you use [pyenv](https://github.com/yyuu/pyenv) and love to manage virtualen
 
 Next, you'll need to define your local and server-side settings.
 
-#### Running the Initial Setup / Settings
+### Running the Initial Setup / Settings
 
 **Zappa** can automatically set up your deployment settings for you with the `init` command:
 
@@ -186,7 +186,7 @@ Now, you're ready to deploy!
 
 ## Basic Usage
 
-#### Initial Deployments
+### Initial Deployments
 
 Once your settings are configured, you can package and deploy your application to a stage called "production" with a single command:
 
@@ -202,7 +202,7 @@ Be aware that the default IAM role and policy created for executing Lambda appli
 These are most likely not appropriate for production deployment of important applications.  See the section
 [Using Custom AWS IAM Roles and Policies for Execution](#using-custom-aws-iam-roles-and-policies-for-Execution) for more detail.
 
-#### Updates
+### Updates
 
 If your application has already been deployed and you only need to upload new Python code, but not touch the underlying routes, you can simply:
 
@@ -212,13 +212,13 @@ If your application has already been deployed and you only need to upload new Py
 
 This creates a new archive, uploads it to S3 and updates the Lambda function to use the new code, but doesn't touch the API Gateway routes.
 
-#### Rollback
+### Rollback
 
 You can also `rollback` the deployed code to a previous version by supplying the number of revisions to return to. For instance, to rollback to the version deployed 3 versions ago:
 
     $ zappa rollback production -n 3
 
-#### Scheduling
+### Scheduling
 
 Zappa can be used to easily schedule functions to occur on regular intervals. This provides a much nicer, maintenance-free alternative to Celery!
 These functions will be packaged and deployed along with your `app_function` and called from the handler automatically.
@@ -251,7 +251,7 @@ And now your scheduled event rules are deleted.
 
 See the [example](example/) for more details.
 
-##### Advanced Scheduling
+#### Advanced Scheduling
 
 Sometimes a function needs multiple expressions to describe its schedule. To set multiple expressions, simply list your functions, and the list of expressions to schedule them using [cron or rate syntax](http://docs.aws.amazon.com/lambda/latest/dg/tutorial-scheduled-events-schedule-expressions.html) in your *zappa_settings.json* file:
 
@@ -272,7 +272,7 @@ This can be used to deal with issues arising from the UTC timezone crossing midn
 
 It should be noted that overlapping expressions will not throw a warning, and should be checked for, to prevent duplicate triggering of functions.
 
-#### Undeploy
+### Undeploy
 
 If you need to remove the API Gateway and Lambda function that you have previously published, you can simply:
 
@@ -285,7 +285,7 @@ want to keep those logs, you can specify the `--remove-logs` argument to purge t
 
     $ zappa undeploy production --remove-logs
 
-#### Package
+### Package
 
 If you want to build your application package without actually uploading and registering it as a Lambda function, you can use the `package` command:
 
@@ -307,7 +307,7 @@ You can also specify the output filename of the package with `-o`:
 
     $ zappa package production -o my_awesome_package.zip
 
-#### Template
+### Template
 
 Similarly, if you only want the API Gateway CloudFormation template, for use the `template` command:
 
@@ -317,13 +317,13 @@ Note that you must supply your own Lambda ARN and Role ARNs in this case, as the
 
 You can use get the JSON output directly with `--json`, and specify the output file with `--output`.
 
-#### Status
+### Status
 
 If you need to see the status of your deployment and event schedules, simply use the `status` command.
 
     $ zappa status production
 
-#### Tailing Logs
+### Tailing Logs
 
 You can watch the logs of a deployment by calling the `tail` management command.
 
@@ -353,7 +353,7 @@ You can filter out the contents of the logs with `--filter`, like so:
 
 Note that this uses the [CloudWatch Logs filter syntax](http://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/FilterAndPatternSyntax.html).
 
-#### Remote Function Invocation
+### Remote Function Invocation
 
 You can execute any function in your application directly at any time by using the `invoke` command.
 
@@ -367,7 +367,7 @@ You can also invoke interpretable Python 2.7 or Python 3.6 strings directly by u
 
     $ zappa invoke production "print 1 + 2 + 3" --raw
 
-#### Django Management Commands
+### Django Management Commands
 
 As a convenience, Zappa can also invoke remote Django 'manage.py' commands with the `manage` command. For instance, to perform the basic Django status check:
 
@@ -383,13 +383,13 @@ Commands which require direct user input, such as `createsuperuser`, should be [
 
 _(Please note that commands which take over 30 seconds to execute may time-out. See [this related issue](https://github.com/Miserlou/Zappa/issues/205#issuecomment-236391248) for a work-around.)_
 
-#### SSL Certification
+### SSL Certification
 
 Zappa can be deployed to custom domain names and subdomains with custom SSL certificates, Let's Encrypt certificates, and [AWS Certificate Manager](https://aws.amazon.com/certificate-manager/) (ACM) certificates.
 
 Currently, the easiest of these to use are the AWS Certificate Manager certificates, as they are free, self-renewing, and require the least amount of work.
 
-##### Deploying to a Domain With AWS Certificate Manager
+#### Deploying to a Domain With AWS Certificate Manager
 
 Amazon provides their own free alternative to Let's Encrypt called [AWS Certificate Manager](https://aws.amazon.com/certificate-manager/) (ACM). To use this service with Zappa:
 
@@ -399,17 +399,17 @@ Amazon provides their own free alternative to Let's Encrypt called [AWS Certific
 4. Set your desired domain in the `domain` setting.
 5. Call `$ zappa certify` to create and associate the API Gateway distribution using that certificate.
 
-##### Deploying to a Domain With a Let's Encrypt Certificate (DNS Auth)
+#### Deploying to a Domain With a Let's Encrypt Certificate (DNS Auth)
 
 If you want to use Zappa on a domain with a free Let's Encrypt certificate using automatic Route 53 based DNS Authentication, you can follow [this handy guide](https://github.com/Miserlou/Zappa/blob/master/docs/domain_with_free_ssl_dns.md).
 
-##### Deploying to a Domain With a Let's Encrypt Certificate (HTTP Auth)
+#### Deploying to a Domain With a Let's Encrypt Certificate (HTTP Auth)
 
 If you want to use Zappa on a domain with a free Let's Encrypt certificate using HTTP Authentication, you can follow [this guide](https://github.com/Miserlou/Zappa/blob/master/docs/domain_with_free_ssl_http.md).
 
 However, it's now far easier to use Route 53-based DNS authentication, which will allow you to use a Let's Encrypt certificate with a single `$ zappa certify` command.
 
-##### Deploying to a Domain With Your Own SSL Certs
+#### Deploying to a Domain With Your Own SSL Certs
 
 1. The first step is to create a custom domain and obtain your SSL cert / key / bundle.
 2. Ensure you have set the `domain` setting within your Zappa settings JSON - this will avoid problems with the Base Path mapping between the Custom Domain and the API invoke URL, which gets the Stage Name appended in the URI
@@ -836,7 +836,7 @@ Similarly, you can supply a `zappa_settings.toml` file:
 
 ## Advanced Usage
 
-#### Keeping The Server Warm
+### Keeping The Server Warm
 
 Zappa will automatically set up a regularly occurring execution of your application in order to keep the Lambda function warm. This can be disabled via the `keep_warm` setting.
 
@@ -850,17 +850,17 @@ Your web application framework will likely be able to handle this for you automa
 
 Similarly, you may want to design your application so that static binary uploads go [directly to S3](http://docs.aws.amazon.com/AWSJavaScriptSDK/guide/browser-examples.html#Uploading_a_local_file_using_the_File_API), which then triggers an event response defined in your `events` setting! That's thinking serverlessly!
 
-#### Enabling CORS
+### Enabling CORS
 
 The simplest way to enable CORS (Cross-Origin Resource Sharing) for in your Zappa application is to set `cors` to `true` in your Zappa settings file and updating, which is the equivalent of pushing the "Enable CORS" button in the AWS API Gateway console. This is disabled by default, but you may wish to enable it for APIs which are accessed from other domains, etc. It may also conflict with `binary_support`, so you should set that to `false` in your settings.
 
 You can also simply handle CORS directly in your application. Your web framework will probably have an extension to do this, such as [django-cors-headers](https://github.com/ottoyiu/django-cors-headers) or [Flask-CORS](https://github.com/corydolphin/flask-cors). Using these will make your code more portable.
 
-#### Large Projects
+### Large Projects
 
 AWS currently limits Lambda zip sizes to 50 megabytes. If your project is larger than that, set `slim_handler: true` in your `zappa_settings.json`. In this case, your fat application package will be replaced with a small handler-only package. The handler file then pulls the rest of the large project down from S3 at run time! The initial load of the large project may add to startup overhead, but the difference should be minimal on a warm lambda function. Note that this will also eat into the _memory_ space of your application function.
 
-#### Enabling Bash Completion
+### Enabling Bash Completion
 
 Bash completion can be enabled by adding the following to your .bashrc:
 
@@ -875,9 +875,9 @@ then the command must be run there. Alternatively you can execute:
 
 The file's contents should then be sourced in e.g. ~/.bashrc.
 
-#### Enabling Secure Endpoints on API Gateway
+### Enabling Secure Endpoints on API Gateway
 
-##### API Key
+#### API Key
 
 You can use the `api_key_required` setting to generate an API key to all the routes of your API Gateway. The process is as follows:
 1. Deploy/redeploy (update won't work) and write down the *id* for the key that has been created
@@ -886,11 +886,11 @@ You can use the `api_key_required` setting to generate an API key to all the rou
     * select "Usage Plans", create a new usage plan and link the API Key and the API that Zappa has created for you
 3. Send a request where you pass the key value as a header called `x-api-key` to access the restricted endpoints (for example with curl: `curl --header "x-api-key: key_value"`). Note that without the x-api-key header, you will receive a 403.
 
-##### IAM Policy
+#### IAM Policy
 
 You can enable IAM-based (v4 signing) authorization on an API by setting the `iam_authorization` setting to `true`. Your API will then require signed requests and access can be controlled via [IAM policy](https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-iam-policy-examples.html). Unsigned requests will receive a 403 response, as will requesters who are not authorized to access the API. Enabling this will override the Authorizer configuration (see below).
 
-##### API Gateway Authorizers
+#### API Gateway Authorizers
 If you deploy an API endpoint with Zappa, you can take advantage of [API Gateway Authorizers](http://docs.aws.amazon.com/apigateway/latest/developerguide/use-custom-authorizer.html) to implement a token-based authentication - all you need to do is to provide a function to create the required output, Zappa takes care of the rest. A good start for the function is the [AWS Labs blueprint example](https://github.com/awslabs/aws-apigateway-lambda-authorizer-blueprints/blob/master/blueprints/python/api-gateway-authorizer-python.py).
 
 If you are wondering for what you would use an Authorizer, here are some potential use cases:
@@ -918,7 +918,7 @@ def hello_world:
    print(request.headers.get('user_id'))
 ```
 
-##### Cognito User Pool Authorizer
+#### Cognito User Pool Authorizer
 
 You can also use AWS Cognito User Pool Authorizer by adding:
 
@@ -933,9 +933,9 @@ You can also use AWS Cognito User Pool Authorizer by adding:
 }
 ```
 
-#### Setting Environment Variables
+### Setting Environment Variables
 
-##### Local Environment Variables
+#### Local Environment Variables
 
 If you want to set local environment variables for a deployment stage, you can simply set them in your `zappa_settings.json`:
 
@@ -960,7 +960,7 @@ your_value = os.environ.get('your_key')
 
 If your project needs to be aware of the type of environment you're deployed to, you'll also be able to get `SERVERTYPE` (AWS Lambda), `FRAMEWORK` (Zappa), `PROJECT` (your project name) and `STAGE` (_dev_, _production_, etc.) variables at any time.
 
-##### Remote AWS Environment Variables
+#### Remote AWS Environment Variables
 
 If you want to use native AWS Lambda environment variables you can use the `aws_environment_variables` configuration setting. These are useful as you can easily change them via the AWS Lambda console or cli at runtime. They are also useful for storing sensitive credentials and to take advantage of KMS encryption of environment variables.
 
@@ -978,13 +978,13 @@ if 'SERVERTYPE' in os.environ and os.environ['SERVERTYPE'] == 'AWS Lambda':
 
 ```
 
-##### Remote Environment Variables
+#### Remote Environment Variables
 
 Any environment variables that you have set outside of Zappa (via AWS Lambda console or cli) will remain as they are when running `update`, unless they are also in `aws_environment_variables`, in which case the remote value will be overwritten by the one in the settings file. If you are using KMS-encrypted AWS environment variables, you can set your KMS Key ARN in the `aws_kms_key_arn` setting. Make sure that the values you set are encrypted in such case.
 
 _Note: if you rely on these as well as `environment_variables`, and you have the same key names, then those in `environment_variables` will take precedence as they are injected in the lambda handler._
 
-##### Remote Environment Variables (via an S3 file)
+#### Remote Environment Variables (via an S3 file)
 
 _S3 remote environment variables were added to Zappa before AWS introduced native environment variables for Lambda (via the console and cli). Before going down this route check if above make more sense for your usecase._
 
@@ -993,7 +993,7 @@ If you want to use remote environment variables to configure your application (w
 
 For example, to ensure your application has access to the database credentials without storing them in your version control, you can add a file to S3 with the connection string and load it into the lambda environment using the `remote_env` configuration setting.
 
-#####
+####
 super-secret-config.json (uploaded to my-config-bucket):
 ```javascript
 {
@@ -1018,7 +1018,7 @@ import os
 db_string = os.environ.get('DB_CONNECTION_STRING')
 ```
 
-#### API Gateway Context Variables
+### API Gateway Context Variables
 
 If you want to map an API Gateway context variable (http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html) to an HTTP header you can set up the mapping in `zappa_settings.json`:
 
@@ -1049,7 +1049,7 @@ For example, if you want to expose the $context.identity.cognitoIdentityId varia
 }
 ```
 
-#### Catching Unhandled Exceptions
+### Catching Unhandled Exceptions
 
 By default, if an _unhandled_ exception happens in your code, Zappa will just print the stacktrace into a CloudWatch log. If you wish to use an external reporting tool to take note of those exceptions, you can use the `exception_handler` configuration option.
 
@@ -1076,12 +1076,12 @@ You may still need a similar exception handler inside your application, this is 
 
 By default, AWS Lambda will attempt to retry an event based (non-API Gateway, e.g. CloudWatch) invocation if an exception has been thrown. However, you can prevent this by returning True, as in example above, so Zappa that will not re-raise the uncaught exception, thus preventing AWS Lambda from retrying the current invocation.
 
-#### Using Custom AWS IAM Roles and Policies for Deployment
+### Using Custom AWS IAM Roles and Policies for Deployment
 
 You can specify which _local_ profile to use for deploying your Zappa application by defining
 the `profile_name` setting, which will correspond to a profile in your AWS credentials file.
 
-#### Using Custom AWS IAM Roles and Policies for Execution
+### Using Custom AWS IAM Roles and Policies for Execution
 
 The default IAM policy created by Zappa for executing the Lambda is very permissive.
 It grants access to all actions for
@@ -1126,7 +1126,7 @@ To add permissions to the default Zappa execution policy, use the `extra_permiss
 }
 ```
 
-#### AWS X-Ray
+### AWS X-Ray
 
 Zappa can enable [AWS X-Ray](https://aws.amazon.com/xray/) support on your function with a configuration setting:
 
@@ -1156,7 +1156,7 @@ XRayMiddleware(app, xray_recorder)
 The official [X-Ray documentation for Python](http://docs.aws.amazon.com/xray-sdk-for-python/latest/reference/) has more information on how to use this with your code.
 
 
-#### Globally Available Server-less Architectures
+### Globally Available Server-less Architectures
 
 
 <p align="center">
@@ -1170,23 +1170,23 @@ During the `init` process, you will be given the option to deploy your applicati
 
 To learn more about these capabilities, see [these slides](https://htmlpreview.github.io/?https://github.com/Miserlou/Talks/blob/master/serverless-london/global.html#0) from ServerlessConf London.
 
-#### Raising AWS Service Limits
+### Raising AWS Service Limits
 
 Out of the box, AWS sets a limit of [1000 concurrent executions](http://docs.aws.amazon.com/lambda/latest/dg/limits.html) for your functions. If you start to breach these limits, you may start to see errors like `ClientError: An error occurred (LimitExceededException) when calling the PutTargets.."` or something similar.
 
 To avoid this, you can file a [service ticket](https://console.aws.amazon.com/support/home#/) with Amazon to raise your limits up to the many tens of thousands of concurrent executions which you may need. This is a fairly common practice with Amazon, designed to prevent you from accidentally creating extremely expensive bug reports. So, before raising your service limits, make sure that you don't have any rogue scripts which could accidentally create tens of thousands of parallel executions that you don't want to pay for.
 
-#### Using Zappa With Docker
+### Using Zappa With Docker
 
 If Docker is part of your team's CI, testing, or deployments, you may want to check out [this handy guide](https://blog.zappa.io/posts/simplified-aws-lambda-deployments-with-docker-and-zappa) on using Zappa with Docker.
 
-#### Dead Letter Queues
+### Dead Letter Queues
 
 If you want to utilise [AWS Lambda's Dead Letter Queue feature](http://docs.aws.amazon.com/lambda/latest/dg/dlq.html) simply add the key `dead_letter_arn`, with the value being the complete ARN to the corresponding SNS topic or SQS queue in your `zappa_settings.json`.
 
 You must have already created the corresponding SNS/SQS topic/queue, and the Lambda function execution role must have been provisioned with read/publish/sendMessage access to the DLQ resource.
 
-#### Unique Package ID
+### Unique Package ID
 
 For monitoring of different deployments, a unique UUID for each package is available in `package_info.json` in the root directory of your application's package.  You can use this information or a hash of this file for such things as tracking errors across different deployments, monitoring status of deployments and other such things on services such as Sentry and New Relic. The package will contain:
 
