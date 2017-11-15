@@ -2122,6 +2122,7 @@ class ZappaCLI(object):
             self.zip_path = self.zappa.create_lambda_zip(
                 prefix=self.lambda_name,
                 use_precompiled_packages=self.stage_config.get('use_precompiled_packages', True),
+                include=include,
                 exclude=self.stage_config.get('exclude', []),
                 disable_progress=self.disable_progress,
                 archive_format='tarball'
@@ -2136,7 +2137,6 @@ class ZappaCLI(object):
                 venv=self.zappa.create_handler_venv(),
                 handler_file=handler_file,
                 slim_handler=True,
-                include=include,
                 exclude=exclude,
                 output=output,
                 disable_progress=self.disable_progress
