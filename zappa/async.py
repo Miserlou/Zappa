@@ -215,9 +215,25 @@ class SnsAsyncResponse(LambdaAsyncResponse):
                                     topic_name=get_topic_name(self.lambda_function_name)
                                 )
 
+        # Issue: https://github.com/Miserlou/Zappa/issues/1209
+        # TODO: Refactor
         self.capture_response = capture_response
         if capture_response:
-            self.response_id = str(uuid.uuid4())
+            if ASYNC_RESPONSE_TABLE is None:
+                print(
+                    "Warning! Attempted to capture a response without "
+                    "async_response_table configured in settings (you won't "
+                    "capture async responses)."
+                )
+                capture_response = False
+                self.response_id = "MISCONFIGURED"
+
+            else:
+                self.response_id = str(uuid.uuid4())
+        else:
+            self.response_id = None
+
+        self.capture_response = capture_response
 
 
     def _send(self, message):
@@ -363,7 +379,7 @@ def task(*args, **kwargs):
     if len(args) == 1 and callable(args[0]):
         func = args[0]
 
-    if func:  # Default Values
+    if not kwargs:  # Default Values
         service = 'lambda'
         lambda_function_name = os.environ.get('AWS_LAMBDA_FUNCTION_NAME')
         aws_region = os.environ.get('AWS_REGION')
@@ -452,6 +468,9 @@ def get_func_task_path(func):
 
 
 def get_async_response(response_id):
+    """
+    Get the response from the async table
+    """
     response = DYNAMODB_CLIENT.get_item(
         TableName=ASYNC_RESPONSE_TABLE,
         Key={'id': {'S': str(response_id)}}

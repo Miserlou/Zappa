@@ -10,6 +10,7 @@ from __future__ import print_function
 
 import boto3
 import botocore
+import getpass
 import glob
 import hashlib
 import json
@@ -26,6 +27,7 @@ import time
 import troposphere
 import troposphere.apigateway
 import zipfile
+import uuid
 
 from builtins import int, bytes
 from botocore.exceptions import ClientError
@@ -228,6 +230,7 @@ class Zappa(object):
             aws_region=None,
             load_credentials=True,
             desired_role_name=None,
+            desired_role_arn=None,
             runtime='python2.7', # Detected at runtime in CLI
             tags=(),
             endpoint_urls={},
@@ -247,6 +250,9 @@ class Zappa(object):
 
         if desired_role_name:
             self.role_name = desired_role_name
+
+        if desired_role_arn:
+            self.credentials_arn = desired_role_arn
 
         self.runtime = runtime
 
@@ -447,12 +453,13 @@ class Zappa(object):
         if not venv:
             venv = self.get_current_venv()
 
+        build_time = str(int(time.time()))
         cwd = os.getcwd()
         if not output:
             if archive_format == 'zip':
-                archive_fname = prefix + '-' + str(int(time.time())) + '.zip'
+                archive_fname = prefix + '-' + build_time + '.zip'
             elif archive_format == 'tarball':
-                archive_fname = prefix + '-' + str(int(time.time())) + '.tar.gz'
+                archive_fname = prefix + '-' + build_time + '.tar.gz'
         else:
             archive_fname = output
         archive_path = os.path.join(cwd, archive_fname)
@@ -507,6 +514,53 @@ class Zappa(object):
         if handler_file:
             filename = handler_file.split(os.sep)[-1]
             shutil.copy(handler_file, os.path.join(temp_project_path, filename))
+
+        # Create and populate package ID file and write to temp project path
+        package_info = {}
+        package_info['uuid'] = str(uuid.uuid4())
+        package_info['build_time'] = build_time
+        package_info['build_platform'] = os.sys.platform
+        package_info['build_user'] = getpass.getuser()
+        # TODO: Add git head and info?
+
+        # Ex, from @scoates:
+        # def _get_git_branch():
+        #     chdir(DIR)
+        #     out = check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD']).strip()
+        #     lambci_branch = environ.get('LAMBCI_BRANCH', None)
+        #     if out == "HEAD" and lambci_branch:
+        #         out += " lambci:{}".format(lambci_branch)
+        #     return out
+
+        # def _get_git_hash():
+        #     chdir(DIR)
+        #     return check_output(['git', 'rev-parse', 'HEAD']).strip()
+
+        # def _get_uname():
+        #     return check_output(['uname', '-a']).strip()
+
+        # def _get_user():
+        #     return check_output(['whoami']).strip()
+
+        # def set_id_info(zappa_cli):
+        #     build_info = {
+        #         'branch': _get_git_branch(),
+        #         'hash': _get_git_hash(),
+        #         'build_uname': _get_uname(),
+        #         'build_user': _get_user(),
+        #         'build_time': datetime.datetime.utcnow().isoformat(),
+        #     }
+        #     with open(path.join(DIR, 'id_info.json'), 'w') as f:
+        #         json.dump(build_info, f)
+        #     return True
+
+        package_id_file = open(os.path.join(temp_project_path, 'package_info.json'), 'w')
+        dumped = json.dumps(package_info, indent=4)
+        try:
+            package_id_file.write(dumped)
+        except TypeError: # This is a Python 2/3 issue. TODO: Make pretty!
+            package_id_file.write(unicode(dumped))
+        package_id_file.close()
 
         # Then, do site site-packages..
         egg_links = []
@@ -564,6 +618,13 @@ class Zappa(object):
                             lambda_version = lambda_packages[installed_package_name][self.runtime]['version']
                             print(" - %s==%s: Warning! Using precompiled lambda package version %s instead!" % (installed_package_name, installed_package_version, lambda_version, ))
                             self.extract_lambda_package(installed_package_name, temp_project_path)
+
+                # This is a special case!
+                # SQLite3 is part of the _system_ Python, not a package. Still, it lives in `lambda-packages`.
+                # Everybody on Python3 gets it!
+                if self.runtime == "python3.6":
+                    print(" - sqlite==python36: Using precompiled lambda package")
+                    self.extract_lambda_package('sqlite3', temp_project_path)
 
             except Exception as e:
                 print(e)

@@ -1,7 +1,23 @@
 # Zappa Changelog
 
+## 0.46.0
+* Add `role_arn` settings variable
+
+## 0.45.1
+* Make `package_info.json` consistent across Python versions
+* Fixes to `task_sns`
+
+## 0.45.0
+* Add support for SQLite on Python 3.6 (LP bump)
+* Add unique package identifier file
+* Fixes #1171 don't colorize partial words
+* Various small changes
+* More robust OpenSSL parsing for LE
+* Update applies tags
+* Allows deploying and updating from existing S3 package
+
 ## 0.44.3
-* Slim handler packaging hotfix - thanks @mcrowson! 
+* Slim handler packaging hotfix - thanks @mcrowson!
 
 ## 0.44.2
 * Non-Dynamo asynx hotfix - thanks @jwkvam!
@@ -33,7 +49,7 @@
 * Fix SNS Async (#1055)
 * GZip for slim handler
 * Force color option
-* Various dep bumps 
+* Various dep bumps
 
 ## 0.43.1
 * Fixes #1001, don't override AWS env vars if k:v not set. Thanks Nik and Sean!
