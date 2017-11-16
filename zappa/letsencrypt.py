@@ -239,7 +239,7 @@ def register_account():
     LOGGER.info("Registering account...")
     code, result = _send_signed_request(DEFAULT_CA + "/acme/new-reg", {
         "resource": "new-reg",
-        "agreement": "https://letsencrypt.org/documents/LE-SA-v1.1.1-August-1-2016.pdf",
+        "agreement": "https://letsencrypt.org/documents/LE-SA-v1.2-November-15-2017.pdf",
     })
     if code == 201:  # pragma: no cover
         LOGGER.info("Registered!")
