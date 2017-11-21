@@ -63,7 +63,7 @@ def create_wsgi_request(event_info,
         
         # Extract the source IP of the TCP connection making the request to API Gateway
         if event_info['requestContext'].get('identity'):
-            source_ip = event_info['requestContext']['identity'].get('sourceIp')
+            tcp_source_ip = event_info['requestContext']['identity'].get('sourceIp')
 
         # Related:  https://github.com/Miserlou/Zappa/issues/677
         #           https://github.com/Miserlou/Zappa/issues/683
@@ -109,7 +109,7 @@ def create_wsgi_request(event_info,
             'PATH_INFO': path,
             'QUERY_STRING': query_string,
             'REMOTE_ADDR': remote_addr,
-            'SOURCE_IP': source_ip,
+            'TCP_SOURCE_IP': tcp_source_ip,
             'REQUEST_METHOD': method,
             'SCRIPT_NAME': str(script_name) if script_name else '',
             'SERVER_NAME': str(server_name),
