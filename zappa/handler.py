@@ -124,6 +124,7 @@ class LambdaHandler(object):
                 self.app_module = None
                 wsgi_app_function = None
             # This is probably a normal WSGI app (Or django with overloaded wsgi application)
+            # https://github.com/Miserlou/Zappa/issues/1164
             elif hasattr(self.settings, 'APP_MODULE'):
                 if self.settings.DJANGO_SETTINGS:
                     sys.path.append('/var/task')
