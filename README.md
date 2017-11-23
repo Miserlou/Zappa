@@ -367,6 +367,10 @@ You can also invoke interpretable Python 2.7 or Python 3.6 strings directly by u
 
     $ zappa invoke production "print 1 + 2 + 3" --raw
 
+If you want the zappa command to fail if the invoked command fails add the `--exit-code` argument:
+
+  $ zappa invoke production "raise Exception()" --raw --exit-code
+
 ### Django Management Commands
 
 As a convenience, Zappa can also invoke remote Django 'manage.py' commands with the `manage` command. For instance, to perform the basic Django status check:
