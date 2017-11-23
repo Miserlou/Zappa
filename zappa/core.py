@@ -1698,6 +1698,13 @@ class Zappa(object):
                 ]
             )
 
+    def update_cognito(self, user_pool, lambda_configs):
+        LambdaConfig = {}
+        for config in lambda_configs:
+            LambdaConfig[config] = self.lambda_arn
+        cognito_idp = boto3.client('cognito-idp')
+        cognito_idp.update_user_pool(UserPoolId=user_pool, LambdaConfig=LambdaConfig)
+
     def delete_stack(self, name, wait=False):
         """
         Delete the CF stack managed by Zappa.

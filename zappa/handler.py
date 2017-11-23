@@ -303,6 +303,12 @@ class LambdaHandler(object):
 
         return None
 
+    def get_function_for_cognito_trigger(self, trigger):
+        """
+        Get the associated function to execute for a cognito trigger
+        """
+        return self.settings.COGNITO_TRIGGER_MAPPING.get(trigger)
+
     def handler(self, event, context):
         """
         An AWS Lambda function which parses specific API Gateway input into a
@@ -400,6 +406,19 @@ class LambdaHandler(object):
             else:
                 logger.error("Cannot find a function to process the authorization request.")
                 raise Exception('Unauthorized')
+
+        # This is an AWS Cognito Trigger Event
+        elif event.get('triggerSource', None):
+            triggerSource = event.get('triggerSource')
+            whole_function = self.get_function_for_cognito_trigger(triggerSource)
+            result = event
+            if whole_function:
+                app_function = self.import_module_and_get_function(whole_function)
+                result = self.run_function(app_function, event, context)
+                logger.debug(result)
+            else:
+                logger.error("Cannot find a function to handle cognito trigger {}".format(triggerSource))
+            return result
 
         # Normal web app flow
         try:

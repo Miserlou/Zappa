@@ -985,6 +985,15 @@ class ZappaCLI(object):
         else:
             endpoint_url = None
 
+        # Update any cognito pool with the lambda arn
+        if self.cognito:
+            user_pool = self.cognito.get('user_pool')
+            triggers = self.cognito.get('triggers', [])
+            lambda_configs = set()
+            for trigger in triggers:
+                lambda_configs.add(trigger['source'].split('_')[0])
+            self.zappa.update_cognito(user_pool, lambda_configs)
+
         self.schedule()
 
         self.callback('post')
@@ -1971,6 +1980,7 @@ class ZappaCLI(object):
         self.timeout_seconds = self.stage_config.get('timeout_seconds', 30)
         dead_letter_arn = self.stage_config.get('dead_letter_arn', '')
         self.dead_letter_config = {'TargetArn': dead_letter_arn} if dead_letter_arn else {}
+        self.cognito = self.stage_config.get('cognito', None)
 
         # Provide legacy support for `use_apigateway`, now `apigateway_enabled`.
         # https://github.com/Miserlou/Zappa/issues/490
@@ -2292,6 +2302,18 @@ class ZappaCLI(object):
                 if arn and function:
                     event_mapping[arn] = function
             settings_s = settings_s + "AWS_EVENT_MAPPING={0!s}\n".format(event_mapping)
+
+            # Map cognito triggers
+            cognito_trigger_mapping = {}
+            cognito_config = self.stage_config.get('cognito', {})
+            triggers = cognito_config.get('triggers', [])
+            for trigger in triggers:
+
+                source = trigger.get('trigger')
+                function = trigger.get('function')
+                if source and function:
+                    cognito_trigger_mapping[source] = function
+            settings_s = settings_s + "COGNITO_TRIGGER_MAPPING={0!s}\n".format(cognito_trigger_mapping)
 
             # Authorizer config
             authorizer_function = self.authorizer.get('function', None)
