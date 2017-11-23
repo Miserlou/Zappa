@@ -2461,7 +2461,7 @@ class Zappa(object):
                     function,
                     self.boto_session
                 )
-                print("Removed event " + name + " (" + str(event_source['events']) + ").")
+                print("Removed event " + name + " (" + str(event_source.get('events', [])) + ").")
 
     ###
     # Async / SNS
