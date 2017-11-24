@@ -296,6 +296,8 @@ class Zappa(object):
             self.sns_client = self.boto_client('sns')
             self.cf_client = self.boto_client('cloudformation')
             self.dynamodb_client = self.boto_client('dynamodb')
+            self.cognito_client = self.boto_client('cognito-idp')
+            self.sts_client = self.boto_client('sts')
 
         self.tags = tags
         self.cf_template = troposphere.Template()
@@ -1698,12 +1700,41 @@ class Zappa(object):
                 ]
             )
 
-    def update_cognito(self, user_pool, lambda_configs):
+    def update_cognito(self, lambda_name, user_pool, lambda_configs, lambda_arn):
         LambdaConfig = {}
         for config in lambda_configs:
-            LambdaConfig[config] = self.lambda_arn
-        cognito_idp = boto3.client('cognito-idp')
-        cognito_idp.update_user_pool(UserPoolId=user_pool, LambdaConfig=LambdaConfig)
+            LambdaConfig[config] = lambda_arn
+        description = self.cognito_client.describe_user_pool(UserPoolId=user_pool)
+        description_kwargs = {}
+        for key, value in description['UserPool'].items():
+            if key in ('UserPoolId', 'Policies', 'AutoVerifiedAttributes', 'SmsVerificationMessage',
+                       'EmailVerificationMessage', 'EmailVerificationSubject', 'VerificationMessageTemplate',
+                       'SmsAuthenticationMessage', 'MfaConfiguration', 'DeviceConfiguration',
+                       'EmailConfiguration', 'SmsConfiguration', 'UserPoolTags',
+                       'AdminCreateUserConfig'):
+                description_kwargs[key] = value
+            elif key is 'LambdaConfig':
+                for lckey, lcvalue in value.items():
+                    if lckey in LambdaConfig:
+                        value[lckey] = LambdaConfig[lckey]
+                print("value", value)
+                description_kwargs[key] = value
+        if 'LambdaConfig' not in description_kwargs:
+            description_kwargs['LambdaConfig'] = LambdaConfig
+        result = self.cognito_client.update_user_pool(UserPoolId=user_pool, **description_kwargs)
+        if result['ResponseMetadata']['HTTPStatusCode'] != 200:
+            print("Cognito:  Failed to update user pool", result)
+
+        # Now we need to add a policy to the IAM that allows cognito access
+        result = self.create_event_permission(lambda_name,
+                                              'cognito-idp.amazonaws.com',
+                                              'arn:aws:cognito-idp:{}:{}:userpool/{}'.
+                                              format(self.aws_region,
+                                                     self.sts_client.get_caller_identity().get('Account'),
+                                                     user_pool)
+                                              )
+        if result['ResponseMetadata']['HTTPStatusCode'] != 201:
+            print("Cognito:  Failed to update lambda permission", result)
 
     def delete_stack(self, name, wait=False):
         """

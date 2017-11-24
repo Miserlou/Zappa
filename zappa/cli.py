@@ -985,16 +985,17 @@ class ZappaCLI(object):
         else:
             endpoint_url = None
 
+        self.schedule()
+
         # Update any cognito pool with the lambda arn
+        # do this after schedule as schedule clears the lambda policy and we need to add one
         if self.cognito:
             user_pool = self.cognito.get('user_pool')
             triggers = self.cognito.get('triggers', [])
             lambda_configs = set()
             for trigger in triggers:
                 lambda_configs.add(trigger['source'].split('_')[0])
-            self.zappa.update_cognito(user_pool, lambda_configs)
-
-        self.schedule()
+            self.zappa.update_cognito(self.lambda_name, user_pool, lambda_configs, self.lambda_arn)
 
         self.callback('post')
 
@@ -2308,8 +2309,7 @@ class ZappaCLI(object):
             cognito_config = self.stage_config.get('cognito', {})
             triggers = cognito_config.get('triggers', [])
             for trigger in triggers:
-
-                source = trigger.get('trigger')
+                source = trigger.get('source')
                 function = trigger.get('function')
                 if source and function:
                     cognito_trigger_mapping[source] = function
