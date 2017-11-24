@@ -312,7 +312,7 @@ You can also specify the output filename of the package with `-o`:
 
 By default, Zappa will package the entire virtualenv in the resulting zip. To control the final package (and potentially reduce size) you can:
 
-* Set `slim_handler` to `True` to upload a small handler to lambdas and the rest of the package to S3. For more details, see the [merged pull request](https://github.com/Miserlou/Zappa/pull/548) and the [discussion in the original issue](https://github.com/Miserlou/Zappa/issues/510).
+* Set `slim_handler` to `True` to upload a small handler to lambdas and the rest of the package to S3. For more details, see the [merged pull request](https://github.com/Miserlou/Zappa/pull/548) and the [discussion in the original issue](https://github.com/Miserlou/Zappa/issues/510). See also: [Large Projects](#large-projects).
 * Use the `exclude` setting and provide a list of regex patterns to exclude from the archive. By default, Zappa will exclude Boto, because [it's already available in the Lambda execution environment](http://docs.aws.amazon.com/lambda/latest/dg/current-supported-versions.html).
 
 ### Template
