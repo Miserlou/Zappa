@@ -26,6 +26,7 @@
     - [Advanced Scheduling](#advanced-scheduling)
   - [Undeploy](#undeploy)
   - [Package](#package)
+  - [How Zappa packages your app](#how-zappa-packages-your-app)
   - [Template](#template)
   - [Status](#status)
   - [Tailing Logs](#tailing-logs)
@@ -306,6 +307,13 @@ If you have a `zip` callback in your `callbacks` setting, this will also be invo
 You can also specify the output filename of the package with `-o`:
 
     $ zappa package production -o my_awesome_package.zip
+
+### How Zappa packages your app
+
+By default, Zappa will package the entire virtualenv in the resulting zip. To control the final package (and potentially reduce size) you can:
+
+* Set `slim_handler` to `True` to upload a small handler to lambdas and the rest of the package to S3. For more details, see the [merged pull request](https://github.com/Miserlou/Zappa/pull/548) and the [discussion in the original issue](https://github.com/Miserlou/Zappa/issues/510).
+* Use the `exclude` setting and provide a list of regex patterns to exclude from the archive. By default, Zappa will exclude Boto, because [it's already available in the Lambda execution environment](http://docs.aws.amazon.com/lambda/latest/dg/current-supported-versions.html).
 
 ### Template
 
