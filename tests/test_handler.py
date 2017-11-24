@@ -127,3 +127,26 @@ class TestZappa(unittest.TestCase):
             response['body'],
             'https://zappa:80/return/request/url'
         )
+
+    def test_wsgi_script_on_cognito_event_request(self):
+        """
+        Ensure that requests sent by cognito behave sensibly
+        """
+        lh = LambdaHandler('tests.test_wsgi_script_name_settings')
+
+        event = {'version': '1',
+                 'region': 'eu-west-1',
+                 'userPoolId': 'region_poolID',
+                 'userName': 'uuu-id-here',
+                 'callerContext': {'awsSdkVersion': 'aws-sdk-js-2.149.0',
+                                   'clientId': 'client-id-here'},
+                 'triggerSource': 'PreSignUp_SignUp',
+                 'request': {'userAttributes':
+                             {'email': 'email@example.com'}, 'validationData': None},
+                 'response': {'autoConfirmUser': False,
+                              'autoVerifyEmail': False,
+                              'autoVerifyPhone': False}}
+
+        response = lh.handler(event, None)
+
+        self.assertEqual(response['response']['autoConfirmUser'], False)

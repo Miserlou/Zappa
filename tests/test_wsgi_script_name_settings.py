@@ -9,3 +9,4 @@ DOMAIN = 'api.example.com'
 ENVIRONMENT_VARIABLES = {}
 LOG_LEVEL = 'DEBUG'
 PROJECT_NAME = 'wsgi_script_name_settings'
+COGNITO_TRIGGER_MAPPING = {}
