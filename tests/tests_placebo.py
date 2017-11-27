@@ -465,5 +465,11 @@ class TestZappa(unittest.TestCase):
         remove_event_source(event_source, 'lambda:lambda:lambda:lambda', 'test_settings.callback', session, dry=True)
         # get_event_source_status(event_source, 'lambda:lambda:lambda:lambda', 'test_settings.callback', session, dry=True)
 
+    @placebo_session
+    def test_cognito_trigger(self, session):
+        z = Zappa(session)
+        z.update_cognito('Zappa-Trigger-Test', 'us-east-1_9jUv74DH8', {'PreSignUp': 'test.tasks.pre_signup'}, 'arn:aws:lambda:us-east-1:575873786340:function:Zappa-Trigger-Test')
+
+
 if __name__ == '__main__':
     unittest.main()

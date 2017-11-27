@@ -1,0 +1,19 @@
+{
+    "status_code": 200,
+    "data": {
+        "UserId": "RANDOMSTRING12314",
+        "Account": "12345",
+        "Arn": "arn:aws:iam::12345:user/test",
+        "ResponseMetadata": {
+            "RequestId": "ae5ff039-d365-11e7-ba9b-9d9eb3cc14f8",
+            "HTTPStatusCode": 200,
+            "HTTPHeaders": {
+                "x-amzn-requestid": "ae5ff039-d365-11e7-ba9b-9d9eb3cc14f8",
+                "content-type": "text/xml",
+                "content-length": "401",
+                "date": "Mon, 27 Nov 2017 11:25:32 GMT"
+            },
+            "RetryAttempts": 0
+        }
+    }
+}
