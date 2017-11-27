@@ -178,8 +178,8 @@ class TestZappa(unittest.TestCase):
     @placebo_session
     def test_no_api_gw(self, session):
         lh = LambdaHandler('test_settings', session=session)
-        lh.settings.USE_APIGATEWAY = False;
-        lh.settings.APP_FUNCTION = 'no_api_gw';
+        lh.settings.USE_APIGATEWAY = False
+        lh.settings.APP_FUNCTION = 'no_api_gw'
 
         # Test with disabled API GW (https://github.com/Miserlou/Zappa/issues/695)
         event = {
