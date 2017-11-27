@@ -14,9 +14,10 @@ import shutil
 import sys
 import tempfile
 
+from click.globals import resolve_color_default
 from click.exceptions import ClickException
 
-from zappa.cli import ZappaCLI, shamelessly_promote
+from zappa.cli import ZappaCLI, shamelessly_promote, disable_click_colors
 from zappa.ext.django_zappa import get_django_wsgi
 from zappa.letsencrypt import get_cert_and_update_domain, create_domain_key, create_domain_csr, \
     create_chained_certificate, cleanup, parse_account_key, parse_csr, sign_certificate, encode_certificate,\
@@ -65,6 +66,10 @@ class TestZappa(unittest.TestCase):
     def test_zappa(self):
         self.assertTrue(True)
         Zappa()
+
+    def test_disable_click_colors(self):
+        disable_click_colors()
+        assert resolve_color_default() is False
 
     # @mock.patch('zappa.zappa.find_packages')
     # @mock.patch('os.remove')
@@ -155,14 +160,27 @@ class TestZappa(unittest.TestCase):
         z = Zappa(runtime='python2.7')
 
         # mock pip packages call to be same as what our mocked site packages dir has
-        mock_package = collections.namedtuple('mock_package', ['project_name', 'version'])
-        mock_pip_installed_packages = [mock_package('super_package', '0.1')]
+        mock_package = collections.namedtuple('mock_package', ['project_name', 'version', 'location'])
+        mock_pip_installed_packages = [mock_package('super_package', '0.1', '/venv/site-packages')]
 
         with mock.patch('os.path.isdir', return_value=True):
             with mock.patch('os.listdir', return_value=['super_package']):
                 import pip  # this gets called in non-test Zappa mode
                 with mock.patch('pip.get_installed_distributions', return_value=mock_pip_installed_packages):
                     self.assertDictEqual(z.get_installed_packages('',''), {'super_package' : '0.1'})
+
+    def test_getting_installed_packages_mixed_case(self, *args):
+        z = Zappa(runtime='python2.7')
+
+        # mock pip packages call to be same as what our mocked site packages dir has
+        mock_package = collections.namedtuple('mock_package', ['project_name', 'version', 'location'])
+        mock_pip_installed_packages = [mock_package('SuperPackage', '0.1', '/venv/site-packages')]
+
+        with mock.patch('os.path.isdir', return_value=True):
+            with mock.patch('os.listdir', return_value=['superpackage']):
+                import pip  # this gets called in non-test Zappa mode
+                with mock.patch('pip.get_installed_distributions', return_value=mock_pip_installed_packages):
+                    self.assertDictEqual(z.get_installed_packages('',''), {'superpackage' : '0.1'})
 
     def test_load_credentials(self):
         z = Zappa()
@@ -700,7 +718,7 @@ class TestZappa(unittest.TestCase):
         self.assertTrue(zappa_cli.stage_config['touch'])  # First Extension
         self.assertTrue(zappa_cli.stage_config['delete_local_zip'])  # The base
 
-    def test_load_settings_yaml(self):
+    def test_load_settings_yml(self):
         zappa_cli = ZappaCLI()
         zappa_cli.api_stage = 'ttt888'
         zappa_cli.load_settings('tests/test_settings.yml')
@@ -709,6 +727,18 @@ class TestZappa(unittest.TestCase):
         zappa_cli = ZappaCLI()
         zappa_cli.api_stage = 'extendo'
         zappa_cli.load_settings('tests/test_settings.yml')
+        self.assertEqual('lmbda', zappa_cli.stage_config['s3_bucket'])
+        self.assertEqual(True, zappa_cli.stage_config['touch'])
+
+    def test_load_settings_yaml(self):
+        zappa_cli = ZappaCLI()
+        zappa_cli.api_stage = 'ttt888'
+        zappa_cli.load_settings('tests/test_settings.yaml')
+        self.assertEqual(False, zappa_cli.stage_config['touch'])
+
+        zappa_cli = ZappaCLI()
+        zappa_cli.api_stage = 'extendo'
+        zappa_cli.load_settings('tests/test_settings.yaml')
         self.assertEqual('lmbda', zappa_cli.stage_config['s3_bucket'])
         self.assertEqual(True, zappa_cli.stage_config['touch'])
 
@@ -725,6 +755,7 @@ class TestZappa(unittest.TestCase):
         tempdir = tempfile.mkdtemp(prefix="zappa-test-settings")
         shutil.copy("tests/test_one_env.json", tempdir + "/zappa_settings.json")
         shutil.copy("tests/test_settings.yml", tempdir + "/zappa_settings.yml")
+        shutil.copy("tests/test_settings.yml", tempdir + "/zappa_settings.yaml")
         shutil.copy("tests/test_settings.toml", tempdir + "/zappa_settings.toml")
 
         orig_cwd = os.getcwd()
@@ -754,6 +785,13 @@ class TestZappa(unittest.TestCase):
             self.assertIn("ttt888", zappa_cli.zappa_settings)
             self.assertIn("devor", zappa_cli.zappa_settings)
             os.unlink("zappa_settings.yml")
+
+            self.assertEqual(zappa_cli.get_json_or_yaml_settings(),
+                             "zappa_settings.yaml")
+            zappa_cli.load_settings_file()
+            self.assertIn("ttt888", zappa_cli.zappa_settings)
+            self.assertIn("devor", zappa_cli.zappa_settings)
+            os.unlink("zappa_settings.yaml")
 
             # Without anything, we should get an exception.
             self.assertRaises(
@@ -807,6 +845,10 @@ class TestZappa(unittest.TestCase):
         zappa_cli.print_logs(logs, colorize=True, non_http=False)
         zappa_cli.print_logs(logs, colorize=True, non_http=True, http=True)
         zappa_cli.print_logs(logs, colorize=True, non_http=False, http=False)
+        zappa_cli.print_logs(logs, colorize=False, force_colorize=False)
+        zappa_cli.print_logs(logs, colorize=False, force_colorize=True)
+        zappa_cli.print_logs(logs, colorize=True, force_colorize=False)
+        zappa_cli.print_logs(logs, colorize=True, non_http=False, http=False, force_colorize=True)
         zappa_cli.check_for_update()
 
     def test_cli_format_invoke_command(self):
@@ -821,6 +863,14 @@ class TestZappa(unittest.TestCase):
         zappa_cli = ZappaCLI()
         plain_string = "START RequestId: dd81d3de-5225-11e7-a24f-59014f430ab3 Version: $LATEST\n[DEBUG] 2017-06-15T23:53:44.194Z dd81d3de-5225-11e7-a24f-59014f430ab3 Zappa Event: {'raw_command': 'import datetime; print(datetime.datetime.now())'}\n2017-06-15 23:53:44.195012\nEND RequestId: dd81d3de-5225-11e7-a24f-59014f430ab3\nREPORT RequestId: dd81d3de-5225-11e7-a24f-59014f430ab3\nDuration: 0.63 ms\nBilled Duration: 100 ms \nMemory Size: 512 MB\nMax Memory Used: 53 MB\n"
         final_string = "\x1b[36m\x1b[1m[START]\x1b[0m \x1b[32m\x1b[1mRequestId:\x1b[0m \x1b[35m\x1b[35mdd81d3de-5225-11e7-a24f-59014f430ab3\x1b[0m\x1b[0m \x1b[32m\x1b[1mVersion:\x1b[0m $LATEST\n\x1b[36m\x1b[1m[DEBUG]\x1b[0m 2017-06-15T23:53:44.194Z \x1b[35m\x1b[35mdd81d3de-5225-11e7-a24f-59014f430ab3\x1b[0m\x1b[0m \x1b[32m\x1b[1mZappa Event:\x1b[0m {'raw_command': 'import datetime; print(datetime.datetime.now())'}\n2017-06-15 23:53:44.195012\n\x1b[36m\x1b[1m[END]\x1b[0m \x1b[32m\x1b[1mRequestId:\x1b[0m \x1b[35m\x1b[35mdd81d3de-5225-11e7-a24f-59014f430ab3\x1b[0m\x1b[0m\n\x1b[36m\x1b[1m[REPORT]\x1b[0m \x1b[32m\x1b[1mRequestId:\x1b[0m \x1b[35m\x1b[35mdd81d3de-5225-11e7-a24f-59014f430ab3\x1b[0m\x1b[0m\n\x1b[32m\x1b[1mDuration:\x1b[0m 0.63 ms\n\x1b[32m\x1b[1mBilled\x1b[0m \x1b[32m\x1b[1mDuration:\x1b[0m 100 ms \n\x1b[32m\x1b[1mMemory Size:\x1b[0m 512 MB\n\x1b[32m\x1b[1mMax Memory Used:\x1b[0m 53 MB\n"
+
+        colorized_string = zappa_cli.colorize_invoke_command(plain_string)
+        self.assertEqual(final_string, colorized_string)
+
+    def test_cli_colorize_whole_words_only(self):
+        zappa_cli = ZappaCLI()
+        plain_string = "START RESTART END RENDER report [DEBUG] TEXT[DEBUG]TEXT"
+        final_string = "\x1b[36m\x1b[1m[START]\x1b[0m RESTART \x1b[36m\x1b[1m[END]\x1b[0m RENDER report \x1b[36m\x1b[1m[DEBUG]\x1b[0m TEXT\x1b[36m\x1b[1m[DEBUG]\x1b[0mTEXT"
 
         colorized_string = zappa_cli.colorize_invoke_command(plain_string)
         self.assertEqual(final_string, colorized_string)

@@ -29,7 +29,7 @@ def lambda_handler(event, context):
 
     """if the token is valid, a policy must be generated which will allow or deny access to the client"""
 
-    """if access is denied, the client will recieve a 403 Access Denied response"""
+    """if access is denied, the client will receive a 403 Access Denied response"""
     """if access is allowed, API Gateway will proceed with the backend integration configured on the method that was called"""
 
     """this function must generate a policy that is associated with the recognized principal user identifier."""

@@ -1,5 +1,56 @@
 # Zappa Changelog
 
+## 0.46.0
+* Add `role_arn` settings variable
+
+## 0.45.1
+* Make `package_info.json` consistent across Python versions
+* Fixes to `task_sns`
+
+## 0.45.0
+* Add support for SQLite on Python 3.6 (LP bump)
+* Add unique package identifier file
+* Fixes #1171 don't colorize partial words
+* Various small changes
+* More robust OpenSSL parsing for LE
+* Update applies tags
+* Allows deploying and updating from existing S3 package
+
+## 0.44.3
+* Slim handler packaging hotfix - thanks @mcrowson!
+
+## 0.44.2
+* Non-Dynamo asynx hotfix - thanks @jwkvam!
+
+## 0.44.1
+* Packaging hotfix - thank Yunseop!
+
+## 0.44.0
+* Async responses (thanks Sean!)
+* Remove setLevel call from common log
+* Fix #1023
+* Merge #1058, 1059, 1073
+* Allow overriding of endpoint_url arg
+* Add support for API Gateway stage variables
+* Add AWS X-Ray support (thanks @mathom!)
+* Events take kwargs (Thanks @mcrowson!)
+* Detect P2/3 during `init`
+* Include stage names in `slim_handler` zips
+* Allow `-s` with `manage`
+* Use same S3 bucket for global endpoints
+* Fix bug with mixed-case packages
+* Cache wheels, fix 0-byte wheels
+
+## 0.43.2
+* Add index prefix to each subsequent schedule expression for the same event (#1051)
+* fix/Only update CORS on resources which have an OPTIONS method (#1036)
+* Support for binary support and cors simultaneously (#1011)
+* Set Flask script name based on domain which the request was made to (#1015)
+* Fix SNS Async (#1055)
+* GZip for slim handler
+* Force color option
+* Various dep bumps
+
 ## 0.43.1
 * Fixes #1001, don't override AWS env vars if k:v not set. Thanks Nik and Sean!
 
@@ -209,7 +260,7 @@ from nikbora
 
 ## 0.28.1
 * Add "global" mode to init. Expect a blog post soon!
-* Small refactors and dependancy upgrades.
+* Small refactors and dependency upgrades.
 
 ## 0.28.0
 * `--json` for machine readable status output
@@ -233,7 +284,7 @@ from nikbora
 * Remove many hacks using new API Gateway features.
     * Closes #303, #363, #361
     * See the [blog post](https://blog.zappa.io/posts/unhacking-zappa-with-new-apigateway-features) for more details!
-* Bump dependancies - make sure you reinstall your requirements!
+* Bump dependencies - make sure you reinstall your requirements!
 * Improved stack update handling.
 
 ### 0.26.1 (Never Published)

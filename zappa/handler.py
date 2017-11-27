@@ -11,7 +11,7 @@ import logging
 import os
 import sys
 import traceback
-import zipfile
+import tarfile
 
 from builtins import str
 from werkzeug.wrappers import Response
@@ -91,15 +91,15 @@ class LambdaHandler(object):
                 pass
 
             # Set any locally defined env vars
-            # Environement variable keys can't be Unicode
+            # Environment variable keys can't be Unicode
             # https://github.com/Miserlou/Zappa/issues/604
             for key in self.settings.ENVIRONMENT_VARIABLES.keys():
                 os.environ[str(key)] = self.settings.ENVIRONMENT_VARIABLES[key]
 
             # Pulling from S3 if given a zip path
-            project_zip_path = getattr(self.settings, 'ZIP_PATH', None)
-            if project_zip_path:
-                self.load_remote_project_zip(project_zip_path)
+            project_archive_path = getattr(self.settings, 'ARCHIVE_PATH', None)
+            if project_archive_path:
+                self.load_remote_project_archive(project_archive_path)
 
 
             # Load compliled library to the PythonPath
@@ -145,7 +145,7 @@ class LambdaHandler(object):
 
             self.wsgi_app = ZappaWSGIMiddleware(wsgi_app_function)
 
-    def load_remote_project_zip(self, project_zip_path):
+    def load_remote_project_archive(self, project_zip_path):
         """
         Puts the project files from S3 in /tmp and adds to path
         """
@@ -157,16 +157,13 @@ class LambdaHandler(object):
             else:
                 boto_session = self.session
 
-            # Download the zip
+            # Download zip file from S3
             remote_bucket, remote_file = parse_s3_url(project_zip_path)
             s3 = boto_session.resource('s3')
+            archive_on_s3 = s3.Object(remote_bucket, remote_file).get()
 
-            zip_path = '/tmp/{0!s}'.format(remote_file)
-            s3.Object(remote_bucket, remote_file).download_file(zip_path)
-
-            # Unzip contents to project folder
-            with zipfile.ZipFile(zip_path, 'r') as z:
-                z.extractall(path=project_folder)
+            with tarfile.open(fileobj=archive_on_s3['Body'], mode="r|gz") as t:
+                t.extractall(project_folder)
 
         # Add to project path
         sys.path.insert(0, project_folder)
@@ -216,7 +213,7 @@ class LambdaHandler(object):
                     key,
                     value
                 ))
-            # Environement variable keys can't be Unicode
+            # Environment variable keys can't be Unicode
             # https://github.com/Miserlou/Zappa/issues/604
             try:
                 os.environ[str(key)] = value
@@ -319,6 +316,12 @@ class LambdaHandler(object):
         if settings.DEBUG:
             logger.debug('Zappa Event: {}'.format(event))
 
+        # Set any API Gateway defined Stage Variables
+        # as env vars
+        if event.get('stageVariables'):
+            for key in event['stageVariables'].keys():
+                os.environ[str(key)] = event['stageVariables'][key]
+
         # This is the result of a keep alive, recertify
         # or scheduled event.
         if event.get('detail-type') == u'Scheduled Event':
@@ -346,7 +349,7 @@ class LambdaHandler(object):
 
         # This is a direct, raw python invocation.
         # It's _extremely_ important we don't allow this event source
-        # to be overriden by unsanitized, non-admin user input.
+        # to be overridden by unsanitized, non-admin user input.
         elif event.get('raw_command', None):
 
             raw_command = event['raw_command']

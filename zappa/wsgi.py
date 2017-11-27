@@ -159,7 +159,6 @@ def common_log(environ, response, response_time=None):
     """
 
     logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
 
     if response_time:
         formatter = ApacheFormatter(with_response_time=True)
