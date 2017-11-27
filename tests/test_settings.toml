@@ -7,6 +7,7 @@ prebuild_script = "test_settings.prebuild_me"
 s3_bucket = "lmbda"
 touch = false
 use_precompiled_packages = false
+apigateway_enabled = true
 [ttt888.events]
 	function = "tests.test_app.schedule_me" 
 	expression = "rate(1 minute)"
