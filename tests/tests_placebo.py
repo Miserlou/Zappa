@@ -468,7 +468,23 @@ class TestZappa(unittest.TestCase):
     @placebo_session
     def test_cognito_trigger(self, session):
         z = Zappa(session)
-        z.update_cognito('Zappa-Trigger-Test', 'us-east-1_9jUv74DH8', {'PreSignUp': 'test.tasks.pre_signup'}, 'arn:aws:lambda:us-east-1:575873786340:function:Zappa-Trigger-Test')
+        z.update_cognito('Zappa-Trigger-Test', 'us-east-1_9jUv74DH8', {'PreSignUp': 'test.tasks.pre_signup'}, 'arn:aws:lambda:us-east-1:12345:function:Zappa-Trigger-Test')
+
+    @placebo_session
+    def test_cognito_trigger_existing(self, session):
+        z = Zappa(session)
+        z.update_cognito('Zappa-Trigger-Test', 'us-east-1_9jUv74DH8', {'PreSignUp': 'test.tasks.pre_signup'}, 'arn:aws:lambda:us-east-1:12345:function:Zappa-Trigger-Test')
+
+    @placebo_session
+    def test_cli_cognito_triggers(self, session):
+        zappa_cli = ZappaCLI()
+        zappa_cli.api_stage = 'ttt888'
+        zappa_cli.api_key_required = True
+        zappa_cli.load_settings('test_settings.json', session)
+        zappa_cli.lambda_arn = 'arn:aws:lambda:us-east-1:12345:function:Zappa-Trigger-Test'
+        zappa_cli.update_cognito_triggers()
+
+
 
 
 if __name__ == '__main__':

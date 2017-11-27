@@ -989,13 +989,7 @@ class ZappaCLI(object):
 
         # Update any cognito pool with the lambda arn
         # do this after schedule as schedule clears the lambda policy and we need to add one
-        if self.cognito:
-            user_pool = self.cognito.get('user_pool')
-            triggers = self.cognito.get('triggers', [])
-            lambda_configs = set()
-            for trigger in triggers:
-                lambda_configs.add(trigger['source'].split('_')[0])
-            self.zappa.update_cognito(self.lambda_name, user_pool, lambda_configs, self.lambda_arn)
+        self.update_cognito_triggers()
 
         self.callback('post')
 
@@ -1101,6 +1095,18 @@ class ZappaCLI(object):
             self.zappa.remove_lambda_function_logs(self.lambda_name)
 
         click.echo(click.style("Done", fg="green", bold=True) + "!")
+
+    def update_cognito_triggers(self):
+        """
+        Update any cognito triggers
+        """
+        if self.cognito:
+            user_pool = self.cognito.get('user_pool')
+            triggers = self.cognito.get('triggers', [])
+            lambda_configs = set()
+            for trigger in triggers:
+                lambda_configs.add(trigger['source'].split('_')[0])
+            self.zappa.update_cognito(self.lambda_name, user_pool, lambda_configs, self.lambda_arn)
 
     def schedule(self):
         """
