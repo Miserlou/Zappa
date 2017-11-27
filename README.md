@@ -1027,6 +1027,7 @@ You must have already created the corresponding SNS/SQS topic/queue, and the Lam
 * [Deploy a Serverless WSGI App using Zappa, CloudFront, RDS, and VPC](https://docs.google.com/presentation/d/1aYeOMgQl4V_fFgT5VNoycdXtob1v6xVUWlyxoTEiTw0/edit#slide=id.p)
 * [AWS: Deploy Alexa Ask Skills with Flask-Ask and Zappa](https://developer.amazon.com/blogs/post/8e8ad73a-99e9-4c0f-a7b3-60f92287b0bf/New-Alexa-Tutorial-Deploy-Flask-Ask-Skills-to-AWS-Lambda-with-Zappa)
 * [Guide to using Django with Zappa](https://edgarroman.github.io/zappa-django-guide/)
+* [Building A Serverless Image Processing SaaS using Zappa](http://www.99serverless.com/index.php/2017/11/25/building-a-serverless-image-processing-saas/)
 * _Your guide here?_
 
 ## Zappa in the Press
