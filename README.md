@@ -314,10 +314,13 @@ Zappa will automatically packages your active virtualenv into packages which run
 
 During this process it will also replace any local dependancies with AWS Lambda compatible version, so dependencies are included in this order:
 
-    * `manylinux` wheels from a local cache
-    * `manylinux` wheels from PyPI
-    * Lambda-specific versions from [lambda-package](https://github.com/Miserlou/lambda-packages)
-    * Versions from the local file system
+  * `manylinux` wheels from a local cache
+
+  * `manylinux` wheels from PyPI
+
+  * Lambda-specific versions from [lambda-package](https://github.com/Miserlou/lambda-packages)
+
+  * Versions from the local file system
 
 It also skips certain unnecessary files, and ignores any .py files if .pyc files are available. Zappa will also automatically set the correct execution permissions, configure package settings, and create a unique, auditable package manifest file.
 
