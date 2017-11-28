@@ -1250,6 +1250,13 @@ class ZappaCLI(object):
         else:
             print(response)
 
+        # For a successful request FunctionError is not in response.
+        # https://github.com/Miserlou/Zappa/pull/1254/
+        if 'FunctionError' in response:
+            raise ClickException(
+                "{} error occured while invoking command.".format(response['FunctionError'])
+)
+
     def format_invoke_command(self, string):
         """
         Formats correctly the string ouput from the invoke() method,
