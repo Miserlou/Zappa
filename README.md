@@ -310,16 +310,19 @@ You can also specify the output filename of the package with `-o`:
 
 #### How Zappa Makes Packages
 
-Zappa will automatically packages your active virtualenv into packages which runs on AWS Lambda.
+Zappa will automatically package your active virtual environment into a package which runs on smoothly AWS Lambda.
 
-During this process it will also replace any local dependancies with AWS Lambda compatible version, so dependencies are included in this order:
+During this process, it will replace any local dependancies with AWS Lambda compatible versions. Dependencies are included in this order:
 
-  * `manylinux` wheels from a local cache
-  * `manylinux` wheels from PyPI
+  * Lambda-compatible `manylinux` wheels from a local cache
+  * Lambda-compatible `manylinux` wheels from PyPI
   * Lambda-specific versions from [lambda-package](https://github.com/Miserlou/lambda-packages)
-  * Versions from the local file system
+  * Packages from the active virtual environment
+  * Packages from the local project directory
 
-It also skips certain unnecessary files, and ignores any .py files if .pyc files are available. Zappa will also automatically set the correct execution permissions, configure package settings, and create a unique, auditable package manifest file.
+It also skips certain unnecessary files, and ignores any .py files if .pyc files are available.
+
+In addition, Zappa will also automatically set the correct execution permissions, configure package settings, and create a unique, auditable package manifest file.
 
 To further reduce the final package file size, you can:
 
