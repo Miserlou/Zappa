@@ -186,7 +186,7 @@ class TestZappa(unittest.TestCase):
             u'account': u'72333333333',
             u'region': u'us-east-1',
             u'detail': {},
-            u'detail-type': u'No AP GW',
+            u'detail-type': u'No API GW',
             u'source': u'aws.events',
             u'version': u'0',
             u'time': u'2016-05-10T21:05:39Z',
@@ -195,7 +195,7 @@ class TestZappa(unittest.TestCase):
         }
         ret = lh.handler(event, 'context')
         self.assertEquals(u'72333333333', ret[0][u'account'])
-        self.assertEquals(u'No AP GW', ret[0][u'detail-type'])
+        self.assertEquals(u'No API GW', ret[0][u'detail-type'])
         self.assertEquals('context', ret[1])
 
     @placebo_session
