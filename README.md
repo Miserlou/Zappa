@@ -1214,6 +1214,7 @@ For monitoring of different deployments, a unique UUID for each package is avail
 * [Guide to using Django with Zappa](https://edgarroman.github.io/zappa-django-guide/)
 * [Apex and WWW Domains with Zappa](http://sciencestuff.xperiment.mobi/2017/08/09/apex-and-www-domains-with-pythons-zappa-https/)
 * [Zappa and LambCI](https://seancoates.com/blogs/zappa-and-lambci/)
+* [Building A Serverless Image Processing SaaS using Zappa](http://www.99serverless.com/index.php/2017/11/25/building-a-serverless-image-processing-saas/)
 * _Your guide here?_
 
 ## Zappa in the Press
