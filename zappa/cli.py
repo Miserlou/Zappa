@@ -987,6 +987,10 @@ class ZappaCLI(object):
 
         self.schedule()
 
+        # Update any cognito pool with the lambda arn
+        # do this after schedule as schedule clears the lambda policy and we need to add one
+        self.update_cognito_triggers()
+
         self.callback('post')
 
         if endpoint_url and 'https://' not in endpoint_url:
@@ -1091,6 +1095,18 @@ class ZappaCLI(object):
             self.zappa.remove_lambda_function_logs(self.lambda_name)
 
         click.echo(click.style("Done", fg="green", bold=True) + "!")
+
+    def update_cognito_triggers(self):
+        """
+        Update any cognito triggers
+        """
+        if self.cognito:
+            user_pool = self.cognito.get('user_pool')
+            triggers = self.cognito.get('triggers', [])
+            lambda_configs = set()
+            for trigger in triggers:
+                lambda_configs.add(trigger['source'].split('_')[0])
+            self.zappa.update_cognito(self.lambda_name, user_pool, lambda_configs, self.lambda_arn)
 
     def schedule(self):
         """
@@ -1971,6 +1987,7 @@ class ZappaCLI(object):
         self.timeout_seconds = self.stage_config.get('timeout_seconds', 30)
         dead_letter_arn = self.stage_config.get('dead_letter_arn', '')
         self.dead_letter_config = {'TargetArn': dead_letter_arn} if dead_letter_arn else {}
+        self.cognito = self.stage_config.get('cognito', None)
 
         # Provide legacy support for `use_apigateway`, now `apigateway_enabled`.
         # https://github.com/Miserlou/Zappa/issues/490
@@ -2292,6 +2309,17 @@ class ZappaCLI(object):
                 if arn and function:
                     event_mapping[arn] = function
             settings_s = settings_s + "AWS_EVENT_MAPPING={0!s}\n".format(event_mapping)
+
+            # Map cognito triggers
+            cognito_trigger_mapping = {}
+            cognito_config = self.stage_config.get('cognito', {})
+            triggers = cognito_config.get('triggers', [])
+            for trigger in triggers:
+                source = trigger.get('source')
+                function = trigger.get('function')
+                if source and function:
+                    cognito_trigger_mapping[source] = function
+            settings_s = settings_s + "COGNITO_TRIGGER_MAPPING={0!s}\n".format(cognito_trigger_mapping)
 
             # Authorizer config
             authorizer_function = self.authorizer.get('function', None)
