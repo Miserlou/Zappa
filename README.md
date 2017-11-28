@@ -749,13 +749,13 @@ to change Zappa's behavior. Use these at your own risk!
         "cloudwatch_log_level": "OFF", // Enables/configures a level of logging for the given staging. Available options: "OFF", "INFO", "ERROR", default "OFF". C
         "cloudwatch_data_trace": false, // Logs all data about received events. Default false.
         "cloudwatch_metrics_enabled": false, // Additional metrics for the API Gateway. Default false.
-        "cognito": {
+        "cognito": { // for Cognito event triggers
             "user_pool": "user-pool-id", // User pool ID from AWS Cognito
-            "triggers": [{"source": "PreSignUp_SignUp", // triggerSource from http://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-identity-pools-working-with-aws-lambda-triggers.html#cognito-user-pools-lambda-trigger-syntax-pre-signup
-                          "function": "my_app.pre_signup_function"
-                         }
-                        ]
-                    }
+            "triggers": [{
+                "source": "PreSignUp_SignUp", // triggerSource from http://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-identity-pools-working-with-aws-lambda-triggers.html#cognito-user-pools-lambda-trigger-syntax-pre-signup
+                "function": "my_app.pre_signup_function"
+            }]
+        },
         "context_header_mappings": { "HTTP_header_name": "API_Gateway_context_variable" }, // A dictionary mapping HTTP header names to API Gateway context variables
         "cors": false, // Enable Cross-Origin Resource Sharing. Default false. If true, simulates the "Enable CORS" button on the API Gateway console. Can also be a dictionary specifying lists of "allowed_headers", "allowed_methods", and string of "allowed_origin"
         "dead_letter_arn": "arn:aws:<sns/sqs>:::my-topic/queue", // Optional Dead Letter configuration for when Lambda async invoke fails thrice
