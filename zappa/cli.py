@@ -303,6 +303,10 @@ class ZappaCLI(object):
             '--no-color', action='store_true',
             help=("Don't color the output")
         )
+        invoke_parser.add_argument(
+            '--exit-code', action='store_true',
+            help=("Return a non 0 exit code if invoked function fails")
+        )
         invoke_parser.add_argument('command_rest')
 
         ##
@@ -319,6 +323,10 @@ class ZappaCLI(object):
         manage_parser.add_argument(
             '--no-color', action='store_true',
             help=("Don't color the output")
+        )
+        manage_parser.add_argument(
+            '--exit-code', action='store_true',
+            help=("Return a non 0 exit code if invoked function fails")
         )
         # This is explicitly added here because this is the only subcommand that doesn't inherit from env_parser
         # https://github.com/Miserlou/Zappa/issues/1002
@@ -559,6 +567,7 @@ class ZappaCLI(object):
                 self.vargs['command_rest'],
                 raw_python=self.vargs['raw'],
                 no_color=self.vargs['no_color'],
+                exit_code=self.vargs['exit_code'],
             )
         elif command == 'manage': # pragma: no cover
 
@@ -581,6 +590,7 @@ class ZappaCLI(object):
                 command,
                 command="manage",
                 no_color=self.vargs['no_color'],
+                exit_code=self.vargs['exit_code'],
             )
 
         elif command == 'tail': # pragma: no cover
@@ -1215,7 +1225,7 @@ class ZappaCLI(object):
             removed_arns = self.zappa.remove_async_sns_topic(self.lambda_name)
             click.echo('SNS Topic removed: %s' % ', '.join(removed_arns))
 
-    def invoke(self, function_name, raw_python=False, command=None, no_color=False):
+    def invoke(self, function_name, raw_python=False, command=None, no_color=False, exit_code=False):
         """
         Invoke a remote function.
         """
@@ -1249,6 +1259,11 @@ class ZappaCLI(object):
                 print(colorized)
         else:
             print(response)
+        # For a successful request FunctionError is not in response.
+        if exit_code and 'FunctionError' in response:
+            raise ClickException(
+                "{} error occured while invoking command.".format(response['FunctionError'])
+            )
 
         # For a successful request FunctionError is not in response.
         # https://github.com/Miserlou/Zappa/pull/1254/
