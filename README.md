@@ -26,7 +26,7 @@
     - [Advanced Scheduling](#advanced-scheduling)
   - [Undeploy](#undeploy)
   - [Package](#package)
-  - [How Zappa packages your app](#how-zappa-packages-your-app)
+    - [How Zappa Makes Packages](#how-zappa-makes-packages)
   - [Template](#template)
   - [Status](#status)
   - [Tailing Logs](#tailing-logs)
@@ -308,16 +308,27 @@ You can also specify the output filename of the package with `-o`:
 
     $ zappa package production -o my_awesome_package.zip
 
-### How Zappa packages your app
+#### How Zappa Makes Packages
 
-By default, Zappa will package the entire virtualenv in the resulting zip. To control the final package (and potentially reduce size) you can:
+Zappa will automatically packages your active virtualenv into packages which runs on AWS Lambda.
 
-* Set `slim_handler` to `True` to upload a small handler to lambdas and the rest of the package to S3. For more details, see the [merged pull request](https://github.com/Miserlou/Zappa/pull/548) and the [discussion in the original issue](https://github.com/Miserlou/Zappa/issues/510). See also: [Large Projects](#large-projects).
+During this process it will also replace any local dependancies with AWS Lambda compatible version, so dependencies are included in this order:
+
+    * `manylinux` wheels from a local cache
+    * `manylinux` wheels from PyPI
+    * Lambda-specific versions from [lambda-package](https://github.com/Miserlou/lambda-packages)
+    * Versions from the local file system
+
+It also skips certain unnecessary files, and ignores any .py files if .pyc files are available. Zappa will also automatically set the correct execution permissions, configure package settings, and create a unique, auditable package manifest file.
+
+To further reduce the final package file size, you can:
+
+* Set `slim_handler` to `True` to upload a small handler to Lambdas and the rest of the package to S3. For more details, see the [merged pull request](https://github.com/Miserlou/Zappa/pull/548) and the [discussion in the original issue](https://github.com/Miserlou/Zappa/issues/510). See also: [Large Projects](#large-projects).
 * Use the `exclude` setting and provide a list of regex patterns to exclude from the archive. By default, Zappa will exclude Boto, because [it's already available in the Lambda execution environment](http://docs.aws.amazon.com/lambda/latest/dg/current-supported-versions.html).
 
 ### Template
 
-Similarly, if you only want the API Gateway CloudFormation template, for use the `template` command:
+Similarly to `package`, if you only want the API Gateway CloudFormation template, for use the `template` command:
 
     $ zappa template production --l your-lambda-arn -r your-role-arn
 
