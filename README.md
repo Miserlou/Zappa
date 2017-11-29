@@ -577,7 +577,7 @@ def pre_signup(event, context):
     return event
 ```
 
-You can find out what triggers you can configure here [Cognito triggers documentation]http://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-identity-pools-working-with-aws-lambda-triggers.html
+You can find out what triggers you can configure here [Cognito triggers documentation](http://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-identity-pools-working-with-aws-lambda-triggers.html)
 
 
 ## Asynchronous Task Execution
