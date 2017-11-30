@@ -1661,12 +1661,15 @@ class ZappaCLI(object):
         zappa_settings = {
             env: {
                 'profile_name': profile_name,
-                'aws_region': profile_region,
                 's3_bucket': bucket,
                 'runtime': 'python3.6' if sys.version_info[0] == 3 else 'python2.7',
                 'project_name': self.get_project_name()
             }
         }
+        
+        if profile_region:
+          zappa_settings[env]['aws_region'] = profile_region
+        
         if has_django:
             zappa_settings[env]['django_settings'] = django_settings
         else:
