@@ -129,7 +129,8 @@ class LambdaAsyncResponse(object):
     Base Response Dispatcher class
     Can be used directly or subclassed if the method to send the message is changed.
     """
-    def __init__(self, lambda_function_name=None, aws_region=None, capture_response=False, **kwargs):
+    def __init__(self, lambda_function_name=None, aws_region=None, capture_response=False,
+                 deserialize=True, **kwargs):
         """ """
         if kwargs.get('boto_session'):
             self.client = kwargs.get('boto_session').client('lambda')
@@ -154,6 +155,7 @@ class LambdaAsyncResponse(object):
             self.response_id = None
 
         self.capture_response = capture_response
+        self.deserialize = deserialize
 
 
     def send(self, task_path, args, kwargs):
@@ -163,6 +165,7 @@ class LambdaAsyncResponse(object):
         message = {
                 'task_path': task_path,
                 'capture_response': self.capture_response,
+                'deserialize': self.deserialize,
                 'response_id': self.response_id,
                 'args': args,
                 'kwargs': kwargs
@@ -190,7 +193,8 @@ class SnsAsyncResponse(LambdaAsyncResponse):
     Send a SNS message to a specified SNS topic
     Serialise the func path and arguments
     """
-    def __init__(self, lambda_function_name=None, aws_region=None, capture_response=False, **kwargs):
+    def __init__(self, lambda_function_name=None, aws_region=None, capture_response=False,
+                 deserialize=True, **kwargs):
 
         self.lambda_function_name = lambda_function_name
         self.aws_region=aws_region
@@ -234,6 +238,7 @@ class SnsAsyncResponse(LambdaAsyncResponse):
             self.response_id = None
 
         self.capture_response = capture_response
+        self.deserialize = deserialize
 
 
     def _send(self, message):
