@@ -375,6 +375,9 @@ def task(*args, **kwargs):
         service (str): either 'lambda' or 'sns'
         remote_aws_lambda_function_name (str): the name of a remote lambda function to call with this task
         remote_aws_region (str): the name of a remote region to make lambda/sns calls against
+        deserialize (bool): extract the args and kwargs from the AWS Lambda arguments
+            otherwise the event and context will be passed to the function
+            defaults to True
 
     Returns:
         A replacement function that dispatches func() to
