@@ -420,7 +420,7 @@ def task(*args, **kwargs):
             if (service in ASYNC_CLASSES) and (lambda_function_name):
                 send_result = ASYNC_CLASSES[service](lambda_function_name=lambda_function_name,
                                                      aws_region=aws_region,
-                                                     capture_response=capture_response
+                                                     capture_response=capture_response,
                                                      deserialize=deserialize).send(task_path, args, kwargs)
                 return send_result
             else:
