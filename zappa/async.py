@@ -308,7 +308,7 @@ def run_message(message, context):
     args = message, context
     kwargs = {}
     if message.get('deserialize', True):
-        args = message['args'],
+        args = message['args']
         kwargs = message['kwargs']
 
     if hasattr(func, 'sync'):
