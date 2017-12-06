@@ -411,6 +411,16 @@ Zappa can be deployed to custom domain names and subdomains with custom SSL cert
 
 Currently, the easiest of these to use are the AWS Certificate Manager certificates, as they are free, self-renewing, and require the least amount of work.
 
+Once configured as described below, all of these methods use the same command:
+
+    $ zappa certify 
+
+When deploying from a CI/CD system, you can use:
+    
+    $ zappa certify --yes
+
+to skip the confirmation prompt.
+
 #### Deploying to a Domain With AWS Certificate Manager
 
 Amazon provides their own free alternative to Let's Encrypt called [AWS Certificate Manager](https://aws.amazon.com/certificate-manager/) (ACM). To use this service with Zappa:
