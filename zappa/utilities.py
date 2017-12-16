@@ -20,16 +20,19 @@ else:
 # Settings / Packaging
 ##
 
-def copytree(src, dst, symlinks=False, ignore=None):
+def copytree(src, dst, metadata=True, symlinks=False, ignore=None):
     """
     This is a contributed re-implementation of 'copytree' that
     should work with the exact same behavior on multiple platforms.
 
+    When `metadata` is False, file metadata such as permissions and modification
+    times are not copied.
     """
 
     if not os.path.exists(dst):
         os.makedirs(dst)
-        shutil.copystat(src, dst)
+        if metadata:
+            shutil.copystat(src, dst)
     lst = os.listdir(src)
 
     if ignore:
@@ -44,16 +47,17 @@ def copytree(src, dst, symlinks=False, ignore=None):
             if os.path.lexists(d):
                 os.remove(d)
             os.symlink(os.readlink(s), d)
-            try:
-                st = os.lstat(s)
-                mode = stat.S_IMODE(st.st_mode)
-                os.lchmod(d, mode)
-            except:
-                pass  # lchmod not available
+            if metadata:
+                try:
+                    st = os.lstat(s)
+                    mode = stat.S_IMODE(st.st_mode)
+                    os.lchmod(d, mode)
+                except:
+                    pass  # lchmod not available
         elif os.path.isdir(s):
-            copytree(s, d, symlinks, ignore)
+            copytree(s, d, metadata, symlinks, ignore)
         else:
-            shutil.copy2(s, d)
+            shutil.copy2(s, d) if metadata else shutil.copy(s, d)
 
 def parse_s3_url(url):
     """
