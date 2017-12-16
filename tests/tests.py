@@ -1209,16 +1209,23 @@ class TestZappa(unittest.TestCase):
 
         # We need a fake account key and crt
         import subprocess
-        proc = subprocess.Popen(["openssl genrsa 2048 > /tmp/account.key"],
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        out, err = proc.communicate()
-        if proc.returncode != 0:
-            raise IOError("OpenSSL Error: {0}".format(err))
-        proc = subprocess.Popen(["openssl req -x509 -newkey rsa:2048 -subj '/C=US/ST=Denial/L=Springfield/O=Dis/CN=www.example.com' -passout pass:foo -keyout /tmp/key.key -out test_signed.crt -days 1 > /tmp/signed.crt"],
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        out, err = proc.communicate()
-        if proc.returncode != 0:
-            raise IOError("OpenSSL Error: {0}".format(err))
+        out = subprocess.check_output(['openssl', 'genrsa', '2048'])
+        with open('/tmp/account.key', 'wb') as f:
+            f.write(out)
+
+        cmd = [
+            'openssl', 'req',
+            '-x509',
+            '-newkey', 'rsa:2048',
+            '-subj', '/C=US/ST=Denial/L=Springfield/O=Dis/CN=www.example.com',
+            '-passout', 'pass:foo',
+            '-keyout', '/tmp/key.key',
+            '-out', 'test_signed.crt',
+            '-days', '1'
+        ]
+        out = subprocess.check_output(cmd)
+        with open('/tmp/signed.crt', 'wb') as f:
+            f.write(out)
 
         DEFAULT_CA = "https://acme-staging.api.letsencrypt.org"
         CA = "https://acme-staging.api.letsencrypt.org"

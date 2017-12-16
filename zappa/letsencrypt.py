@@ -43,17 +43,6 @@ LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())
 
 
-def Popen(command, *args, **kwargs):
-    if not kwargs.get('shell'):
-        return subprocess.Popen(command, *args, **kwargs)
-
-    mswindows = (sys.platform == "win32")
-    if mswindows:
-        return subprocess.Popen(command[0], *args, **kwargs)
-    else:
-        return subprocess.Popen(command, *args, **kwargs)
-
-
 def get_cert_and_update_domain(
                                 zappa_instance,
                                 lambda_name,
@@ -126,63 +115,49 @@ def get_cert_and_update_domain(
 
 
 def create_domain_key():
-    """
-    """
-    proc = Popen(
-        ['openssl genrsa 2048 > "{}/domain.key"'.format(gettempdir())],
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        shell=True
-    )
-    out, err = proc.communicate()
-    if proc.returncode != 0: # pragma: no cover
-        raise IOError("OpenSSL Error: {0}".format(err))
-    return True
+    out = subprocess.check_output(['openssl', 'genrsa', '2048'])
+    with open(os.path.join(gettempdir(), 'domain.key'), 'wb') as f:
+        f.write(out)
 
 
 def create_domain_csr(domain):
     subj = "/CN=" + domain
-    cmd = 'openssl req -new -sha256 -key "{0}/domain.key" -subj "{1}"  > "{0}/domain.csr"'.format(gettempdir(), subj)
-    proc = Popen(
-        [cmd],
-        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
-    )
-    out, err = proc.communicate()
-    if proc.returncode != 0: # pragma: no cover
-        raise IOError("OpenSSL Error: {0}".format(err))
-    return True
+    cmd = [
+        'openssl', 'req',
+        '-new',
+        '-sha256',
+        '-key', os.pathjoin(gettempdir(), 'domain.key'),
+        '-subj', subj
+    ]
+
+    out = subprocess.check_output(cmd)
+    with open(os.path.join(gettempdir(), 'domain.csr'), 'wb') as f:
+        f.write(out)
 
 
 def create_chained_certificate():
+    signed_crt = open(os.path.join(gettempdir(), 'signed.crt'), 'rb').read()
+
     cross_cert_url = "https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem"
     cert = requests.get(cross_cert_url)
-    with open('{}/intermediate.pem'.format(gettempdir()), 'wb') as intermediate_pem:
+    with open(os.path.join(gettempdir(), 'intermediate.pem'), 'wb') as intermediate_pem:
         intermediate_pem.write(cert.content)
 
-    proc = Popen(
-        ['cat "{0}/signed.crt" "{0}/intermediate.pem" > "{0}/chained.pem"'.format(gettempdir())],
-        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
-    )
-    out, err = proc.communicate()
-    if proc.returncode != 0: # pragma: no cover
-        raise IOError("Error: {0}".format(err))
-
-    return True
+    with open(os.path.join(gettempdir(), 'chained.pem'), 'wb') as chained_pem:
+        chained_pem.write(signed_crt)
+        chained_pem.write(cert.content)
 
 
 def parse_account_key():
     """Parse account key to get public key"""
     LOGGER.info("Parsing account key...")
-    proc = Popen(
-        ['openssl rsa -in "{}/account.key" -noout -text'.format(gettempdir())],
-        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
-    )
-    out, err = proc.communicate()
-    if proc.returncode != 0: # pragma: no cover
-        raise IOError("OpenSSL Error: {0}".format(err))
-
-    return out
+    cmd = [
+        'openssl', 'rsa',
+        '-in', os.path.join(gettempdir(), 'account.key'),
+        '-noout',
+        '-text'
+    ]
+    return subprocess.check_output(cmd)
 
 
 def parse_csr():
@@ -190,14 +165,13 @@ def parse_csr():
     Parse certificate signing request for domains
     """
     LOGGER.info("Parsing CSR...")
-    csr_filename = '{}/domain.csr'.format(gettempdir())
-    proc = Popen(
-        ["openssl req -in {} -noout -text".format(csr_filename)],
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
-    )
-    out, err = proc.communicate()
-    if proc.returncode != 0: # pragma: no cover
-        raise IOError("Error loading {0}: {1}".format(csr_filename, err))
+    cmd = [
+        'openssl', 'req',
+        '-in', os.path.join(gettempdir(), 'domain.csr'),
+        '-noout',
+        '-text'
+    ]
+    out = subprocess.check_output(cmd)
     domains = set([])
     common_name = re.search(r"Subject:.*? CN\s?=\s?([^\s,;/]+)", out.decode('utf8'))
     if common_name is not None:
@@ -345,11 +319,12 @@ def sign_certificate():
 
     """
     LOGGER.info("Signing certificate...")
-    proc = Popen(
-        ['openssl req -in "{}/domain.csr" -outform DER'.format(gettempdir())],
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
-    )
-    csr_der, err = proc.communicate()
+    cmd = [
+        'openssl', 'req',
+        '-in', os.path.join(gettempdir(), 'domain.csr'),
+        '-outform', 'DER'
+    ]
+    csr_der = subprocess.check_output(cmd)
     code, result = _send_signed_request(DEFAULT_CA + "/acme/new-cert", {
         "resource": "new-cert",
         "csr": _b64(csr_der),
@@ -397,9 +372,14 @@ def _send_signed_request(url, payload):
     protected = copy.deepcopy(header)
     protected["nonce"] = urlopen(DEFAULT_CA + "/directory").headers['Replay-Nonce']
     protected64 = _b64(json.dumps(protected).encode('utf8'))
-    proc = Popen(
-        ['openssl dgst -sha256 -sign "{}/account.key"'.format(gettempdir())],
-        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
+    cmd = [
+        'openssl', 'dgst',
+        '-sha256',
+        '-sign', os.path.join(gettempdir(), 'account.key')
+    ]
+    proc = subprocess.Popen(
+        cmd,
+        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
     out, err = proc.communicate("{0}.{1}".format(protected64, payload64).encode('utf8'))
     if proc.returncode != 0: # pragma: no cover
