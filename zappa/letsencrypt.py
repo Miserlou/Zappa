@@ -49,7 +49,6 @@ def get_cert_and_update_domain(
                                 lambda_name,
                                 api_stage,
                                 domain=None,
-                                clean_up=True,
                                 manual=False,
                             ):
     """
@@ -110,8 +109,6 @@ def get_cert_and_update_domain(
         print(e)
         return False
 
-    if clean_up:
-        cleanup()
     return True
 
 
