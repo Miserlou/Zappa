@@ -21,7 +21,7 @@ from zappa.cli import ZappaCLI, shamelessly_promote, disable_click_colors
 from zappa.ext.django_zappa import get_django_wsgi
 from zappa.letsencrypt import get_cert_and_update_domain, create_domain_key, create_domain_csr, \
     create_chained_certificate, cleanup, parse_account_key, parse_csr, sign_certificate, encode_certificate,\
-    register_account, verify_challenge
+    register_account, verify_challenge, gettempdir
 from zappa.utilities import (detect_django_settings, detect_flask_apps,  parse_s3_url, human_size, string_to_timestamp,
                              validate_name, InvalidAwsLambdaName, contains_python_files_or_subdirs,
                              conflicts_with_a_neighbouring_module)
@@ -1206,11 +1206,10 @@ class TestZappa(unittest.TestCase):
     ##
 
     def test_lets_encrypt_sanity(self):
-
         # We need a fake account key and crt
         import subprocess
         out = subprocess.check_output(['openssl', 'genrsa', '2048'])
-        with open('/tmp/account.key', 'wb') as f:
+        with open(os.path.join(gettempdir(), 'account.key'), 'wb') as f:
             f.write(out)
 
         cmd = [
@@ -1219,13 +1218,11 @@ class TestZappa(unittest.TestCase):
             '-newkey', 'rsa:2048',
             '-subj', '/C=US/ST=Denial/L=Springfield/O=Dis/CN=www.example.com',
             '-passout', 'pass:foo',
-            '-keyout', '/tmp/key.key',
-            '-out', 'test_signed.crt',
+            '-keyout', os.path.join(gettempdir(), 'key.key'),
+            '-out', os.path.join(gettempdir(), 'test_signed.crt'),
             '-days', '1'
         ]
-        out = subprocess.check_output(cmd)
-        with open('/tmp/signed.crt', 'wb') as f:
-            f.write(out)
+        subprocess.check_call(cmd)
 
         DEFAULT_CA = "https://acme-staging.api.letsencrypt.org"
         CA = "https://acme-staging.api.letsencrypt.org"
@@ -1264,7 +1261,6 @@ class TestZappa(unittest.TestCase):
         zappa_cli.load_settings('test_settings.json')
         get_cert_and_update_domain(zappa_cli, 'kerplah', 'zzzz', domain=None, clean_up=True)
 
-        os.remove('test_signed.crt')
         cleanup()
 
 
