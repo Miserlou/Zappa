@@ -10,6 +10,7 @@ openssl genrsa 2048 > account.key # Keep it secret, keep safe!
 
 """
 
+import atexit
 import base64
 import copy
 import json
@@ -71,13 +72,13 @@ def get_cert_and_update_domain(
         get_cert(zappa_instance)
         create_chained_certificate()
 
-        with open('{}/signed.crt'.format(tempfile.gettempdir())) as f:
+        with open('{}/signed.crt'.format(gettempdir())) as f:
             certificate_body = f.read()
 
-        with open('{}/domain.key'.format(tempfile.gettempdir())) as f:
+        with open('{}/domain.key'.format(gettempdir())) as f:
             certificate_private_key = f.read()
 
-        with open('{}/intermediate.pem'.format(tempfile.gettempdir())) as f:
+        with open('{}/intermediate.pem'.format(gettempdir())) as f:
             certificate_chain = f.read()
 
         if not manual:
@@ -128,7 +129,7 @@ def create_domain_key():
     """
     """
     proc = Popen(
-        ['openssl genrsa 2048 > "{}/domain.key"'.format(tempfile.gettempdir())],
+        ['openssl genrsa 2048 > "{}/domain.key"'.format(gettempdir())],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -142,7 +143,7 @@ def create_domain_key():
 
 def create_domain_csr(domain):
     subj = "/CN=" + domain
-    cmd = 'openssl req -new -sha256 -key "{0}/domain.key" -subj "{1}"  > "{0}/domain.csr"'.format(tempfile.gettempdir(), subj)
+    cmd = 'openssl req -new -sha256 -key "{0}/domain.key" -subj "{1}"  > "{0}/domain.csr"'.format(gettempdir(), subj)
     proc = Popen(
         [cmd],
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
@@ -156,11 +157,11 @@ def create_domain_csr(domain):
 def create_chained_certificate():
     cross_cert_url = "https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem"
     cert = requests.get(cross_cert_url)
-    with open('{}/intermediate.pem'.format(tempfile.gettempdir()), 'wb') as intermediate_pem:
+    with open('{}/intermediate.pem'.format(gettempdir()), 'wb') as intermediate_pem:
         intermediate_pem.write(cert.content)
 
     proc = Popen(
-        ['cat "{0}/signed.crt" "{0}/intermediate.pem" > "{0}/chained.pem"'.format(tempfile.gettempdir())],
+        ['cat "{0}/signed.crt" "{0}/intermediate.pem" > "{0}/chained.pem"'.format(gettempdir())],
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
     )
     out, err = proc.communicate()
@@ -174,7 +175,7 @@ def parse_account_key():
     """Parse account key to get public key"""
     LOGGER.info("Parsing account key...")
     proc = Popen(
-        ['openssl rsa -in "{}/account.key" -noout -text'.format(tempfile.gettempdir())],
+        ['openssl rsa -in "{}/account.key" -noout -text'.format(gettempdir())],
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
     )
     out, err = proc.communicate()
@@ -189,7 +190,7 @@ def parse_csr():
     Parse certificate signing request for domains
     """
     LOGGER.info("Parsing CSR...")
-    csr_filename = '{}/domain.csr'.format(tempfile.gettempdir())
+    csr_filename = '{}/domain.csr'.format(gettempdir())
     proc = Popen(
         ["openssl req -in {} -noout -text".format(csr_filename)],
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
@@ -345,7 +346,7 @@ def sign_certificate():
     """
     LOGGER.info("Signing certificate...")
     proc = Popen(
-        ['openssl req -in "{}/domain.csr" -outform DER'.format(tempfile.gettempdir())],
+        ['openssl req -in "{}/domain.csr" -outform DER'.format(gettempdir())],
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
     )
     csr_der, err = proc.communicate()
@@ -366,7 +367,7 @@ def encode_certificate(result):
     """
     cert_body = """-----BEGIN CERTIFICATE-----\n{0}\n-----END CERTIFICATE-----\n""".format(
         "\n".join(textwrap.wrap(base64.b64encode(result).decode('utf8'), 64)))
-    signed_crt = open("{}/signed.crt".format(tempfile.gettempdir()), "w")
+    signed_crt = open("{}/signed.crt".format(gettempdir()), "w")
     signed_crt.write(cert_body)
     signed_crt.close()
 
@@ -397,7 +398,7 @@ def _send_signed_request(url, payload):
     protected["nonce"] = urlopen(DEFAULT_CA + "/directory").headers['Replay-Nonce']
     protected64 = _b64(json.dumps(protected).encode('utf8'))
     proc = Popen(
-        ['openssl dgst -sha256 -sign "{}/account.key"'.format(tempfile.gettempdir())],
+        ['openssl dgst -sha256 -sign "{}/account.key"'.format(gettempdir())],
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
     )
     out, err = proc.communicate("{0}.{1}".format(protected64, payload64).encode('utf8'))
@@ -414,29 +415,30 @@ def _send_signed_request(url, payload):
         return getattr(e, "code", None), getattr(e, "read", e.__str__)()
 
 ##
-# File Utility
+# Temporary Directory Utility
 ##
 
 
+__tempdir = None
+
+def gettempdir():
+    """
+    Lazily creates a temporary directory in a secure manner. When Python exits,
+    or the cleanup() function is called, the directory is erased.
+    """
+    global __tempdir
+    if __tempdir is not None:
+        return __tempdir 
+    __tempdir = tempfile.mkdtemp()
+    return __tempdir
+
+
+@atexit.register
 def cleanup():
     """
     Delete any temporary files.
     """
-    filenames = [
-        '{}/account.key'.format(tempfile.gettempdir()),
-        '{}/domain.key'.format(tempfile.gettempdir()),
-        '{}/key.key'.format(tempfile.gettempdir()),
-        '{}/domain.csr'.format(tempfile.gettempdir()),
-        '{}/signed.crt'.format(tempfile.gettempdir()),
-        '{}/intermediate.pem'.format(tempfile.gettempdir()),
-        '{}/chained.pem'.format(tempfile.gettempdir()),
-        '{}/lets-encrypt-x3-cross-signed.pem'.format(tempfile.gettempdir())
-    ]
-
-    for filename in filenames:
-        try:
-            os.remove(filename)
-        except OSError:
-            pass
-
-    return True
+    global __tempdir
+    if __tempdir is not None:
+        shutil.rmtree(__tempdir)
+        __tempdir = None
