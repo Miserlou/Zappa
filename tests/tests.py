@@ -1219,10 +1219,11 @@ class TestZappa(unittest.TestCase):
             '-subj', '/C=US/ST=Denial/L=Springfield/O=Dis/CN=www.example.com',
             '-passout', 'pass:foo',
             '-keyout', os.path.join(gettempdir(), 'key.key'),
-            '-out', os.path.join(gettempdir(), 'test_signed.crt'),
+            '-out', os.path.join(gettempdir(), 'signed.crt'),
             '-days', '1'
         ]
-        subprocess.check_call(cmd)
+        devnull = open(os.devnull, 'wb')
+        subprocess.check_call(cmd, stdout=devnull, stderr=devnull)
 
         DEFAULT_CA = "https://acme-staging.api.letsencrypt.org"
         CA = "https://acme-staging.api.letsencrypt.org"

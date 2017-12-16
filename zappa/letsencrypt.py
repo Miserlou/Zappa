@@ -19,6 +19,7 @@ import logging
 import re
 import subprocess
 import os
+import shutil
 import sys
 import time
 import tempfile
@@ -115,7 +116,8 @@ def get_cert_and_update_domain(
 
 
 def create_domain_key():
-    out = subprocess.check_output(['openssl', 'genrsa', '2048'])
+    devnull = open(os.devnull, 'wb')
+    out = subprocess.check_output(['openssl', 'genrsa', '2048'], stderr=devnull)
     with open(os.path.join(gettempdir(), 'domain.key'), 'wb') as f:
         f.write(out)
 
@@ -126,11 +128,12 @@ def create_domain_csr(domain):
         'openssl', 'req',
         '-new',
         '-sha256',
-        '-key', os.pathjoin(gettempdir(), 'domain.key'),
+        '-key', os.path.join(gettempdir(), 'domain.key'),
         '-subj', subj
     ]
 
-    out = subprocess.check_output(cmd)
+    devnull = open(os.devnull, 'wb')
+    out = subprocess.check_output(cmd, stderr=devnull)
     with open(os.path.join(gettempdir(), 'domain.csr'), 'wb') as f:
         f.write(out)
 
@@ -157,7 +160,8 @@ def parse_account_key():
         '-noout',
         '-text'
     ]
-    return subprocess.check_output(cmd)
+    devnull = open(os.devnull, 'wb')
+    return subprocess.check_output(cmd, stderr=devnull)
 
 
 def parse_csr():
@@ -171,7 +175,8 @@ def parse_csr():
         '-noout',
         '-text'
     ]
-    out = subprocess.check_output(cmd)
+    devnull = open(os.devnull, 'wb')
+    out = subprocess.check_output(cmd, stderr=devnull)
     domains = set([])
     common_name = re.search(r"Subject:.*? CN\s?=\s?([^\s,;/]+)", out.decode('utf8'))
     if common_name is not None:
@@ -324,7 +329,8 @@ def sign_certificate():
         '-in', os.path.join(gettempdir(), 'domain.csr'),
         '-outform', 'DER'
     ]
-    csr_der = subprocess.check_output(cmd)
+    devnull = open(os.devnull, 'wb')
+    csr_der = subprocess.check_output(cmd, stderr=devnull)
     code, result = _send_signed_request(DEFAULT_CA + "/acme/new-cert", {
         "resource": "new-cert",
         "csr": _b64(csr_der),
