@@ -1266,7 +1266,6 @@ class TestZappa(unittest.TestCase):
     def test_certify_sanity_checks(self):
         """
         Make sure 'zappa certify':
-        * Writes a warning with the --no-cleanup flag.
         * Errors out when a deployment hasn't taken place.
         * Writes errors when certificate settings haven't been specified.
         * Calls Zappa correctly for creates vs. updates.
@@ -1279,15 +1278,11 @@ class TestZappa(unittest.TestCase):
             zappa_cli = ZappaCLI()
             zappa_cli.domain = "test.example.com"
             try:
-                zappa_cli.certify(no_cleanup=True)
+                zappa_cli.certify()
             except AttributeError:
                 # Since zappa_cli.zappa isn't initalized, the certify() call
                 # fails when it tries to inspect what Zappa has deployed.
                 pass
-
-            log_output = sys.stdout.getvalue()
-            self.assertIn("You are calling certify with", log_output)
-            self.assertIn("--no-cleanup", log_output)
 
             class ZappaMock(object):
                 def __init__(self):
@@ -1383,7 +1378,7 @@ class TestZappa(unittest.TestCase):
                 "certificate_chain": cert_file.name
             })
             sys.stdout.truncate(0)
-            zappa_cli.certify(no_cleanup=True)
+            zappa_cli.certify()
             self.assertEquals(len(zappa_cli.zappa.calls), 2)
             self.assertTrue(zappa_cli.zappa.calls[0][0] == "create_domain_name")
             self.assertTrue(zappa_cli.zappa.calls[1][0] == "update_route53_records")
@@ -1393,7 +1388,7 @@ class TestZappa(unittest.TestCase):
             zappa_cli.zappa.calls = []
             zappa_cli.zappa.domain_names["test.example.com"] = "*.example.com"
             sys.stdout.truncate(0)
-            zappa_cli.certify(no_cleanup=True)
+            zappa_cli.certify()
             self.assertEquals(len(zappa_cli.zappa.calls), 1)
             self.assertTrue(zappa_cli.zappa.calls[0][0] == "update_domain_name")
             log_output = sys.stdout.getvalue()
@@ -1406,7 +1401,7 @@ class TestZappa(unittest.TestCase):
             zappa_cli.zappa.calls = []
             zappa_cli.zappa.domain_names["test.example.com"] = ""
             sys.stdout.truncate(0)
-            zappa_cli.certify(no_cleanup=True)
+            zappa_cli.certify()
             self.assertEquals(len(zappa_cli.zappa.calls), 1)
             self.assertTrue(zappa_cli.zappa.calls[0][0] == "create_domain_name")
             log_output = sys.stdout.getvalue()
