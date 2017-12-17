@@ -501,7 +501,6 @@ class Zappa(object):
         # First, do the project..
         temp_project_path = tempfile.mkdtemp(prefix='zappa-project')
 
-        os.makedirs(temp_project_path)
         if not slim_handler:
             # Slim handler does not take the project files.
             if minify:
