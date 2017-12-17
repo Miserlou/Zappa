@@ -1208,7 +1208,8 @@ class TestZappa(unittest.TestCase):
     def test_lets_encrypt_sanity(self):
         # We need a fake account key and crt
         import subprocess
-        out = subprocess.check_output(['openssl', 'genrsa', '2048'])
+        devnull = open(os.devnull, 'wb')
+        out = subprocess.check_output(['openssl', 'genrsa', '2048'], stderr=devnull)
         with open(os.path.join(gettempdir(), 'account.key'), 'wb') as f:
             f.write(out)
 
