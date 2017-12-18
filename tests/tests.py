@@ -529,6 +529,21 @@ class TestZappa(unittest.TestCase):
         request = create_wsgi_request(event, trailing_slash=True)
         self.assertEqual("/path:1", request['PATH_INFO'])
 
+    def test_wsgi_latin1(self):
+        event = {
+            "body": {},
+            "headers": {},
+            "pathParameters": {},
+            "path": '/path/%E4%BB%8A%E6%97%A5%E3%81%AF',
+            "httpMethod": "GET",
+            "queryStringParameters": {"a": "%E4%BB%8A%E6%97%A5%E3%81%AF"},
+            "requestContext": {}
+        }
+        request = create_wsgi_request(event, script_name="%E4%BB%8A%E6%97%A5%E3%81%AF")
+        # verify that the path, query params and script name can be encoded in iso-8859-1
+        request['PATH_INFO'].encode('iso-8859-1')
+        request['QUERY_STRING'].encode('iso-8859-1')
+        request['SCRIPT_NAME'].encode('iso-8859-1')
 
     def test_wsgi_logging(self):
         # event = {
