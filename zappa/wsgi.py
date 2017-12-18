@@ -179,5 +179,7 @@ def common_log(environ, response, response_time=None):
     return log_entry
 
 
+# added this function in order to have wsgi compatible strings in the environ
+# Related: https://github.com/Miserlou/Zappa/issues/1199
 def _get_wsgi_string(string, encoding='utf-8'):
     return string.encode(encoding).decode('iso-8859-1')
