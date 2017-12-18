@@ -180,7 +180,7 @@ def common_log(environ, response, response_time=None):
 
 
 # Related: https://github.com/Miserlou/Zappa/issues/1199
-def _get_wsgi_string(string, encoding='utf-8'):
+def get_wsgi_string(string, encoding='utf-8'):
     """
     Returns wsgi-compatible string
     """
