@@ -2325,11 +2325,12 @@ class ZappaCLI(object):
             settings_s += "ASYNC_RESPONSE_TABLE='{0!s}'\n".format(async_response_table)
 
             # Lambda requires a specific chmod
-            temp_settings = tempfile.NamedTemporaryFile()
+            temp_settings = tempfile.NamedTemporaryFile(delete=False)
             os.chmod(temp_settings.name, 0o644)
             temp_settings.write(bytes(settings_s, "utf-8"))
             temp_settings.close()
             lambda_zip.write(temp_settings.name, 'zappa_settings.py')
+            os.unlink(temp_settings.name)
 
     def remove_local_zip(self):
         """
