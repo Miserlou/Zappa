@@ -232,7 +232,6 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
 
         def add(self, function):
             super(ExtendedSnsEventSource, self).add(function)
-
             if self.filters:
                 self.add_filters(function)
 
