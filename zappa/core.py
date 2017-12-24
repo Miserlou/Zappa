@@ -797,8 +797,11 @@ class Zappa(object):
         Downloads a given url in chunks and writes to the provided stream (can be any io stream).
         Displays the progress bar for the download.
         """
-        resp = requests.get(url, timeout=timeout, stream=True)
-        # TODO implement retry scheme here (requests.Session and HTTPAdapter with retries=retries)
+        # implemented retries scheme
+        # Related : https://github.com/Miserlou/Zappa/issues/1235
+        session = requests.Session()
+        session.mount(url, requests.adapters.HTTPAdapter(max_retries=retries))
+        resp = session.get(url, timeout=timeout, stream=True)
         resp.raw.decode_content = True
 
         progress = tqdm(unit="B", unit_scale=True, total=int(resp.headers.get('Content-Length', 0)), disable=disable_progress)

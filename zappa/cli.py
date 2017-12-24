@@ -434,6 +434,8 @@ class ZappaCLI(object):
         update_parser.add_argument(
             '-n', '--no-upload', help="Update configuration where appropriate, but don't upload new code"
         )
+        # added timeout and retries when dowloading dependencies
+        # Related : https://github.com/Miserlou/Zappa/issues/1235
         update_parser.add_argument(
             '-t', '--timeout', type=positive_int, default=2, help='Timeout on downloading dependencies'
         )
