@@ -265,6 +265,9 @@ class ZappaCLI(object):
         deploy_parser.add_argument(
             '-z', '--zip', help='Deploy Lambda with specific local or S3 hosted zip package'
         )
+        # added timeout and retries when dowloading dependencies
+        # Related : https://github.com/Miserlou/Zappa/issues/1235
+        # Related : https://github.com/Miserlou/Zappa/issues/1040
         deploy_parser.add_argument(
             '-t', '--timeout', type=positive_int, default=2, help='Timeout on downloading dependencies'
         )
