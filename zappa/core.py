@@ -1645,7 +1645,7 @@ class Zappa(object):
                 continue
             yield api
 
-    def undeploy_api_gateway(self, lambda_name, domain_name=None):
+    def undeploy_api_gateway(self, lambda_name, domain_names=None):
         """
         Delete a deployed REST API Gateway.
         """
@@ -1653,19 +1653,19 @@ class Zappa(object):
 
         api_id = self.get_api_id(lambda_name)
 
-        if domain_name:
+        if domain_names:
 
             # XXX - Remove Route53 smartly here?
             # XXX - This doesn't raise, but doesn't work either.
-
-            try:
-                self.apigateway_client.delete_base_path_mapping(
-                    domainName=domain_name,
-                    basePath='(none)'
-                )
-            except Exception as e:
-                # We may not have actually set up the domain.
-                pass
+            for domain_name in domain_names:
+                try:
+                    self.apigateway_client.delete_base_path_mapping(
+                        domainName=domain_name,
+                        basePath='(none)'
+                    )
+                except Exception as e:
+                    # We may not have actually set up the domain.
+                    pass
 
         was_deleted = self.delete_stack(lambda_name, wait=True)
 
@@ -2047,9 +2047,7 @@ class Zappa(object):
         This updates your certificate information for an existing domain,
         with similar arguments to boto's update_domain_name API Gateway api.
 
-        It returns the resulting new domain information including the new certificate's ARN
-        if created during this process.
-
+        It returns the distribution DNS name
         Previously, this method involved downtime that could take up to 40 minutes
         because the API Gateway api only allowed this by deleting, and then creating it.
 
@@ -2072,17 +2070,28 @@ class Zappa(object):
                                                                  CertificateChain=certificate_chain)
             certificate_arn = acm_certificate['CertificateArn']
 
-        return self.apigateway_client.update_domain_name(domainName=domain_name,
-                                                         patchOperations=[
-                                                             {"op" : "replace",
-                                                              "path" : "/certificateName",
-                                                              "value" : certificate_name},
-                                                             {"op" : "replace",
-                                                              "path" : "/certificateArn",
-                                                              "value" : certificate_arn}
-                                                         ])
+        response = self.apigateway_client.update_domain_name(
+            domainName=domain_name,
+            patchOperations=[{
+                "op" : "replace",
+                "path" : "/certificateName",
+                "value" : certificate_name,
+            }, {
+                "op" : "replace",
+                "path" : "/certificateArn",
+                "value" : certificate_arn,
+            }]
+        )
+        return response['distributionDomainName']
 
-    def get_domain_name(self, domain_name):
+    def get_apigateway_domain(self, domain_name):
+        try:
+            return self.apigateway_client.get_domain_name(domainName=domain_name)
+        except Exception:
+            return None
+
+
+    def get_route53_domain(self, domain_name):
         """
         Scan our hosted zones for the record of a given name.
 

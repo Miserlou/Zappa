@@ -60,6 +60,7 @@ def get_cert_and_update_domain(
                                 domain=None,
                                 clean_up=True,
                                 manual=False,
+                                route53_enabled=False,
                             ):
     """
     Main cert installer path.
@@ -82,8 +83,8 @@ def get_cert_and_update_domain(
 
         if not manual:
             if domain:
-                if not zappa_instance.get_domain_name(domain):
-                    zappa_instance.create_domain_name(
+                if not zappa_instance.get_apigateway_domain(domain):
+                    dns_name = zappa_instance.create_domain_name(
                         domain_name=domain,
                         certificate_name=domain + "-Zappa-LE-Cert",
                         certificate_body=certificate_body,
@@ -95,7 +96,7 @@ def get_cert_and_update_domain(
                     )
                     print("Created a new domain name. Please note that it can take up to 40 minutes for this domain to be created and propagated through AWS, but it requires no further work on your part.")
                 else:
-                    zappa_instance.update_domain_name(
+                    dns_name = zappa_instance.update_domain_name(
                         domain_name=domain,
                         certificate_name=domain + "-Zappa-LE-Cert",
                         certificate_body=certificate_body,
@@ -105,6 +106,8 @@ def get_cert_and_update_domain(
                         lambda_name=lambda_name,
                         stage=api_stage
                     )
+                if route53_enabled:
+                    zappa_instance.update_route53_records(domain, dns_name)
         else:
             print("Cerificate body:\n")
             print(certificate_body)
@@ -117,7 +120,7 @@ def get_cert_and_update_domain(
 
     except Exception as e:
         print(e)
-        return False
+        return None
 
     if clean_up:
         cleanup()
