@@ -241,7 +241,7 @@ class SnsAsyncResponse(LambdaAsyncResponse):
         Given a message, publish to this topic.
         """
         message['command'] = 'zappa.async.route_sns_task'
-        payload = json.dumps(message).encode('utf-8')
+        payload = json.dumps(message)
         if len(payload) > 256000: # pragma: no cover
             raise AsyncException("Payload too large for SNS")
         self.response = self.client.publish(
