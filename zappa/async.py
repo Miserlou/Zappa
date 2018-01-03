@@ -97,6 +97,9 @@ import time
 
 from .utilities import get_topic_name
 
+import sys
+PY2 = (sys.version_info[0] == 2)
+
 try:
     from zappa_settings import ASYNC_RESPONSE_TABLE
 except ImportError:
@@ -241,7 +244,10 @@ class SnsAsyncResponse(LambdaAsyncResponse):
         Given a message, publish to this topic.
         """
         message['command'] = 'zappa.async.route_sns_task'
-        payload = json.dumps(message).encode('utf-8')
+        if PY2:
+            payload = json.dumps(message).encode('utf-8')
+        else:
+            payload = json.dumps(message)
         if len(payload) > 256000: # pragma: no cover
             raise AsyncException("Payload too large for SNS")
         self.response = self.client.publish(
