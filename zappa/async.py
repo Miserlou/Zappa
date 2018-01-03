@@ -97,6 +97,8 @@ import time
 
 from .utilities import get_topic_name
 
+# https://github.com/Miserlou/Zappa/issues/1330
+# Need to check wether we need the encoding or not for the SNS payload
 import sys
 PY2 = (sys.version_info[0] == 2)
 
@@ -244,6 +246,8 @@ class SnsAsyncResponse(LambdaAsyncResponse):
         Given a message, publish to this topic.
         """
         message['command'] = 'zappa.async.route_sns_task'
+        # https://github.com/Miserlou/Zappa/issues/1330
+        # encode the json.dumps only if Python 2
         if PY2:
             payload = json.dumps(message).encode('utf-8')
         else:
