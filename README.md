@@ -1120,36 +1120,68 @@ By default, AWS Lambda will attempt to retry an event based (non-API Gateway, e.
 You can specify which _local_ profile to use for deploying your Zappa application by defining
 the `profile_name` setting, which will correspond to a profile in your AWS credentials file.
 
+Ongoing discussion about the minimum policy requirements necessary for a Zappa deployment 
+[can be found here](https://github.com/Miserlou/Zappa/issues/244).
+
 ### Using Custom AWS IAM Roles and Policies for Execution
 
-The default IAM policy created by Zappa for executing the Lambda is very permissive.
-It grants access to all actions for
-all resources for types CloudWatch, S3, Kinesis, SNS, SQS, DynamoDB, and Route53; lambda:InvokeFunction
+The default IAM policy created by Zappa for executing the Lambda is very permissive. It grants access to all actions for
+all resources for types CloudWatch, Route53, S3, DynamoDB, SNS, SQS, and Kinesis; lambda:InvokeFunction
 for all Lambda resources; Put to all X-Ray resources; and all Network Interface operations to all EC2
-resources. While this allows most Lambdas to work correctly with no extra permissions, it is
-generally not an acceptable set of permissions for most continuous integration pipelines or
-production deployments. Instead, you will probably want to manually manage your IAM policies.
+resources. While this allows most Lambdas to work correctly with no `extra_permissions` setting, it is
+not an acceptable set of permissions for most continuous integration pipelines or
+production deployments. Instead, you will probably want to explicitly manage your execution IAM Policy.
 
-To manually define the policy of your Lambda execution role, you must set *manage_roles* to false and define
-either the *role_name* or *role_arn* in your Zappa settings file.
+There are three options for explicitly managing the execution policy : 
+1. Manually manage the Role in IAM directly independently from Zappa
+1. Allow Zappa to manage the Role, but with an explicitly defined policy
+1. Add additional permissions to the default Zappa policy
+
+#### Option 1 - Manually-managed Role independent of Zappa
+
+To manually manage Role, set `manage_roles` to false.  With this set, you are expected to create and manage the Role
+outside of Zappa, for example, by creating it manually in the AWS Console or via a CloudFormation template. You may 
+optionally override the default name of the Role that Zappa uses (<project_name>-<env>-ZappaExecutionRole) by setting 
+either `role_name` or `role_arn`.  
 
 ```javascript
 {
     "dev": {
         ...
         "manage_roles": false, // Disable Zappa client managing roles.
-        "role_name": "MyLambdaRole", // Name of your Zappa execution role. Optional, default: <project_name>-<env>-ZappaExecutionRole.
+        ...and, optionally, one of...
+        "role_name": "MyLambdaRole", // Name of your Zappa execution role. Optional. Default: <project_name>-<env>-ZappaExecutionRole.
+        ...or...
         "role_arn": "arn:aws:iam::12345:role/app-ZappaLambdaExecutionRole", // ARN of your Zappa execution role. Optional.
+        ...
+    }
+}
+```
+
+#### Option 2 - Zappa-managed Role with an explicitly defined policy
+
+To allow Zappa to manage the Role but specify an explicit policy, either do not specify `manage_roles` or set 
+its value to `true`. Then, configure the `attach_policy` attribute to be the name of a file containing the IAM Policy 
+JSON.  This policy is used in place of the default Zappa policy.  This is called the 'attach' policy because the Policy 
+is  associated with the Lambda with an operation known as 'attach'.  Optionally, the `role_name` can be 
+customized to be a name other than the default (<project_name>-<env>-ZappaExecutionRole).   
+
+```javascript
+{
+    "dev": {
+        ...
+        "manage_roles": true, // Enable Zappa client managing roles. Optional. Default: true.
+        "attach_policy": "my_attach_policy.json", // custom IAM attach policy JSON file name. Optional.
         ...
     },
     ...
 }
 ```
 
-Ongoing discussion about the minimum policy requirements necessary for a Zappa deployment [can be found here](https://github.com/Miserlou/Zappa/issues/244).
-A more robust solution to managing these entitlements will likely be implemented soon.
+#### Option 3 - Zappa-managed Role with extra permissions in addition to the base policy
 
-To add permissions to the default Zappa execution policy, use the `extra_permissions` setting:
+The `extra_permissions` setting will add permissions to the base Zappa execution policy (either the default policy 
+or the policy defined by the `attach_policy` setting).
 
 ```javascript
 {
@@ -1164,6 +1196,12 @@ To add permissions to the default Zappa execution policy, use the `extra_permiss
     ...
 }
 ```
+
+### Using Custom AWS IAM Roles and Policies for Assume
+
+A custom assume policy can be specified by setting via the `assume_policy` configuration option to the name of the file 
+containing your assume policy.  The default assume policy allows access by `apigateway.amazonaws.com`, 
+`lambda.amazonaws.com` and `events.amazonaws.com`.
 
 ### AWS X-Ray
 

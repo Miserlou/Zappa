@@ -530,7 +530,7 @@ class ZappaCLI(object):
         try:
             self.load_settings(self.vargs.get('settings_file'))
         except ValueError as e:
-            print("Error: {}".format(e.message))
+            print("Error: {}".format(str(e)))
             sys.exit(-1)
         self.callback('settings')
 
@@ -696,14 +696,14 @@ class ZappaCLI(object):
             if self.manage_roles:
                 try:
                     self.zappa.create_iam_roles()
-                except botocore.client.ClientError:
+                except botocore.client.ClientError as e:
                     raise ClickException(
                         click.style("Failed", fg="red") + " to " + click.style("manage IAM roles", bold=True) + "!\n" +
-                        "You may " + click.style("lack the necessary AWS permissions", bold=True) +
+                        "You may " + click.style("lack the necessary AWS permissions " , bold=True) +
                         " to automatically manage a Zappa execution role.\n" +
                         "To fix this, see here: " +
-                        click.style("https://github.com/Miserlou/Zappa#using-custom-aws-iam-roles-and-policies", bold=True)
-                        + '\n')
+                        click.style("https://github.com/Miserlou/Zappa#using-custom-aws-iam-roles-and-policies", bold=True) + '\n' +
+                        'Exception: ' + str(e) + '\n')
 
             # Create the Lambda Zip
             self.create_package()
@@ -2035,6 +2035,13 @@ class ZappaCLI(object):
         self.tags = self.stage_config.get('tags', {})
 
         desired_role_name = self.lambda_name + "-ZappaLambdaExecutionRole"
+        if len(desired_role_name) > 64:
+            raise ClickException(
+                "Your " + click.style("role name", fg='red', bold=True) +
+                " value is longer than 64 characters, the max length allowed " +
+                "by AWS for a role name. Make your Zappa profile name or " +
+                "project name shorter, or provide role_name configuration parameter.")
+
         self.zappa = Zappa( boto_session=session,
                             profile_name=self.profile_name,
                             aws_region=self.aws_region,
