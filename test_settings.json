@@ -84,7 +84,7 @@
     },
     "extendo2": {
        "extends": "extendo",
-       "s3_bucket": "lmbda2",
+       "s3_bucket": "lmbda2"
     },
     "slim_handler": {
        "extends": "ttt888",
