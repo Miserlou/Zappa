@@ -310,7 +310,7 @@ You can also specify the output filename of the package with `-o`:
 
 #### How Zappa Makes Packages
 
-Zappa will automatically package your active virtual environment into a package which runs on smoothly AWS Lambda.
+Zappa will automatically package your active virtual environment into a package which runs smoothly on AWS Lambda.
 
 During this process, it will replace any local dependancies with AWS Lambda compatible versions. Dependencies are included in this order:
 
