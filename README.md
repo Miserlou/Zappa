@@ -1344,6 +1344,22 @@ Zappa is currently supported by these awesome individuals and companies:
   * Theo Chitayat
   * George Sibble
   * Joe Weiss
+  * Nik Bora
+  * Zerong Toby Wang
+  * Gareth E
+  * Matt Jackson
+  * Sean Coates
+  * Alexander Loschilov
+  * Korey Peters
+  * Joe Weiss
+  * Kimmo Parvianen-Jalanko
+  * Patrick Agin
+  * Roberto Martinez
+  * Charles Dimino
+  * Doug Beney
+  * Dan "The Man" Gayle
+  * Juancito
+  * Will Childs-Klein
 
 Thank you very, very much!
 
