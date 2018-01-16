@@ -1251,7 +1251,6 @@ For monitoring of different deployments, a unique UUID for each package is avail
 * [Deploy a Serverless WSGI App using Zappa, CloudFront, RDS, and VPC](https://docs.google.com/presentation/d/1aYeOMgQl4V_fFgT5VNoycdXtob1v6xVUWlyxoTEiTw0/edit#slide=id.p)
 * [AWS: Deploy Alexa Ask Skills with Flask-Ask and Zappa](https://developer.amazon.com/blogs/post/8e8ad73a-99e9-4c0f-a7b3-60f92287b0bf/New-Alexa-Tutorial-Deploy-Flask-Ask-Skills-to-AWS-Lambda-with-Zappa)
 * [Guide to using Django with Zappa](https://edgarroman.github.io/zappa-django-guide/)
-* [Apex and WWW Domains with Zappa](http://sciencestuff.xperiment.mobi/2017/08/09/apex-and-www-domains-with-pythons-zappa-https/)
 * [Zappa and LambCI](https://seancoates.com/blogs/zappa-and-lambci/)
 * [Building A Serverless Image Processing SaaS using Zappa](http://www.99serverless.com/index.php/2017/11/25/building-a-serverless-image-processing-saas/)
 * _Your guide here?_
