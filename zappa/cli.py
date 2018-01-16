@@ -2544,9 +2544,12 @@ class ZappaCLI(object):
             "zappa.", "wsgi.", "middleware.", "handler.", "util.", "letsencrypt.", "cli."
         ]
         for namespace_collision in namespace_collisions:
-            if namespace_collision in item:
+            if item.startswith(namespace_collision):
                 click.echo(click.style("Warning!", fg="red", bold=True) +
-                           " You may have a namespace collision with " + click.style(item, bold=True) +
+                           " You may have a namespace collision between " +
+                           click.style(item, bold=True) +
+                           " and " +
+                           click.style(namespace_collision, bold=True) +
                            "! You may want to rename that file.")
 
     def deploy_api_gateway(self, api_id):
