@@ -233,11 +233,6 @@ class ZappaCLI(object):
             help='Create and install SSL certificate'
         )
         cert_parser.add_argument(
-            '--no-cleanup', action='store_true',
-            help=("Don't remove certificate files from /tmp during certify."
-                  " Dangerous.")
-        )
-        cert_parser.add_argument(
             '--manual', action='store_true',
             help=("Gets new Let's Encrypt certificates, but prints them to console."
                 "Does not update API Gateway domains.")
@@ -605,7 +600,6 @@ class ZappaCLI(object):
             self.status(return_json=self.vargs['json'])
         elif command == 'certify': # pragma: no cover
             self.certify(
-                no_cleanup=self.vargs['no_cleanup'],
                 no_confirm=self.vargs['yes'],
                 manual=self.vargs['manual']
             )
@@ -1729,7 +1723,7 @@ class ZappaCLI(object):
 
         return
 
-    def certify(self, no_cleanup=False, no_confirm=True, manual=False):
+    def certify(self, no_confirm=True, manual=False):
         """
         Register or update a domain certificate for this env.
         """
@@ -1741,15 +1735,6 @@ class ZappaCLI(object):
             confirm = input("Are you sure you want to certify? [y/n] ")
             if confirm != 'y':
                 return
-
-        # Give warning on --no-cleanup
-        if no_cleanup:
-            clean_up = False
-            click.echo(click.style("Warning!", fg="red", bold=True) + " You are calling certify with " +
-                       click.style("--no-cleanup", bold=True) +
-                       ". Your certificate files will remain in the system temporary directory after this command executes!")
-        else:
-            clean_up = True
 
         # Make sure this isn't already deployed.
         deployed_versions = self.zappa.get_lambda_function_versions(self.lambda_name)
@@ -1777,12 +1762,13 @@ class ZappaCLI(object):
                                      " or " + click.style("certificate_arn", fg="red", bold=True) + " configured!")
 
             # Get install account_key to /tmp/account_key.pem
+            from .letsencrypt import gettempdir
             if account_key_location.startswith('s3://'):
                 bucket, key_name = parse_s3_url(account_key_location)
-                self.zappa.s3_client.download_file(bucket, key_name, '{}/account.key'.format(tempfile.gettempdir()))
+                self.zappa.s3_client.download_file(bucket, key_name, os.path.join(gettempdir(), 'account.key'))
             else:
                 from shutil import copyfile
-                copyfile(account_key_location, '{}/account.key'.format(tempfile.gettempdir()))
+                copyfile(account_key_location, os.path.join(gettempdir(), 'account.key'))
 
         # Prepare for Custom SSL
         elif not account_key_location and not cert_arn:
@@ -1807,23 +1793,14 @@ class ZappaCLI(object):
 
         # Let's Encrypt
         if not cert_location and not cert_arn:
-            from .letsencrypt import get_cert_and_update_domain, cleanup
+            from .letsencrypt import get_cert_and_update_domain
             cert_success = get_cert_and_update_domain(
                     self.zappa,
                     self.lambda_name,
                     self.api_stage,
                     self.domain,
-                    clean_up,
                     manual
                 )
-
-            # Deliberately undocumented feature (for now, at least.)
-            # We are giving the user the ability to shoot themselves in the foot.
-            # _This is probably not a good idea._
-            # However, I am sick and tired of hitting the Let's Encrypt cert
-            # limit while testing.
-            if clean_up:
-                cleanup()
 
         # Custom SSL / ACM
         else:
@@ -2353,7 +2330,7 @@ class ZappaCLI(object):
             temp_settings.write(bytes(settings_s, "utf-8"))
             temp_settings.close()
             lambda_zip.write(temp_settings.name, 'zappa_settings.py')
-            os.remove(temp_settings.name)
+            os.unlink(temp_settings.name)
 
     def remove_local_zip(self):
         """

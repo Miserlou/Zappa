@@ -21,7 +21,7 @@ from zappa.cli import ZappaCLI, shamelessly_promote, disable_click_colors
 from zappa.ext.django_zappa import get_django_wsgi
 from zappa.letsencrypt import get_cert_and_update_domain, create_domain_key, create_domain_csr, \
     create_chained_certificate, cleanup, parse_account_key, parse_csr, sign_certificate, encode_certificate,\
-    register_account, verify_challenge
+    register_account, verify_challenge, gettempdir
 from zappa.utilities import (detect_django_settings, detect_flask_apps,  parse_s3_url, human_size, string_to_timestamp,
                              validate_name, InvalidAwsLambdaName, contains_python_files_or_subdirs,
                              conflicts_with_a_neighbouring_module)
@@ -1206,19 +1206,25 @@ class TestZappa(unittest.TestCase):
     ##
 
     def test_lets_encrypt_sanity(self):
-
         # We need a fake account key and crt
         import subprocess
-        proc = subprocess.Popen(["openssl genrsa 2048 > /tmp/account.key"],
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        out, err = proc.communicate()
-        if proc.returncode != 0:
-            raise IOError("OpenSSL Error: {0}".format(err))
-        proc = subprocess.Popen(["openssl req -x509 -newkey rsa:2048 -subj '/C=US/ST=Denial/L=Springfield/O=Dis/CN=www.example.com' -passout pass:foo -keyout /tmp/key.key -out test_signed.crt -days 1 > /tmp/signed.crt"],
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        out, err = proc.communicate()
-        if proc.returncode != 0:
-            raise IOError("OpenSSL Error: {0}".format(err))
+        devnull = open(os.devnull, 'wb')
+        out = subprocess.check_output(['openssl', 'genrsa', '2048'], stderr=devnull)
+        with open(os.path.join(gettempdir(), 'account.key'), 'wb') as f:
+            f.write(out)
+
+        cmd = [
+            'openssl', 'req',
+            '-x509',
+            '-newkey', 'rsa:2048',
+            '-subj', '/C=US/ST=Denial/L=Springfield/O=Dis/CN=www.example.com',
+            '-passout', 'pass:foo',
+            '-keyout', os.path.join(gettempdir(), 'key.key'),
+            '-out', os.path.join(gettempdir(), 'signed.crt'),
+            '-days', '1'
+        ]
+        devnull = open(os.devnull, 'wb')
+        subprocess.check_call(cmd, stdout=devnull, stderr=devnull)
 
         DEFAULT_CA = "https://acme-staging.api.letsencrypt.org"
         CA = "https://acme-staging.api.letsencrypt.org"
@@ -1255,16 +1261,12 @@ class TestZappa(unittest.TestCase):
         zappa_cli = ZappaCLI()
         zappa_cli.api_stage = 'ttt888'
         zappa_cli.load_settings('test_settings.json')
-        get_cert_and_update_domain(zappa_cli, 'kerplah', 'zzzz', domain=None, clean_up=True)
-
-        os.remove('test_signed.crt')
-        cleanup()
+        get_cert_and_update_domain(zappa_cli, 'kerplah', 'zzzz', domain=None)
 
 
     def test_certify_sanity_checks(self):
         """
         Make sure 'zappa certify':
-        * Writes a warning with the --no-cleanup flag.
         * Errors out when a deployment hasn't taken place.
         * Writes errors when certificate settings haven't been specified.
         * Calls Zappa correctly for creates vs. updates.
@@ -1277,15 +1279,11 @@ class TestZappa(unittest.TestCase):
             zappa_cli = ZappaCLI()
             zappa_cli.domain = "test.example.com"
             try:
-                zappa_cli.certify(no_cleanup=True)
+                zappa_cli.certify()
             except AttributeError:
                 # Since zappa_cli.zappa isn't initalized, the certify() call
                 # fails when it tries to inspect what Zappa has deployed.
                 pass
-
-            log_output = sys.stdout.getvalue()
-            self.assertIn("You are calling certify with", log_output)
-            self.assertIn("--no-cleanup", log_output)
 
             class ZappaMock(object):
                 def __init__(self):
@@ -1381,7 +1379,7 @@ class TestZappa(unittest.TestCase):
                 "certificate_chain": cert_file.name
             })
             sys.stdout.truncate(0)
-            zappa_cli.certify(no_cleanup=True)
+            zappa_cli.certify()
             self.assertEquals(len(zappa_cli.zappa.calls), 2)
             self.assertTrue(zappa_cli.zappa.calls[0][0] == "create_domain_name")
             self.assertTrue(zappa_cli.zappa.calls[1][0] == "update_route53_records")
@@ -1391,7 +1389,7 @@ class TestZappa(unittest.TestCase):
             zappa_cli.zappa.calls = []
             zappa_cli.zappa.domain_names["test.example.com"] = "*.example.com"
             sys.stdout.truncate(0)
-            zappa_cli.certify(no_cleanup=True)
+            zappa_cli.certify()
             self.assertEquals(len(zappa_cli.zappa.calls), 1)
             self.assertTrue(zappa_cli.zappa.calls[0][0] == "update_domain_name")
             log_output = sys.stdout.getvalue()
@@ -1404,7 +1402,7 @@ class TestZappa(unittest.TestCase):
             zappa_cli.zappa.calls = []
             zappa_cli.zappa.domain_names["test.example.com"] = ""
             sys.stdout.truncate(0)
-            zappa_cli.certify(no_cleanup=True)
+            zappa_cli.certify()
             self.assertEquals(len(zappa_cli.zappa.calls), 1)
             self.assertTrue(zappa_cli.zappa.calls[0][0] == "create_domain_name")
             log_output = sys.stdout.getvalue()
