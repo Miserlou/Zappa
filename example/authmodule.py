@@ -7,9 +7,6 @@ or in the "license" file accompanying this file. This file is distributed on an 
 from __future__ import print_function
 
 import re
-import time
-import pprint
-import json
 
 
 def lambda_handler(event, context):

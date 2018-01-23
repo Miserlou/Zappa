@@ -44,11 +44,10 @@ from click.globals import push_context
 from dateutil import parser
 from datetime import datetime, timedelta
 
-from .core import Zappa, logger, API_GATEWAY_REGIONS
+from .core import Zappa, API_GATEWAY_REGIONS
 from .utilities import (check_new_version_available, detect_django_settings,
                   detect_flask_apps, parse_s3_url, human_size,
-                  validate_name, InvalidAwsLambdaName,
-                  get_runtime_from_python_version, string_to_timestamp)
+                  validate_name, get_runtime_from_python_version, string_to_timestamp)
 
 
 CUSTOM_SETTINGS = [
