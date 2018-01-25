@@ -53,6 +53,7 @@
   - [Enabling CORS](#enabling-cors)
   - [Large Projects](#large-projects)
   - [Enabling Bash Completion](#enabling-bash-completion)
+  - [Multi Stage Deployment in API Gateway](#multi-stage-deployment-in-api-gateway)
   - [Enabling Secure Endpoints on API Gateway](#enabling-secure-endpoints-on-api-gateway)
     - [API Key](#api-key)
     - [IAM Policy](#iam-policy)
@@ -727,6 +728,7 @@ to change Zappa's behavior. Use these at your own risk!
 ```javascript
  {
     "dev": {
+        "api_name": "your_api_name", default "project_name" + "-" + api_stage (default lambda_package name)
         "api_key_required": false, // enable securing API Gateway endpoints with x-api-key header (default False)
         "api_key": "your_api_key_id", // optional, use an existing API key. The option "api_key_required" must be true to apply
         "apigateway_enabled": true, // Set to false if you don't want to create an API Gateway resource. Default true.
@@ -913,6 +915,20 @@ then the command must be run there. Alternatively you can execute:
   activate-global-python-argcomplete --dest=- > file
 
 The file's contents should then be sourced in e.g. ~/.bashrc.
+
+#### Multi Stage Deployment in API Gateway
+ 
+ Provide `api_name` value to re use same api gateway and deploy multiple stages. We have 60 APIs limit per region per account in aws.
+ 
+ ```javascript
+   {
+     "dev": {
+         ...
+         "api_name": "your_api_name", // default is zappa lambda function name 
+         ...
+     }
+   }
+ ```
 
 ### Enabling Secure Endpoints on API Gateway
 
