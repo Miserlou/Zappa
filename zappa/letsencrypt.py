@@ -46,7 +46,7 @@ LOGGER.addHandler(logging.StreamHandler())
 
 def get_cert_and_update_domain(
                                 zappa_instance,
-                                lambda_name,
+                                api_name,
                                 api_stage,
                                 domain=None,
                                 manual=False,
@@ -80,7 +80,7 @@ def get_cert_and_update_domain(
                         certificate_private_key=certificate_private_key,
                         certificate_chain=certificate_chain,
                         certificate_arn=None,
-                        lambda_name=lambda_name,
+                        api_name=api_name,
                         stage=api_stage
                     )
                     print("Created a new domain name. Please note that it can take up to 40 minutes for this domain to be created and propagated through AWS, but it requires no further work on your part.")
@@ -92,7 +92,7 @@ def get_cert_and_update_domain(
                         certificate_private_key=certificate_private_key,
                         certificate_chain=certificate_chain,
                         certificate_arn=None,
-                        lambda_name=lambda_name,
+                        api_name=api_name,
                         stage=api_stage
                     )
         else:
