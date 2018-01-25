@@ -1,0 +1,19 @@
+{
+  "status_code": 200,
+  "data": {
+    "Aliases": [
+      {
+        "AliasName": "string",
+        "AliasArn": "string",
+        "FunctionVersion": 1,
+        "TargetKeyId": "string"
+      }
+    ],
+    "NextMarker": "string",
+    "Truncated": true,
+    "ResponseMetadata": {
+      "HTTPStatusCode": 204,
+      "RequestId": "db1a1c1c0-28f7-11e6-8db2-597c5c8eebes5"
+    }
+  }
+}
