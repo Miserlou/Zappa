@@ -13,7 +13,6 @@
   },
   "required": [
     "id",
-    "name",
     "summary"
   ],
   "title": "Config"
