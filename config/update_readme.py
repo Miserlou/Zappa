@@ -20,7 +20,7 @@ for config_file in sorted(Path('configs').glob('*.json')):
     end = readme.index('<!-- /list-of-configs -->')
     config = json.loads(config_file.read_text())
     readme.insert(
-        end, '| [{id}]({default} | {summary} |'.format(**config))
+        end, '| {id} | {default} | {summary} |'.format(**config))
 
 readme.insert(end+1, '')
 

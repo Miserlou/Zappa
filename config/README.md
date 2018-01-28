@@ -15,7 +15,7 @@ Zappa Configs
 
 | ID | Default | Summary |
 | --- | --- | --- |
-| [certificate_arn]( | AWS certificate arn |
+| certificate_arn |  | AWS certificate arn |
 
 <!-- /list-of-configs -->
 
