@@ -81,10 +81,15 @@ def create_wsgi_request(event_info,
                 body = body.encode("utf-8")
 
         # Make header names canonical, e.g. content-type => Content-Type
+        # https://github.com/Miserlou/Zappa/issues/1188
+        canonicalized = {}
         for header in headers.keys():
             canonical = header.title()
             if canonical != header:
-                headers[canonical] = headers.pop(header)
+                canonicalized[header] = canonical
+
+        for header, canonical in canonicalized.items():
+            headers[canonical] = headers.pop(header)
 
         path = urls.url_unquote(event_info['path'])
 
