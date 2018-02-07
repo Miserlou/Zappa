@@ -303,6 +303,18 @@ class LambdaHandler(object):
 
         return None
 
+    def get_function_from_bot_intent_trigger(self, event):
+        """
+        For the given event build ARN and return the configured function
+        """
+        intent = event.get('currentIntent')
+        if intent:
+            intent = intent.get('name')
+            if intent:
+                return self.settings.AWS_BOT_EVENT_MAPPING.get(
+                    "{}:{}".format(intent, event.get('invocationSource'))
+                )
+
     def get_function_for_cognito_trigger(self, trigger):
         """
         Get the associated function to execute for a cognito trigger
@@ -389,6 +401,18 @@ class LambdaHandler(object):
             records = event.get('Records')
             result = None
             whole_function = self.get_function_for_aws_event(records[0])
+            if whole_function:
+                app_function = self.import_module_and_get_function(whole_function)
+                result = self.run_function(app_function, event, context)
+                logger.debug(result)
+            else:
+                logger.error("Cannot find a function to process the triggered event.")
+            return result
+
+        # this is an AWS-event triggered from Lex bot's intent
+        elif event.get('bot'):
+            result = None
+            whole_function = self.get_function_from_bot_intent_trigger(event)
             if whole_function:
                 app_function = self.import_module_and_get_function(whole_function)
                 result = self.run_function(app_function, event, context)
