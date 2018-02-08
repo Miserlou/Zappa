@@ -532,13 +532,13 @@ Similarly, for a [Simple Notification Service](https://aws.amazon.com/sns/) even
        ]
 ```
 
-For configuring Lex Bot's Intent triggered events
+For configuring Lex Bot's intent triggered events:
 ```javascript
 	"bot_events": [
         {
             "function": "lexbot.handlers.book_appointment.handler",
             "event_source": {
-                "arn": "arn:aws:lex:us-east-1:029992932068:intent:TmpTestLexEventNames:$LATEST", // optional. In future it will be used to configure the intent
+                "arn": "arn:aws:lex:us-east-1:01234123123:intent:TestLexEventNames:$LATEST", // optional. In future it will be used to configure the intent
             	"intent":"intentName", // name of the bot event configured
             	"invocation_source":"DialogCodeHook", // either FulfillmentCodeHook or DialogCodeHook
             }
@@ -547,7 +547,7 @@ For configuring Lex Bot's Intent triggered events
  
 ```
 
-Events can also take keyword arguments.
+Events can also take keyword arguments:
 ```javascript
        "events": [
             {
@@ -558,7 +558,7 @@ Events can also take keyword arguments.
        ]
 ```
 
-To get the keyword arguments you will need to look inside the event dict.
+To get the keyword arguments you will need to look inside the event dictionary:
 
 ```python
 def your_recurring_function(event, context):
