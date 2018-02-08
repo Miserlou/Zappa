@@ -2297,6 +2297,19 @@ class ZappaCLI(object):
                     event_mapping[arn] = function
             settings_s = settings_s + "AWS_EVENT_MAPPING={0!s}\n".format(event_mapping)
 
+            # Map Lext bot events
+            bot_events = self.stage_config.get('bot_events', [])
+            bot_events_mapping = {}
+            for bot_event in bot_events:
+                event_source = bot_event.get('event_source', {})
+                intent = event_source.get('intent')
+                invocation_source = event_source.get('invocation_source')
+                function = bot_event.get('function')
+                if intent and invocation_source and function:
+                    bot_events_mapping[str(intent) + ':' + str(invocation_source)] = function
+
+            settings_s = settings_s + "AWS_BOT_EVENT_MAPPING={0!s}\n".format(bot_events_mapping)
+
             # Map cognito triggers
             cognito_trigger_mapping = {}
             cognito_config = self.stage_config.get('cognito', {})

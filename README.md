@@ -532,6 +532,21 @@ Similarly, for a [Simple Notification Service](https://aws.amazon.com/sns/) even
        ]
 ```
 
+For configuring Lex Bot's Intent triggered events
+```javascript
+	"bot_events": [
+        {
+            "function": "lexbot.handlers.book_appointment.handler",
+            "event_source": {
+                "arn": "arn:aws:lex:us-east-1:029992932068:intent:TmpTestLexEventNames:$LATEST", // optional. In future it will be used to configure the intent
+            	"intent":"intentName", // name of the bot event configured
+            	"invocation_source":"DialogCodeHook", // either FulfillmentCodeHook or DialogCodeHook
+            }
+        }
+	]
+ 
+```
+
 Events can also take keyword arguments.
 ```javascript
        "events": [

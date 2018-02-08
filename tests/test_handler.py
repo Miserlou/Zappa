@@ -21,8 +21,13 @@ def var_args(*args):
 def var_args_with_one(first, *args):
     return first, args[0]
 
+
 def unsupported(first, second, third):
     return first, second, third
+
+
+def handle_bot_intent(event, context):
+    return "Success"
 
 
 class TestZappa(unittest.TestCase):
@@ -142,7 +147,7 @@ class TestZappa(unittest.TestCase):
                                    'clientId': 'client-id-here'},
                  'triggerSource': 'PreSignUp_SignUp',
                  'request': {'userAttributes':
-                             {'email': 'email@example.com'}, 'validationData': None},
+                                 {'email': 'email@example.com'}, 'validationData': None},
                  'response': {'autoConfirmUser': False,
                               'autoVerifyEmail': False,
                               'autoVerifyPhone': False}}
@@ -150,3 +155,38 @@ class TestZappa(unittest.TestCase):
         response = lh.handler(event, None)
 
         self.assertEqual(response['response']['autoConfirmUser'], False)
+
+    def test_bot_triggered_event(self):
+        """
+        Ensure that bot triggered events are handled as in the settings
+        """
+        lh = LambdaHandler('tests.test_bot_handler_being_triggered')
+        # from : https://docs.aws.amazon.com/lambda/latest/dg/eventsources.html#eventsources-lex
+        event = {
+            "messageVersion": "1.0",
+            "invocationSource": "DialogCodeHook",
+            "userId": "user-id specified in the POST request to Amazon Lex.",
+            "sessionAttributes": {
+                "key1": "value1",
+                "key2": "value2",
+            },
+            "bot": {
+                "name": "bot-name",
+                "alias": "bot-alias",
+                "version": "bot-version"
+            },
+            "outputDialogMode": "Text or Voice, based on ContentType request header in runtime API request",
+            "currentIntent": {
+                "name": "intent-name",
+                "slots": {
+                    "slot-name": "value",
+                    "slot-name": "value",
+                    "slot-name": "value"
+                },
+                "confirmationStatus": "None, Confirmed, or Denied (intent confirmation, if configured)"
+            }
+        }
+
+        response = lh.handler(event, None)
+
+        self.assertEqual(response, 'Success')
