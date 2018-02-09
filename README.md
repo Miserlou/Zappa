@@ -549,22 +549,8 @@ Optionally you can add [SNS message filters](http://docs.aws.amazon.com/sns/late
        ]
 ```
 
-For configuring Lex Bot's intent triggered events:
-```javascript
-	"bot_events": [
-        {
-            "function": "lexbot.handlers.book_appointment.handler",
-            "event_source": {
-                "arn": "arn:aws:lex:us-east-1:01234123123:intent:TestLexEventNames:$LATEST", // optional. In future it will be used to configure the intent
-            	"intent":"intentName", // name of the bot event configured
-            	"invocation_source":"DialogCodeHook", // either FulfillmentCodeHook or DialogCodeHook
-            }
-        }
-	]
- 
-```
+Events can also take keyword arguments.
 
-Events can also take keyword arguments:
 ```javascript
        "events": [
             {
@@ -585,6 +571,28 @@ def your_recurring_function(event, context):
 
 
 You can find more [example event sources here](http://docs.aws.amazon.com/lambda/latest/dg/eventsources.html).
+
+### Events from AWS Lex
+For configuring Lex Bot's Intent triggered events
+```javascript
+	"bot_events": [
+        {
+            "function": "lexbot.handlers.book_appointment.handler",
+            "event_source": {
+                "arn": "arn:aws:lex:us-east-1:029992932068:intent:TmpTestLexEventNames:$LATEST", // optional. In future it will be used to configure the intent
+            	"intent":"intentName", // name of the bot event configured
+            	"invocation_source":"DialogCodeHook", // either FulfillmentCodeHook or DialogCodeHook
+            }
+        }
+	]
+ 
+```
+Note:
+	- Manually you need to select the lambda function created by zappa deployment in the AWS Lex console while creating the intent
+	- Also you [need to add permission](https://stackoverflow.com/questions/43549478/aws-lex-access-denied-after-lambda-redeployed-wrong-default-iam-role) for Lex to invoke the Lambda function created by zappa. It can be done from console like this
+	```
+	aws lambda add-permission --function-name <zappa-function-name-dev> --statement-id <chatbot-dialog or chatbot-fullfillment> --action "lambda:InvokeFunction" --principal "lex.amazonaws.com"
+	```
 
 ## Asynchronous Task Execution
 
