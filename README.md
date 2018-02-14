@@ -1122,7 +1122,7 @@ The function has to accept three arguments: exception, event, and context:
 
 your_module.py
 ```python
-def unhandled_exception(e, event, context):
+def unhandled_exceptions(e, event, context):
     send_to_raygun(e, event)  # gather data you need and send
     return True # Prevent invocation retry
 ```
