@@ -37,6 +37,7 @@ import time
 import toml
 import yaml
 import zipfile
+import pip
 
 from click import Context, BaseCommand
 from click.exceptions import ClickException
@@ -1660,10 +1661,10 @@ class ZappaCLI(object):
                 'project_name': self.get_project_name()
             }
         }
-        
+
         if profile_region:
           zappa_settings[env]['aws_region'] = profile_region
-        
+
         if has_django:
             zappa_settings[env]['django_settings'] = django_settings
         else:
@@ -1700,6 +1701,46 @@ class ZappaCLI(object):
         # Write
         with open("zappa_settings.json", "w") as zappa_settings_file:
             zappa_settings_file.write(zappa_settings_json)
+
+        # if this is a blank project, create a hello world file
+        # https://github.com/Miserlou/Zappa/issues/1261
+        if has_django:
+            # TODO: write hello world for django
+            pass
+        else:
+            # hello world in flask
+
+            # try to find the file name
+            # I'm not familiar with flask, so I could be wrong here
+            # I'm assuming that if app_function is myapp.app then
+            # the file is myapp.py
+            print('app_function: %s' % app_function)# DELTEME
+            if app_function.endswith('.app'):
+               handler_fname = app_function[:-len('.app')] + '.py'
+               if not os.path.isfile(handler_fname): # file doesn't exist
+                   # so create the file now
+                   # Is there a neater way to hard code this?
+                   # should I put it in an external file?
+                   body = """from flask import Flask
+
+app = Flask(__name__)
+
+@app.route('/')
+def index(event=None, context=None):
+   return 'Hello World!'
+
+if __name__ == '__main__':
+   app.run(debug=True)
+"""
+                   print('Writing a hello world template to %s' % handler_fname)
+                   with open(handler_fname,'w') as fp:
+                       fp.write(body)
+
+                   # install Flask if not already installed
+                   if not has_flask:
+                       pip.main(['install', 'Flask'])
+
+
 
         if global_deployment:
             click.echo("\n" + click.style("Done", bold=True) + "! You can also " + click.style("deploy all", bold=True)  + " by executing:\n")
