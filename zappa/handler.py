@@ -8,6 +8,7 @@ import importlib
 import inspect
 import json
 import logging
+import logging.config
 import os
 import sys
 import traceback
@@ -69,6 +70,10 @@ class LambdaHandler(object):
             self.settings = importlib.import_module(settings_name)
             self.settings_name = settings_name
             self.session = session
+
+            # Set custom log config
+            if self.settings.LOG_CONFIG_FILE:
+                logging.config.fileConfig(os.path.join(os.getcwd(), self.settings.LOG_CONFIG_FILE))
 
             # Custom log level
             if self.settings.LOG_LEVEL:
