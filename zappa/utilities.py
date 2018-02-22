@@ -92,7 +92,7 @@ def string_to_timestamp(timestring):
 
     # Uses an extended version of Go's duration string.
     try:
-        delta = durationpy.from_str(timestring);
+        delta = durationpy.from_str(timestring)
         past = datetime.datetime.utcnow() - delta
         ts = calendar.timegm(past.timetuple())
         return ts
