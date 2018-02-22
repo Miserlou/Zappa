@@ -143,7 +143,7 @@ def detect_flask_apps():
 
             full = os.path.join(root, filename)
 
-            with open(full, 'r') as f:
+            with os.io.open(full, 'r', encoding='utf-8') as f:
                 lines = f.readlines()
                 for line in lines:
                     app = None
