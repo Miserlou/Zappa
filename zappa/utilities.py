@@ -4,6 +4,7 @@ import durationpy
 import fnmatch
 import json
 import os
+import io
 import re
 import shutil
 import stat
@@ -143,7 +144,7 @@ def detect_flask_apps():
 
             full = os.path.join(root, filename)
 
-            with os.io.open(full, 'r', encoding='utf-8') as f:
+            with io.open(full, 'r', encoding='utf-8') as f:
                 lines = f.readlines()
                 for line in lines:
                     app = None
