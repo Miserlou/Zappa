@@ -2086,7 +2086,7 @@ class Zappa(object):
                                                               "value" : certificate_arn}
                                                          ])
 
-    def get_domain_name(self, domain_name):
+    def get_domain_name(self, domain_name, route53=True):
         """
         Scan our hosted zones for the record of a given name.
 
@@ -2098,6 +2098,9 @@ class Zappa(object):
             self.apigateway_client.get_domain_name(domainName=domain_name)
         except Exception:
             return None
+
+        if not route53:
+            return True
 
         try:
             zones = self.route53.list_hosted_zones()
