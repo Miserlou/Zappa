@@ -525,7 +525,10 @@ class ZappaCLI(object):
         try:
             self.load_settings(self.vargs.get('settings_file'))
         except ValueError as e:
-            print("Error: {}".format(e.message))
+            if hasattr(e, 'message'):
+                print("Error: {}".format(e.message))
+            else:
+                print(str(e))
             sys.exit(-1)
         self.callback('settings')
 
@@ -1660,10 +1663,10 @@ class ZappaCLI(object):
                 'project_name': self.get_project_name()
             }
         }
-        
+
         if profile_region:
           zappa_settings[env]['aws_region'] = profile_region
-        
+
         if has_django:
             zappa_settings[env]['django_settings'] = django_settings
         else:
