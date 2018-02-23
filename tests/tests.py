@@ -1410,6 +1410,49 @@ class TestZappa(unittest.TestCase):
         finally:
             sys.stdout = old_stdout
 
+    @mock.patch('troposphere.Template')
+    @mock.patch('botocore.client')
+    def test_get_domain_respects_route53_setting(self, client, template):
+        zappa_core = Zappa(
+            boto_session=mock.Mock(),
+            profile_name="test",
+            aws_region="test",
+            load_credentials=False
+        )
+        zappa_core.apigateway_client = mock.Mock()
+        zappa_core.route53 = mock.Mock()
+
+        # Check it returns valid and exits early
+        record = zappa_core.get_domain_name('test_domain', route53=False)
+        self.assertIsNotNone(record)
+        zappa_core.apigateway_client.get_domain_name.assert_called_once()
+        zappa_core.route53.list_hosted_zones.assert_not_called()
+
+        zappa_core.apigateway_client.reset_mock()
+        zappa_core.route53.reset_mock()
+
+        # And that the route53 path still works
+        zappa_core.route53.list_hosted_zones.return_value = {
+            'HostedZones': [
+                {
+                    'Id': 'somezone'
+                }
+            ]
+        }
+        zappa_core.route53.list_resource_record_sets.return_value = {
+            'ResourceRecordSets': [{
+                'Type': 'CNAME',
+                'Name': 'test_domain1'
+            }]
+        }
+
+        record = zappa_core.get_domain_name('test_domain')
+        self.assertIsNotNone(record)
+        zappa_core.apigateway_client.get_domain_name.assert_called_once()
+        zappa_core.route53.list_hosted_zones.assert_called_once()
+        zappa_core.route53.list_resource_record_sets.assert_called_once_with(
+            HostedZoneId='somezone')
+
     ##
     # Django
     ##

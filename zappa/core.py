@@ -171,19 +171,25 @@ ATTACH_POLICY = """{
 API_GATEWAY_REGIONS = ['us-east-1', 'us-east-2',
                        'us-west-1', 'us-west-2',
                        'eu-central-1',
-                       'eu-west-1', 'eu-west-2',
+                       'eu-west-1', 'eu-west-2', 'eu-west-3',
                        'ap-northeast-1', 'ap-northeast-2',
                        'ap-southeast-1', 'ap-southeast-2',
-                       'ap-south-1']
+                       'ap-south-1',
+                       'ca-central-1',
+                       'cn-north-1',
+                       'sa-east-1']
 
 # Latest list: https://docs.aws.amazon.com/general/latest/gr/rande.html#lambda_region
 LAMBDA_REGIONS = ['us-east-1', 'us-east-2',
                   'us-west-1', 'us-west-2',
                   'eu-central-1',
-                  'eu-west-1', 'eu-west-2',
+                  'eu-west-1', 'eu-west-2', 'eu-west-3',
                   'ap-northeast-1', 'ap-northeast-2',
                   'ap-southeast-1', 'ap-southeast-2',
-                  'ap-south-1']
+                  'ap-south-1',
+                  'ca-central-1',
+                  'cn-north-1',
+                  'sa-east-1']
 
 # We never need to include these.
 # Related: https://github.com/Miserlou/Zappa/pull/56
@@ -2080,7 +2086,7 @@ class Zappa(object):
                                                               "value" : certificate_arn}
                                                          ])
 
-    def get_domain_name(self, domain_name):
+    def get_domain_name(self, domain_name, route53=True):
         """
         Scan our hosted zones for the record of a given name.
 
@@ -2092,6 +2098,9 @@ class Zappa(object):
             self.apigateway_client.get_domain_name(domainName=domain_name)
         except Exception:
             return None
+
+        if not route53:
+            return True
 
         try:
             zones = self.route53.list_hosted_zones()

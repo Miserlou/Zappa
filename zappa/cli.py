@@ -529,7 +529,10 @@ class ZappaCLI(object):
         try:
             self.load_settings(self.vargs.get('settings_file'))
         except ValueError as e:
-            print("Error: {}".format(e.message))
+            if hasattr(e, 'message'):
+                print("Error: {}".format(e.message))
+            else:
+                print(str(e))
             sys.exit(-1)
         self.callback('settings')
 
@@ -1808,6 +1811,7 @@ class ZappaCLI(object):
 
         # Custom SSL / ACM
         else:
+            route53 = self.stage_config.get('route53_enabled', True)
             if not self.zappa.get_domain_name(self.domain):
                 dns_name = self.zappa.create_domain_name(
                     domain_name=self.domain,
@@ -1818,8 +1822,9 @@ class ZappaCLI(object):
                     certificate_arn=cert_arn,
                     lambda_name=self.lambda_name,
                     stage=self.api_stage,
+                    route53=route53
                 )
-                if self.stage_config.get('route53_enabled', True):
+                if route53:
                     self.zappa.update_route53_records(self.domain, dns_name)
                 print("Created a new domain name with supplied certificate. Please note that it can take up to 40 minutes for this domain to be "
                       "created and propagated through AWS, but it requires no further work on your part.")
@@ -1833,7 +1838,7 @@ class ZappaCLI(object):
                     certificate_arn=cert_arn,
                     lambda_name=self.lambda_name,
                     stage=self.api_stage,
-                    route53=self.stage_config.get('route53_enabled', True)
+                    route53=route53
                 )
 
             cert_success = True
@@ -2300,6 +2305,19 @@ class ZappaCLI(object):
                 if arn and function:
                     event_mapping[arn] = function
             settings_s = settings_s + "AWS_EVENT_MAPPING={0!s}\n".format(event_mapping)
+
+            # Map Lext bot events
+            bot_events = self.stage_config.get('bot_events', [])
+            bot_events_mapping = {}
+            for bot_event in bot_events:
+                event_source = bot_event.get('event_source', {})
+                intent = event_source.get('intent')
+                invocation_source = event_source.get('invocation_source')
+                function = bot_event.get('function')
+                if intent and invocation_source and function:
+                    bot_events_mapping[str(intent) + ':' + str(invocation_source)] = function
+
+            settings_s = settings_s + "AWS_BOT_EVENT_MAPPING={0!s}\n".format(bot_events_mapping)
 
             # Map cognito triggers
             cognito_trigger_mapping = {}

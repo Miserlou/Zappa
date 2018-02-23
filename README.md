@@ -532,7 +532,22 @@ Similarly, for a [Simple Notification Service](https://aws.amazon.com/sns/) even
        ]
 ```
 
-Events can also take keyword arguments.
+For configuring Lex Bot's intent triggered events:
+```javascript
+	"bot_events": [
+        {
+            "function": "lexbot.handlers.book_appointment.handler",
+            "event_source": {
+                "arn": "arn:aws:lex:us-east-1:01234123123:intent:TestLexEventNames:$LATEST", // optional. In future it will be used to configure the intent
+            	"intent":"intentName", // name of the bot event configured
+            	"invocation_source":"DialogCodeHook", // either FulfillmentCodeHook or DialogCodeHook
+            }
+        }
+	]
+ 
+```
+
+Events can also take keyword arguments:
 ```javascript
        "events": [
             {
@@ -543,7 +558,7 @@ Events can also take keyword arguments.
        ]
 ```
 
-To get the keyword arguments you will need to look inside the event dict.
+To get the keyword arguments you will need to look inside the event dictionary:
 
 ```python
 def your_recurring_function(event, context):
@@ -755,7 +770,7 @@ to change Zappa's behavior. Use these at your own risk!
         "certificate": "my_cert.crt", // SSL certificate file location. Used to manually certify a custom domain
         "certificate_key": "my_key.key", // SSL key file location. Used to manually certify a custom domain
         "certificate_chain": "my_cert_chain.pem", // SSL certificate chain file location. Used to manually certify a custom domain
-        "certificate_arn": "arn:aws:acm:us-east-1:1234512345:certificate/aaaa-bbb-cccc-dddd", // ACM certificate ARN.
+        "certificate_arn": "arn:aws:acm:us-east-1:1234512345:certificate/aaaa-bbb-cccc-dddd", // ACM certificate ARN (needs to be in us-east-1 region).
         "cloudwatch_log_level": "OFF", // Enables/configures a level of logging for the given staging. Available options: "OFF", "INFO", "ERROR", default "OFF". C
         "cloudwatch_data_trace": false, // Logs all data about received events. Default false.
         "cloudwatch_metrics_enabled": false, // Additional metrics for the API Gateway. Default false.
@@ -891,7 +906,7 @@ Similarly, you may want to design your application so that static binary uploads
 
 ### Enabling CORS
 
-The simplest way to enable CORS (Cross-Origin Resource Sharing) for in your Zappa application is to set `cors` to `true` in your Zappa settings file and updating, which is the equivalent of pushing the "Enable CORS" button in the AWS API Gateway console. This is disabled by default, but you may wish to enable it for APIs which are accessed from other domains, etc. It may also conflict with `binary_support`, so you should set that to `false` in your settings.
+The simplest way to enable CORS (Cross-Origin Resource Sharing) for your Zappa application is to set `cors` to `true` in your Zappa settings file and update, which is the equivalent of pushing the "Enable CORS" button in the AWS API Gateway console. This is disabled by default, but you may wish to enable it for APIs which are accessed from other domains, etc. It may also conflict with `binary_support`, so you should set that to `false` in your settings.
 
 You can also simply handle CORS directly in your application. Your web framework will probably have an extension to do this, such as [django-cors-headers](https://github.com/ottoyiu/django-cors-headers) or [Flask-CORS](https://github.com/corydolphin/flask-cors). Using these will make your code more portable.
 
@@ -1107,7 +1122,7 @@ The function has to accept three arguments: exception, event, and context:
 
 your_module.py
 ```python
-def unhandled_exception(e, event, context):
+def unhandled_exceptions(e, event, context):
     send_to_raygun(e, event)  # gather data you need and send
     return True # Prevent invocation retry
 ```
