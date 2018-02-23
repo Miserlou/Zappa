@@ -450,6 +450,10 @@ class ZappaCLI(object):
         # been specified AND that stage_env='showmigrations')
         # By having command_rest collect everything but --all we can split it
         # apart here instead of relying on argparse.
+        if not args.command:
+            parser.print_help()
+            return
+
         if args.command == 'manage' and not self.vargs.get('all'):
             self.stage_env = self.vargs['command_rest'].pop(0)
         else:
@@ -512,7 +516,7 @@ class ZappaCLI(object):
         self.api_stage = stage
 
         if command not in ['status', 'manage']:
-            if not self.vargs['json']:
+            if not self.vargs.get('json', None):
                 click.echo("Calling " + click.style(command, fg="green", bold=True) + " for stage " +
                            click.style(self.api_stage, bold=True) + ".." )
 
@@ -1665,7 +1669,7 @@ class ZappaCLI(object):
         }
 
         if profile_region:
-          zappa_settings[env]['aws_region'] = profile_region
+            zappa_settings[env]['aws_region'] = profile_region
 
         if has_django:
             zappa_settings[env]['django_settings'] = django_settings
