@@ -1660,10 +1660,10 @@ class ZappaCLI(object):
                 'project_name': self.get_project_name()
             }
         }
-        
+
         if profile_region:
           zappa_settings[env]['aws_region'] = profile_region
-        
+
         if has_django:
             zappa_settings[env]['django_settings'] = django_settings
         else:
@@ -1972,6 +1972,7 @@ class ZappaCLI(object):
         self.prebuild_script = self.stage_config.get('prebuild_script', None)
         self.profile_name = self.stage_config.get('profile_name', None)
         self.log_level = self.stage_config.get('log_level', "DEBUG")
+        self.log_config_file = self.stage_config.get('log_config_file', None)
         self.domain = self.stage_config.get('domain', None)
         self.timeout_seconds = self.stage_config.get('timeout_seconds', 30)
         dead_letter_arn = self.stage_config.get('dead_letter_arn', '')
@@ -2213,6 +2214,9 @@ class ZappaCLI(object):
                 settings_s = settings_s + "DEBUG=False\n"
 
             settings_s = settings_s + "LOG_LEVEL='{0!s}'\n".format((self.log_level))
+
+            if self.log_config_file:
+                settings_s = settings_s + "LOG_CONFIG_FILE='{0!s}'\n".format((self.log_config_file))
 
             if self.binary_support:
                 settings_s = settings_s + "BINARY_SUPPORT=True\n"
