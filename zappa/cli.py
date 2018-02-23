@@ -1804,6 +1804,7 @@ class ZappaCLI(object):
 
         # Custom SSL / ACM
         else:
+            route53 = self.stage_config.get('route53_enabled', True)
             if not self.zappa.get_domain_name(self.domain):
                 dns_name = self.zappa.create_domain_name(
                     domain_name=self.domain,
@@ -1814,8 +1815,9 @@ class ZappaCLI(object):
                     certificate_arn=cert_arn,
                     lambda_name=self.lambda_name,
                     stage=self.api_stage,
+                    route53=route53
                 )
-                if self.stage_config.get('route53_enabled', True):
+                if route53:
                     self.zappa.update_route53_records(self.domain, dns_name)
                 print("Created a new domain name with supplied certificate. Please note that it can take up to 40 minutes for this domain to be "
                       "created and propagated through AWS, but it requires no further work on your part.")
@@ -1829,7 +1831,7 @@ class ZappaCLI(object):
                     certificate_arn=cert_arn,
                     lambda_name=self.lambda_name,
                     stage=self.api_stage,
-                    route53=self.stage_config.get('route53_enabled', True)
+                    route53=route53
                 )
 
             cert_success = True
