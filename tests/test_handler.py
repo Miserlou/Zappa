@@ -151,7 +151,7 @@ class TestZappa(unittest.TestCase):
 
     def test_exception_handler_on_web_request(self):
         """
-        Ensure that app exceptions triggered by web requests use the exception_handler
+        Ensure that app exceptions triggered by web requests use the exception_handler.
         """
         lh = LambdaHandler('tests.test_exception_handler_settings')
 
@@ -238,7 +238,7 @@ class TestZappa(unittest.TestCase):
 
     def test_exception_in_bot_triggered_event(self):
         """
-        Ensure that bot triggered exceptions are handled as in the settings
+        Ensure that bot triggered exceptions are handled as defined in the settings.
         """
         lh = LambdaHandler('tests.test_bot_exception_handler_settings')
         # from : https://docs.aws.amazon.com/lambda/latest/dg/eventsources.html#eventsources-lex
