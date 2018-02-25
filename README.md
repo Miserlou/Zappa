@@ -572,6 +572,30 @@ def your_recurring_function(event, context):
 
 You can find more [example event sources here](http://docs.aws.amazon.com/lambda/latest/dg/eventsources.html).
 
+### Events from AWS Connect
+You can configure zappa to handle AWS Connect triggers. 
+Use Contact Attributes/Parameters when using multiple functions inside a same contact flow to distinguish between them.
+
+```javascript
+	"connect_events": [
+        {
+            "function": "handlers.handler",
+            "event_source": {
+              "arn": "arn:aws:connect:us-east-1:123456789012:instance/def1a4fc-ac9d-11e6-b582-06a0be38cccf", // To find the ARN for your instance, open the [Amazon Connect console](https://console.aws.amazon.com/connect), and then choose the Instance Alias to open the Overview page.
+            }
+        }
+	]
+ 
+```
+
+Note:
+  - Manually you need to select the lambda function created by zappa deployment in the AWS Connect flow editor.
+  - Also you [need to add permission](https://docs.aws.amazon.com/connect/latest/adminguide/connect-lambda-functions.html) for AWS Connect to invoke the Lambda function created by zappa. It can be done from console like this
+  ```
+  aws lambda add-permission --function-name function:<zappa-function-name-dev> --statement-id 1 --principal connect.amazonaws.com  --action lambda:InvokeFunction --source-account <your-account-id> --source-arn <arn-of-the-connect-instance>
+  ```
+
+
 ### Events from AWS Lex
 For configuring Lex Bot's Intent triggered events
 ```javascript
