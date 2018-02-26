@@ -847,6 +847,7 @@ to change Zappa's behavior. Use these at your own risk!
             },
         "timeout_seconds": 30, // Maximum lifespan for the Lambda function (default 30, max 300.)
         "touch": true, // GET the production URL upon initial deployment (default True)
+        "touch_path": "/", // The endpoint path to GET when checking the initial deployment (default "/")
         "use_precompiled_packages": true, // If possible, use C-extension packages which have been pre-compiled for AWS Lambda. Default true.
         "vpc_config": { // Optional Virtual Private Cloud (VPC) configuration for Lambda function
             "SubnetIds": [ "subnet-12345678" ], // Note: not all availability zones support Lambda!
