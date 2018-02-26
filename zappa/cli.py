@@ -812,7 +812,7 @@ class ZappaCLI(object):
                     self.zappa.add_api_stage_to_api_key(api_key=self.api_key, api_id=api_id, stage_name=self.api_stage)
 
             if self.stage_config.get('touch', True):
-                requests.get(endpoint_url)
+                self.touch_endpoint(endpoint_url)
 
         # Finally, delete the local copy our zip package
         if not source_zip:
@@ -1012,9 +1012,9 @@ class ZappaCLI(object):
 
             if self.stage_config.get('touch', True):
                 if api_url:
-                    requests.get(api_url)
+                    self.touch_endpoint(api_url)
                 elif endpoint_url:
-                    requests.get(endpoint_url)
+                    self.touch_endpoint(endpoint_url)
 
         click.echo(deployed_string)
 
@@ -2609,6 +2609,20 @@ class ZappaCLI(object):
 
         sys.stdout = open(os.devnull, 'w')
         sys.stderr = open(os.devnull, 'w')
+
+    def touch_endpoint(self, endpoint_url):
+        """
+        Test the deployed endpoint with a GET request
+        """
+
+        touch_path = self.stage_config.get('touch_path', '/')
+        req = requests.get(endpoint_url + touch_path)
+
+        if req.status_code >= 500:
+            raise ClickException(click.style("Warning!", fg="red", bold=True) +
+                " Status check on the deployed lambda failed." +
+                " A GET request to '" + touch_path + "' yielded a " +
+                click.style(str(req.status_code), fg="red", bold=True) + " response code.")
 
 ####################################################################
 # Main
