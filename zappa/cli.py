@@ -801,7 +801,7 @@ class ZappaCLI(object):
                 self.zappa.add_binary_support(api_id=api_id, cors=self.cors)
 
             # Add payload compression
-            if self.stage_config.get('payload_compression', False):
+            if self.stage_config.get('payload_compression', True):
                 self.zappa.add_api_compression(
                     api_id=api_id,
                     min_compression_size=self.stage_config.get('payload_minimum_compression_size', 0))
@@ -982,7 +982,7 @@ class ZappaCLI(object):
             else:
                 self.zappa.remove_binary_support(api_id=api_id, cors=self.cors)
 
-            if self.stage_config.get('payload_compression', False):
+            if self.stage_config.get('payload_compression', True):
                 self.zappa.add_api_compression(
                     api_id=api_id,
                     min_compression_size=self.stage_config.get('payload_minimum_compression_size', 0))
