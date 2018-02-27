@@ -262,7 +262,7 @@ class TestZappa(unittest.TestCase):
                     u'account': u'72333333333',
                     u'region': u'us-east-1',
                     u'detail': {},
-                    u'Records': [{'s3': {'configurationId': 'test_settings.aws_s3_event'}}],
+                    u'Records': [{'s3': {'configurationId': 'test_project:test_settings.aws_s3_event'}}],
                     u'source': u'aws.events',
                     u'version': u'0',
                     u'time': u'2016-05-10T21:05:39Z',
