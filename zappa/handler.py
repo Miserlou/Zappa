@@ -542,6 +542,11 @@ class LambdaHandler(object):
                 except NameError as ne:
                     message = 'Failed to import module: {}'.format(ne.message)
 
+            # Call exception handler for unhandled exceptions
+            exception_handler = self.settings.EXCEPTION_HANDLER
+            self._process_exception(exception_handler=exception_handler,
+                                    event=event, context=context, exception=e)
+
             # Return this unspecified exception as a 500, using template that API Gateway expects.
             content = collections.OrderedDict()
             content['statusCode'] = 500
