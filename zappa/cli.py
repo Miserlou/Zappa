@@ -800,6 +800,12 @@ class ZappaCLI(object):
             if self.binary_support:
                 self.zappa.add_binary_support(api_id=api_id, cors=self.cors)
 
+            # Add payload compression
+            if self.stage_config.get('payload_compression', True):
+                self.zappa.add_api_compression(
+                    api_id=api_id,
+                    min_compression_size=self.stage_config.get('payload_minimum_compression_size', 0))
+
             # Deploy the API!
             endpoint_url = self.deploy_api_gateway(api_id)
             deployment_string = deployment_string + ": {}".format(endpoint_url)
@@ -975,6 +981,13 @@ class ZappaCLI(object):
                 self.zappa.add_binary_support(api_id=api_id, cors=self.cors)
             else:
                 self.zappa.remove_binary_support(api_id=api_id, cors=self.cors)
+
+            if self.stage_config.get('payload_compression', True):
+                self.zappa.add_api_compression(
+                    api_id=api_id,
+                    min_compression_size=self.stage_config.get('payload_minimum_compression_size', 0))
+            else:
+                self.zappa.remove_api_compression(api_id=api_id)
 
             # It looks a bit like we might actually be using this just to get the URL,
             # but we're also updating a few of the APIGW settings.

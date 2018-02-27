@@ -1572,6 +1572,35 @@ class Zappa(object):
                     ]
                 )
 
+    def add_api_compression(self, api_id, min_compression_size):
+        """
+        Add Rest API compression
+        """
+        self.apigateway_client.update_rest_api(
+            restApiId=api_id,
+            patchOperations=[
+                {
+                    'op': 'replace',
+                    'path': '/minimumCompressionSize',
+                    'value': str(min_compression_size)
+                }
+            ]
+        )
+
+    def remove_api_compression(self, api_id):
+        """
+        Remove Rest API compression
+        """
+        self.apigateway_client.update_rest_api(
+            restApiId=api_id,
+            patchOperations=[
+                {
+                    'op': 'replace',
+                    'path': '/minimumCompressionSize',
+                }
+            ]
+        )
+
     def get_api_keys(self, api_id, stage_name):
         """
         Generator that allows to iterate per API keys associated to an api_id and a stage_name.
