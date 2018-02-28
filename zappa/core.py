@@ -171,19 +171,25 @@ ATTACH_POLICY = """{
 API_GATEWAY_REGIONS = ['us-east-1', 'us-east-2',
                        'us-west-1', 'us-west-2',
                        'eu-central-1',
-                       'eu-west-1', 'eu-west-2',
+                       'eu-west-1', 'eu-west-2', 'eu-west-3',
                        'ap-northeast-1', 'ap-northeast-2',
                        'ap-southeast-1', 'ap-southeast-2',
-                       'ap-south-1']
+                       'ap-south-1',
+                       'ca-central-1',
+                       'cn-north-1',
+                       'sa-east-1']
 
 # Latest list: https://docs.aws.amazon.com/general/latest/gr/rande.html#lambda_region
 LAMBDA_REGIONS = ['us-east-1', 'us-east-2',
                   'us-west-1', 'us-west-2',
                   'eu-central-1',
-                  'eu-west-1', 'eu-west-2',
+                  'eu-west-1', 'eu-west-2', 'eu-west-3',
                   'ap-northeast-1', 'ap-northeast-2',
                   'ap-southeast-1', 'ap-southeast-2',
-                  'ap-south-1']
+                  'ap-south-1',
+                  'ca-central-1',
+                  'cn-north-1',
+                  'sa-east-1']
 
 # We never need to include these.
 # Related: https://github.com/Miserlou/Zappa/pull/56
@@ -296,6 +302,8 @@ class Zappa(object):
             self.sns_client = self.boto_client('sns')
             self.cf_client = self.boto_client('cloudformation')
             self.dynamodb_client = self.boto_client('dynamodb')
+            self.cognito_client = self.boto_client('cognito-idp')
+            self.sts_client = self.boto_client('sts')
 
         self.tags = tags
         self.cf_template = troposphere.Template()
@@ -340,7 +348,7 @@ class Zappa(object):
                 egg_path = df.read().decode('utf-8').splitlines()[0].strip()
                 pkgs = set([x.split(".")[0] for x in find_packages(egg_path, exclude=['test', 'tests'])])
                 for pkg in pkgs:
-                    copytree(os.path.join(egg_path, pkg), os.path.join(temp_package_path, pkg), symlinks=False)
+                    copytree(os.path.join(egg_path, pkg), os.path.join(temp_package_path, pkg), metadata=False, symlinks=False)
 
         if temp_package_path:
             # now remove any egg-links as they will cause issues if they still exist
@@ -497,17 +505,16 @@ class Zappa(object):
             )
 
         # First, do the project..
-        temp_project_path = os.path.join(tempfile.gettempdir(), str(int(time.time())))
+        temp_project_path = tempfile.mkdtemp(prefix='zappa-project')
 
-        os.makedirs(temp_project_path)
         if not slim_handler:
             # Slim handler does not take the project files.
             if minify:
                 # Related: https://github.com/Miserlou/Zappa/issues/744
                 excludes = ZIP_EXCLUDES + exclude + [split_venv[-1]]
-                copytree(cwd, temp_project_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
+                copytree(cwd, temp_project_path, metadata=False, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
             else:
-                copytree(cwd, temp_project_path, symlinks=False)
+                copytree(cwd, temp_project_path, metadata=False, symlinks=False)
 
         # If a handler_file is supplied, copy that to the root of the package,
         # because that's where AWS Lambda looks for it. It can't be inside a package.
@@ -564,7 +571,7 @@ class Zappa(object):
 
         # Then, do site site-packages..
         egg_links = []
-        temp_package_path = os.path.join(tempfile.gettempdir(), str(int(time.time() + 1)))
+        temp_package_path = tempfile.mkdtemp(prefix='zappa-packages')
         if os.sys.platform == 'win32':
             site_packages = os.path.join(venv, 'Lib', 'site-packages')
         else:
@@ -573,10 +580,9 @@ class Zappa(object):
 
         if minify:
             excludes = ZIP_EXCLUDES + exclude
-            copytree(site_packages, temp_package_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
-
+            copytree(site_packages, temp_package_path, metadata=False, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
         else:
-            copytree(site_packages, temp_package_path, symlinks=False)
+            copytree(site_packages, temp_package_path, metadata=False, symlinks=False)
 
         # We may have 64-bin specific packages too.
         site_packages_64 = os.path.join(venv, 'lib64', get_venv_from_python_version(), 'site-packages')
@@ -584,9 +590,9 @@ class Zappa(object):
             egg_links.extend(glob.glob(os.path.join(site_packages_64, '*.egg-link')))
             if minify:
                 excludes = ZIP_EXCLUDES + exclude
-                copytree(site_packages_64, temp_package_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
+                copytree(site_packages_64, temp_package_path, metadata = False, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
             else:
-                copytree(site_packages_64, temp_package_path, symlinks=False)
+                copytree(site_packages_64, temp_package_path, metadata = False, symlinks=False)
 
         if egg_links:
             self.copy_editable_packages(egg_links, temp_package_path)
@@ -1566,6 +1572,35 @@ class Zappa(object):
                     ]
                 )
 
+    def add_api_compression(self, api_id, min_compression_size):
+        """
+        Add Rest API compression
+        """
+        self.apigateway_client.update_rest_api(
+            restApiId=api_id,
+            patchOperations=[
+                {
+                    'op': 'replace',
+                    'path': '/minimumCompressionSize',
+                    'value': str(min_compression_size)
+                }
+            ]
+        )
+
+    def remove_api_compression(self, api_id):
+        """
+        Remove Rest API compression
+        """
+        self.apigateway_client.update_rest_api(
+            restApiId=api_id,
+            patchOperations=[
+                {
+                    'op': 'replace',
+                    'path': '/minimumCompressionSize',
+                }
+            ]
+        )
+
     def get_api_keys(self, api_id, stage_name):
         """
         Generator that allows to iterate per API keys associated to an api_id and a stage_name.
@@ -1697,6 +1732,42 @@ class Zappa(object):
                     self.get_patch_op('metrics/enabled', cloudwatch_metrics_enabled),
                 ]
             )
+
+    def update_cognito(self, lambda_name, user_pool, lambda_configs, lambda_arn):
+        LambdaConfig = {}
+        for config in lambda_configs:
+            LambdaConfig[config] = lambda_arn
+        description = self.cognito_client.describe_user_pool(UserPoolId=user_pool)
+        description_kwargs = {}
+        for key, value in description['UserPool'].items():
+            if key in ('UserPoolId', 'Policies', 'AutoVerifiedAttributes', 'SmsVerificationMessage',
+                       'EmailVerificationMessage', 'EmailVerificationSubject', 'VerificationMessageTemplate',
+                       'SmsAuthenticationMessage', 'MfaConfiguration', 'DeviceConfiguration',
+                       'EmailConfiguration', 'SmsConfiguration', 'UserPoolTags',
+                       'AdminCreateUserConfig'):
+                description_kwargs[key] = value
+            elif key is 'LambdaConfig':
+                for lckey, lcvalue in value.items():
+                    if lckey in LambdaConfig:
+                        value[lckey] = LambdaConfig[lckey]
+                print("value", value)
+                description_kwargs[key] = value
+        if 'LambdaConfig' not in description_kwargs:
+            description_kwargs['LambdaConfig'] = LambdaConfig
+        result = self.cognito_client.update_user_pool(UserPoolId=user_pool, **description_kwargs)
+        if result['ResponseMetadata']['HTTPStatusCode'] != 200:
+            print("Cognito:  Failed to update user pool", result)
+
+        # Now we need to add a policy to the IAM that allows cognito access
+        result = self.create_event_permission(lambda_name,
+                                              'cognito-idp.amazonaws.com',
+                                              'arn:aws:cognito-idp:{}:{}:userpool/{}'.
+                                              format(self.aws_region,
+                                                     self.sts_client.get_caller_identity().get('Account'),
+                                                     user_pool)
+                                              )
+        if result['ResponseMetadata']['HTTPStatusCode'] != 201:
+            print("Cognito:  Failed to update lambda permission", result)
 
     def delete_stack(self, name, wait=False):
         """
@@ -2044,7 +2115,7 @@ class Zappa(object):
                                                               "value" : certificate_arn}
                                                          ])
 
-    def get_domain_name(self, domain_name):
+    def get_domain_name(self, domain_name, route53=True):
         """
         Scan our hosted zones for the record of a given name.
 
@@ -2056,6 +2127,9 @@ class Zappa(object):
             self.apigateway_client.get_domain_name(domainName=domain_name)
         except Exception:
             return None
+
+        if not route53:
+            return True
 
         try:
             zones = self.route53.list_hosted_zones()

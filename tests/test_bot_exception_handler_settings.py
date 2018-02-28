@@ -10,3 +10,5 @@ ENVIRONMENT_VARIABLES = {}
 LOG_LEVEL = 'DEBUG'
 PROJECT_NAME = 'wsgi_script_name_settings'
 COGNITO_TRIGGER_MAPPING = {}
+AWS_BOT_EVENT_MAPPING = {'intent-name:DialogCodeHook': 'tests.test_handler.raises_exception'}
+EXCEPTION_HANDLER = 'tests.test_handler.mocked_exception_handler'

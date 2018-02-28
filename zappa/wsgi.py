@@ -102,11 +102,11 @@ def create_wsgi_request(event_info,
             remote_addr = '127.0.0.1'
 
         environ = {
-            'PATH_INFO': path,
-            'QUERY_STRING': query_string,
+            'PATH_INFO': get_wsgi_string(path),
+            'QUERY_STRING': get_wsgi_string(query_string),
             'REMOTE_ADDR': remote_addr,
             'REQUEST_METHOD': method,
-            'SCRIPT_NAME': str(script_name) if script_name else '',
+            'SCRIPT_NAME': get_wsgi_string(str(script_name)) if script_name else '',
             'SERVER_NAME': str(server_name),
             'SERVER_PORT': headers.get('X-Forwarded-Port', '80'),
             'SERVER_PROTOCOL': str('HTTP/1.1'),
@@ -177,3 +177,11 @@ def common_log(environ, response, response_time=None):
     logger.info(log_entry)
 
     return log_entry
+
+
+# Related: https://github.com/Miserlou/Zappa/issues/1199
+def get_wsgi_string(string, encoding='utf-8'):
+    """
+    Returns wsgi-compatible string
+    """
+    return string.encode(encoding).decode('iso-8859-1')

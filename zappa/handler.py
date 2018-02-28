@@ -284,7 +284,8 @@ class LambdaHandler(object):
         Support S3, SNS, DynamoDB and kinesis events
         """
         if 's3' in record:
-            return record['s3']['configurationId'].split(':')[-1]
+            if ':' in record['s3']['configurationId']:
+                return record['s3']['configurationId'].split(':')[-1]
 
         arn = None
         if 'Sns' in record:
@@ -297,11 +298,32 @@ class LambdaHandler(object):
             arn = record['Sns'].get('TopicArn')
         elif 'dynamodb' in record or 'kinesis' in record:
             arn = record.get('eventSourceARN')
+        elif 's3' in record:
+            arn = record['s3']['bucket']['arn']
 
         if arn:
             return self.settings.AWS_EVENT_MAPPING.get(arn)
 
         return None
+
+    def get_function_from_bot_intent_trigger(self, event):
+        """
+        For the given event build ARN and return the configured function
+        """
+        intent = event.get('currentIntent')
+        if intent:
+            intent = intent.get('name')
+            if intent:
+                return self.settings.AWS_BOT_EVENT_MAPPING.get(
+                    "{}:{}".format(intent, event.get('invocationSource'))
+                )
+
+    def get_function_for_cognito_trigger(self, trigger):
+        """
+        Get the associated function to execute for a cognito trigger
+        """
+        print("get_function_for_cognito_trigger", self.settings.COGNITO_TRIGGER_MAPPING, trigger, self.settings.COGNITO_TRIGGER_MAPPING.get(trigger))
+        return self.settings.COGNITO_TRIGGER_MAPPING.get(trigger)
 
     def handler(self, event, context):
         """
@@ -390,6 +412,18 @@ class LambdaHandler(object):
                 logger.error("Cannot find a function to process the triggered event.")
             return result
 
+        # this is an AWS-event triggered from Lex bot's intent
+        elif event.get('bot'):
+            result = None
+            whole_function = self.get_function_from_bot_intent_trigger(event)
+            if whole_function:
+                app_function = self.import_module_and_get_function(whole_function)
+                result = self.run_function(app_function, event, context)
+                logger.debug(result)
+            else:
+                logger.error("Cannot find a function to process the triggered event.")
+            return result
+
         # This is an API Gateway authorizer event
         elif event.get('type') == u'TOKEN':
             whole_function = self.settings.AUTHORIZER_FUNCTION
@@ -400,6 +434,19 @@ class LambdaHandler(object):
             else:
                 logger.error("Cannot find a function to process the authorization request.")
                 raise Exception('Unauthorized')
+
+        # This is an AWS Cognito Trigger Event
+        elif event.get('triggerSource', None):
+            triggerSource = event.get('triggerSource')
+            whole_function = self.get_function_for_cognito_trigger(triggerSource)
+            result = event
+            if whole_function:
+                app_function = self.import_module_and_get_function(whole_function)
+                result = self.run_function(app_function, event, context)
+                logger.debug(result)
+            else:
+                logger.error("Cannot find a function to handle cognito trigger {}".format(triggerSource))
+            return result
 
         # Normal web app flow
         try:
@@ -494,6 +541,11 @@ class LambdaHandler(object):
                     self.app_module
                 except NameError as ne:
                     message = 'Failed to import module: {}'.format(ne.message)
+
+            # Call exception handler for unhandled exceptions
+            exception_handler = self.settings.EXCEPTION_HANDLER
+            self._process_exception(exception_handler=exception_handler,
+                                    event=event, context=context, exception=e)
 
             # Return this unspecified exception as a 500, using template that API Gateway expects.
             content = collections.OrderedDict()

@@ -266,7 +266,7 @@ class TestZappa(unittest.TestCase):
                     u'account': u'72333333333',
                     u'region': u'us-east-1',
                     u'detail': {},
-                    u'Records': [{'s3': {'configurationId': 'test_settings.aws_s3_event'}}],
+                    u'Records': [{'s3': {'configurationId': 'test_project:test_settings.aws_s3_event'}}],
                     u'source': u'aws.events',
                     u'version': u'0',
                     u'time': u'2016-05-10T21:05:39Z',
@@ -468,6 +468,28 @@ class TestZappa(unittest.TestCase):
         add_event_source(event_source, 'lambda:lambda:lambda:lambda', 'test_settings.callback', session, dry=True)
         remove_event_source(event_source, 'lambda:lambda:lambda:lambda', 'test_settings.callback', session, dry=True)
         # get_event_source_status(event_source, 'lambda:lambda:lambda:lambda', 'test_settings.callback', session, dry=True)
+
+    @placebo_session
+    def test_cognito_trigger(self, session):
+        z = Zappa(session)
+        z.update_cognito('Zappa-Trigger-Test', 'us-east-1_9jUv74DH8', {'PreSignUp': 'test.tasks.pre_signup'}, 'arn:aws:lambda:us-east-1:12345:function:Zappa-Trigger-Test')
+
+    @placebo_session
+    def test_cognito_trigger_existing(self, session):
+        z = Zappa(session)
+        z.update_cognito('Zappa-Trigger-Test', 'us-east-1_9jUv74DH8', {'PreSignUp': 'test.tasks.pre_signup'}, 'arn:aws:lambda:us-east-1:12345:function:Zappa-Trigger-Test')
+
+    @placebo_session
+    def test_cli_cognito_triggers(self, session):
+        zappa_cli = ZappaCLI()
+        zappa_cli.api_stage = 'ttt888'
+        zappa_cli.api_key_required = True
+        zappa_cli.load_settings('test_settings.json', session)
+        zappa_cli.lambda_arn = 'arn:aws:lambda:us-east-1:12345:function:Zappa-Trigger-Test'
+        zappa_cli.update_cognito_triggers()
+
+
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -34,7 +34,15 @@
                    ]
                }
            }
-       ]
+       ],
+       "cognito": {
+           "user_pool": "user-pool-id",
+           "triggers": [
+                {"source": "PreSignUp_SignUp",
+                 "function": "test.tasks.pre_signup_function"
+                }
+            ]
+      }
     },
     "devor": {
        "s3_bucket": "lmbda",
