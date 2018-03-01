@@ -516,6 +516,24 @@ Similarly, for a [Simple Notification Service](https://aws.amazon.com/sns/) even
         ]
 ```
 
+Optionally you can add [SNS message filters](http://docs.aws.amazon.com/sns/latest/dg/message-filtering.html):
+
+```javascript
+        "events": [
+            {
+                "function": "your_module.your_function",
+                "event_source": {
+                    "arn":  "arn:aws:sns:::your-event-topic-arn",
+                    "filters": {
+                        "interests": ["python", "aws", "zappa"],
+                        "version": ["1.0"]
+                    },
+                    ...
+                }
+            }
+        ]
+```
+
 [DynamoDB](http://docs.aws.amazon.com/lambda/latest/dg/with-ddb.html) and [Kinesis](http://docs.aws.amazon.com/lambda/latest/dg/with-kinesis.html) are slightly different as it is not event based but pulling from a stream:
 
 ```javascript
