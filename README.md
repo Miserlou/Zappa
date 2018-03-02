@@ -63,7 +63,6 @@
     - [Remote AWS Environment Variables](#remote-aws-environment-variables)
     - [Remote Environment Variables](#remote-environment-variables)
     - [Remote Environment Variables (via an S3 file)](#remote-environment-variables-via-an-s3-file)
-    - [](#)
   - [API Gateway Context Variables](#api-gateway-context-variables)
   - [Catching Unhandled Exceptions](#catching-unhandled-exceptions)
   - [Using Custom AWS IAM Roles and Policies for Deployment](#using-custom-aws-iam-roles-and-policies-for-deployment)
