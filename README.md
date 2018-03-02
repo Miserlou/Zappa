@@ -1050,7 +1050,6 @@ If you want to use remote environment variables to configure your application (w
 
 For example, to ensure your application has access to the database credentials without storing them in your version control, you can add a file to S3 with the connection string and load it into the lambda environment using the `remote_env` configuration setting.
 
-####
 super-secret-config.json (uploaded to my-config-bucket):
 ```javascript
 {
