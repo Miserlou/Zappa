@@ -1343,6 +1343,7 @@ Are you using Zappa? Let us know and we'll list your site here!
 * [wunderskill-alexa-skill](https://github.com/mcrowson/wunderlist-alexa-skill) - An Alexa skill for adding to a Wunderlist.
 * [xrayvision](https://github.com/mathom/xrayvision) - Utilities and wrappers for using AWS X-Ray with Zappa.
 * [zappa-sentry](https://github.com/jneves/zappa-sentry) - Integration with Zappa and Sentry
+* [IOpipe](https://github.com/iopipe/iopipe-python#zappa) - Monitor, profile and analyze your Zappa apps.
 
 ## Hacks
 
