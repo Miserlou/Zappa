@@ -703,7 +703,7 @@ class ZappaCLI(object):
                         "You may " + click.style("lack the necessary AWS permissions", bold=True) +
                         " to automatically manage a Zappa execution role.\n" +
                         "To fix this, see here: " +
-                        click.style("https://github.com/Miserlou/Zappa#using-custom-aws-iam-roles-and-policies", bold=True)
+                        click.style("https://github.com/Miserlou/Zappa#using-custom-aws-iam-roles-and-policies-for-deployment", bold=True)
                         + '\n')
 
             # Create the Lambda Zip
@@ -875,7 +875,7 @@ class ZappaCLI(object):
                     click.echo("You may " + click.style("lack the necessary AWS permissions", bold=True) +
                                " to automatically manage a Zappa execution role.")
                     click.echo("To fix this, see here: " +
-                               click.style("https://github.com/Miserlou/Zappa#using-custom-aws-iam-roles-and-policies",
+                               click.style("https://github.com/Miserlou/Zappa#using-custom-aws-iam-roles-and-policies-for-deployment",
                                            bold=True))
                     sys.exit(-1)
 
