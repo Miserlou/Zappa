@@ -25,13 +25,18 @@ LOG = logging.getLogger(__name__)
 # Settings / Packaging
 ##
 
-def copytree(src, dst, metadata=True, symlinks=False, ignore=None):
+def copytree(src, dst, metadata=True, symlinks=False, ignore=None, ignore_pathspec=None):
     """
     This is a contributed re-implementation of 'copytree' that
     should work with the exact same behavior on multiple platforms.
 
     When `metadata` is False, file metadata such as permissions and modification
     times are not copied.
+
+    This implementation adds an additional parameter `ignore_pathspec` which is
+    an instance of `pathspec.PathSpec`. `ignore_pathspec` can be used to specify
+    more complex patterns of excluding files.
+    https://github.com/cpburnz/python-path-specification
     """
 
     if not os.path.exists(dst):
@@ -43,6 +48,9 @@ def copytree(src, dst, metadata=True, symlinks=False, ignore=None):
     if ignore:
         excl = ignore(src, lst)
         lst = [x for x in lst if x not in excl]
+
+    if ignore_pathspec:
+        lst = [x for x in lst if not ignore_pathspec.match_file(os.path.join(src, x))]
 
     for item in lst:
         s = os.path.join(src, item)
@@ -60,7 +68,7 @@ def copytree(src, dst, metadata=True, symlinks=False, ignore=None):
                 except:
                     pass  # lchmod not available
         elif os.path.isdir(s):
-            copytree(s, d, metadata, symlinks, ignore)
+            copytree(s, d, metadata, symlinks, ignore, ignore_pathspec)
         else:
             shutil.copy2(s, d) if metadata else shutil.copy(s, d)
 
