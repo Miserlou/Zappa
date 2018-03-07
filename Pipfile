@@ -18,11 +18,6 @@ placebo = "*"
 flask = "*"
 coverage = "*"
 
-
-[requires]
-
-python_version = "3.6"
-
 [scripts]
 
 "tests" = "bash ./test.sh"
