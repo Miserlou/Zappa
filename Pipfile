@@ -1,0 +1,24 @@
+[[source]]
+
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+
+[packages]
+
+
+
+[dev-packages]
+
+nose = "*"
+mock = "*"
+placebo = "*"
+"e1839a8" = {path = ".", editable = true}
+flask = "*"
+coverage = "*"
+
+
+[requires]
+
+python_version = "3.6"
