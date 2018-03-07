@@ -14,9 +14,11 @@ name = "pypi"
 nose = "*"
 mock = "*"
 placebo = "*"
-"e1839a8" = {path = ".", editable = true}
+zappa = {path = ".", editable = true}
 flask = "*"
 coverage = "*"
+nose-timer = "*"
+
 
 [scripts]
 
