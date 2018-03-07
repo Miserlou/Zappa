@@ -6,7 +6,7 @@ python:
 cache:
   - pip
 install:
-  - "pip install pipenv --upgrade --upgrade-strategy=selective-upgrade; pipenv install --dev; pip install -e git+https://github.com/django/django-contrib-comments.git#egg=django-contrib-comments"
+  - "pip install pipenv --upgrade --upgrade-strategy=only-if-needed; pipenv install --dev; pip install -e git+https://github.com/django/django-contrib-comments.git#egg=django-contrib-comments"
 # command to run tests
 env:
   - TESTCASE=tests/test_handler.py
