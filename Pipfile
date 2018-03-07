@@ -18,7 +18,7 @@ zappa = {path = ".", editable = true}
 flask = "*"
 coverage = "*"
 nose-timer = "*"
-
+futures = {version = "*", python_version = "<'3.0.0'"}
 
 [scripts]
 
