@@ -1,9 +1,14 @@
 # -*- coding: utf8 -*-
-import unittest
 import sys
+import unittest
 
 from zappa.wsgi import create_wsgi_request
 from zappa.middleware import ZappaWSGIMiddleware, all_casings
+
+try:
+    unicode        # Python 2
+except NameError:
+    unicode = str  # Python 3
 
 
 class TestWSGIMockMiddleWare(unittest.TestCase):
@@ -245,5 +250,3 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
         self.assertEqual(environ['HTTP_APISTAGE'], u'prod')
         self.assertNotIn('HTTP_INVALIDVALUE', environ)
         self.assertNotIn('HTTP_OTHERINVALID', environ)
-
-
