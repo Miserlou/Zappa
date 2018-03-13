@@ -1288,6 +1288,7 @@ For monitoring of different deployments, a unique UUID for each package is avail
 * [Zappa and LambCI](https://seancoates.com/blogs/zappa-and-lambci/)
 * [Building A Serverless Image Processing SaaS using Zappa](http://www.99serverless.com/index.php/2017/11/25/building-a-serverless-image-processing-saas/)
 * [Serverless Slack Slash Commands with Python and Zappa](https://renzo.lucioni.xyz/serverless-slash-commands-with-python/)
+* [Bringing Tokusatsu to AWS using Python, Flask, Zappa and Contentful](https://www.contentful.com/blog/2018/03/07/bringing-tokusatsu-to-aws-using-python-flask-zappa-and-contentful/)
 * _Your guide here?_
 
 ## Zappa in the Press
