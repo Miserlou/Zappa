@@ -1285,28 +1285,19 @@ class TestZappa(unittest.TestCase):
                 # fails when it tries to inspect what Zappa has deployed.
                 pass
 
-            class ZappaMock(object):
-                def __init__(self):
-                    self.function_versions = []
-                    self.domain_names = {}
-                    self.calls = []
+            # Set up a core.Zappa mock and let us save some state about
+            # domains and lambdas
+            zappa_mock = mock.create_autospec(Zappa)
+            zappa_mock.function_versions = []
+            zappa_mock.domain_names = {}
+            def get_lambda_function_versions(_function_name, *_args, **_kwargs):
+                return zappa_mock.function_versions
+            def get_domain_name(domain, *_args, **_kwargs):
+                return zappa_mock.domain_names.get(domain)
+            zappa_mock.get_domain_name.side_effect = get_domain_name
+            zappa_mock.get_lambda_function_versions.side_effect = get_lambda_function_versions
 
-                def get_lambda_function_versions(self, function_name):
-                    return self.function_versions
-
-                def get_domain_name(self, domain):
-                    return self.domain_names.get(domain)
-
-                def create_domain_name(self, *args, **kw):
-                    self.calls.append(("create_domain_name", args, kw))
-
-                def update_route53_records(self, *args, **kw):
-                    self.calls.append(("update_route53_records", args, kw))
-
-                def update_domain_name(self, *args, **kw):
-                    self.calls.append(("update_domain_name", args, kw))
-
-            zappa_cli.zappa = ZappaMock()
+            zappa_cli.zappa = zappa_mock
             self.assertRaises(ClickException, zappa_cli.certify)
 
             # Make sure we get an error if we don't configure the domain.
@@ -1380,18 +1371,19 @@ class TestZappa(unittest.TestCase):
             })
             sys.stdout.truncate(0)
             zappa_cli.certify()
-            self.assertEquals(len(zappa_cli.zappa.calls), 2)
-            self.assertTrue(zappa_cli.zappa.calls[0][0] == "create_domain_name")
-            self.assertTrue(zappa_cli.zappa.calls[1][0] == "update_route53_records")
+            zappa_cli.zappa.create_domain_name.assert_called_once()
+            zappa_cli.zappa.update_route53_records.assert_called_once()
+            zappa_cli.zappa.update_domain_name.assert_not_called()
             log_output = sys.stdout.getvalue()
             self.assertIn("Created a new domain name", log_output)
 
-            zappa_cli.zappa.calls = []
+            zappa_cli.zappa.reset_mock()
             zappa_cli.zappa.domain_names["test.example.com"] = "*.example.com"
             sys.stdout.truncate(0)
             zappa_cli.certify()
-            self.assertEquals(len(zappa_cli.zappa.calls), 1)
-            self.assertTrue(zappa_cli.zappa.calls[0][0] == "update_domain_name")
+            zappa_cli.zappa.update_domain_name.assert_called_once()
+            zappa_cli.zappa.update_route53_records.assert_not_called()
+            zappa_cli.zappa.create_domain_name.assert_not_called()
             log_output = sys.stdout.getvalue()
             self.assertNotIn("Created a new domain name", log_output)
 
@@ -1399,12 +1391,13 @@ class TestZappa(unittest.TestCase):
             zappa_cli.zappa_settings["stage"].update({
                 "route53_enabled": False,
             })
-            zappa_cli.zappa.calls = []
+            zappa_cli.zappa.reset_mock()
             zappa_cli.zappa.domain_names["test.example.com"] = ""
             sys.stdout.truncate(0)
             zappa_cli.certify()
-            self.assertEquals(len(zappa_cli.zappa.calls), 1)
-            self.assertTrue(zappa_cli.zappa.calls[0][0] == "create_domain_name")
+            zappa_cli.zappa.create_domain_name.assert_called_once()
+            zappa_cli.zappa.update_route53_records.assert_not_called()
+            zappa_cli.zappa.update_domain_name.assert_not_called()
             log_output = sys.stdout.getvalue()
             self.assertIn("Created a new domain name", log_output)
         finally:
