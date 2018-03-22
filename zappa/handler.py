@@ -264,6 +264,8 @@ class LambdaHandler(object):
         Given a function and event context,
         detect signature and execute, returning any result.
         """
+        # getargspec does not support python 3 method with type hints
+        # Related issue: https://github.com/Miserlou/Zappa/issues/1452
         if hasattr(inspect, "getfullargspec"):  # Python 3
             args, varargs, keywords, defaults, _, _, _ = inspect.getfullargspec(app_function)
         else:  # Python 2
