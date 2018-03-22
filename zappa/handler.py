@@ -264,7 +264,10 @@ class LambdaHandler(object):
         Given a function and event context,
         detect signature and execute, returning any result.
         """
-        args, varargs, keywords, defaults = inspect.getargspec(app_function)
+        if hasattr(inspect, "getfullargspec"):  # Python 3
+            args, varargs, keywords, defaults, _, _, _ = inspect.getfullargspec(app_function)
+        else:  # Python 2
+            args, varargs, keywords, defaults = inspect.getargspec(app_function)
         num_args = len(args)
         if num_args == 0:
             result = app_function(event, context) if varargs else app_function()
