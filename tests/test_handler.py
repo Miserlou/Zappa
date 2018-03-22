@@ -1,5 +1,6 @@
-import unittest
 from mock import Mock
+import sys
+import unittest
 from zappa.handler import LambdaHandler
 
 
@@ -60,6 +61,15 @@ class TestZappa(unittest.TestCase):
             self.fail('Exception expected')
         except RuntimeError as e:
             pass
+
+    def test_run_fuction_with_type_hint(self):
+        python_version = sys.version_info[0]
+        # type hints are python 3 only
+        if python_version == 3:
+            scope = {}
+            exec('def f_with_type_hint() -> None: return', scope)
+            f_with_type_hint = scope['f_with_type_hint']
+            self.assertIsNone(LambdaHandler.run_function(f_with_type_hint, 'e', 'c'))
 
     def test_wsgi_script_name_on_aws_url(self):
         """
