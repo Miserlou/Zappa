@@ -397,7 +397,9 @@ class Zappa(object):
 
         # Need to manually add setuptools
         pkg_list.append('setuptools')
-        pip.main(["install", "--quiet", "--target", venv_site_packages_dir] + pkg_list)
+        pip_return_code = pip.main(["install", "--quiet", "--target", venv_site_packages_dir] + pkg_list)
+        if pip_return_code:
+          raise EnvironmentError("Pypi lookup failed")
 
         return ve_path
 
