@@ -986,7 +986,7 @@ class Zappa(object):
         try:
             self.s3_client.delete_object(Bucket=bucket_name, Key=file_name)
             return True
-        except botocore.exceptions.ClientError:  # pragma: no cover
+        except (botocore.exceptions.ParamValidationError, botocore.exceptions.ClientError):  # pragma: no cover
             return False
 
     ##
