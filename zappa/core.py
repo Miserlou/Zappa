@@ -2386,9 +2386,8 @@ class Zappa(object):
                         print("Problem scheduling {} with expression {}.".format(rule_name, expression))
 
             elif event_source:
-                if isinstance(event_source['arn'], list):
-                    arns = event_source['arn']
-                else:
+                arns = event_source['arn']
+                if not isinstance(event_source['arn'], list):
                     arns = [event_source['arn']]
 
                 for arn in arns:
@@ -2533,9 +2532,8 @@ class Zappa(object):
             function = event['function']
             name = event.get('name', function)
             event_source = event.get('event_source', function)
-            if isinstance(event_source['arn'], list):
-                arns = event_source['arn']
-            else:
+            arns = event_source['arn']
+            if not isinstance(arns, list):
                 arns = [event_source['arn']]
             for arn in arns:
                 service = self.service_from_arn(arn)
