@@ -1756,7 +1756,7 @@ class ZappaCLI(object):
             if confirm != 'y':
                 return
 
-        # Make sure this isn't already deployed.
+        # Make sure this is already deployed.
         deployed_versions = self.zappa.get_lambda_function_versions(self.lambda_name)
         if len(deployed_versions) == 0:
             raise ClickException("This application " + click.style("isn't deployed yet", fg="red") +
@@ -1768,6 +1768,7 @@ class ZappaCLI(object):
         cert_key_location = self.stage_config.get('certificate_key', None)
         cert_chain_location = self.stage_config.get('certificate_chain', None)
         cert_arn = self.stage_config.get('certificate_arn', None)
+        use_regional_endpoint = self.stage_config.get('use_regional_endpoint', False)
 
         # These are sensitive
         certificate_body = None
@@ -1834,7 +1835,8 @@ class ZappaCLI(object):
                     certificate_chain=certificate_chain,
                     certificate_arn=cert_arn,
                     lambda_name=self.lambda_name,
-                    stage=self.api_stage
+                    stage=self.api_stage,
+                    use_regional_endpoint=use_regional_endpoint
                 )
                 if route53:
                     self.zappa.update_route53_records(self.domain, dns_name)
@@ -1850,7 +1852,8 @@ class ZappaCLI(object):
                     certificate_arn=cert_arn,
                     lambda_name=self.lambda_name,
                     stage=self.api_stage,
-                    route53=route53
+                    route53=route53,
+                    use_regional_endpoint=use_regional_endpoint
                 )
 
             cert_success = True
