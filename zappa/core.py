@@ -2139,7 +2139,6 @@ class Zappa(object):
         print("Updating domain name!")
 
         certificate_name = certificate_name + str(time.time())
-        api_gateway_domain = self.apigateway_client.get_domain_name(domainName=domain_name)
         if not certificate_arn\
            and certificate_body and certificate_private_key and certificate_chain:
             acm_certificate = self.acm_client.import_certificate(Certificate=certificate_body,
@@ -2147,7 +2146,13 @@ class Zappa(object):
                                                                  CertificateChain=certificate_chain)
             certificate_arn = acm_certificate['CertificateArn']
 
-        current_endpoint_type = api_gateway_domain['endpointConfiguration']['types'][0]
+        try:
+            # if route53 is false we can get here with or without the API gateway domain existing
+            api_gateway_domain = self.apigateway_client.get_domain_name(domainName=domain_name)
+            current_endpoint_type = api_gateway_domain['endpointConfiguration']['types'][0]
+        except self.apigateway_client.NotFoundException:
+            current_endpoint_type = None
+
         target_endpoint_type = 'REGIONAL' if use_regional_endpoint else 'EDGE'
 
         if current_endpoint_type != target_endpoint_type:
