@@ -1826,7 +1826,8 @@ class ZappaCLI(object):
 
         # Custom SSL / ACM
         else:
-            if not self.zappa.get_domain_name(self.domain, route53=route53):
+            if not self.zappa.get_api_domain_name(self.domain):
+                # Follow the create flow, if there is NO entry in API Gateway for the domain
                 agw_response = self.zappa.create_domain_name(
                     domain_name=self.domain,
                     certificate_name=self.domain + "-Zappa-Cert",
@@ -1842,6 +1843,7 @@ class ZappaCLI(object):
                 print("Created a new domain name with supplied certificate. Please note that it can take up to 40 minutes for this domain to be "
                       "created and propagated through AWS, but it requires no further work on your part.")
             else:
+                # Follow the update flow, if there is an entry in API Gateway for the domain
                 agw_response = self.zappa.update_domain_name(
                     domain_name=self.domain,
                     certificate_name=self.domain + "-Zappa-Cert",
@@ -1856,6 +1858,7 @@ class ZappaCLI(object):
                 )
 
             if route53:
+                # Uses UPSERT, so always try to update route53, if route53 in use
                 # https://github.com/Miserlou/Zappa/issues/1465
                 if use_regional_endpoint:
                     dns_name = agw_response['regionalDomainName']

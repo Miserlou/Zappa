@@ -2303,6 +2303,19 @@ class Zappa(object):
 
         return None
 
+    def get_api_domain_name(self, domain_name):
+        """
+        Get the API gateway domain name entry
+
+        Returns the record entry, else None.
+
+        """
+        # Make sure api gateway domain is present
+        try:
+            return self.apigateway_client.get_domain_name(domainName=domain_name)
+        except Exception:
+            return None
+
     ##
     # IAM
     ##
