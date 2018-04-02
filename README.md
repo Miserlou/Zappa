@@ -420,6 +420,12 @@ When deploying from a CI/CD system, you can use:
 
 to skip the confirmation prompt.
 
+#### Choosing an Endpoint Configuration for your custom domain name
+
+When using a custom domain name with your API gateway AWS lets you chose between a "Regional" endpoint and "Edge Optimized". Regional is best for services that will primarily consumed by other services in the same region. Edge Optimized is best for publicly available endpoints. When you choose "Edge Optimized" API Gateway will configure a CloudFront distribution to handle traffic through its geographically diverse points of presence (note this distribution will not appear in your account). For a Regional endpoint there is no CloudFront distribution, and Zappa will configure route53 (if enabled) with an Alias record for the endpoint in the region hosting the API Gateway.
+
+For more information see [Amazon API Gateway Concepts](https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-basic-concept.html)
+
 #### Deploying to a Domain With AWS Certificate Manager
 
 Amazon provides their own free alternative to Let's Encrypt called [AWS Certificate Manager](https://aws.amazon.com/certificate-manager/) (ACM). To use this service with Zappa:
@@ -868,6 +874,7 @@ to change Zappa's behavior. Use these at your own risk!
         "touch": true, // GET the production URL upon initial deployment (default True)
         "touch_path": "/", // The endpoint path to GET when checking the initial deployment (default "/")
         "use_precompiled_packages": true, // If possible, use C-extension packages which have been pre-compiled for AWS Lambda. Default true.
+        "use_regional_endpoint": false, // Use a Regional api endpoint, instead of the default edge optimized CloudFront distrobution. Default false.
         "vpc_config": { // Optional Virtual Private Cloud (VPC) configuration for Lambda function
             "SubnetIds": [ "subnet-12345678" ], // Note: not all availability zones support Lambda!
             "SecurityGroupIds": [ "sg-12345678" ]
