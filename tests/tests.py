@@ -2,7 +2,7 @@
 import collections
 import json
 
-from io import BytesIO
+from io import BytesIO, StringIO
 import flask
 import mock
 import os
@@ -1274,6 +1274,8 @@ class TestZappa(unittest.TestCase):
         old_stdout = sys.stderr
         if sys.version_info[0] < 3:
             sys.stdout = OldStringIO() # print() barfs on io.* types.
+        else:
+            sys.stdout = StringIO()
 
         try:
             zappa_cli = ZappaCLI()
@@ -1309,6 +1311,7 @@ class TestZappa(unittest.TestCase):
 
             try:
                 zappa_cli.certify()
+                self.fail("Expected a ClickException")
             except ClickException as e:
                 log_output = str(e)
                 self.assertIn("Can't certify a domain without", log_output)
@@ -1370,33 +1373,71 @@ class TestZappa(unittest.TestCase):
                 "certificate_chain": cert_file.name
             })
             sys.stdout.truncate(0)
+            # For create get_api_domain_name should return None
+            zappa_mock.get_api_domain_name = mock.MagicMock(return_value=None)
             zappa_cli.certify()
             zappa_cli.zappa.create_domain_name.assert_called_once()
             zappa_cli.zappa.update_route53_records.assert_called_once()
+            zappa_cli.zappa.update_route53_records_for_regional_alias.assert_not_called()
             zappa_cli.zappa.update_domain_name.assert_not_called()
             log_output = sys.stdout.getvalue()
             self.assertIn("Created a new domain name", log_output)
 
             zappa_cli.zappa.reset_mock()
+            # For update get_api_domain_name should return something True
+            zappa_mock.get_api_domain_name = mock.MagicMock(return_value=True)
+            zappa_cli.zappa.domain_names["test.example.com"] = "*.example.com"
+            sys.stdout.truncate(0)
+            zappa_cli.certify()
+            zappa_cli.zappa.update_domain_name.assert_called_once()
+            zappa_cli.zappa.update_route53_records.assert_called_once()  # Always update route53 if enabled
+            zappa_cli.zappa.update_route53_records_for_regional_alias.assert_not_called()
+            zappa_cli.zappa.create_domain_name.assert_not_called()
+            log_output = sys.stdout.getvalue()
+            self.assertNotIn("Created a new domain name", log_output)
+
+            # Test regional endpoint
+            zappa_cli.zappa.reset_mock()
+            zappa_cli.zappa_settings["stage"].update({'use_regional_endpoint': True})
+            sys.stdout.truncate(0)
+            # For create get_api_domain_name should return None
+            zappa_mock.get_api_domain_name = mock.MagicMock(return_value=None)
+            zappa_cli.certify()
+            zappa_cli.zappa.create_domain_name.assert_called_once()
+            zappa_cli.zappa.update_route53_records.assert_not_called()
+            zappa_cli.zappa.update_route53_records_for_regional_alias.assert_called_once()
+            zappa_cli.zappa.update_domain_name.assert_not_called()
+            log_output = sys.stdout.getvalue()
+            self.assertIn("Created a new domain name", log_output)
+
+            zappa_cli.zappa.reset_mock()
+            # For update get_api_domain_name should return something True
+            zappa_mock.get_api_domain_name = mock.MagicMock(return_value=True)
             zappa_cli.zappa.domain_names["test.example.com"] = "*.example.com"
             sys.stdout.truncate(0)
             zappa_cli.certify()
             zappa_cli.zappa.update_domain_name.assert_called_once()
             zappa_cli.zappa.update_route53_records.assert_not_called()
+            zappa_cli.zappa.update_route53_records_for_regional_alias.assert_called_once()
             zappa_cli.zappa.create_domain_name.assert_not_called()
             log_output = sys.stdout.getvalue()
             self.assertNotIn("Created a new domain name", log_output)
+            zappa_cli.zappa_settings["stage"].update({'use_regional_endpoint': False})
+            # end test regional endpoint
 
             # Test creating domain without Route53
             zappa_cli.zappa_settings["stage"].update({
                 "route53_enabled": False,
             })
             zappa_cli.zappa.reset_mock()
+            # For create get_api_domain_name should return None
+            zappa_mock.get_api_domain_name = mock.MagicMock(return_value=None)
             zappa_cli.zappa.domain_names["test.example.com"] = ""
             sys.stdout.truncate(0)
             zappa_cli.certify()
             zappa_cli.zappa.create_domain_name.assert_called_once()
             zappa_cli.zappa.update_route53_records.assert_not_called()
+            zappa_cli.zappa.update_route53_records_for_regional_alias.assert_not_called()
             zappa_cli.zappa.update_domain_name.assert_not_called()
             log_output = sys.stdout.getvalue()
             self.assertIn("Created a new domain name", log_output)

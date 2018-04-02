@@ -2210,56 +2210,6 @@ class Zappa(object):
                     ])
 
 
-
-
-        if use_regional_endpoint:
-            # https://github.com/Miserlou/Zappa/issues/1465
-            return self.apigateway_client.update_domain_name(
-                domainName=domain_name,
-                patchOperations=[
-                    {"op": "remove",
-                     "path": "/certificateName"},
-                    {"op": "remove",
-                     "path": "/certificateArn"},
-                    {"op": "replace",
-                     "path": "/regionalCertificateName",
-                     "value": certificate_name},
-                    {"op": "replace",
-                     "path": "/regionalCertificateArn",
-                     "value": certificate_arn},
-                    # https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-api-migration.html
-                    {"op": "replace",
-                     "path": "/endpointConfiguration/types/EDGE",
-                     "value": "REGIONAL"}
-                ])
-        else:
-            # https://stackoverflow.com/a/47537714/401636 (use add/remove)
-            self.apigateway_client.update_domain_name(
-                domainName=domain_name,
-                patchOperations=[
-                    {"op": "replace",
-                     "path": "/certificateName",
-                     "value": certificate_name},
-                    {"op": "replace",
-                     "path": "/certificateArn",
-                     "value": certificate_arn},
-                    {"op": "add",
-                     "path": "/endpointConfiguration/types",
-                     "value": "EDGE"}
-                ])
-
-            return self.apigateway_client.update_domain_name(
-                domainName=domain_name,
-                patchOperations=[
-                    {"op": "remove",
-                     "path": "/regionalCertificateName"},
-                    {"op": "remove",
-                     "path": "/regionalCertificateArn"},
-                    {"op": "remove",
-                     "path": "/endpointConfiguration/types",
-                     "value": "REGIONAL"}
-                ])
-
     def get_domain_name(self, domain_name, route53=True):
         """
         Scan our hosted zones for the record of a given name.
