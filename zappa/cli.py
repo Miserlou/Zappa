@@ -1812,6 +1812,7 @@ class ZappaCLI(object):
 
         # Get cert and update domain.
 
+        route53 = self.stage_config.get('route53_enabled', True)
         # Let's Encrypt
         if not cert_location and not cert_arn:
             from .letsencrypt import get_cert_and_update_domain
@@ -1825,7 +1826,6 @@ class ZappaCLI(object):
 
         # Custom SSL / ACM
         else:
-            route53 = self.stage_config.get('route53_enabled', True)
             if not self.zappa.get_domain_name(self.domain, route53=route53):
                 agw_response = self.zappa.create_domain_name(
                     domain_name=self.domain,
@@ -1839,21 +1839,10 @@ class ZappaCLI(object):
                     use_regional_endpoint=use_regional_endpoint
                 )
 
-                if route53:
-                    # https://github.com/Miserlou/Zappa/issues/1465
-                    if use_regional_endpoint:
-                        dns_name = agw_response['regionalDomainName']
-                        target_hosted_zone_id = agw_response['regionalHostedZoneId']
-                        self.zappa.update_route53_records_for_regional_alias(
-                            self.domain, dns_name, target_hosted_zone_id)
-                    else:
-                        dns_name = agw_response['distributionDomainName']
-                        self.zappa.update_route53_records(self.domain, dns_name)
-
                 print("Created a new domain name with supplied certificate. Please note that it can take up to 40 minutes for this domain to be "
                       "created and propagated through AWS, but it requires no further work on your part.")
             else:
-                self.zappa.update_domain_name(
+                agw_response = self.zappa.update_domain_name(
                     domain_name=self.domain,
                     certificate_name=self.domain + "-Zappa-Cert",
                     certificate_body=certificate_body,
@@ -1865,6 +1854,17 @@ class ZappaCLI(object):
                     route53=route53,
                     use_regional_endpoint=use_regional_endpoint
                 )
+
+            if route53:
+                # https://github.com/Miserlou/Zappa/issues/1465
+                if use_regional_endpoint:
+                    dns_name = agw_response['regionalDomainName']
+                    target_hosted_zone_id = agw_response['regionalHostedZoneId']
+                    self.zappa.update_route53_records_for_regional_alias(
+                        self.domain, dns_name, target_hosted_zone_id)
+                else:
+                    dns_name = agw_response['distributionDomainName']
+                    self.zappa.update_route53_records(self.domain, dns_name)
 
             cert_success = True
 
