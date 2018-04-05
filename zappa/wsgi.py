@@ -15,6 +15,8 @@ if sys.version_info[0] < 3:
 else:
     from urllib.parse import urlencode
 
+from .utilities import titlecase_keys
+
 BINARY_METHODS = [
                     "POST",
                     "PUT",
@@ -82,14 +84,7 @@ def create_wsgi_request(event_info,
 
         # Make header names canonical, e.g. content-type => Content-Type
         # https://github.com/Miserlou/Zappa/issues/1188
-        canonicalized = {}
-        for header in headers.keys():
-            canonical = header.title()
-            if canonical != header:
-                canonicalized[header] = canonical
-
-        for header, canonical in canonicalized.items():
-            headers[canonical] = headers.pop(header)
+        headers = titlecase_keys(headers)
 
         path = urls.url_unquote(event_info['path'])
 

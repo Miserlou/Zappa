@@ -24,7 +24,7 @@ from zappa.letsencrypt import get_cert_and_update_domain, create_domain_key, cre
     register_account, verify_challenge
 from zappa.utilities import (detect_django_settings, detect_flask_apps,  parse_s3_url, human_size, string_to_timestamp,
                              validate_name, InvalidAwsLambdaName, contains_python_files_or_subdirs,
-                             conflicts_with_a_neighbouring_module)
+                             conflicts_with_a_neighbouring_module, titlecase_keys)
 from zappa.wsgi import create_wsgi_request, common_log
 from zappa.core import Zappa, ASSUME_POLICY, ATTACH_POLICY
 
@@ -1741,6 +1741,30 @@ USE_TZ = True
             zappa_cli.create_package()
         self.assertEqual('Environment variable keys must be ascii.', str(context.exception))
 
+
+    def test_titlecase_keys(self):
+        raw = {
+            'hOSt': 'github.com',
+            'ConnECtiOn': 'keep-alive',
+            'UpGRAde-InSecuRE-ReQueSts': '1',
+            'uSer-AGEnT': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36',
+            'cONtENt-TYPe': 'text/html; charset=utf-8',
+            'aCCEpT': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+            'ACcePT-encoDInG': 'gzip, deflate, br',
+            'AcCEpT-lAnGUagE': 'en-US,en;q=0.9'
+        }
+        transformed= titlecase_keys(raw)
+        expected = {
+            'Host': 'github.com',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36',
+            'Content-Type': 'text/html; charset=utf-8',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Accept-Language': 'en-US,en;q=0.9'
+        }
+        self.assertEqual(expected, transformed)
 
 
 if __name__ == '__main__':
