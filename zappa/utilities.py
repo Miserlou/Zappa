@@ -413,3 +413,11 @@ def conflicts_with_a_neighbouring_module(directory_path):
     neighbours = os.listdir(parent_dir_path)
     conflicting_neighbour_filename = current_dir_name+'.py'
     return conflicting_neighbour_filename in neighbours
+
+
+# https://github.com/Miserlou/Zappa/issues/1188
+def titlecase_keys(d):
+    """
+    Takes a dict with keys of type str and returns a new dict with all keys titlecased.
+    """
+    return {k.title(): v for k, v in d.items()}
