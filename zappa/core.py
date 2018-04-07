@@ -1064,9 +1064,10 @@ class Zappa(object):
 
         return resource_arn
 
-    def update_lambda_function(self, bucket, function_name, s3_key=None, publish=True, local_zip=None):
+    def update_lambda_function(self, bucket, function_name, s3_key=None, publish=True, local_zip=None, num_revisions=None):
         """
         Given a bucket and key (or a local path) of a valid Lambda-zip, a function name and a handler, update that Lambda function's code.
+        Optionally, delete previous versions if they exceed the optional limit.
         """
         print("Updating Lambda function code..")
 
@@ -1081,6 +1082,22 @@ class Zappa(object):
             kwargs['S3Key'] = s3_key
 
         response = self.lambda_client.update_function_code(**kwargs)
+
+        if num_revisions:
+            # Find the existing revision IDs for the given function
+            # Related: https://github.com/Miserlou/Zappa/issues/1402
+            versions_in_lambda = []
+            versions = self.lambda_client.list_versions_by_function(FunctionName=function_name)
+            for version in versions['Versions']:
+                versions_in_lambda.append(version['Version'])
+            while 'NextMarker' in versions:
+                versions = self.lambda_client.list_versions_by_function(FunctionName=function_name,Marker=versions['NextMarker'])
+                for version in versions['Versions']:
+                    versions_in_lambda.append(version['Version'])
+            versions_in_lambda.remove('$LATEST')
+            # Delete older revisions if their number exceeds the specified limit
+            for version in versions_in_lambda[::-1][num_revisions:]:
+                self.lambda_client.delete_function(FunctionNmae=function_name,Qualifier=version)
 
         return response['FunctionArn']
 

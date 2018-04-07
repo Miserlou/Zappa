@@ -915,7 +915,8 @@ class ZappaCLI(object):
             self.lambda_arn = self.zappa.update_lambda_function(
                                             bucket,
                                             self.lambda_name,
-                                            key_name
+                                            key_name,
+                                            num_revisions=self.num_retained_versions
                                         )
         elif source_zip and not source_zip.startswith('s3://'):
             with open(source_zip, mode='rb') as fh:
@@ -923,14 +924,16 @@ class ZappaCLI(object):
             self.lambda_arn = self.zappa.update_lambda_function(
                                             self.s3_bucket_name,
                                             self.lambda_name,
-                                            local_zip=byte_stream
+                                            local_zip=byte_stream,
+                                            num_revisions=self.num_retained_versions
                                         )
         else:
             if not no_upload:
                 self.lambda_arn = self.zappa.update_lambda_function(
                                                 self.s3_bucket_name,
                                                 self.lambda_name,
-                                                handler_file
+                                                handler_file,
+                                                num_revisions=self.num_retained_versions
                                             )
 
         # Remove the uploaded zip from S3, because it is now registered..
@@ -1996,6 +1999,13 @@ class ZappaCLI(object):
         dead_letter_arn = self.stage_config.get('dead_letter_arn', '')
         self.dead_letter_config = {'TargetArn': dead_letter_arn} if dead_letter_arn else {}
         self.cognito = self.stage_config.get('cognito', None)
+        self.num_retained_versions = self.stage_config.get('num_retained_versions',None)
+
+        # Check for valid values of num_retained_versions
+        if self.num_retained_versions is not None and type(self.num_retained_versions) is not int:
+            raise ClickException("Please supply either an integer or null for num_retained_versions in the zappa_settings.json. Found %s" % type(self.num_retained_versions))
+        elif type(self.num_retained_versions) is int and self.num_retained_versions<1:
+            raise ClickException("The value for num_retained_versions in the zappa_settings.json should be greater than 0.")
 
         # Provide legacy support for `use_apigateway`, now `apigateway_enabled`.
         # https://github.com/Miserlou/Zappa/issues/490
