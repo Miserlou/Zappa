@@ -1083,7 +1083,7 @@ class Zappa(object):
 
         response = self.lambda_client.update_function_code(**kwargs)
 
-        if type(num_revisions) is int and num_revisions>=1:
+        if num_revisions:
             # Find the existing revision IDs for the given function
             # Related: https://github.com/Miserlou/Zappa/issues/1402
             versions_in_lambda = []
