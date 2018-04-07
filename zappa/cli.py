@@ -2002,9 +2002,9 @@ class ZappaCLI(object):
         self.num_retained_versions = self.stage_config.get('num_retained_versions',None)
 
         # Check for valid values of num_retained_versions
-        if type(self.num_retained_versions) is not in [int,None]:
-            raise ClickException("Please supply either an integer or null for num_retained_versions in the zappa_settings.json.")
-        elif type(self.num_retained_versions) is int and self.num_retained_versions<1):
+        if self.num_retained_versions is not None and type(self.num_retained_versions) is not int:
+            raise ClickException("Please supply either an integer or null for num_retained_versions in the zappa_settings.json. Found %s" % type(self.num_retained_versions))
+        elif type(self.num_retained_versions) is int and self.num_retained_versions<1:
             raise ClickException("The value for num_retained_versions in the zappa_settings.json should be greater than 0.")
 
         # Provide legacy support for `use_apigateway`, now `apigateway_enabled`.
