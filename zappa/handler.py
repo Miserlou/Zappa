@@ -323,6 +323,16 @@ class LambdaHandler(object):
                     "{}:{}".format(intent, event.get('invocationSource'))
                 )
 
+    def get_function_from_contact_flow_event(self, event):
+        """
+        For the given event build ARN and return the configured function
+        """
+        if ('Details' in event
+                and 'ContactData' in event['Details']
+                and 'InstanceARN' in event['Details']['ContactData']):
+            arn = event['Details']['ContactData']['InstanceARN']
+            return self.settings.AWS_CONNECT_EVENT_MAPPING.get(arn)
+
     def get_function_for_cognito_trigger(self, trigger):
         """
         Get the associated function to execute for a cognito trigger
@@ -421,6 +431,18 @@ class LambdaHandler(object):
         elif event.get('bot'):
             result = None
             whole_function = self.get_function_from_bot_intent_trigger(event)
+            if whole_function:
+                app_function = self.import_module_and_get_function(whole_function)
+                result = self.run_function(app_function, event, context)
+                logger.debug(result)
+            else:
+                logger.error("Cannot find a function to process the triggered event.")
+            return result
+
+        # this is an AWS-event triggered from AWS Connect Contact Flow
+        elif event.get('Name') == 'ContactFlowEvent':
+            result = None
+            whole_function = self.get_function_from_contact_flow_event(event)
             if whole_function:
                 app_function = self.import_module_and_get_function(whole_function)
                 result = self.run_function(app_function, event, context)
