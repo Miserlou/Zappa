@@ -37,6 +37,10 @@ def handle_bot_intent(event, context):
     return "Success"
 
 
+def handle_aws_connect_event(event, context):
+    return "Success"
+
+
 mocked_exception_handler = Mock()
 
 
@@ -416,3 +420,39 @@ class TestZappa(unittest.TestCase):
         merged = merge_headers(event)
         self.assertEqual(merged['a'], 'c, d')
         self.assertEqual(merged['x'], 'y, z, f')
+    def test_aws_connect_triggered_event(self):
+        """
+        Ensure that AWS triggered events are handled as in the settings
+        """
+        lh = LambdaHandler('tests.test_connect_handler_being_triggered')
+        # from : https://docs.aws.amazon.com/connect/latest/adminguide/connect-lambda-functions.html
+        event = {
+            "Details": {
+                "ContactData": {
+                    "Attributes": {},
+                    "Channel": "VOICE",
+                    "ContactId": "4a573372-1f28-4e26-b97b-XXXXXXXXXXX",
+                    "CustomerEndpoint": {
+                        "Address": "+1234567890",
+                        "Type": "TELEPHONE_NUMBER"
+                    },
+                    "InitialContactId": "4a573372-1f28-4e26-b97b-XXXXXXXXXXX",
+                    "InitiationMethod": "INBOUND | OUTBOUND | TRANSFER | CALLBACK",
+                    "InstanceARN": "arn:aws:connect:aws-region:1234567890:instance/c8c0e68d-2200-4265-82c0-XXXXXXXXXX",
+                    "PreviousContactId": "4a573372-1f28-4e26-b97b-XXXXXXXXXX",
+                    "Queue": "QueueName",
+                    "SystemEndpoint": {
+                        "Address": "+1234567890",
+                        "Type": "TELEPHONE_NUMBER"
+                    }
+                },
+                "Parameters": {
+                    "sentAttributeKey": "sentAttributeValue"
+                }
+            },
+            "Name": "ContactFlowEvent"
+        }
+
+        response = lh.handler(event, None)
+
+        self.assertEqual(response, 'Success')
