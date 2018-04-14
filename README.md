@@ -78,6 +78,7 @@
 - [Sites Using Zappa](#sites-using-zappa)
 - [Related Projects](#related-projects)
 - [Hacks](#hacks)
+- [Testing](#testing)
 - [Contributing](#contributing)
     - [Using a Local Repo](#using-a-local-repo)
 - [Patrons](#patrons)
@@ -1350,6 +1351,13 @@ Zappa goes quite far beyond what Lambda and API Gateway were ever intended to ha
 * ~~~Packing and _Base58_ encoding multiple cookies into a single cookie because we can only map one kind.~~~
 * Forcing the case permutations of "Set-Cookie" in order to return multiple headers at the same time.
 * ~~~Turning cookie-setting 301/302 responses into 200 responses with HTML redirects, because we have no way to set headers on redirects.~~~
+
+## Testing
+Zappa uses `tox` for testing. Checkout the [tox documentation](https://tox.readthedocs.io/en/latest/) for more information.
+
+You can run a specific test file via `tox -- path/to/tests.py`, or a specific test via `tox -- tests.tests:TestZappa.test_lets_encrypt_sanity -s`
+
+You can run all tests for both python environments via `tox`.
 
 ## Contributing
 

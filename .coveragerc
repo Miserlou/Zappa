@@ -1,0 +1,8 @@
+[report]
+omit=
+    .tox/*
+    docs/*
+    example/*
+    tests/*
+    dj_test_settings.py
+    test_settings.py
