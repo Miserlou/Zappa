@@ -403,7 +403,9 @@ class Zappa(object):
 
         # Need to manually add setuptools
         pkg_list.append('setuptools')
-        pip.main(["install", "--quiet", "--target", venv_site_packages_dir] + pkg_list)
+        pip_return_code = pip.main(["install", "--quiet", "--target", venv_site_packages_dir] + pkg_list)
+        if pip_return_code:
+          raise EnvironmentError("Pypi lookup failed")
 
         return ve_path
 
@@ -990,7 +992,7 @@ class Zappa(object):
         try:
             self.s3_client.delete_object(Bucket=bucket_name, Key=file_name)
             return True
-        except botocore.exceptions.ClientError:  # pragma: no cover
+        except (botocore.exceptions.ParamValidationError, botocore.exceptions.ClientError):  # pragma: no cover
             return False
 
     ##
