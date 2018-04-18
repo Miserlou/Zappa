@@ -10,7 +10,7 @@ hjson==3.0.1
 jmespath==0.9.3
 kappa==0.6.0
 lambda-packages==0.19.0
-pip==9.0.1
+pip>=9.0.1, <=10.0.0
 python-dateutil>=2.6.1, <2.7.0
 python-slugify==1.2.4
 PyYAML==3.12
