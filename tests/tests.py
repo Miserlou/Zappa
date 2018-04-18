@@ -169,7 +169,7 @@ class TestZappa(unittest.TestCase):
                 try:
                     with mock.patch('pip._internal.utils.misc.get_installed_distributions', return_value=mock_pip_installed_packages):
                         self.assertDictEqual(z.get_installed_packages('',''), {'super_package' : '0.1'})
-                except AttributeError:
+                except ImportError:
                     with mock.patch('pip.get_installed_distributions', return_value=mock_pip_installed_packages):
                         self.assertDictEqual(z.get_installed_packages('',''), {'super_package' : '0.1'})
 
@@ -186,7 +186,7 @@ class TestZappa(unittest.TestCase):
                 try:
                     with mock.patch('pip._internal.utils.misc.get_installed_distributions', return_value=mock_pip_installed_packages):
                         self.assertDictEqual(z.get_installed_packages('',''), {'superpackage' : '0.1'})
-                except AttributeError:
+                except ImportError:
                     with mock.patch('pip.get_installed_distributions', return_value=mock_pip_installed_packages):
                         self.assertDictEqual(z.get_installed_packages('',''), {'superpackage' : '0.1'})
 
