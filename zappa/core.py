@@ -359,10 +359,10 @@ class Zappa(object):
         """
         For a given package, returns a list of required packages. Recursive.
         """
-        import pip
+        from pip._internal.utils.misc import get_installed_distributions
         deps = []
         if not installed_distros:
-            installed_distros = pip.get_installed_distributions()
+            installed_distros = get_installed_distributions()
         for package in installed_distros:
             if package.project_name.lower() == pkg_name.lower():
                 deps = [(package.project_name, package.version)]
@@ -750,7 +750,7 @@ class Zappa(object):
         """
         Returns a dict of installed packages that Zappa cares about.
         """
-        import pip  # this is to avoid 'funkiness' with global import
+        from pip._internal.utils.misc import get_installed_distributions
         package_to_keep = []
         if os.path.isdir(site_packages):
             package_to_keep += os.listdir(site_packages)
@@ -760,7 +760,7 @@ class Zappa(object):
         package_to_keep = [x.lower() for x in package_to_keep]
 
         installed_packages = {package.project_name.lower(): package.version for package in
-                              pip.get_installed_distributions()
+                              get_installed_distributions()
                               if package.project_name.lower() in package_to_keep
                               or package.location in [site_packages, site_packages_64]}
 

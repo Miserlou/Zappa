@@ -108,7 +108,7 @@ class TestZappa(unittest.TestCase):
     #             self.assertEqual(mock_remove.call_count, 1)
 
     def test_create_lambda_package(self):
-        # mock the pip.get_installed_distributions() to include a known package in lambda_packages so that the code
+        # mock the pip._internal.utils.misc.get_installed_distributions() to include a known package in lambda_packages so that the code
         # for zipping pre-compiled packages gets called
         mock_installed_packages = {'psycopg2': '2.6.1'}
         with mock.patch('zappa.core.Zappa.get_installed_packages', return_value=mock_installed_packages):
@@ -166,7 +166,7 @@ class TestZappa(unittest.TestCase):
         with mock.patch('os.path.isdir', return_value=True):
             with mock.patch('os.listdir', return_value=['super_package']):
                 import pip  # this gets called in non-test Zappa mode
-                with mock.patch('pip.get_installed_distributions', return_value=mock_pip_installed_packages):
+                with mock.patch('pip._internal.utils.misc.get_installed_distributions', return_value=mock_pip_installed_packages):
                     self.assertDictEqual(z.get_installed_packages('',''), {'super_package' : '0.1'})
 
     def test_getting_installed_packages_mixed_case(self, *args):
@@ -179,7 +179,7 @@ class TestZappa(unittest.TestCase):
         with mock.patch('os.path.isdir', return_value=True):
             with mock.patch('os.listdir', return_value=['superpackage']):
                 import pip  # this gets called in non-test Zappa mode
-                with mock.patch('pip.get_installed_distributions', return_value=mock_pip_installed_packages):
+                with mock.patch('pip._internal.utils.misc.get_installed_distributions', return_value=mock_pip_installed_packages):
                     self.assertDictEqual(z.get_installed_packages('',''), {'superpackage' : '0.1'})
 
     def test_load_credentials(self):
