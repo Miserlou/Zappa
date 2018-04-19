@@ -359,13 +359,10 @@ class Zappa(object):
         """
         For a given package, returns a list of required packages. Recursive.
         """
-        try: # for pip >= 10
-            from pip._internal.utils.misc import get_installed_distributions
-        except ImportError: # for pip <= 9.0.3
-            from pip import get_installed_distributions
+        import pkg_resources
         deps = []
         if not installed_distros:
-            installed_distros = get_installed_distributions()
+            installed_distros = pkg_resources.WorkingSet()
         for package in installed_distros:
             if package.project_name.lower() == pkg_name.lower():
                 deps = [(package.project_name, package.version)]
