@@ -108,7 +108,7 @@ class TestZappa(unittest.TestCase):
     #             self.assertEqual(mock_remove.call_count, 1)
 
     def test_create_lambda_package(self):
-        # mock the pip._internal.utils.misc.get_installed_distributions() to include a known package in lambda_packages so that the code
+        # mock the pkg_resources.WorkingSet() to include a known package in lambda_packages so that the code
         # for zipping pre-compiled packages gets called
         mock_installed_packages = {'psycopg2': '2.6.1'}
         with mock.patch('zappa.core.Zappa.get_installed_packages', return_value=mock_installed_packages):
@@ -159,7 +159,7 @@ class TestZappa(unittest.TestCase):
     def test_getting_installed_packages(self, *args):
         z = Zappa(runtime='python2.7')
 
-        # mock pip packages call to be same as what our mocked site packages dir has
+        # mock pkg_resources call to be same as what our mocked site packages dir has
         mock_package = collections.namedtuple('mock_package', ['project_name', 'version', 'location'])
         mock_pip_installed_packages = [mock_package('super_package', '0.1', '/venv/site-packages')]
 
@@ -172,7 +172,7 @@ class TestZappa(unittest.TestCase):
     def test_getting_installed_packages_mixed_case(self, *args):
         z = Zappa(runtime='python2.7')
 
-        # mock pip packages call to be same as what our mocked site packages dir has
+        # mock pkg_resources call to be same as what our mocked site packages dir has
         mock_package = collections.namedtuple('mock_package', ['project_name', 'version', 'location'])
         mock_pip_installed_packages = [mock_package('SuperPackage', '0.1', '/venv/site-packages')]
 

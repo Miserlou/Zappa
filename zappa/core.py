@@ -359,6 +359,9 @@ class Zappa(object):
         """
         For a given package, returns a list of required packages. Recursive.
         """
+        # https://github.com/Miserlou/Zappa/issues/1478.  Using `pkg_resources`
+        # instead of `pip` is the recommended approach.  The usage is nearly
+        # identical.
         import pkg_resources
         deps = []
         if not installed_distros:
@@ -405,9 +408,12 @@ class Zappa(object):
         pkg_list.append('setuptools')
         command = ["pip", "install", "--quiet", "--target", venv_site_packages_dir] + pkg_list
 
-        # Using subprocess as pip.main() is not supported
-        pip = subprocess.Popen(command, stdout=subprocess.PIPE)
-        pip_return_code = pip.communicate()[0]
+        # This is the recommended method for installing packages if you don't
+        # to depend on `setuptools`
+        # https://github.com/pypa/pip/issues/5240#issuecomment-381662679
+        pip_process = subprocess.Popen(command, stdout=subprocess.PIPE)
+        # Using poll() since it gives us an meaningful return code
+        pip_return_code = pip_process.poll()
 
         if pip_return_code:
           raise EnvironmentError("Pypi lookup failed")
