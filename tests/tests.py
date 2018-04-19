@@ -165,13 +165,9 @@ class TestZappa(unittest.TestCase):
 
         with mock.patch('os.path.isdir', return_value=True):
             with mock.patch('os.listdir', return_value=['super_package']):
-                import pip  # this gets called in non-test Zappa mode
-                try:
-                    with mock.patch('pip._internal.utils.misc.get_installed_distributions', return_value=mock_pip_installed_packages):
-                        self.assertDictEqual(z.get_installed_packages('',''), {'super_package' : '0.1'})
-                except ImportError:
-                    with mock.patch('pip.get_installed_distributions', return_value=mock_pip_installed_packages):
-                        self.assertDictEqual(z.get_installed_packages('',''), {'super_package' : '0.1'})
+                import pkg_resources  # this gets called in non-test Zappa mode
+                with mock.patch('pkg_resources.WorkingSet', return_value=mock_pip_installed_packages):
+                    self.assertDictEqual(z.get_installed_packages('',''), {'super_package' : '0.1'})
 
     def test_getting_installed_packages_mixed_case(self, *args):
         z = Zappa(runtime='python2.7')
@@ -182,13 +178,9 @@ class TestZappa(unittest.TestCase):
 
         with mock.patch('os.path.isdir', return_value=True):
             with mock.patch('os.listdir', return_value=['superpackage']):
-                import pip  # this gets called in non-test Zappa mode
-                try:
-                    with mock.patch('pip._internal.utils.misc.get_installed_distributions', return_value=mock_pip_installed_packages):
-                        self.assertDictEqual(z.get_installed_packages('',''), {'superpackage' : '0.1'})
-                except ImportError:
-                    with mock.patch('pip.get_installed_distributions', return_value=mock_pip_installed_packages):
-                        self.assertDictEqual(z.get_installed_packages('',''), {'superpackage' : '0.1'})
+                import pkg_resources  # this gets called in non-test Zappa mode
+                with mock.patch('pkg_resources.WorkingSet', return_value=mock_pip_installed_packages):
+                    self.assertDictEqual(z.get_installed_packages('',''), {'superpackage' : '0.1'})
 
 
     def test_load_credentials(self):
