@@ -374,7 +374,7 @@ class Zappa(object):
         """
         Takes the installed zappa and brings it into a fresh virtualenv-like folder. All dependencies are then downloaded.
         """
-        import pip
+        import subprocess
 
         # We will need the currenv venv to pull Zappa from
         current_venv = self.get_current_venv()
@@ -403,7 +403,12 @@ class Zappa(object):
 
         # Need to manually add setuptools
         pkg_list.append('setuptools')
-        pip_return_code = pip.main(["install", "--quiet", "--target", venv_site_packages_dir] + pkg_list)
+        command = ["pip", "install", "--quiet", "--target", venv_site_packages_dir] + pkg_list
+
+        # Using subprocess as pip.main() is not supported
+        pip = subprocess.Popen(command, stdout=subprocess.PIPE)
+        pip_return_code = pip.communicate()[0]
+
         if pip_return_code:
           raise EnvironmentError("Pypi lookup failed")
 
