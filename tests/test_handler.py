@@ -1,3 +1,5 @@
+from mock import Mock
+import sys
 import unittest
 from zappa.handler import LambdaHandler
 
@@ -21,11 +23,31 @@ def var_args(*args):
 def var_args_with_one(first, *args):
     return first, args[0]
 
+
 def unsupported(first, second, third):
     return first, second, third
 
 
+def raises_exception(*args, **kwargs):
+    raise Exception('app exception')
+
+
+def handle_bot_intent(event, context):
+    return "Success"
+
+
+mocked_exception_handler = Mock()
+
+
 class TestZappa(unittest.TestCase):
+
+    def setUp(self):
+        mocked_exception_handler.reset_mock()
+
+    def tearDown(self):
+        LambdaHandler._LambdaHandler__instance = None
+        LambdaHandler.settings = None
+        LambdaHandler.settings_name = None
 
     def test_run_function(self):
         self.assertIsNone(LambdaHandler.run_function(no_args, 'e', 'c'))
@@ -39,6 +61,15 @@ class TestZappa(unittest.TestCase):
             self.fail('Exception expected')
         except RuntimeError as e:
             pass
+
+    def test_run_fuction_with_type_hint(self):
+        python_version = sys.version_info[0]
+        # type hints are python 3 only
+        if python_version == 3:
+            scope = {}
+            exec('def f_with_type_hint() -> None: return', scope)
+            f_with_type_hint = scope['f_with_type_hint']
+            self.assertIsNone(LambdaHandler.run_function(f_with_type_hint, 'e', 'c'))
 
     def test_wsgi_script_name_on_aws_url(self):
         """
@@ -128,6 +159,35 @@ class TestZappa(unittest.TestCase):
             'https://zappa:80/return/request/url'
         )
 
+    def test_exception_handler_on_web_request(self):
+        """
+        Ensure that app exceptions triggered by web requests use the exception_handler.
+        """
+        lh = LambdaHandler('tests.test_exception_handler_settings')
+
+        event = {
+            'body': '',
+            'resource': '/{proxy+}',
+            'requestContext': {},
+            'queryStringParameters': {},
+            'headers': {
+                'Host': '1234567890.execute-api.us-east-1.amazonaws.com',
+            },
+            'pathParameters': {
+                'proxy': 'return/request/url'
+            },
+            'httpMethod': 'GET',
+            'stageVariables': {},
+            'path': '/return/request/url'
+        }
+
+        mocked_exception_handler.assert_not_called()
+        response = lh.handler(event, None)
+
+        self.assertEqual(response['statusCode'], 500)
+        mocked_exception_handler.assert_called()
+
+
     def test_wsgi_script_on_cognito_event_request(self):
         """
         Ensure that requests sent by cognito behave sensibly
@@ -142,7 +202,7 @@ class TestZappa(unittest.TestCase):
                                    'clientId': 'client-id-here'},
                  'triggerSource': 'PreSignUp_SignUp',
                  'request': {'userAttributes':
-                             {'email': 'email@example.com'}, 'validationData': None},
+                                 {'email': 'email@example.com'}, 'validationData': None},
                  'response': {'autoConfirmUser': False,
                               'autoVerifyEmail': False,
                               'autoVerifyPhone': False}}
@@ -150,3 +210,72 @@ class TestZappa(unittest.TestCase):
         response = lh.handler(event, None)
 
         self.assertEqual(response['response']['autoConfirmUser'], False)
+
+    def test_bot_triggered_event(self):
+        """
+        Ensure that bot triggered events are handled as in the settings
+        """
+        lh = LambdaHandler('tests.test_bot_handler_being_triggered')
+        # from : https://docs.aws.amazon.com/lambda/latest/dg/eventsources.html#eventsources-lex
+        event = {
+            "messageVersion": "1.0",
+            "invocationSource": "DialogCodeHook",
+            "userId": "user-id specified in the POST request to Amazon Lex.",
+            "sessionAttributes": {
+                "key1": "value1",
+                "key2": "value2",
+            },
+            "bot": {
+                "name": "bot-name",
+                "alias": "bot-alias",
+                "version": "bot-version"
+            },
+            "outputDialogMode": "Text or Voice, based on ContentType request header in runtime API request",
+            "currentIntent": {
+                "name": "intent-name",
+                "slots": {
+                    "slot-name": "value",
+                    "slot-name": "value",
+                    "slot-name": "value"
+                },
+                "confirmationStatus": "None, Confirmed, or Denied (intent confirmation, if configured)"
+            }
+        }
+
+        response = lh.handler(event, None)
+
+        self.assertEqual(response, 'Success')
+
+    def test_exception_in_bot_triggered_event(self):
+        """
+        Ensure that bot triggered exceptions are handled as defined in the settings.
+        """
+        lh = LambdaHandler('tests.test_bot_exception_handler_settings')
+        # from : https://docs.aws.amazon.com/lambda/latest/dg/eventsources.html#eventsources-lex
+        event = {
+            "messageVersion": "1.0",
+            "invocationSource": "DialogCodeHook",
+            "userId": "user-id specified in the POST request to Amazon Lex.",
+            "sessionAttributes": {
+                "key1": "value1",
+                "key2": "value2",
+            },
+            "bot": {
+                "name": "bot-name",
+                "alias": "bot-alias",
+                "version": "bot-version"
+            },
+            "outputDialogMode": "Text or Voice, based on ContentType request header in runtime API request",
+            "currentIntent": {
+                "name": "intent-name",
+                "slots": {
+                    "slot-name": "value",
+                    "slot-name": "value",
+                    "slot-name": "value"
+                },
+                "confirmationStatus": "None, Confirmed, or Denied (intent confirmation, if configured)"
+            }
+        }
+
+        response = lh.lambda_handler(event, None)
+        mocked_exception_handler.assert_called

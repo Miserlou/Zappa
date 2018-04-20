@@ -171,19 +171,25 @@ ATTACH_POLICY = """{
 API_GATEWAY_REGIONS = ['us-east-1', 'us-east-2',
                        'us-west-1', 'us-west-2',
                        'eu-central-1',
-                       'eu-west-1', 'eu-west-2',
+                       'eu-west-1', 'eu-west-2', 'eu-west-3',
                        'ap-northeast-1', 'ap-northeast-2',
                        'ap-southeast-1', 'ap-southeast-2',
-                       'ap-south-1']
+                       'ap-south-1',
+                       'ca-central-1',
+                       'cn-north-1',
+                       'sa-east-1']
 
 # Latest list: https://docs.aws.amazon.com/general/latest/gr/rande.html#lambda_region
 LAMBDA_REGIONS = ['us-east-1', 'us-east-2',
                   'us-west-1', 'us-west-2',
                   'eu-central-1',
-                  'eu-west-1', 'eu-west-2',
+                  'eu-west-1', 'eu-west-2', 'eu-west-3',
                   'ap-northeast-1', 'ap-northeast-2',
                   'ap-southeast-1', 'ap-southeast-2',
-                  'ap-south-1']
+                  'ap-south-1',
+                  'ca-central-1',
+                  'cn-north-1',
+                  'sa-east-1']
 
 # We never need to include these.
 # Related: https://github.com/Miserlou/Zappa/pull/56
@@ -342,7 +348,7 @@ class Zappa(object):
                 egg_path = df.read().decode('utf-8').splitlines()[0].strip()
                 pkgs = set([x.split(".")[0] for x in find_packages(egg_path, exclude=['test', 'tests'])])
                 for pkg in pkgs:
-                    copytree(os.path.join(egg_path, pkg), os.path.join(temp_package_path, pkg), symlinks=False)
+                    copytree(os.path.join(egg_path, pkg), os.path.join(temp_package_path, pkg), metadata=False, symlinks=False)
 
         if temp_package_path:
             # now remove any egg-links as they will cause issues if they still exist
@@ -397,7 +403,9 @@ class Zappa(object):
 
         # Need to manually add setuptools
         pkg_list.append('setuptools')
-        pip.main(["install", "--quiet", "--target", venv_site_packages_dir] + pkg_list)
+        pip_return_code = pip.main(["install", "--quiet", "--target", venv_site_packages_dir] + pkg_list)
+        if pip_return_code:
+          raise EnvironmentError("Pypi lookup failed")
 
         return ve_path
 
@@ -499,17 +507,16 @@ class Zappa(object):
             )
 
         # First, do the project..
-        temp_project_path = os.path.join(tempfile.gettempdir(), str(int(time.time())))
+        temp_project_path = tempfile.mkdtemp(prefix='zappa-project')
 
-        os.makedirs(temp_project_path)
         if not slim_handler:
             # Slim handler does not take the project files.
             if minify:
                 # Related: https://github.com/Miserlou/Zappa/issues/744
                 excludes = ZIP_EXCLUDES + exclude + [split_venv[-1]]
-                copytree(cwd, temp_project_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
+                copytree(cwd, temp_project_path, metadata=False, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
             else:
-                copytree(cwd, temp_project_path, symlinks=False)
+                copytree(cwd, temp_project_path, metadata=False, symlinks=False)
 
         # If a handler_file is supplied, copy that to the root of the package,
         # because that's where AWS Lambda looks for it. It can't be inside a package.
@@ -566,7 +573,7 @@ class Zappa(object):
 
         # Then, do site site-packages..
         egg_links = []
-        temp_package_path = os.path.join(tempfile.gettempdir(), str(int(time.time() + 1)))
+        temp_package_path = tempfile.mkdtemp(prefix='zappa-packages')
         if os.sys.platform == 'win32':
             site_packages = os.path.join(venv, 'Lib', 'site-packages')
         else:
@@ -575,10 +582,9 @@ class Zappa(object):
 
         if minify:
             excludes = ZIP_EXCLUDES + exclude
-            copytree(site_packages, temp_package_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
-
+            copytree(site_packages, temp_package_path, metadata=False, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
         else:
-            copytree(site_packages, temp_package_path, symlinks=False)
+            copytree(site_packages, temp_package_path, metadata=False, symlinks=False)
 
         # We may have 64-bin specific packages too.
         site_packages_64 = os.path.join(venv, 'lib64', get_venv_from_python_version(), 'site-packages')
@@ -586,9 +592,9 @@ class Zappa(object):
             egg_links.extend(glob.glob(os.path.join(site_packages_64, '*.egg-link')))
             if minify:
                 excludes = ZIP_EXCLUDES + exclude
-                copytree(site_packages_64, temp_package_path, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
+                copytree(site_packages_64, temp_package_path, metadata = False, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
             else:
-                copytree(site_packages_64, temp_package_path, symlinks=False)
+                copytree(site_packages_64, temp_package_path, metadata = False, symlinks=False)
 
         if egg_links:
             self.copy_editable_packages(egg_links, temp_package_path)
@@ -986,7 +992,7 @@ class Zappa(object):
         try:
             self.s3_client.delete_object(Bucket=bucket_name, Key=file_name)
             return True
-        except botocore.exceptions.ClientError:  # pragma: no cover
+        except (botocore.exceptions.ParamValidationError, botocore.exceptions.ClientError):  # pragma: no cover
             return False
 
     ##
@@ -1060,9 +1066,10 @@ class Zappa(object):
 
         return resource_arn
 
-    def update_lambda_function(self, bucket, function_name, s3_key=None, publish=True, local_zip=None):
+    def update_lambda_function(self, bucket, function_name, s3_key=None, publish=True, local_zip=None, num_revisions=None):
         """
         Given a bucket and key (or a local path) of a valid Lambda-zip, a function name and a handler, update that Lambda function's code.
+        Optionally, delete previous versions if they exceed the optional limit.
         """
         print("Updating Lambda function code..")
 
@@ -1077,6 +1084,22 @@ class Zappa(object):
             kwargs['S3Key'] = s3_key
 
         response = self.lambda_client.update_function_code(**kwargs)
+
+        if num_revisions:
+            # Find the existing revision IDs for the given function
+            # Related: https://github.com/Miserlou/Zappa/issues/1402
+            versions_in_lambda = []
+            versions = self.lambda_client.list_versions_by_function(FunctionName=function_name)
+            for version in versions['Versions']:
+                versions_in_lambda.append(version['Version'])
+            while 'NextMarker' in versions:
+                versions = self.lambda_client.list_versions_by_function(FunctionName=function_name,Marker=versions['NextMarker'])
+                for version in versions['Versions']:
+                    versions_in_lambda.append(version['Version'])
+            versions_in_lambda.remove('$LATEST')
+            # Delete older revisions if their number exceeds the specified limit
+            for version in versions_in_lambda[::-1][num_revisions:]:
+                self.lambda_client.delete_function(FunctionNmae=function_name,Qualifier=version)
 
         return response['FunctionArn']
 
@@ -1567,6 +1590,35 @@ class Zappa(object):
                         }
                     ]
                 )
+
+    def add_api_compression(self, api_id, min_compression_size):
+        """
+        Add Rest API compression
+        """
+        self.apigateway_client.update_rest_api(
+            restApiId=api_id,
+            patchOperations=[
+                {
+                    'op': 'replace',
+                    'path': '/minimumCompressionSize',
+                    'value': str(min_compression_size)
+                }
+            ]
+        )
+
+    def remove_api_compression(self, api_id):
+        """
+        Remove Rest API compression
+        """
+        self.apigateway_client.update_rest_api(
+            restApiId=api_id,
+            patchOperations=[
+                {
+                    'op': 'replace',
+                    'path': '/minimumCompressionSize',
+                }
+            ]
+        )
 
     def get_api_keys(self, api_id, stage_name):
         """
@@ -2082,7 +2134,7 @@ class Zappa(object):
                                                               "value" : certificate_arn}
                                                          ])
 
-    def get_domain_name(self, domain_name):
+    def get_domain_name(self, domain_name, route53=True):
         """
         Scan our hosted zones for the record of a given name.
 
@@ -2094,6 +2146,9 @@ class Zappa(object):
             self.apigateway_client.get_domain_name(domainName=domain_name)
         except Exception:
             return None
+
+        if not route53:
+            return True
 
         try:
             zones = self.route53.list_hosted_zones()

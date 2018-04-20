@@ -5,12 +5,13 @@ boto3>=1.4.7
 docutils>=0.12
 durationpy==0.5
 future==0.16.0
-futures==3.2.0
+futures==3.2.0; python_version < '3'
 hjson==3.0.1
 jmespath==0.9.3
 kappa==0.6.0
 lambda-packages==0.19.0
-python-dateutil==2.6.1
+pip==9.0.1
+python-dateutil>=2.6.1, <2.7.0
 python-slugify==1.2.4
 PyYAML==3.12
 requests>=2.10.0
