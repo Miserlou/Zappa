@@ -421,6 +421,8 @@ def task(*args, **kwargs):
                                                      capture_response=capture_response).send(task_path, args, kwargs)
                 return send_result
             else:
+                args = json.loads(json.dumps(args).encode('utf-8'))
+                kwargs = json.loads(json.dumps(kwargs).encode('utf-8'))
                 return func(*args, **kwargs)
 
         update_wrapper(_run_async, func)
