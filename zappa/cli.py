@@ -1605,7 +1605,7 @@ class ZappaCLI(object):
         click.echo("\nYour Zappa deployments will need to be uploaded to a " + click.style("private S3 bucket", bold=True)  + ".")
         click.echo("If you don't have a bucket yet, we'll create one for you too.")
         default_bucket = "zappa-" + ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(9))
-        bucket = input("What do you want call your bucket? (default '%s'): " % default_bucket) or default_bucket
+        bucket = input("What do you want to call your bucket? (default '%s'): " % default_bucket) or default_bucket
 
         # Detect Django/Flask
         try: # pragma: no cover
