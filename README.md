@@ -808,6 +808,7 @@ to change Zappa's behavior. Use these at your own risk!
         "delete_s3_zip": true, // Delete the s3 zip archive. Default true.
         "django_settings": "your_project.production_settings", // The modular path to your Django project's settings. For Django projects only.
         "domain": "yourapp.yourdomain.com", // Required if you're using a domain
+        "base_path": "your-base-path", // Optional base path for API gateway custom domain base path mapping. Default None.
         "environment_variables": {"your_key": "your_value"}, // A dictionary of environment variables that will be available to your deployed app. See also "remote_env" and "aws_environment_variables". Default {}.
         "events": [
             {   // Recurring events
