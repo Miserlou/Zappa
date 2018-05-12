@@ -24,7 +24,7 @@ from zappa.letsencrypt import get_cert_and_update_domain, create_domain_key, cre
     register_account, verify_challenge, gettempdir
 from zappa.utilities import (detect_django_settings, detect_flask_apps,  parse_s3_url, human_size, string_to_timestamp,
                              validate_name, InvalidAwsLambdaName, contains_python_files_or_subdirs,
-                             conflicts_with_a_neighbouring_module)
+                             conflicts_with_a_neighbouring_module, titlecase_keys)
 from zappa.wsgi import create_wsgi_request, common_log
 from zappa.core import Zappa, ASSUME_POLICY, ATTACH_POLICY
 
@@ -1285,28 +1285,19 @@ class TestZappa(unittest.TestCase):
                 # fails when it tries to inspect what Zappa has deployed.
                 pass
 
-            class ZappaMock(object):
-                def __init__(self):
-                    self.function_versions = []
-                    self.domain_names = {}
-                    self.calls = []
+            # Set up a core.Zappa mock and let us save some state about
+            # domains and lambdas
+            zappa_mock = mock.create_autospec(Zappa)
+            zappa_mock.function_versions = []
+            zappa_mock.domain_names = {}
+            def get_lambda_function_versions(_function_name, *_args, **_kwargs):
+                return zappa_mock.function_versions
+            def get_domain_name(domain, *_args, **_kwargs):
+                return zappa_mock.domain_names.get(domain)
+            zappa_mock.get_domain_name.side_effect = get_domain_name
+            zappa_mock.get_lambda_function_versions.side_effect = get_lambda_function_versions
 
-                def get_lambda_function_versions(self, function_name):
-                    return self.function_versions
-
-                def get_domain_name(self, domain):
-                    return self.domain_names.get(domain)
-
-                def create_domain_name(self, *args, **kw):
-                    self.calls.append(("create_domain_name", args, kw))
-
-                def update_route53_records(self, *args, **kw):
-                    self.calls.append(("update_route53_records", args, kw))
-
-                def update_domain_name(self, *args, **kw):
-                    self.calls.append(("update_domain_name", args, kw))
-
-            zappa_cli.zappa = ZappaMock()
+            zappa_cli.zappa = zappa_mock
             self.assertRaises(ClickException, zappa_cli.certify)
 
             # Make sure we get an error if we don't configure the domain.
@@ -1380,18 +1371,19 @@ class TestZappa(unittest.TestCase):
             })
             sys.stdout.truncate(0)
             zappa_cli.certify()
-            self.assertEquals(len(zappa_cli.zappa.calls), 2)
-            self.assertTrue(zappa_cli.zappa.calls[0][0] == "create_domain_name")
-            self.assertTrue(zappa_cli.zappa.calls[1][0] == "update_route53_records")
+            zappa_cli.zappa.create_domain_name.assert_called_once()
+            zappa_cli.zappa.update_route53_records.assert_called_once()
+            zappa_cli.zappa.update_domain_name.assert_not_called()
             log_output = sys.stdout.getvalue()
             self.assertIn("Created a new domain name", log_output)
 
-            zappa_cli.zappa.calls = []
+            zappa_cli.zappa.reset_mock()
             zappa_cli.zappa.domain_names["test.example.com"] = "*.example.com"
             sys.stdout.truncate(0)
             zappa_cli.certify()
-            self.assertEquals(len(zappa_cli.zappa.calls), 1)
-            self.assertTrue(zappa_cli.zappa.calls[0][0] == "update_domain_name")
+            zappa_cli.zappa.update_domain_name.assert_called_once()
+            zappa_cli.zappa.update_route53_records.assert_not_called()
+            zappa_cli.zappa.create_domain_name.assert_not_called()
             log_output = sys.stdout.getvalue()
             self.assertNotIn("Created a new domain name", log_output)
 
@@ -1399,16 +1391,60 @@ class TestZappa(unittest.TestCase):
             zappa_cli.zappa_settings["stage"].update({
                 "route53_enabled": False,
             })
-            zappa_cli.zappa.calls = []
+            zappa_cli.zappa.reset_mock()
             zappa_cli.zappa.domain_names["test.example.com"] = ""
             sys.stdout.truncate(0)
             zappa_cli.certify()
-            self.assertEquals(len(zappa_cli.zappa.calls), 1)
-            self.assertTrue(zappa_cli.zappa.calls[0][0] == "create_domain_name")
+            zappa_cli.zappa.create_domain_name.assert_called_once()
+            zappa_cli.zappa.update_route53_records.assert_not_called()
+            zappa_cli.zappa.update_domain_name.assert_not_called()
             log_output = sys.stdout.getvalue()
             self.assertIn("Created a new domain name", log_output)
         finally:
             sys.stdout = old_stdout
+
+    @mock.patch('troposphere.Template')
+    @mock.patch('botocore.client')
+    def test_get_domain_respects_route53_setting(self, client, template):
+        zappa_core = Zappa(
+            boto_session=mock.Mock(),
+            profile_name="test",
+            aws_region="test",
+            load_credentials=False
+        )
+        zappa_core.apigateway_client = mock.Mock()
+        zappa_core.route53 = mock.Mock()
+
+        # Check it returns valid and exits early
+        record = zappa_core.get_domain_name('test_domain', route53=False)
+        self.assertIsNotNone(record)
+        zappa_core.apigateway_client.get_domain_name.assert_called_once()
+        zappa_core.route53.list_hosted_zones.assert_not_called()
+
+        zappa_core.apigateway_client.reset_mock()
+        zappa_core.route53.reset_mock()
+
+        # And that the route53 path still works
+        zappa_core.route53.list_hosted_zones.return_value = {
+            'HostedZones': [
+                {
+                    'Id': 'somezone'
+                }
+            ]
+        }
+        zappa_core.route53.list_resource_record_sets.return_value = {
+            'ResourceRecordSets': [{
+                'Type': 'CNAME',
+                'Name': 'test_domain1'
+            }]
+        }
+
+        record = zappa_core.get_domain_name('test_domain')
+        self.assertIsNotNone(record)
+        zappa_core.apigateway_client.get_domain_name.assert_called_once()
+        zappa_core.route53.list_hosted_zones.assert_called_once()
+        zappa_core.route53.list_resource_record_sets.assert_called_once_with(
+            HostedZoneId='somezone')
 
     ##
     # Django
@@ -1754,6 +1790,30 @@ USE_TZ = True
             zappa_cli.create_package()
         self.assertEqual('Environment variable keys must be ascii.', str(context.exception))
 
+
+    def test_titlecase_keys(self):
+        raw = {
+            'hOSt': 'github.com',
+            'ConnECtiOn': 'keep-alive',
+            'UpGRAde-InSecuRE-ReQueSts': '1',
+            'uSer-AGEnT': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36',
+            'cONtENt-TYPe': 'text/html; charset=utf-8',
+            'aCCEpT': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+            'ACcePT-encoDInG': 'gzip, deflate, br',
+            'AcCEpT-lAnGUagE': 'en-US,en;q=0.9'
+        }
+        transformed= titlecase_keys(raw)
+        expected = {
+            'Host': 'github.com',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36',
+            'Content-Type': 'text/html; charset=utf-8',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Accept-Language': 'en-US,en;q=0.9'
+        }
+        self.assertEqual(expected, transformed)
 
 
 if __name__ == '__main__':

@@ -63,7 +63,6 @@
     - [Remote AWS Environment Variables](#remote-aws-environment-variables)
     - [Remote Environment Variables](#remote-environment-variables)
     - [Remote Environment Variables (via an S3 file)](#remote-environment-variables-via-an-s3-file)
-    - [](#)
   - [API Gateway Context Variables](#api-gateway-context-variables)
   - [Catching Unhandled Exceptions](#catching-unhandled-exceptions)
   - [Using Custom AWS IAM Roles and Policies for Deployment](#using-custom-aws-iam-roles-and-policies-for-deployment)
@@ -136,7 +135,7 @@ _Before you begin, make sure you are running Python 2.7 or Python 3.6 and you ha
 
     $ pip install zappa
 
-Please note that Zappa _**must**_ be installed into your project's [virtual environment](http://docs.python-guide.org/en/latest/dev/virtualenvs/).
+Please note that Zappa _**must**_ be installed into your project's [virtual environment](http://docs.python-guide.org/en/latest/dev/virtualenvs/). The virtual environment name should not be the same as the Zappa project name, as this may cause errors.
 
 _(If you use [pyenv](https://github.com/yyuu/pyenv) and love to manage virtualenvs with **pyenv-virtualenv**, you just have to call `pyenv local [your_venv_name]` and it's ready. [Conda](http://conda.pydata.org/docs/) users should comment [here](https://github.com/Miserlou/Zappa/pull/108).)_
 
@@ -403,6 +402,8 @@ For commands which have their own arguments, you can also pass the command in as
 
 Commands which require direct user input, such as `createsuperuser`, should be [replaced by commands](http://stackoverflow.com/a/26091252) which use `zappa invoke <env> --raw`.
 
+For more Django integration, take a look at the [zappa-django-utils](https://github.com/Miserlou/zappa-django-utils) project.
+
 _(Please note that commands which take over 30 seconds to execute may time-out. See [this related issue](https://github.com/Miserlou/Zappa/issues/205#issuecomment-236391248) for a work-around.)_
 
 ### SSL Certification
@@ -516,6 +517,24 @@ Similarly, for a [Simple Notification Service](https://aws.amazon.com/sns/) even
         ]
 ```
 
+Optionally you can add [SNS message filters](http://docs.aws.amazon.com/sns/latest/dg/message-filtering.html):
+
+```javascript
+        "events": [
+            {
+                "function": "your_module.your_function",
+                "event_source": {
+                    "arn":  "arn:aws:sns:::your-event-topic-arn",
+                    "filters": {
+                        "interests": ["python", "aws", "zappa"],
+                        "version": ["1.0"]
+                    },
+                    ...
+                }
+            }
+        ]
+```
+
 [DynamoDB](http://docs.aws.amazon.com/lambda/latest/dg/with-ddb.html) and [Kinesis](http://docs.aws.amazon.com/lambda/latest/dg/with-kinesis.html) are slightly different as it is not event based but pulling from a stream:
 
 ```javascript
@@ -532,7 +551,22 @@ Similarly, for a [Simple Notification Service](https://aws.amazon.com/sns/) even
        ]
 ```
 
-Events can also take keyword arguments.
+For configuring Lex Bot's intent triggered events:
+```javascript
+	"bot_events": [
+        {
+            "function": "lexbot.handlers.book_appointment.handler",
+            "event_source": {
+                "arn": "arn:aws:lex:us-east-1:01234123123:intent:TestLexEventNames:$LATEST", // optional. In future it will be used to configure the intent
+            	"intent":"intentName", // name of the bot event configured
+            	"invocation_source":"DialogCodeHook", // either FulfillmentCodeHook or DialogCodeHook
+            }
+        }
+	]
+ 
+```
+
+Events can also take keyword arguments:
 ```javascript
        "events": [
             {
@@ -543,7 +577,7 @@ Events can also take keyword arguments.
        ]
 ```
 
-To get the keyword arguments you will need to look inside the event dict.
+To get the keyword arguments you will need to look inside the event dictionary:
 
 ```python
 def your_recurring_function(event, context):
@@ -755,7 +789,7 @@ to change Zappa's behavior. Use these at your own risk!
         "certificate": "my_cert.crt", // SSL certificate file location. Used to manually certify a custom domain
         "certificate_key": "my_key.key", // SSL key file location. Used to manually certify a custom domain
         "certificate_chain": "my_cert_chain.pem", // SSL certificate chain file location. Used to manually certify a custom domain
-        "certificate_arn": "arn:aws:acm:us-east-1:1234512345:certificate/aaaa-bbb-cccc-dddd", // ACM certificate ARN.
+        "certificate_arn": "arn:aws:acm:us-east-1:1234512345:certificate/aaaa-bbb-cccc-dddd", // ACM certificate ARN (needs to be in us-east-1 region).
         "cloudwatch_log_level": "OFF", // Enables/configures a level of logging for the given staging. Available options: "OFF", "INFO", "ERROR", default "OFF". C
         "cloudwatch_data_trace": false, // Logs all data about received events. Default false.
         "cloudwatch_metrics_enabled": false, // Additional metrics for the API Gateway. Default false.
@@ -815,6 +849,9 @@ to change Zappa's behavior. Use these at your own risk!
         "log_level": "DEBUG", // Set the Zappa log level. Can be one of CRITICAL, ERROR, WARNING, INFO and DEBUG. Default: DEBUG
         "manage_roles": true, // Have Zappa automatically create and define IAM execution roles and policies. Default true. If false, you must define your own IAM Role and role_name setting.
         "memory_size": 512, // Lambda function memory in MB. Default 512.
+        "num_retained_versions":null, // Indicates the number of old versions to retain for the lambda. If absent, keeps all the versions of the function.
+        "payload_compression": true, // Whether or not to enable API gateway payload compression (default: true)
+        "payload_minimum_compression_size": 0, // The threshold size (in bytes) below which payload compression will not be applied (default: 0)
         "prebuild_script": "your_module.your_function", // Function to execute before uploading code
         "profile_name": "your-profile-name", // AWS profile credentials to use. Default 'default'. Removing this setting will use the AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables instead.
         "project_name": "MyProject", // The name of the project as it appears on AWS. Defaults to a slugified `pwd`.
@@ -832,6 +869,7 @@ to change Zappa's behavior. Use these at your own risk!
             },
         "timeout_seconds": 30, // Maximum lifespan for the Lambda function (default 30, max 300.)
         "touch": true, // GET the production URL upon initial deployment (default True)
+        "touch_path": "/", // The endpoint path to GET when checking the initial deployment (default "/")
         "use_precompiled_packages": true, // If possible, use C-extension packages which have been pre-compiled for AWS Lambda. Default true.
         "vpc_config": { // Optional Virtual Private Cloud (VPC) configuration for Lambda function
             "SubnetIds": [ "subnet-12345678" ], // Note: not all availability zones support Lambda!
@@ -891,7 +929,7 @@ Similarly, you may want to design your application so that static binary uploads
 
 ### Enabling CORS
 
-The simplest way to enable CORS (Cross-Origin Resource Sharing) for in your Zappa application is to set `cors` to `true` in your Zappa settings file and updating, which is the equivalent of pushing the "Enable CORS" button in the AWS API Gateway console. This is disabled by default, but you may wish to enable it for APIs which are accessed from other domains, etc. It may also conflict with `binary_support`, so you should set that to `false` in your settings.
+The simplest way to enable CORS (Cross-Origin Resource Sharing) for your Zappa application is to set `cors` to `true` in your Zappa settings file and update, which is the equivalent of pushing the "Enable CORS" button in the AWS API Gateway console. This is disabled by default, but you may wish to enable it for APIs which are accessed from other domains, etc. It may also conflict with `binary_support`, so you should set that to `false` in your settings.
 
 You can also simply handle CORS directly in your application. Your web framework will probably have an extension to do this, such as [django-cors-headers](https://github.com/ottoyiu/django-cors-headers) or [Flask-CORS](https://github.com/corydolphin/flask-cors). Using these will make your code more portable.
 
@@ -1032,7 +1070,6 @@ If you want to use remote environment variables to configure your application (w
 
 For example, to ensure your application has access to the database credentials without storing them in your version control, you can add a file to S3 with the connection string and load it into the lambda environment using the `remote_env` configuration setting.
 
-####
 super-secret-config.json (uploaded to my-config-bucket):
 ```javascript
 {
@@ -1107,7 +1144,7 @@ The function has to accept three arguments: exception, event, and context:
 
 your_module.py
 ```python
-def unhandled_exception(e, event, context):
+def unhandled_exceptions(e, event, context):
     send_to_raygun(e, event)  # gather data you need and send
     return True # Prevent invocation retry
 ```
@@ -1253,6 +1290,9 @@ For monitoring of different deployments, a unique UUID for each package is avail
 * [Guide to using Django with Zappa](https://edgarroman.github.io/zappa-django-guide/)
 * [Zappa and LambCI](https://seancoates.com/blogs/zappa-and-lambci/)
 * [Building A Serverless Image Processing SaaS using Zappa](http://www.99serverless.com/index.php/2017/11/25/building-a-serverless-image-processing-saas/)
+* [Serverless Slack Slash Commands with Python and Zappa](https://renzo.lucioni.xyz/serverless-slash-commands-with-python/)
+* [Bringing Tokusatsu to AWS using Python, Flask, Zappa and Contentful](https://www.contentful.com/blog/2018/03/07/bringing-tokusatsu-to-aws-using-python-flask-zappa-and-contentful/)
+* [AWS Summit 2018 Seoul - Zappa와 함께하는 Serverless Microservice](https://www.slideshare.net/YunSeopSong/zappa-serverless-microservice-94410308/)
 * _Your guide here?_
 
 ## Zappa in the Press
@@ -1302,6 +1342,7 @@ Are you using Zappa? Let us know and we'll list your site here!
 * [travis-build-repeat](https://github.com/bcongdon/travis-build-repeat) - Repeat TravisCI builds to avoid stale test results.
 * [wunderskill-alexa-skill](https://github.com/mcrowson/wunderlist-alexa-skill) - An Alexa skill for adding to a Wunderlist.
 * [xrayvision](https://github.com/mathom/xrayvision) - Utilities and wrappers for using AWS X-Ray with Zappa.
+* [zappa-sentry](https://github.com/jneves/zappa-sentry) - Integration with Zappa and Sentry
 
 ## Hacks
 
@@ -1343,6 +1384,22 @@ Zappa is currently supported by these awesome individuals and companies:
   * Theo Chitayat
   * George Sibble
   * Joe Weiss
+  * Nik Bora
+  * Zerong Toby Wang
+  * Gareth E
+  * Matt Jackson
+  * Sean Coates
+  * Alexander Loschilov
+  * Korey Peters
+  * Joe Weiss
+  * Kimmo Parvianen-Jalanko
+  * Patrick Agin
+  * Roberto Martinez
+  * Charles Dimino
+  * Doug Beney
+  * Dan "The Man" Gayle
+  * Juancito
+  * Will Childs-Klein
 
 Thank you very, very much!
 

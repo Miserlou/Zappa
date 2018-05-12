@@ -450,6 +450,10 @@ class ZappaCLI(object):
         # been specified AND that stage_env='showmigrations')
         # By having command_rest collect everything but --all we can split it
         # apart here instead of relying on argparse.
+        if not args.command:
+            parser.print_help()
+            return
+
         if args.command == 'manage' and not self.vargs.get('all'):
             self.stage_env = self.vargs['command_rest'].pop(0)
         else:
@@ -512,7 +516,7 @@ class ZappaCLI(object):
         self.api_stage = stage
 
         if command not in ['status', 'manage']:
-            if not self.vargs['json']:
+            if not self.vargs.get('json', None):
                 click.echo("Calling " + click.style(command, fg="green", bold=True) + " for stage " +
                            click.style(self.api_stage, bold=True) + ".." )
 
@@ -525,7 +529,10 @@ class ZappaCLI(object):
         try:
             self.load_settings(self.vargs.get('settings_file'))
         except ValueError as e:
-            print("Error: {}".format(e.message))
+            if hasattr(e, 'message'):
+                print("Error: {}".format(e.message))
+            else:
+                print(str(e))
             sys.exit(-1)
         self.callback('settings')
 
@@ -793,6 +800,12 @@ class ZappaCLI(object):
             if self.binary_support:
                 self.zappa.add_binary_support(api_id=api_id, cors=self.cors)
 
+            # Add payload compression
+            if self.stage_config.get('payload_compression', True):
+                self.zappa.add_api_compression(
+                    api_id=api_id,
+                    min_compression_size=self.stage_config.get('payload_minimum_compression_size', 0))
+
             # Deploy the API!
             endpoint_url = self.deploy_api_gateway(api_id)
             deployment_string = deployment_string + ": {}".format(endpoint_url)
@@ -805,7 +818,7 @@ class ZappaCLI(object):
                     self.zappa.add_api_stage_to_api_key(api_key=self.api_key, api_id=api_id, stage_name=self.api_stage)
 
             if self.stage_config.get('touch', True):
-                requests.get(endpoint_url)
+                self.touch_endpoint(endpoint_url)
 
         # Finally, delete the local copy our zip package
         if not source_zip:
@@ -902,7 +915,8 @@ class ZappaCLI(object):
             self.lambda_arn = self.zappa.update_lambda_function(
                                             bucket,
                                             self.lambda_name,
-                                            key_name
+                                            key_name,
+                                            num_revisions=self.num_retained_versions
                                         )
         elif source_zip and not source_zip.startswith('s3://'):
             with open(source_zip, mode='rb') as fh:
@@ -910,14 +924,16 @@ class ZappaCLI(object):
             self.lambda_arn = self.zappa.update_lambda_function(
                                             self.s3_bucket_name,
                                             self.lambda_name,
-                                            local_zip=byte_stream
+                                            local_zip=byte_stream,
+                                            num_revisions=self.num_retained_versions
                                         )
         else:
             if not no_upload:
                 self.lambda_arn = self.zappa.update_lambda_function(
                                                 self.s3_bucket_name,
                                                 self.lambda_name,
-                                                handler_file
+                                                handler_file,
+                                                num_revisions=self.num_retained_versions
                                             )
 
         # Remove the uploaded zip from S3, because it is now registered..
@@ -969,6 +985,13 @@ class ZappaCLI(object):
             else:
                 self.zappa.remove_binary_support(api_id=api_id, cors=self.cors)
 
+            if self.stage_config.get('payload_compression', True):
+                self.zappa.add_api_compression(
+                    api_id=api_id,
+                    min_compression_size=self.stage_config.get('payload_minimum_compression_size', 0))
+            else:
+                self.zappa.remove_api_compression(api_id=api_id)
+
             # It looks a bit like we might actually be using this just to get the URL,
             # but we're also updating a few of the APIGW settings.
             endpoint_url = self.deploy_api_gateway(api_id)
@@ -1005,9 +1028,9 @@ class ZappaCLI(object):
 
             if self.stage_config.get('touch', True):
                 if api_url:
-                    requests.get(api_url)
+                    self.touch_endpoint(api_url)
                 elif endpoint_url:
-                    requests.get(endpoint_url)
+                    self.touch_endpoint(endpoint_url)
 
         click.echo(deployed_string)
 
@@ -1582,7 +1605,7 @@ class ZappaCLI(object):
         click.echo("\nYour Zappa deployments will need to be uploaded to a " + click.style("private S3 bucket", bold=True)  + ".")
         click.echo("If you don't have a bucket yet, we'll create one for you too.")
         default_bucket = "zappa-" + ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(9))
-        bucket = input("What do you want call your bucket? (default '%s'): " % default_bucket) or default_bucket
+        bucket = input("What do you want to call your bucket? (default '%s'): " % default_bucket) or default_bucket
 
         # Detect Django/Flask
         try: # pragma: no cover
@@ -1660,10 +1683,10 @@ class ZappaCLI(object):
                 'project_name': self.get_project_name()
             }
         }
-        
+
         if profile_region:
-          zappa_settings[env]['aws_region'] = profile_region
-        
+            zappa_settings[env]['aws_region'] = profile_region
+
         if has_django:
             zappa_settings[env]['django_settings'] = django_settings
         else:
@@ -1804,7 +1827,8 @@ class ZappaCLI(object):
 
         # Custom SSL / ACM
         else:
-            if not self.zappa.get_domain_name(self.domain):
+            route53 = self.stage_config.get('route53_enabled', True)
+            if not self.zappa.get_domain_name(self.domain, route53=route53):
                 dns_name = self.zappa.create_domain_name(
                     domain_name=self.domain,
                     certificate_name=self.domain + "-Zappa-Cert",
@@ -1813,9 +1837,9 @@ class ZappaCLI(object):
                     certificate_chain=certificate_chain,
                     certificate_arn=cert_arn,
                     lambda_name=self.lambda_name,
-                    stage=self.api_stage,
+                    stage=self.api_stage
                 )
-                if self.stage_config.get('route53_enabled', True):
+                if route53:
                     self.zappa.update_route53_records(self.domain, dns_name)
                 print("Created a new domain name with supplied certificate. Please note that it can take up to 40 minutes for this domain to be "
                       "created and propagated through AWS, but it requires no further work on your part.")
@@ -1829,7 +1853,7 @@ class ZappaCLI(object):
                     certificate_arn=cert_arn,
                     lambda_name=self.lambda_name,
                     stage=self.api_stage,
-                    route53=self.stage_config.get('route53_enabled', True)
+                    route53=route53
                 )
 
             cert_success = True
@@ -1975,6 +1999,13 @@ class ZappaCLI(object):
         dead_letter_arn = self.stage_config.get('dead_letter_arn', '')
         self.dead_letter_config = {'TargetArn': dead_letter_arn} if dead_letter_arn else {}
         self.cognito = self.stage_config.get('cognito', None)
+        self.num_retained_versions = self.stage_config.get('num_retained_versions',None)
+
+        # Check for valid values of num_retained_versions
+        if self.num_retained_versions is not None and type(self.num_retained_versions) is not int:
+            raise ClickException("Please supply either an integer or null for num_retained_versions in the zappa_settings.json. Found %s" % type(self.num_retained_versions))
+        elif type(self.num_retained_versions) is int and self.num_retained_versions<1:
+            raise ClickException("The value for num_retained_versions in the zappa_settings.json should be greater than 0.")
 
         # Provide legacy support for `use_apigateway`, now `apigateway_enabled`.
         # https://github.com/Miserlou/Zappa/issues/490
@@ -2297,6 +2328,19 @@ class ZappaCLI(object):
                     event_mapping[arn] = function
             settings_s = settings_s + "AWS_EVENT_MAPPING={0!s}\n".format(event_mapping)
 
+            # Map Lext bot events
+            bot_events = self.stage_config.get('bot_events', [])
+            bot_events_mapping = {}
+            for bot_event in bot_events:
+                event_source = bot_event.get('event_source', {})
+                intent = event_source.get('intent')
+                invocation_source = event_source.get('invocation_source')
+                function = bot_event.get('function')
+                if intent and invocation_source and function:
+                    bot_events_mapping[str(intent) + ':' + str(invocation_source)] = function
+
+            settings_s = settings_s + "AWS_BOT_EVENT_MAPPING={0!s}\n".format(bot_events_mapping)
+
             # Map cognito triggers
             cognito_trigger_mapping = {}
             cognito_config = self.stage_config.get('cognito', {})
@@ -2587,6 +2631,20 @@ class ZappaCLI(object):
 
         sys.stdout = open(os.devnull, 'w')
         sys.stderr = open(os.devnull, 'w')
+
+    def touch_endpoint(self, endpoint_url):
+        """
+        Test the deployed endpoint with a GET request
+        """
+
+        touch_path = self.stage_config.get('touch_path', '/')
+        req = requests.get(endpoint_url + touch_path)
+
+        if req.status_code >= 500:
+            raise ClickException(click.style("Warning!", fg="red", bold=True) +
+                " Status check on the deployed lambda failed." +
+                " A GET request to '" + touch_path + "' yielded a " +
+                click.style(str(req.status_code), fg="red", bold=True) + " response code.")
 
 ####################################################################
 # Main
