@@ -1400,7 +1400,8 @@ Zappa is currently supported by these awesome individuals and companies:
   * Dan "The Man" Gayle
   * Juancito
   * Will Childs-Klein
-  * Philippe Trounev
+  * Efi Merdler Kravitz
+  * **Philippe Trounev**
 
 Thank you very, very much!
 
