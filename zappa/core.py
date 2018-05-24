@@ -1099,7 +1099,7 @@ class Zappa(object):
             versions_in_lambda.remove('$LATEST')
             # Delete older revisions if their number exceeds the specified limit
             for version in versions_in_lambda[::-1][num_revisions:]:
-                self.lambda_client.delete_function(FunctionNmae=function_name,Qualifier=version)
+                self.lambda_client.delete_function(FunctionName=function_name,Qualifier=version)
 
         return response['FunctionArn']
 
