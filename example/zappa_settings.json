@@ -47,6 +47,29 @@
       "http_methods": ["GET"],
       "parameter_depth": 1,
       "memory_size": 512,
-      "use_precompiled_packages": true
+      "use_precompiled_packages": true,
+      "cloudwatch_alarms": {  // Automatically create alarms for your Lambda.
+        "ok_actions": ["SNS"], // Optional
+        "alarm_actions": ["SNS"], // Optional
+        "insufficient_data_actions": ["SNS"], // Optional
+        "lambda_errors": {
+          "threshold": 1,
+          "evaluation_periods": 2,
+          "period": 30,
+          "statistic": "Maximum"
+        },
+        "api_gateway_4xx": {
+          "threshold": 10,
+          "evaluation_periods": 2,
+          "period": 30,
+          "statistic": "Maximum"
+        },
+        "api_gateway_5xx": {
+          "threshold": 1,
+          "evaluation_periods": 2,
+          "period": 30,
+          "statistic": "Maximum"
+        }
+      }
     }
 }

@@ -163,6 +163,13 @@ ATTACH_POLICY = """{
                 "route53:*"
             ],
             "Resource": "*"
+        },        {
+            "Effect": "Allow",
+            "Action": [
+                "cloudwatch:PutMetricAlarm",
+                "cloudwatch:DeleteAlarms"
+            ],
+            "Resource": "*"
         }
     ]
 }"""
@@ -240,7 +247,8 @@ class Zappa(object):
             runtime='python2.7', # Detected at runtime in CLI
             tags=(),
             endpoint_urls={},
-            xray_tracing=False
+            xray_tracing=False,
+            alarms=None,
         ):
         """
         Instantiate this new Zappa instance, loading any custom credentials if necessary.
@@ -269,6 +277,7 @@ class Zappa(object):
 
         self.endpoint_urls = endpoint_urls
         self.xray_tracing = xray_tracing
+        self.alarms = alarms
 
         # Some common invokations, such as DB migrations,
         # can take longer than the default.
@@ -1064,6 +1073,26 @@ class Zappa(object):
         if self.tags:
             self.lambda_client.tag_resource(Resource=resource_arn, Tags=self.tags)
 
+        if self.alarms:
+            if 'lambda_errors' in self.alarms:
+                self.cloudwatch.put_metric_alarm(
+                    AlarmName='Errors alarm for Lambda %s' % function_name,
+                    MetricName='Errors',
+                    Namespace='AWS/Lambda',
+                    Period=self.alarms['lambda_errors'].get('period', 60),
+                    EvaluationPeriods=self.alarms['lambda_errors'].get('evaluation_periods', 1),
+                    Threshold=self.alarms['lambda_errors'].get('threshold', 1),
+                    ComparisonOperator='GreaterThanOrEqualToThreshold',
+                    Statistic=self.alarms['lambda_errors'].get('statistic', 'Maximum'),
+                    Dimensions=[{
+                        'Name': 'FunctionName',
+                        'Value': function_name,
+                    }],
+                    OKActions=self.alarms.get('ok_actions', []),
+                    AlarmActions=self.alarms.get('alarm_actions', []),
+                    InsufficientDataActions=self.alarms.get('insufficient_data_actions', []),
+                )
+
         return resource_arn
 
     def update_lambda_function(self, bucket, function_name, s3_key=None, publish=True, local_zip=None, num_revisions=None):
@@ -1241,6 +1270,11 @@ class Zappa(object):
         """
         print("Deleting Lambda function..")
 
+        if self.alarms and 'lambda_errors' in self.alarms:
+            self.cloudwatch.delete_alarms(
+                AlarmNames=['Errors alarm for Lambda %s' % function_name]
+            )
+
         return self.lambda_client.delete_function(
             FunctionName=function_name,
         )
@@ -1270,6 +1304,8 @@ class Zappa(object):
             description = 'Created automatically by Zappa.'
         restapi.Description = description
         self.cf_template.add_resource(restapi)
+
+        #TODO: SVEDER: ADD CF FOR API GATEWAY ALARMS HERE
 
         root_id = troposphere.GetAtt(restapi, 'RootResourceId')
         invocations_uri = 'arn:aws:apigateway:' + self.boto_session.region_name + ':lambda:path/2015-03-31/functions/' + lambda_arn + '/invocations'
