@@ -26,6 +26,7 @@ import tempfile
 import time
 import troposphere
 import troposphere.apigateway
+import troposphere.cloudwatch
 import zipfile
 import uuid
 
@@ -1305,7 +1306,58 @@ class Zappa(object):
         restapi.Description = description
         self.cf_template.add_resource(restapi)
 
-        #TODO: SVEDER: ADD CF FOR API GATEWAY ALARMS HERE
+        if self.alarms:
+            if 'api_gateway_4xx' in self.alarms:
+                alarm_details = self.alarms['api_gateway_4xx']
+
+                ag_4xx_alarm = troposphere.cloudwatch.Alarm(
+                    '4xxErrors',
+                    AlarmName='4xx Errors for ApiGateway %s' % restapi.Name,
+                    Namespace='AWS/ApiGateway',
+                    MetricName='4XXError',
+                    Dimensions=[
+                        troposphere.cloudwatch.MetricDimension(
+                            Name='ApiName',
+                            Value=restapi.Name
+                        ),
+                    ],
+                    Statistic=alarm_details.get('statistic', 'Maximum'),
+                    Period=alarm_details.get('period', 60),
+                    EvaluationPeriods=alarm_details.get('evaluation_periods', 1),
+                    Threshold=str(alarm_details.get('threshold', 1)),
+                    ComparisonOperator='GreaterThanOrEqualToThreshold',
+                    OKActions=self.alarms.get('ok_actions', []),
+                    AlarmActions=self.alarms.get('alarm_actions', []),
+                    InsufficientDataActions=self.alarms.get('insufficient_data_actions', []),
+                )
+
+                self.cf_template.add_resource(ag_4xx_alarm)
+
+            if 'api_gateway_5xx' in self.alarms:
+                alarm_details = self.alarms['api_gateway_5xx']
+
+                ag_5xx_alarm = troposphere.cloudwatch.Alarm(
+                    '5xxErrors',
+                    AlarmName='5xx Errors for ApiGateway %s' % restapi.Name,
+                    Namespace='AWS/ApiGateway',
+                    MetricName='5XXError',
+                    Dimensions=[
+                        troposphere.cloudwatch.MetricDimension(
+                            Name='ApiName',
+                            Value=restapi.Name
+                        ),
+                    ],
+                    Statistic=alarm_details.get('statistic', 'Maximum'),
+                    Period=alarm_details.get('period', 60),
+                    EvaluationPeriods=alarm_details.get('evaluation_periods', 1),
+                    Threshold=str(alarm_details.get('threshold', 1)),
+                    ComparisonOperator='GreaterThanOrEqualToThreshold',
+                    OKActions=self.alarms.get('ok_actions', []),
+                    AlarmActions=self.alarms.get('alarm_actions', []),
+                    InsufficientDataActions=self.alarms.get('insufficient_data_actions', []),
+                )
+
+                self.cf_template.add_resource(ag_5xx_alarm)
 
         root_id = troposphere.GetAtt(restapi, 'RootResourceId')
         invocations_uri = 'arn:aws:apigateway:' + self.boto_session.region_name + ':lambda:path/2015-03-31/functions/' + lambda_arn + '/invocations'
