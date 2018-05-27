@@ -239,10 +239,17 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
             if self.filters:
                 self.add_filters(function)
 
+    class ExtendedS3EventSource(kappa.event_source.s3.S3EventSource):
+        # until https://github.com/garnaat/kappa/pull/120
+        def _make_notification_id(self, function_name=None):
+            import uuid
+            uid = str(uuid.uuid4()).split('-')[0]
+            return 'Kappa-%s-notification' % uid
+
     event_source_map = {
         'dynamodb': kappa.event_source.dynamodb_stream.DynamoDBStreamEventSource,
         'kinesis': kappa.event_source.kinesis.KinesisEventSource,
-        's3': kappa.event_source.s3.S3EventSource,
+        's3': ExtendedS3EventSource,
         'sns': ExtendedSnsEventSource,
         'events': kappa.event_source.cloudwatch.CloudWatchEventSource
     }
@@ -264,24 +271,7 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
 
     funk = PseudoFunction()
     funk.name = lambda_arn
-
-    # Kappa 0.6.0 requires this nasty hacking,
-    # hopefully we can remove at least some of this soon.
-    # Kappa 0.7.0 introduces a whole host over other changes we don't
-    # really want, so we're stuck here for a little while.
-
-    # Related:  https://github.com/Miserlou/Zappa/issues/684
-    #           https://github.com/Miserlou/Zappa/issues/688
-    #           https://github.com/Miserlou/Zappa/commit/3216f7e5149e76921ecdf9451167846b95616313
-    if svc == 's3':
-        split_arn = lambda_arn.split(':')
-        arn_front = ':'.join(split_arn[:-1])
-        arn_back = split_arn[-1]
-        ctx.environment = arn_back
-        funk.arn = arn_front
-        funk.name = ':'.join([arn_back, target_function])
-    else:
-        funk.arn = lambda_arn
+    funk.arn = lambda_arn
 
     funk._context = ctx
 
