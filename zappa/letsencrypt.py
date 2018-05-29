@@ -20,7 +20,6 @@ import re
 import subprocess
 import os
 import shutil
-import sys
 import time
 import tempfile
 

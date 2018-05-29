@@ -20,7 +20,7 @@ from click.exceptions import ClickException
 from zappa.cli import ZappaCLI, shamelessly_promote, disable_click_colors
 from zappa.ext.django_zappa import get_django_wsgi
 from zappa.letsencrypt import get_cert_and_update_domain, create_domain_key, create_domain_csr, \
-    create_chained_certificate, cleanup, parse_account_key, parse_csr, sign_certificate, encode_certificate,\
+    create_chained_certificate, parse_account_key, parse_csr, sign_certificate, encode_certificate,\
     register_account, verify_challenge, gettempdir
 from zappa.utilities import (detect_django_settings, detect_flask_apps,  parse_s3_url, human_size, string_to_timestamp,
                              validate_name, InvalidAwsLambdaName, contains_python_files_or_subdirs,

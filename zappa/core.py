@@ -32,7 +32,7 @@ import uuid
 from builtins import int, bytes
 from botocore.exceptions import ClientError
 from distutils.dir_util import copy_tree
-from io import BytesIO, open
+from io import open
 from lambda_packages import lambda_packages as lambda_packages_orig
 from setuptools import find_packages
 from tqdm import tqdm
