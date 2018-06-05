@@ -336,7 +336,7 @@ Similarly to `package`, if you only want the API Gateway CloudFormation template
 
 Note that you must supply your own Lambda ARN and Role ARNs in this case, as they may not have been created for you.
 
-You can use get the JSON output directly with `--json`, and specify the output file with `--output`.
+You can get the JSON output directly with `--json`, and specify the output file with `--output`.
 
 ### Status
 
