@@ -1999,7 +1999,8 @@ class Zappa(object):
                            certificate_chain=None,
                            certificate_arn=None,
                            lambda_name=None,
-                           stage=None):
+                           stage=None,
+                           use_regional_endpoint=False):
         """
         Creates the API GW domain and returns the resulting DNS name.
         """
@@ -2015,11 +2016,23 @@ class Zappa(object):
             )
         # This is an AWS ACM-hosted Certificate
         else:
-            agw_response = self.apigateway_client.create_domain_name(
-                domainName=domain_name,
-                certificateName=certificate_name,
-                certificateArn=certificate_arn
-            )
+            if use_regional_endpoint:
+                # https://github.com/Miserlou/Zappa/issues/1465
+                # Only ACM certs can be used for regional endpoints
+                agw_response = self.apigateway_client.create_domain_name(
+                    domainName=domain_name,
+                    regionalCertificateName=certificate_name,
+                    regionalCertificateArn=certificate_arn,
+                    endpointConfiguration={
+                        'types': ['REGIONAL']
+                    }
+                )
+            else:
+                agw_response = self.apigateway_client.create_domain_name(
+                    domainName=domain_name,
+                    certificateName=certificate_name,
+                    certificateArn=certificate_arn
+                )
 
         api_id = self.get_api_id(lambda_name)
         if not api_id:
@@ -2032,7 +2045,7 @@ class Zappa(object):
             stage=stage
         )
 
-        return agw_response['distributionDomainName']
+        return agw_response
 
     def update_route53_records(self, domain_name, dns_name):
         """
@@ -2085,6 +2098,35 @@ class Zappa(object):
 
         return response
 
+    def update_route53_records_for_regional_alias(self, domain_name, dns_name, target_hosted_zone_id):
+        """
+        Updates Route53 Records following GW regional endpoint creation
+        """
+        zone_id = self.get_hosted_zone_id_for_domain(domain_name)
+        record_set = {
+            'Name': domain_name,
+            'Type': 'A',
+            'AliasTarget': {
+                'HostedZoneId': target_hosted_zone_id,
+                'DNSName': dns_name,
+                'EvaluateTargetHealth': False
+            }
+        }
+
+        response = self.route53.change_resource_record_sets(
+            HostedZoneId=zone_id,
+            ChangeBatch={
+                'Changes': [
+                    {
+                        'Action': 'UPSERT',
+                        'ResourceRecordSet': record_set
+                    }
+                ]
+            }
+        )
+
+        return response
+
     def update_domain_name(self,
                            domain_name,
                            certificate_name=None,
@@ -2094,7 +2136,8 @@ class Zappa(object):
                            certificate_arn=None,
                            lambda_name=None,
                            stage=None,
-                           route53=True):
+                           route53=True,
+                           use_regional_endpoint=False):
         """
         This updates your certificate information for an existing domain,
         with similar arguments to boto's update_domain_name API Gateway api.
@@ -2115,8 +2158,6 @@ class Zappa(object):
         print("Updating domain name!")
 
         certificate_name = certificate_name + str(time.time())
-
-        api_gateway_domain = self.apigateway_client.get_domain_name(domainName=domain_name)
         if not certificate_arn\
            and certificate_body and certificate_private_key and certificate_chain:
             acm_certificate = self.acm_client.import_certificate(Certificate=certificate_body,
@@ -2124,15 +2165,69 @@ class Zappa(object):
                                                                  CertificateChain=certificate_chain)
             certificate_arn = acm_certificate['CertificateArn']
 
-        return self.apigateway_client.update_domain_name(domainName=domain_name,
-                                                         patchOperations=[
-                                                             {"op" : "replace",
-                                                              "path" : "/certificateName",
-                                                              "value" : certificate_name},
-                                                             {"op" : "replace",
-                                                              "path" : "/certificateArn",
-                                                              "value" : certificate_arn}
-                                                         ])
+        try:
+            # if route53 is false we can get here with or without the API gateway domain existing
+            api_gateway_domain = self.apigateway_client.get_domain_name(domainName=domain_name)
+            current_endpoint_type = api_gateway_domain['endpointConfiguration']['types'][0]
+        except self.apigateway_client.NotFoundException:
+            current_endpoint_type = None
+
+        target_endpoint_type = 'REGIONAL' if use_regional_endpoint else 'EDGE'
+
+        if current_endpoint_type != target_endpoint_type:
+            # If changing type EDGE <=> REGIONAL
+            if use_regional_endpoint:
+                # Change EDGE to REGIONAL
+                # https://stackoverflow.com/a/47537714/401636 (use add then remove)
+                self.apigateway_client.update_domain_name(
+                    domainName=domain_name,
+                    patchOperations=[
+                        {"op": "add", "path": "/regionalCertificateName", "value": certificate_name},
+                        {"op": "add", "path": "/regionalCertificateArn", "value": certificate_arn},
+                        {"op": "add", "path": "/endpointConfiguration/types", "value": "REGIONAL"}
+                    ])
+                return self.apigateway_client.update_domain_name(
+                    domainName=domain_name,
+                    patchOperations=[
+                        {"op": "remove", "path": "/certificateName"},
+                        {"op": "remove", "path": "/certificateArn"},
+                        {"op": "remove", "path": "/endpointConfiguration/types", "value": "EDGE"}
+                    ])
+            else:
+                # Change REGIONAL to EDGE
+                # https://stackoverflow.com/a/47537714/401636 (use add then remove)
+                self.apigateway_client.update_domain_name(
+                    domainName=domain_name,
+                    patchOperations=[
+                        {"op": "add", "path": "/certificateName", "value": certificate_name},
+                        {"op": "add", "path": "/certificateArn", "value": certificate_arn},
+                        {"op": "add", "path": "/endpointConfiguration/types", "value": "EDGE"}
+                    ])
+                return self.apigateway_client.update_domain_name(
+                    domainName=domain_name,
+                    patchOperations=[
+                        {"op": "remove", "path": "/regionalCertificateName"},
+                        {"op": "remove", "path": "/regionalCertificateArn"},
+                        {"op": "remove", "path": "/endpointConfiguration/types", "value": "REGIONAL"}
+                    ])
+
+        else:
+            # NOT changing type EDGE <=> REGIONAL
+            if use_regional_endpoint:
+                return self.apigateway_client.update_domain_name(
+                    domainName=domain_name,
+                    patchOperations=[
+                        {"op": "replace", "path": "/regionalCertificateName", "value": certificate_name},
+                        {"op": "replace", "path": "/regionalCertificateArn", "value": certificate_arn}
+                    ])
+            else:
+                return self.apigateway_client.update_domain_name(
+                    domainName=domain_name,
+                    patchOperations=[
+                        {"op": "replace", "path": "/certificateName", "value": certificate_name},
+                        {"op": "replace", "path": "/certificateArn", "value": certificate_arn}
+                    ])
+
 
     def get_domain_name(self, domain_name, route53=True):
         """
@@ -2176,6 +2271,19 @@ class Zappa(object):
         #     pass
 
         return None
+
+    def get_api_domain_name(self, domain_name):
+        """
+        Get the API gateway domain name entry
+
+        Returns the record entry, else None.
+
+        """
+        # Make sure api gateway domain is present
+        try:
+            return self.apigateway_client.get_domain_name(domainName=domain_name)
+        except Exception:
+            return None
 
     ##
     # IAM
