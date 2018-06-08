@@ -87,6 +87,8 @@ class ZappaCLI(object):
     zappa_settings = None
     load_credentials = True
     disable_progress = False
+    retries = None
+    timeout = None
 
     # Specific settings
     api_stage = None
@@ -244,13 +246,29 @@ class ZappaCLI(object):
         ##
         # Deploy
         ##
+        def positive_int(s):
+            """ Ensure an arg is positive """
+            i = int(s)
+            if i < 0:
+                msg = "This argument must be positive (got {})".format(s)
+                raise argparse.ArgumentTypeError(msg)
+            return i
+
         deploy_parser = subparsers.add_parser(
             'deploy', parents=[env_parser], help='Deploy application.'
         )
         deploy_parser.add_argument(
             '-z', '--zip', help='Deploy Lambda with specific local or S3 hosted zip package'
         )
-
+        # added timeout and retries when dowloading dependencies
+        # Related : https://github.com/Miserlou/Zappa/issues/1235
+        # Related : https://github.com/Miserlou/Zappa/issues/1040
+        deploy_parser.add_argument(
+            '-t', '--timeout', type=positive_int, default=2, help='Timeout on downloading dependencies'
+        )
+        deploy_parser.add_argument(
+            '-r', '--retries', type=positive_int, default=4, help='Retries when downloading dependencies'
+        )
         ##
         # Init
         ##
@@ -324,13 +342,6 @@ class ZappaCLI(object):
         ##
         # Rollback
         ##
-        def positive_int(s):
-            """ Ensure an arg is positive """
-            i = int(s)
-            if i < 0:
-                msg = "This argument must be positive (got {})".format(s)
-                raise argparse.ArgumentTypeError(msg)
-            return i
 
         rollback_parser = subparsers.add_parser(
             'rollback', parents=[env_parser],
@@ -421,7 +432,15 @@ class ZappaCLI(object):
         update_parser.add_argument(
             '-n', '--no-upload', help="Update configuration where appropriate, but don't upload new code"
         )
-
+        # added timeout and retries when dowloading dependencies
+        # Related : https://github.com/Miserlou/Zappa/issues/1235
+        # Related : https://github.com/Miserlou/Zappa/issues/1040
+        update_parser.add_argument(
+            '-t', '--timeout', type=positive_int, default=2, help='Timeout on downloading dependencies'
+        )
+        update_parser.add_argument(
+            '-r', '--retries', type=positive_int, default=4, help='Retries when downloading dependencies'
+        )
         ##
         # Debug
         ##
@@ -465,6 +484,8 @@ class ZappaCLI(object):
         self.command = args.command
 
         self.disable_progress = self.vargs.get('disable_progress')
+        self.retries = self.vargs.get('retries')
+        self.timeout = self.vargs.get('timeout')
         if self.vargs.get('quiet'):
             self.silence()
 
@@ -2205,7 +2226,9 @@ class ZappaCLI(object):
                 use_precompiled_packages=self.stage_config.get('use_precompiled_packages', True),
                 exclude=exclude,
                 output=output,
-                disable_progress=self.disable_progress
+                disable_progress=self.disable_progress,
+                retries=self.retries,
+                timeout=self.timeout
             )
 
             # Warn if this is too large for Lambda.

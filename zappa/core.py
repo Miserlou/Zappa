@@ -33,6 +33,8 @@ from builtins import int, bytes
 from botocore.exceptions import ClientError
 from distutils.dir_util import copy_tree
 from io import BytesIO, open
+
+from click import ClickException
 from lambda_packages import lambda_packages as lambda_packages_orig
 from setuptools import find_packages
 from tqdm import tqdm
@@ -444,7 +446,9 @@ class Zappa(object):
                             venv=None,
                             output=None,
                             disable_progress=False,
-                            archive_format='zip'
+                            archive_format='zip',
+                            retries=None,
+                            timeout=None
                         ):
         """
         Create a Lambda-ready zip file of the current virtualenvironment and working directory.
@@ -612,7 +616,7 @@ class Zappa(object):
                         print(" - %s==%s: Using precompiled lambda package " % (installed_package_name, installed_package_version,))
                         self.extract_lambda_package(installed_package_name, temp_project_path)
                     else:
-                        cached_wheel_path = self.get_cached_manylinux_wheel(installed_package_name, installed_package_version, disable_progress)
+                        cached_wheel_path = self.get_cached_manylinux_wheel(installed_package_name, installed_package_version, disable_progress, retries, timeout)
                         if cached_wheel_path:
                             # Otherwise try to use manylinux packages from PyPi..
                             # Related: https://github.com/Miserlou/Zappa/issues/398
@@ -633,10 +637,13 @@ class Zappa(object):
                 if self.runtime == "python3.6":
                     print(" - sqlite==python36: Using precompiled lambda package")
                     self.extract_lambda_package('sqlite3', temp_project_path)
-
-            except Exception as e:
-                print(e)
-                # XXX - What should we do here?
+            except (requests.ConnectionError, requests.Timeout):
+                raise ClickException(
+                    'There was a connection failure while trying to fetch packages'
+                )
+            except Exception:
+                # failing here in order to avoid deploying a broken application
+                raise
 
         # Then archive it all up..
         if archive_format == 'zip':
@@ -791,12 +798,16 @@ class Zappa(object):
         return lambda_packages.get(package_name, {}).get(self.runtime) is not None
 
     @staticmethod
-    def download_url_with_progress(url, stream, disable_progress):
+    def download_url_with_progress(url, stream, disable_progress, retries, timeout):
         """
         Downloads a given url in chunks and writes to the provided stream (can be any io stream).
         Displays the progress bar for the download.
         """
-        resp = requests.get(url, timeout=2, stream=True)
+        # implemented retries scheme
+        # Related : https://github.com/Miserlou/Zappa/issues/1235
+        session = requests.Session()
+        session.mount(url, requests.adapters.HTTPAdapter(max_retries=retries))
+        resp = session.get(url, timeout=timeout, stream=True)
         resp.raw.decode_content = True
 
         progress = tqdm(unit="B", unit_scale=True, total=int(resp.headers.get('Content-Length', 0)), disable=disable_progress)
@@ -807,7 +818,7 @@ class Zappa(object):
 
         progress.close()
 
-    def get_cached_manylinux_wheel(self, package_name, package_version, disable_progress=False):
+    def get_cached_manylinux_wheel(self, package_name, package_version, disable_progress=False, retries=None, timeout=None):
         """
         Gets the locally stored version of a manylinux wheel. If one does not exist, the function downloads it.
         """
@@ -826,7 +837,7 @@ class Zappa(object):
 
             print(" - {}=={}: Downloading".format(package_name, package_version))
             with open(wheel_path, 'wb') as f:
-                self.download_url_with_progress(wheel_url, f, disable_progress)
+                self.download_url_with_progress(wheel_url, f, disable_progress, retries, timeout)
 
             if not zipfile.is_zipfile(wheel_path):
                 return None
