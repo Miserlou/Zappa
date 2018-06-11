@@ -8,8 +8,6 @@ Zappa core library. You may also want to look at `cli.py` and `util.py`.
 
 from __future__ import print_function
 
-import boto3
-import botocore
 import getpass
 import glob
 import hashlib
@@ -17,34 +15,38 @@ import json
 import logging
 import os
 import random
-import requests
 import shutil
 import string
 import subprocess
 import tarfile
 import tempfile
 import time
+import uuid
+import zipfile
+from builtins import bytes, int
+from distutils.dir_util import copy_tree
+from io import open
+
+import requests
+from setuptools import find_packages
+
+import boto3
+import botocore
 import troposphere
 import troposphere.apigateway
-import zipfile
-import uuid
-
-from builtins import int, bytes
 from botocore.exceptions import ClientError
-from distutils.dir_util import copy_tree
-from io import BytesIO, open
 from lambda_packages import lambda_packages as lambda_packages_orig
-from setuptools import find_packages
 from tqdm import tqdm
 
-from .utilities import (copytree,
-                    add_event_source,
-                    remove_event_source,
-                    human_size,
-                    get_topic_name,
-                    contains_python_files_or_subdirs,
-                    conflicts_with_a_neighbouring_module,
-                    get_venv_from_python_version)
+from .utilities import (add_event_source, conflicts_with_a_neighbouring_module,
+                        contains_python_files_or_subdirs, copytree,
+                        get_topic_name, get_venv_from_python_version,
+                        human_size, remove_event_source)
+
+try:
+    unicode        # Python 2
+except NameError:
+    unicode = str  # Python 3
 
 # We lower-case lambda package keys to match lower-cased keys in get_installed_packages()
 lambda_packages = {package_name.lower(): val for package_name, val in lambda_packages_orig.items()}
@@ -1099,7 +1101,7 @@ class Zappa(object):
             versions_in_lambda.remove('$LATEST')
             # Delete older revisions if their number exceeds the specified limit
             for version in versions_in_lambda[::-1][num_revisions:]:
-                self.lambda_client.delete_function(FunctionNmae=function_name,Qualifier=version)
+                self.lambda_client.delete_function(FunctionName=function_name,Qualifier=version)
 
         return response['FunctionArn']
 
