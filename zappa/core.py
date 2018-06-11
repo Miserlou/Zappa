@@ -764,7 +764,7 @@ class Zappa(object):
         installed_packages = {package.project_name.lower(): package.version for package in
                               pip.get_installed_distributions()
                               if package.project_name.lower() in package_to_keep
-                              or package.location in [site_packages, site_packages_64]}
+                              or package.location.lower() in [site_packages.lower(), site_packages_64.lower()]}
 
         return installed_packages
 
