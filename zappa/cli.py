@@ -2039,6 +2039,8 @@ class ZappaCLI(object):
         self.xray_tracing = self.stage_config.get('xray_tracing', False)
         self.desired_role_arn = self.stage_config.get('role_arn')
 
+        self.alarms = self.stage_config.get('cloudwatch_alarms')
+
         # Additional tags
         self.tags = self.stage_config.get('tags', {})
 
@@ -2052,7 +2054,8 @@ class ZappaCLI(object):
                             runtime=self.runtime,
                             tags=self.tags,
                             endpoint_urls=self.stage_config.get('aws_endpoint_urls',{}),
-                            xray_tracing=self.xray_tracing
+                            xray_tracing=self.xray_tracing,
+                            alarms=self.alarms,
                         )
 
         for setting in CUSTOM_SETTINGS:
