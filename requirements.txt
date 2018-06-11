@@ -19,6 +19,6 @@ six>=1.11.0
 toml>=0.9.4
 tqdm==4.19.1
 troposphere>=1.9.0
-Werkzeug==0.14
+Werkzeug>=0.14
 wheel>=0.30.0
 wsgi-request-logger==0.4.6
