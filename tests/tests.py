@@ -1245,15 +1245,18 @@ class TestZappa(unittest.TestCase):
         except ValueError as e:
             pass # that's fine.
 
-        result = verify_challenge('http://echo.jsontest.com/status/valid')
-        try:
-            result = verify_challenge('http://echo.jsontest.com/status/fail')
-        except ValueError as e:
-            pass # that's fine.
-        try:
-            result = verify_challenge('http://bing.com')
-        except ValueError as e:
-            pass # that's fine.
+        # This service fails due to remote "over-quota" errors,
+        # so let's retire it until we can find a better provider.
+
+        # result = verify_challenge('http://echo.jsontest.com/status/valid')
+        # try:
+        #     result = verify_challenge('http://echo.jsontest.com/status/fail')
+        # except ValueError as e:
+        #     pass # that's fine.
+        # try:
+        #     result = verify_challenge('http://bing.com')
+        # except ValueError as e:
+        #     pass # that's fine.
 
         encode_certificate(b'123')
 
