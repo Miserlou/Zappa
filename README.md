@@ -838,7 +838,7 @@ to change Zappa's behavior. Use these at your own risk!
             "function": "your_module.your_auth_function", // Local function to run for token validation. For more information about the function see below.
             "arn": "arn:aws:lambda:<region>:<account_id>:function:<function_name>", // Existing Lambda function to run for token validation.
             "result_ttl": 300, // Optional. Default 300. The time-to-live (TTL) period, in seconds, that specifies how long API Gateway caches authorizer results. Currently, the maximum TTL value is 3600 seconds.
-            "token_source": "Authorization", // Optional. Default 'Authorization'. The name of a custom authorization header containing the token that clients submit as part of their requests.
+            "token_header": "Authorization", // Optional. Default 'Authorization'. The name of a custom authorization header containing the token that clients submit as part of their requests.
             "validation_expression": "^Bearer \\w+$", // Optional. A validation expression for the incoming token, specify a regular expression.
         },
         "keep_warm": true, // Create CloudWatch events to keep the server warm. Default true. To remove, set to false and then `unschedule`.
