@@ -1699,7 +1699,7 @@ class Zappa(object):
                 continue
             yield api
 
-    def undeploy_api_gateway(self, lambda_name, domain_name=None):
+    def undeploy_api_gateway(self, lambda_name, domain_name=None, base_path=None):
         """
         Delete a deployed REST API Gateway.
         """
@@ -1715,7 +1715,7 @@ class Zappa(object):
             try:
                 self.apigateway_client.delete_base_path_mapping(
                     domainName=domain_name,
-                    basePath='(none)'
+                    basePath='(none)' if base_path is None else base_path
                 )
             except Exception as e:
                 # We may not have actually set up the domain.
@@ -2001,7 +2001,8 @@ class Zappa(object):
                            certificate_chain=None,
                            certificate_arn=None,
                            lambda_name=None,
-                           stage=None):
+                           stage=None,
+                           base_path=None):
         """
         Creates the API GW domain and returns the resulting DNS name.
         """
@@ -2029,7 +2030,7 @@ class Zappa(object):
 
         self.apigateway_client.create_base_path_mapping(
             domainName=domain_name,
-            basePath='',
+            basePath='' if base_path is None else base_path,
             restApiId=api_id,
             stage=stage
         )
@@ -2096,7 +2097,8 @@ class Zappa(object):
                            certificate_arn=None,
                            lambda_name=None,
                            stage=None,
-                           route53=True):
+                           route53=True,
+                           base_path=None):
         """
         This updates your certificate information for an existing domain,
         with similar arguments to boto's update_domain_name API Gateway api.
@@ -2126,6 +2128,8 @@ class Zappa(object):
                                                                  CertificateChain=certificate_chain)
             certificate_arn = acm_certificate['CertificateArn']
 
+        self.update_domain_base_path_mapping(domain_name, lambda_name, stage, base_path)
+
         return self.apigateway_client.update_domain_name(domainName=domain_name,
                                                          patchOperations=[
                                                              {"op" : "replace",
@@ -2135,6 +2139,36 @@ class Zappa(object):
                                                               "path" : "/certificateArn",
                                                               "value" : certificate_arn}
                                                          ])
+    
+    def update_domain_base_path_mapping(self, domain_name, lambda_name, stage, base_path):
+        """
+        Update domain base path mapping on API Gateway if it was changed
+        """
+        api_id = self.get_api_id(lambda_name)
+        if not api_id:
+            print("Warning! Can't update base path mapping!")
+            return
+        base_path_mappings = self.apigateway_client.get_base_path_mappings(domainName=domain_name)
+        found = False
+        for base_path_mapping in base_path_mappings['items']:
+            if base_path_mapping['restApiId'] == api_id and base_path_mapping['stage'] == stage:
+                found = True
+                if base_path_mapping['basePath'] != base_path:
+                    self.apigateway_client.update_base_path_mapping(domainName=domain_name,
+                                                                    basePath=base_path_mapping['basePath'],
+                                                                    patchOperations=[
+                                                                        {"op" : "replace", 
+                                                                         "path" : "/basePath", 
+                                                                         "value" : base_path}
+                                                                    ])
+        if not found:
+            self.apigateway_client.create_base_path_mapping(
+                domainName=domain_name,
+                basePath='' if base_path is None else base_path,
+                restApiId=api_id,
+                stage=stage
+            )
+        
 
     def get_domain_name(self, domain_name, route53=True):
         """
