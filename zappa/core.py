@@ -361,10 +361,13 @@ class Zappa(object):
         """
         For a given package, returns a list of required packages. Recursive.
         """
-        import pip
+        # https://github.com/Miserlou/Zappa/issues/1478.  Using `pkg_resources`
+        # instead of `pip` is the recommended approach.  The usage is nearly
+        # identical.
+        import pkg_resources
         deps = []
         if not installed_distros:
-            installed_distros = pip.get_installed_distributions()
+            installed_distros = pkg_resources.WorkingSet()
         for package in installed_distros:
             if package.project_name.lower() == pkg_name.lower():
                 deps = [(package.project_name, package.version)]
@@ -376,7 +379,7 @@ class Zappa(object):
         """
         Takes the installed zappa and brings it into a fresh virtualenv-like folder. All dependencies are then downloaded.
         """
-        import pip
+        import subprocess
 
         # We will need the currenv venv to pull Zappa from
         current_venv = self.get_current_venv()
@@ -405,7 +408,15 @@ class Zappa(object):
 
         # Need to manually add setuptools
         pkg_list.append('setuptools')
-        pip_return_code = pip.main(["install", "--quiet", "--target", venv_site_packages_dir] + pkg_list)
+        command = ["pip", "install", "--quiet", "--target", venv_site_packages_dir] + pkg_list
+
+        # This is the recommended method for installing packages if you don't
+        # to depend on `setuptools`
+        # https://github.com/pypa/pip/issues/5240#issuecomment-381662679
+        pip_process = subprocess.Popen(command, stdout=subprocess.PIPE)
+        # Using poll() since it gives us an meaningful return code
+        pip_return_code = pip_process.poll()
+
         if pip_return_code:
           raise EnvironmentError("Pypi lookup failed")
 
@@ -752,7 +763,8 @@ class Zappa(object):
         """
         Returns a dict of installed packages that Zappa cares about.
         """
-        import pip  # this is to avoid 'funkiness' with global import
+        import pkg_resources
+
         package_to_keep = []
         if os.path.isdir(site_packages):
             package_to_keep += os.listdir(site_packages)
@@ -762,7 +774,7 @@ class Zappa(object):
         package_to_keep = [x.lower() for x in package_to_keep]
 
         installed_packages = {package.project_name.lower(): package.version for package in
-                              pip.get_installed_distributions()
+                              pkg_resources.WorkingSet()
                               if package.project_name.lower() in package_to_keep
                               or package.location.lower() in [site_packages.lower(), site_packages_64.lower()]}
 
