@@ -169,6 +169,25 @@ class TestZappa(unittest.TestCase):
                 with mock.patch('pkg_resources.WorkingSet', return_value=mock_pip_installed_packages):
                     self.assertDictEqual(z.get_installed_packages('',''), {'super_package' : '0.1'})
 
+    def test_getting_installed_packages_mixed_case_location(self, *args):
+        z = Zappa(runtime='python2.7')
+
+        # mock pip packages call to be same as what our mocked site packages dir has
+        mock_package = collections.namedtuple('mock_package', ['project_name', 'version', 'location'])
+        mock_pip_installed_packages = [
+            mock_package('SuperPackage', '0.1', '/Venv/site-packages'),
+            mock_package('SuperPackage64', '0.1', '/Venv/site-packages64'),
+        ]
+
+        with mock.patch('os.path.isdir', return_value=True):
+            with mock.patch('os.listdir', return_value=[]):
+                import pip  # this gets called in non-test Zappa mode
+                with mock.patch('pip.get_installed_distributions', return_value=mock_pip_installed_packages):
+                    self.assertDictEqual(z.get_installed_packages('/venv/Site-packages','/venv/site-packages64'), {
+                        'superpackage': '0.1',
+                        'superpackage64': '0.1',
+                })
+
     def test_getting_installed_packages_mixed_case(self, *args):
         z = Zappa(runtime='python2.7')
 
@@ -1246,15 +1265,18 @@ class TestZappa(unittest.TestCase):
         except ValueError as e:
             pass # that's fine.
 
-        result = verify_challenge('http://echo.jsontest.com/status/valid')
-        try:
-            result = verify_challenge('http://echo.jsontest.com/status/fail')
-        except ValueError as e:
-            pass # that's fine.
-        try:
-            result = verify_challenge('http://bing.com')
-        except ValueError as e:
-            pass # that's fine.
+        # This service fails due to remote "over-quota" errors,
+        # so let's retire it until we can find a better provider.
+
+        # result = verify_challenge('http://echo.jsontest.com/status/valid')
+        # try:
+        #     result = verify_challenge('http://echo.jsontest.com/status/fail')
+        # except ValueError as e:
+        #     pass # that's fine.
+        # try:
+        #     result = verify_challenge('http://bing.com')
+        # except ValueError as e:
+        #     pass # that's fine.
 
         encode_certificate(b'123')
 

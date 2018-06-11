@@ -8,8 +8,6 @@ Zappa core library. You may also want to look at `cli.py` and `util.py`.
 
 from __future__ import print_function
 
-import boto3
-import botocore
 import getpass
 import glob
 import hashlib
@@ -17,34 +15,38 @@ import json
 import logging
 import os
 import random
-import requests
 import shutil
 import string
 import subprocess
 import tarfile
 import tempfile
 import time
+import uuid
+import zipfile
+from builtins import bytes, int
+from distutils.dir_util import copy_tree
+from io import open
+
+import requests
+from setuptools import find_packages
+
+import boto3
+import botocore
 import troposphere
 import troposphere.apigateway
-import zipfile
-import uuid
-
-from builtins import int, bytes
 from botocore.exceptions import ClientError
-from distutils.dir_util import copy_tree
-from io import BytesIO, open
 from lambda_packages import lambda_packages as lambda_packages_orig
-from setuptools import find_packages
 from tqdm import tqdm
 
-from .utilities import (copytree,
-                    add_event_source,
-                    remove_event_source,
-                    human_size,
-                    get_topic_name,
-                    contains_python_files_or_subdirs,
-                    conflicts_with_a_neighbouring_module,
-                    get_venv_from_python_version)
+from .utilities import (add_event_source, conflicts_with_a_neighbouring_module,
+                        contains_python_files_or_subdirs, copytree,
+                        get_topic_name, get_venv_from_python_version,
+                        human_size, remove_event_source)
+
+try:
+    unicode        # Python 2
+except NameError:
+    unicode = str  # Python 3
 
 # We lower-case lambda package keys to match lower-cased keys in get_installed_packages()
 lambda_packages = {package_name.lower(): val for package_name, val in lambda_packages_orig.items()}
@@ -774,7 +776,7 @@ class Zappa(object):
         installed_packages = {package.project_name.lower(): package.version for package in
                               pkg_resources.WorkingSet()
                               if package.project_name.lower() in package_to_keep
-                              or package.location in [site_packages, site_packages_64]}
+                              or package.location.lower() in [site_packages.lower(), site_packages_64.lower()]}
 
         return installed_packages
 
@@ -1111,7 +1113,7 @@ class Zappa(object):
             versions_in_lambda.remove('$LATEST')
             # Delete older revisions if their number exceeds the specified limit
             for version in versions_in_lambda[::-1][num_revisions:]:
-                self.lambda_client.delete_function(FunctionNmae=function_name,Qualifier=version)
+                self.lambda_client.delete_function(FunctionName=function_name,Qualifier=version)
 
         return response['FunctionArn']
 
@@ -1709,7 +1711,7 @@ class Zappa(object):
                 continue
             yield api
 
-    def undeploy_api_gateway(self, lambda_name, domain_name=None):
+    def undeploy_api_gateway(self, lambda_name, domain_name=None, base_path=None):
         """
         Delete a deployed REST API Gateway.
         """
@@ -1725,7 +1727,7 @@ class Zappa(object):
             try:
                 self.apigateway_client.delete_base_path_mapping(
                     domainName=domain_name,
-                    basePath='(none)'
+                    basePath='(none)' if base_path is None else base_path
                 )
             except Exception as e:
                 # We may not have actually set up the domain.
@@ -2011,7 +2013,8 @@ class Zappa(object):
                            certificate_chain=None,
                            certificate_arn=None,
                            lambda_name=None,
-                           stage=None):
+                           stage=None,
+                           base_path=None):
         """
         Creates the API GW domain and returns the resulting DNS name.
         """
@@ -2039,7 +2042,7 @@ class Zappa(object):
 
         self.apigateway_client.create_base_path_mapping(
             domainName=domain_name,
-            basePath='',
+            basePath='' if base_path is None else base_path,
             restApiId=api_id,
             stage=stage
         )
@@ -2106,7 +2109,8 @@ class Zappa(object):
                            certificate_arn=None,
                            lambda_name=None,
                            stage=None,
-                           route53=True):
+                           route53=True,
+                           base_path=None):
         """
         This updates your certificate information for an existing domain,
         with similar arguments to boto's update_domain_name API Gateway api.
@@ -2136,6 +2140,8 @@ class Zappa(object):
                                                                  CertificateChain=certificate_chain)
             certificate_arn = acm_certificate['CertificateArn']
 
+        self.update_domain_base_path_mapping(domain_name, lambda_name, stage, base_path)
+
         return self.apigateway_client.update_domain_name(domainName=domain_name,
                                                          patchOperations=[
                                                              {"op" : "replace",
@@ -2145,6 +2151,36 @@ class Zappa(object):
                                                               "path" : "/certificateArn",
                                                               "value" : certificate_arn}
                                                          ])
+    
+    def update_domain_base_path_mapping(self, domain_name, lambda_name, stage, base_path):
+        """
+        Update domain base path mapping on API Gateway if it was changed
+        """
+        api_id = self.get_api_id(lambda_name)
+        if not api_id:
+            print("Warning! Can't update base path mapping!")
+            return
+        base_path_mappings = self.apigateway_client.get_base_path_mappings(domainName=domain_name)
+        found = False
+        for base_path_mapping in base_path_mappings['items']:
+            if base_path_mapping['restApiId'] == api_id and base_path_mapping['stage'] == stage:
+                found = True
+                if base_path_mapping['basePath'] != base_path:
+                    self.apigateway_client.update_base_path_mapping(domainName=domain_name,
+                                                                    basePath=base_path_mapping['basePath'],
+                                                                    patchOperations=[
+                                                                        {"op" : "replace", 
+                                                                         "path" : "/basePath", 
+                                                                         "value" : base_path}
+                                                                    ])
+        if not found:
+            self.apigateway_client.create_base_path_mapping(
+                domainName=domain_name,
+                basePath='' if base_path is None else base_path,
+                restApiId=api_id,
+                stage=stage
+            )
+        
 
     def get_domain_name(self, domain_name, route53=True):
         """

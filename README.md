@@ -336,7 +336,7 @@ Similarly to `package`, if you only want the API Gateway CloudFormation template
 
 Note that you must supply your own Lambda ARN and Role ARNs in this case, as they may not have been created for you.
 
-You can use get the JSON output directly with `--json`, and specify the output file with `--output`.
+You can get the JSON output directly with `--json`, and specify the output file with `--output`.
 
 ### Status
 
@@ -402,7 +402,9 @@ For commands which have their own arguments, you can also pass the command in as
 
 Commands which require direct user input, such as `createsuperuser`, should be [replaced by commands](http://stackoverflow.com/a/26091252) which use `zappa invoke <env> --raw`.
 
-_(Please note that commands which take over 30 seconds to execute may time-out. See [this related issue](https://github.com/Miserlou/Zappa/issues/205#issuecomment-236391248) for a work-around.)_
+For more Django integration, take a look at the [zappa-django-utils](https://github.com/Miserlou/zappa-django-utils) project.
+
+_(Please note that commands which take over 30 seconds to execute may time-out preventing output from being returned - but the command may continue to run. See [this related issue](https://github.com/Miserlou/Zappa/issues/205#issuecomment-236391248) for a work-around.)_
 
 ### SSL Certification
 
@@ -806,6 +808,7 @@ to change Zappa's behavior. Use these at your own risk!
         "delete_s3_zip": true, // Delete the s3 zip archive. Default true.
         "django_settings": "your_project.production_settings", // The modular path to your Django project's settings. For Django projects only.
         "domain": "yourapp.yourdomain.com", // Required if you're using a domain
+        "base_path": "your-base-path", // Optional base path for API gateway custom domain base path mapping. Default None.
         "environment_variables": {"your_key": "your_value"}, // A dictionary of environment variables that will be available to your deployed app. See also "remote_env" and "aws_environment_variables". Default {}.
         "events": [
             {   // Recurring events
@@ -836,7 +839,7 @@ to change Zappa's behavior. Use these at your own risk!
             "function": "your_module.your_auth_function", // Local function to run for token validation. For more information about the function see below.
             "arn": "arn:aws:lambda:<region>:<account_id>:function:<function_name>", // Existing Lambda function to run for token validation.
             "result_ttl": 300, // Optional. Default 300. The time-to-live (TTL) period, in seconds, that specifies how long API Gateway caches authorizer results. Currently, the maximum TTL value is 3600 seconds.
-            "token_source": "Authorization", // Optional. Default 'Authorization'. The name of a custom authorization header containing the token that clients submit as part of their requests.
+            "token_header": "Authorization", // Optional. Default 'Authorization'. The name of a custom authorization header containing the token that clients submit as part of their requests.
             "validation_expression": "^Bearer \\w+$", // Optional. A validation expression for the incoming token, specify a regular expression.
         },
         "keep_warm": true, // Create CloudWatch events to keep the server warm. Default true. To remove, set to false and then `unschedule`.
@@ -1290,6 +1293,7 @@ For monitoring of different deployments, a unique UUID for each package is avail
 * [Building A Serverless Image Processing SaaS using Zappa](http://www.99serverless.com/index.php/2017/11/25/building-a-serverless-image-processing-saas/)
 * [Serverless Slack Slash Commands with Python and Zappa](https://renzo.lucioni.xyz/serverless-slash-commands-with-python/)
 * [Bringing Tokusatsu to AWS using Python, Flask, Zappa and Contentful](https://www.contentful.com/blog/2018/03/07/bringing-tokusatsu-to-aws-using-python-flask-zappa-and-contentful/)
+* [AWS Summit 2018 Seoul - Zappa와 함께하는 Serverless Microservice](https://www.slideshare.net/YunSeopSong/zappa-serverless-microservice-94410308/)
 * _Your guide here?_
 
 ## Zappa in the Press
@@ -1363,6 +1367,8 @@ Please include the GitHub issue or pull request URL that has discussion related 
 
 Please feel free to work on any open ticket, especially any ticket marked with the "help-wanted" label. If you get stuck or want to discuss an issue further, please join [our Slack channel](https://slack.zappa.io), where you'll find a community of smart and interesting people working dilligently on hard problems.
 
+Zappa does not intend to conform to PEP8, isolate your commits so that changes to functionality with changes made by your linter.
+
 #### Using a Local Repo
 
 To use the git HEAD, you *probably can't* use `pip install -e `. Instead, you should clone the repo to your machine and then `pip install /path/to/zappa/repo` or `ln -s /path/to/zappa/repo/zappa zappa` in your local project.
@@ -1381,6 +1387,24 @@ Zappa is currently supported by these awesome individuals and companies:
   * Theo Chitayat
   * George Sibble
   * Joe Weiss
+  * Nik Bora
+  * Zerong Toby Wang
+  * Gareth E
+  * Matt Jackson
+  * Sean Coates
+  * Alexander Loschilov
+  * Korey Peters
+  * Joe Weiss
+  * Kimmo Parvianen-Jalanko
+  * Patrick Agin
+  * Roberto Martinez
+  * Charles Dimino
+  * Doug Beney
+  * Dan "The Man" Gayle
+  * Juancito
+  * Will Childs-Klein
+  * Efi Merdler Kravitz
+  * **Philippe Trounev**
 
 Thank you very, very much!
 

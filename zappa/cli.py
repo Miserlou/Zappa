@@ -1094,6 +1094,7 @@ class ZappaCLI(object):
                 self.zappa.remove_api_gateway_logs(self.lambda_name)
 
             domain_name = self.stage_config.get('domain', None)
+            base_path = self.stage_config.get('base_path', None)
 
             # Only remove the api key when not specified
             if self.api_key_required and self.api_key is None:
@@ -1102,7 +1103,8 @@ class ZappaCLI(object):
 
             gateway_id = self.zappa.undeploy_api_gateway(
                 self.lambda_name,
-                domain_name=domain_name
+                domain_name=domain_name, 
+                base_path=base_path
             )
 
         self.unschedule()  # removes event triggers, including warm up event.
@@ -1605,7 +1607,7 @@ class ZappaCLI(object):
         click.echo("\nYour Zappa deployments will need to be uploaded to a " + click.style("private S3 bucket", bold=True)  + ".")
         click.echo("If you don't have a bucket yet, we'll create one for you too.")
         default_bucket = "zappa-" + ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(9))
-        bucket = input("What do you want call your bucket? (default '%s'): " % default_bucket) or default_bucket
+        bucket = input("What do you want to call your bucket? (default '%s'): " % default_bucket) or default_bucket
 
         # Detect Django/Flask
         try: # pragma: no cover
@@ -1771,6 +1773,7 @@ class ZappaCLI(object):
         cert_key_location = self.stage_config.get('certificate_key', None)
         cert_chain_location = self.stage_config.get('certificate_chain', None)
         cert_arn = self.stage_config.get('certificate_arn', None)
+        base_path = self.stage_config.get('base_path', None)
 
         # These are sensitive
         certificate_body = None
@@ -1837,7 +1840,8 @@ class ZappaCLI(object):
                     certificate_chain=certificate_chain,
                     certificate_arn=cert_arn,
                     lambda_name=self.lambda_name,
-                    stage=self.api_stage
+                    stage=self.api_stage,
+                    base_path=base_path
                 )
                 if route53:
                     self.zappa.update_route53_records(self.domain, dns_name)
@@ -1853,7 +1857,8 @@ class ZappaCLI(object):
                     certificate_arn=cert_arn,
                     lambda_name=self.lambda_name,
                     stage=self.api_stage,
-                    route53=route53
+                    route53=route53,
+                    base_path=base_path
                 )
 
             cert_success = True
