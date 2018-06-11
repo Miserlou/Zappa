@@ -499,6 +499,7 @@ class LambdaHandler(object):
                 environ['HTTPS'] = 'on'
                 environ['wsgi.url_scheme'] = 'https'
                 environ['lambda.context'] = context
+                environ['lambda.event'] = event
 
                 # Execute the application
                 response = Response.from_app(self.wsgi_app, environ)
