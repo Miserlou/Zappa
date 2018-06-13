@@ -1,5 +1,10 @@
 # Zappa Changelog
 
+## 0.46.1
+* Hotfix for pipenv support (pip >10.0.1)
+* Adds AWS GovCloud support!
+* Test fix
+
 ## 0.46.0
 _Okay, I dropped the ball for a long time. Bad BDFL!_
 _New releases will come much faster once again_
