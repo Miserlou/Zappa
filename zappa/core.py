@@ -1283,10 +1283,15 @@ class Zappa(object):
         if not description:
             description = 'Created automatically by Zappa.'
         restapi.Description = description
+        if self.boto_session.region_name == "us-gov-west-1":
+            endpoint = troposphere.apigateway.EndpointConfiguration()
+            endpoint.Types = ["REGIONAL"]
+            restapi.EndpointConfiguration = endpoint
         self.cf_template.add_resource(restapi)
 
         root_id = troposphere.GetAtt(restapi, 'RootResourceId')
-        invocations_uri = 'arn:aws:apigateway:' + self.boto_session.region_name + ':lambda:path/2015-03-31/functions/' + lambda_arn + '/invocations'
+        invocation_prefix = "aws" if self.boto_session.region_name != "us-gov-west-1" else "aws-us-gov"
+        invocations_uri = 'arn:' + invocation_prefix + ':apigateway:' + self.boto_session.region_name + ':lambda:path/2015-03-31/functions/' + lambda_arn + '/invocations'
 
         ##
         # The Resources
@@ -1294,7 +1299,8 @@ class Zappa(object):
         authorizer_resource = None
         if authorizer:
             authorizer_lambda_arn = authorizer.get('arn', lambda_arn)
-            lambda_uri = 'arn:aws:apigateway:{region_name}:lambda:path/2015-03-31/functions/{lambda_arn}/invocations'.format(
+            lambda_uri = 'arn:{invocation_prefix}:apigateway:{region_name}:lambda:path/2015-03-31/functions/{lambda_arn}/invocations'.format(
+                invocation_prefix=invocation_prefix,
                 region_name=self.boto_session.region_name,
                 lambda_arn=authorizer_lambda_arn
             )
@@ -1877,8 +1883,11 @@ class Zappa(object):
             out.write(bytes(self.cf_template.to_json(indent=None, separators=(',',':')), "utf-8"))
 
         self.upload_to_s3(template, working_bucket, disable_progress=disable_progress)
+        if self.boto_session.region_name == "us-gov-west-1":
+            url = 'https://s3-us-gov-west-1.amazonaws.com/{0}/{1}'.format(working_bucket, template)
+        else:
+            url = 'https://s3.amazonaws.com/{0}/{1}'.format(working_bucket, template)
 
-        url = 'https://s3.amazonaws.com/{0}/{1}'.format(working_bucket, template)
         tags = [{'Key': key, 'Value': self.tags[key]}
                 for key in self.tags.keys()
                 if key != 'ZappaProject']
