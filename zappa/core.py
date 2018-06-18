@@ -1853,7 +1853,10 @@ class Zappa(object):
         elif iam_authorization:
             auth_type = "AWS_IAM"
         elif authorizer:
-            auth_type = authorizer.get("type", "CUSTOM")
+            if authorizer.get("type").upper() !== 'REQUEST':
+              auth_type = authorizer.get("type", "CUSTOM")
+            else: 
+              auth_type = "CUSTOM"
 
         # build a fresh template
         self.cf_template = troposphere.Template()
