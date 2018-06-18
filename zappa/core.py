@@ -1362,7 +1362,10 @@ class Zappa(object):
         authorizer_resource.Name = authorizer.get("name", "ZappaAuthorizer")
         authorizer_resource.Type = authorizer_type
         authorizer_resource.AuthorizerUri = uri
-        authorizer_resource.IdentitySource = "method.request.header.%s" % authorizer.get('token_header', 'Authorization')
+        if authorizer_type == 'REQUEST':
+          authorizer_resource.IdentitySource = authorizer.get('identity_source', 'context.identity.clientip')
+        else:
+          authorizer_resource.IdentitySource = "method.request.header.%s" % authorizer.get('token_header', 'Authorization')
           
         if identity_validation_expression:
             authorizer_resource.IdentityValidationExpression = identity_validation_expression
