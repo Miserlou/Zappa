@@ -129,7 +129,13 @@ class LambdaAsyncResponse(object):
     Base Response Dispatcher class
     Can be used directly or subclassed if the method to send the message is changed.
     """
-    def __init__(self, lambda_function_name=None, aws_region=None, capture_response=False, **kwargs):
+
+    def __init__(self,
+                 lambda_function_name=None,
+                 aws_region=None,
+                 capture_response=False,
+                 json_encoder=None,
+                 **kwargs):
         """ """
         if kwargs.get('boto_session'):
             self.client = kwargs.get('boto_session').client('lambda')
@@ -154,7 +160,7 @@ class LambdaAsyncResponse(object):
             self.response_id = None
 
         self.capture_response = capture_response
-
+        self.json_encoder = json_encoder or json.JSONEncoder
 
     def send(self, task_path, args, kwargs):
         """
@@ -175,7 +181,8 @@ class LambdaAsyncResponse(object):
         Given a message, directly invoke the lamdba function for this task.
         """
         message['command'] = 'zappa.async.route_lambda_task'
-        payload = json.dumps(message).encode('utf-8')
+        payload = json.dumps(message,
+                             encoder=self.json_encoder).encode('utf-8')
         if len(payload) > 128000: # pragma: no cover
             raise AsyncException("Payload too large for async Lambda call")
         self.response = self.client.invoke(
@@ -190,7 +197,7 @@ class SnsAsyncResponse(LambdaAsyncResponse):
     Send a SNS message to a specified SNS topic
     Serialise the func path and arguments
     """
-    def __init__(self, lambda_function_name=None, aws_region=None, capture_response=False, **kwargs):
+    def __init__(self, lambda_function_name=None, aws_region=None, capture_response=False, json_encoder=None, **kwargs):
 
         self.lambda_function_name = lambda_function_name
         self.aws_region=aws_region
@@ -234,14 +241,15 @@ class SnsAsyncResponse(LambdaAsyncResponse):
             self.response_id = None
 
         self.capture_response = capture_response
-
+        self.json_encoder = json_encoder or json.JSONEncoder
 
     def _send(self, message):
         """
         Given a message, publish to this topic.
         """
         message['command'] = 'zappa.async.route_sns_task'
-        payload = json.dumps(message).encode('utf-8')
+        payload = json.dumps(message,
+                             encoder=self.json_encoder).encode('utf-8')
         if len(payload) > 256000: # pragma: no cover
             raise AsyncException("Payload too large for SNS")
         self.response = self.client.publish(
