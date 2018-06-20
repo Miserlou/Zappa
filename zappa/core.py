@@ -1857,7 +1857,7 @@ class Zappa(object):
         elif iam_authorization:
             auth_type = "AWS_IAM"
         elif authorizer:
-            if authorizer.get("type").upper() != 'REQUEST':
+            if not authorizer.get("type") or authorizer.get("type").upper() != 'REQUEST':
               auth_type = authorizer.get("type", "CUSTOM")
             else: 
               auth_type = "CUSTOM"
