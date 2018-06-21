@@ -2000,6 +2000,7 @@ class ZappaCLI(object):
         self.profile_name = self.stage_config.get('profile_name', None)
         self.log_level = self.stage_config.get('log_level', "DEBUG")
         self.domain = self.stage_config.get('domain', None)
+        self.base_path = self.stage_config.get('base_path', None)
         self.timeout_seconds = self.stage_config.get('timeout_seconds', 30)
         dead_letter_arn = self.stage_config.get('dead_letter_arn', '')
         self.dead_letter_config = {'TargetArn': dead_letter_arn} if dead_letter_arn else {}
@@ -2265,6 +2266,11 @@ class ZappaCLI(object):
                 settings_s = settings_s + "DOMAIN='{0!s}'\n".format((self.domain))
             else:
                 settings_s = settings_s + "DOMAIN=None\n"
+
+            if self.base_path:
+                settings_s = settings_s + "BASE_PATH='{0!s}'\n".format((self.base_path))
+            else:
+                settings_s = settings_s + "BASE_PATH=None\n"
 
             # Pass through remote config bucket and path
             if self.remote_env:

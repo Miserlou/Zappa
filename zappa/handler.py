@@ -492,6 +492,7 @@ class LambdaHandler(object):
                     script_name=script_name,
                     trailing_slash=self.trailing_slash,
                     binary_support=settings.BINARY_SUPPORT,
+                    base_path=settings.BASE_PATH,
                     context_header_mappings=settings.CONTEXT_HEADER_MAPPINGS
                 )
 
