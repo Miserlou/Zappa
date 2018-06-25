@@ -1013,6 +1013,9 @@ class ZappaCLI(object):
         if endpoint_url and 'https://' not in endpoint_url:
             endpoint_url = 'https://' + endpoint_url
 
+        if self.base_path:
+            endpoint_url += '/' + self.base_path
+
         deployed_string = "Your updated Zappa deployment is " + click.style("live", fg='green', bold=True) + "!"
         if self.use_apigateway:
             deployed_string = deployed_string + ": " + click.style("{}".format(endpoint_url), bold=True)
