@@ -29,14 +29,14 @@ def copytree(src, dst, metadata=True, symlinks=False, ignore=None):
     When `metadata` is False, file metadata such as permissions and modification
     times are not copied.
     """
+    if os.path.isfile(src):
+        shutil.copy2(src, dst) if metadata else shutil.copy(src, dst)
+        return
 
     if not os.path.exists(dst):
         os.makedirs(dst)
         if metadata:
             shutil.copystat(src, dst)
-    # support for egg-link files
-    if '.egg-link' in src and os.path.isfile(src):
-        src = open(src).readline().strip()
     lst = os.listdir(src)
 
     if ignore:
