@@ -414,8 +414,9 @@ class Zappa(object):
         # to depend on `setuptools`
         # https://github.com/pypa/pip/issues/5240#issuecomment-381662679
         pip_process = subprocess.Popen(command, stdout=subprocess.PIPE)
-        # Using poll() since it gives us an meaningful return code
-        pip_return_code = pip_process.poll()
+        # Using communicate() to avoid deadlocks
+        pip_process.communicate()
+        pip_return_code = pip_process.returncode
 
         if pip_return_code:
           raise EnvironmentError("Pypi lookup failed")
