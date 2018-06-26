@@ -34,6 +34,11 @@ def copytree(src, dst, metadata=True, symlinks=False, ignore=None):
         os.makedirs(dst)
         if metadata:
             shutil.copystat(src, dst)
+    # support for egg-link files
+    if '.egg-link' in src:
+        # format documentation says it should only have one line with a directory,
+        # reality has show otherwise
+        src = open(src).readline()
     lst = os.listdir(src)
 
     if ignore:
