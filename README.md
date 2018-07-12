@@ -56,7 +56,7 @@
   - [Enabling Secure Endpoints on API Gateway](#enabling-secure-endpoints-on-api-gateway)
     - [API Key](#api-key)
     - [IAM Policy](#iam-policy)
-    - [API Gateway Authorizers](#api-gateway-authorizers)
+    - [Lambda Authorizers](#lambda-authorizers)
     - [Cognito User Pool Authorizer](#cognito-user-pool-authorizer)
   - [Setting Environment Variables](#setting-environment-variables)
     - [Local Environment Variables](#local-environment-variables)
@@ -968,8 +968,8 @@ You can use the `api_key_required` setting to generate an API key to all the rou
 
 You can enable IAM-based (v4 signing) authorization on an API by setting the `iam_authorization` setting to `true`. Your API will then require signed requests and access can be controlled via [IAM policy](https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-iam-policy-examples.html). Unsigned requests will receive a 403 response, as will requesters who are not authorized to access the API. Enabling this will override the Authorizer configuration (see below).
 
-#### API Gateway Authorizers
-If you deploy an API endpoint with Zappa, you can take advantage of [API Gateway Authorizers](http://docs.aws.amazon.com/apigateway/latest/developerguide/use-custom-authorizer.html) to implement a token-based authentication - all you need to do is to provide a function to create the required output, Zappa takes care of the rest. A good start for the function is the [AWS Labs blueprint example](https://github.com/awslabs/aws-apigateway-lambda-authorizer-blueprints/blob/master/blueprints/python/api-gateway-authorizer-python.py).
+#### Lambda Authorizers
+If you deploy an API endpoint with Zappa, you can take advantage of [Lambda Authorizers](https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-use-lambda-authorizer.html) to implement a token-based authentication - all you need to do is to provide a function to create the required output, Zappa takes care of the rest. A good start for the function is the [AWS Labs blueprint example](https://github.com/awslabs/aws-apigateway-lambda-authorizer-blueprints/blob/master/blueprints/python/api-gateway-authorizer-python.py).
 
 If you are wondering for what you would use an Authorizer, here are some potential use cases:
 
