@@ -433,7 +433,7 @@ class Zappa(object):
             venv = os.environ['VIRTUAL_ENV']
         elif os.path.exists('.python-version'):  # pragma: no cover
             try:
-                subprocess.check_output('pyenv help', stderr=subprocess.STDOUT)
+                subprocess.check_output(['pyenv', 'help'], stderr=subprocess.STDOUT)
             except OSError:
                 print("This directory seems to have pyenv's local venv, "
                       "but pyenv executable was not found.")
