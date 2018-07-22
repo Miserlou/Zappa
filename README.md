@@ -200,7 +200,7 @@ To explain what's going on, when you call `deploy`, Zappa will automatically pac
 
 Be aware that the default IAM role and policy created for executing Lambda applies a liberal set of permissions.
 These are most likely not appropriate for production deployment of important applications.  See the section
-[Using Custom AWS IAM Roles and Policies for Execution](#using-custom-aws-iam-roles-and-policies-for-Execution) for more detail.
+[Using Custom AWS IAM Roles and Policies for Execution](#using-custom-aws-iam-roles-and-policies-for-execution) for more detail.
 
 ### Updates
 
