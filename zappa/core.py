@@ -1363,7 +1363,11 @@ class Zappa(object):
         authorizer_resource.Name = authorizer.get("name", "ZappaAuthorizer")
         authorizer_resource.Type = authorizer_type
         authorizer_resource.AuthorizerUri = uri
-        authorizer_resource.IdentitySource = "method.request.header.%s" % authorizer.get('token_header', 'Authorization')
+        if authorizer_type == 'REQUEST':
+          authorizer_resource.IdentitySource = authorizer.get('identity_source', 'context.identity.sourceIp')
+        else:
+          authorizer_resource.IdentitySource = "method.request.header.%s" % authorizer.get('token_header', 'Authorization')
+          
         if identity_validation_expression:
             authorizer_resource.IdentityValidationExpression = identity_validation_expression
 
@@ -1854,7 +1858,10 @@ class Zappa(object):
         elif iam_authorization:
             auth_type = "AWS_IAM"
         elif authorizer:
-            auth_type = authorizer.get("type", "CUSTOM")
+            if not authorizer.get("type") or authorizer.get("type").upper() != 'REQUEST':
+              auth_type = authorizer.get("type", "CUSTOM")
+            else: 
+              auth_type = "CUSTOM"
 
         # build a fresh template
         self.cf_template = troposphere.Template()
