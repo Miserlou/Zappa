@@ -21,10 +21,10 @@ from zappa.cli import ZappaCLI, shamelessly_promote, disable_click_colors
 from zappa.ext.django_zappa import get_django_wsgi
 from zappa.letsencrypt import get_cert_and_update_domain, create_domain_key, create_domain_csr, \
     create_chained_certificate, cleanup, parse_account_key, parse_csr, sign_certificate, encode_certificate,\
-    register_account, verify_challenge
+    register_account, verify_challenge, gettempdir
 from zappa.utilities import (detect_django_settings, detect_flask_apps,  parse_s3_url, human_size, string_to_timestamp,
                              validate_name, InvalidAwsLambdaName, contains_python_files_or_subdirs,
-                             conflicts_with_a_neighbouring_module)
+                             conflicts_with_a_neighbouring_module, titlecase_keys)
 from zappa.wsgi import create_wsgi_request, common_log
 from zappa.core import Zappa, ASSUME_POLICY, ATTACH_POLICY
 
@@ -108,7 +108,7 @@ class TestZappa(unittest.TestCase):
     #             self.assertEqual(mock_remove.call_count, 1)
 
     def test_create_lambda_package(self):
-        # mock the pip.get_installed_distributions() to include a known package in lambda_packages so that the code
+        # mock the pkg_resources.WorkingSet() to include a known package in lambda_packages so that the code
         # for zipping pre-compiled packages gets called
         mock_installed_packages = {'psycopg2': '2.6.1'}
         with mock.patch('zappa.core.Zappa.get_installed_packages', return_value=mock_installed_packages):
@@ -159,28 +159,48 @@ class TestZappa(unittest.TestCase):
     def test_getting_installed_packages(self, *args):
         z = Zappa(runtime='python2.7')
 
-        # mock pip packages call to be same as what our mocked site packages dir has
+        # mock pkg_resources call to be same as what our mocked site packages dir has
         mock_package = collections.namedtuple('mock_package', ['project_name', 'version', 'location'])
         mock_pip_installed_packages = [mock_package('super_package', '0.1', '/venv/site-packages')]
 
         with mock.patch('os.path.isdir', return_value=True):
             with mock.patch('os.listdir', return_value=['super_package']):
-                import pip  # this gets called in non-test Zappa mode
-                with mock.patch('pip.get_installed_distributions', return_value=mock_pip_installed_packages):
+                import pkg_resources  # this gets called in non-test Zappa mode
+                with mock.patch('pkg_resources.WorkingSet', return_value=mock_pip_installed_packages):
                     self.assertDictEqual(z.get_installed_packages('',''), {'super_package' : '0.1'})
+
+    def test_getting_installed_packages_mixed_case_location(self, *args):
+        z = Zappa(runtime='python2.7')
+
+        # mock pip packages call to be same as what our mocked site packages dir has
+        mock_package = collections.namedtuple('mock_package', ['project_name', 'version', 'location'])
+        mock_pip_installed_packages = [
+            mock_package('SuperPackage', '0.1', '/Venv/site-packages'),
+            mock_package('SuperPackage64', '0.1', '/Venv/site-packages64'),
+        ]
+
+        with mock.patch('os.path.isdir', return_value=True):
+            with mock.patch('os.listdir', return_value=[]):
+                import pkg_resources  # this gets called in non-test Zappa mode
+                with mock.patch('pkg_resources.WorkingSet', return_value=mock_pip_installed_packages):
+                    self.assertDictEqual(z.get_installed_packages('/venv/Site-packages','/venv/site-packages64'), {
+                       'superpackage': '0.1',
+                       'superpackage64': '0.1',
+                })
 
     def test_getting_installed_packages_mixed_case(self, *args):
         z = Zappa(runtime='python2.7')
 
-        # mock pip packages call to be same as what our mocked site packages dir has
+        # mock pkg_resources call to be same as what our mocked site packages dir has
         mock_package = collections.namedtuple('mock_package', ['project_name', 'version', 'location'])
         mock_pip_installed_packages = [mock_package('SuperPackage', '0.1', '/venv/site-packages')]
 
         with mock.patch('os.path.isdir', return_value=True):
             with mock.patch('os.listdir', return_value=['superpackage']):
-                import pip  # this gets called in non-test Zappa mode
-                with mock.patch('pip.get_installed_distributions', return_value=mock_pip_installed_packages):
+                import pkg_resources  # this gets called in non-test Zappa mode
+                with mock.patch('pkg_resources.WorkingSet', return_value=mock_pip_installed_packages):
                     self.assertDictEqual(z.get_installed_packages('',''), {'superpackage' : '0.1'})
+
 
     def test_load_credentials(self):
         z = Zappa()
@@ -529,6 +549,21 @@ class TestZappa(unittest.TestCase):
         request = create_wsgi_request(event, trailing_slash=True)
         self.assertEqual("/path:1", request['PATH_INFO'])
 
+    def test_wsgi_latin1(self):
+        event = {
+            "body": {},
+            "headers": {},
+            "pathParameters": {},
+            "path": '/path/%E4%BB%8A%E6%97%A5%E3%81%AF',
+            "httpMethod": "GET",
+            "queryStringParameters": {"a": "%E4%BB%8A%E6%97%A5%E3%81%AF"},
+            "requestContext": {}
+        }
+        request = create_wsgi_request(event, script_name="%E4%BB%8A%E6%97%A5%E3%81%AF")
+        # verify that the path, query params and script name can be encoded in iso-8859-1
+        request['PATH_INFO'].encode('iso-8859-1')
+        request['QUERY_STRING'].encode('iso-8859-1')
+        request['SCRIPT_NAME'].encode('iso-8859-1')
 
     def test_wsgi_logging(self):
         # event = {
@@ -1191,19 +1226,25 @@ class TestZappa(unittest.TestCase):
     ##
 
     def test_lets_encrypt_sanity(self):
-
         # We need a fake account key and crt
         import subprocess
-        proc = subprocess.Popen(["openssl genrsa 2048 > /tmp/account.key"],
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        out, err = proc.communicate()
-        if proc.returncode != 0:
-            raise IOError("OpenSSL Error: {0}".format(err))
-        proc = subprocess.Popen(["openssl req -x509 -newkey rsa:2048 -subj '/C=US/ST=Denial/L=Springfield/O=Dis/CN=www.example.com' -passout pass:foo -keyout /tmp/key.key -out test_signed.crt -days 1 > /tmp/signed.crt"],
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        out, err = proc.communicate()
-        if proc.returncode != 0:
-            raise IOError("OpenSSL Error: {0}".format(err))
+        devnull = open(os.devnull, 'wb')
+        out = subprocess.check_output(['openssl', 'genrsa', '2048'], stderr=devnull)
+        with open(os.path.join(gettempdir(), 'account.key'), 'wb') as f:
+            f.write(out)
+
+        cmd = [
+            'openssl', 'req',
+            '-x509',
+            '-newkey', 'rsa:2048',
+            '-subj', '/C=US/ST=Denial/L=Springfield/O=Dis/CN=www.example.com',
+            '-passout', 'pass:foo',
+            '-keyout', os.path.join(gettempdir(), 'key.key'),
+            '-out', os.path.join(gettempdir(), 'signed.crt'),
+            '-days', '1'
+        ]
+        devnull = open(os.devnull, 'wb')
+        subprocess.check_call(cmd, stdout=devnull, stderr=devnull)
 
         DEFAULT_CA = "https://acme-staging.api.letsencrypt.org"
         CA = "https://acme-staging.api.letsencrypt.org"
@@ -1224,15 +1265,18 @@ class TestZappa(unittest.TestCase):
         except ValueError as e:
             pass # that's fine.
 
-        result = verify_challenge('http://echo.jsontest.com/status/valid')
-        try:
-            result = verify_challenge('http://echo.jsontest.com/status/fail')
-        except ValueError as e:
-            pass # that's fine.
-        try:
-            result = verify_challenge('http://bing.com')
-        except ValueError as e:
-            pass # that's fine.
+        # This service fails due to remote "over-quota" errors,
+        # so let's retire it until we can find a better provider.
+
+        # result = verify_challenge('http://echo.jsontest.com/status/valid')
+        # try:
+        #     result = verify_challenge('http://echo.jsontest.com/status/fail')
+        # except ValueError as e:
+        #     pass # that's fine.
+        # try:
+        #     result = verify_challenge('http://bing.com')
+        # except ValueError as e:
+        #     pass # that's fine.
 
         encode_certificate(b'123')
 
@@ -1240,16 +1284,12 @@ class TestZappa(unittest.TestCase):
         zappa_cli = ZappaCLI()
         zappa_cli.api_stage = 'ttt888'
         zappa_cli.load_settings('test_settings.json')
-        get_cert_and_update_domain(zappa_cli, 'kerplah', 'zzzz', domain=None, clean_up=True)
-
-        os.remove('test_signed.crt')
-        cleanup()
+        get_cert_and_update_domain(zappa_cli, 'kerplah', 'zzzz', domain=None)
 
 
     def test_certify_sanity_checks(self):
         """
         Make sure 'zappa certify':
-        * Writes a warning with the --no-cleanup flag.
         * Errors out when a deployment hasn't taken place.
         * Writes errors when certificate settings haven't been specified.
         * Calls Zappa correctly for creates vs. updates.
@@ -1262,38 +1302,25 @@ class TestZappa(unittest.TestCase):
             zappa_cli = ZappaCLI()
             zappa_cli.domain = "test.example.com"
             try:
-                zappa_cli.certify(no_cleanup=True)
+                zappa_cli.certify()
             except AttributeError:
                 # Since zappa_cli.zappa isn't initalized, the certify() call
                 # fails when it tries to inspect what Zappa has deployed.
                 pass
 
-            log_output = sys.stdout.getvalue()
-            self.assertIn("You are calling certify with", log_output)
-            self.assertIn("--no-cleanup", log_output)
+            # Set up a core.Zappa mock and let us save some state about
+            # domains and lambdas
+            zappa_mock = mock.create_autospec(Zappa)
+            zappa_mock.function_versions = []
+            zappa_mock.domain_names = {}
+            def get_lambda_function_versions(_function_name, *_args, **_kwargs):
+                return zappa_mock.function_versions
+            def get_domain_name(domain, *_args, **_kwargs):
+                return zappa_mock.domain_names.get(domain)
+            zappa_mock.get_domain_name.side_effect = get_domain_name
+            zappa_mock.get_lambda_function_versions.side_effect = get_lambda_function_versions
 
-            class ZappaMock(object):
-                def __init__(self):
-                    self.function_versions = []
-                    self.domain_names = {}
-                    self.calls = []
-
-                def get_lambda_function_versions(self, function_name):
-                    return self.function_versions
-
-                def get_domain_name(self, domain):
-                    return self.domain_names.get(domain)
-
-                def create_domain_name(self, *args, **kw):
-                    self.calls.append(("create_domain_name", args, kw))
-
-                def update_route53_records(self, *args, **kw):
-                    self.calls.append(("update_route53_records", args, kw))
-
-                def update_domain_name(self, *args, **kw):
-                    self.calls.append(("update_domain_name", args, kw))
-
-            zappa_cli.zappa = ZappaMock()
+            zappa_cli.zappa = zappa_mock
             self.assertRaises(ClickException, zappa_cli.certify)
 
             # Make sure we get an error if we don't configure the domain.
@@ -1366,19 +1393,20 @@ class TestZappa(unittest.TestCase):
                 "certificate_chain": cert_file.name
             })
             sys.stdout.truncate(0)
-            zappa_cli.certify(no_cleanup=True)
-            self.assertEquals(len(zappa_cli.zappa.calls), 2)
-            self.assertTrue(zappa_cli.zappa.calls[0][0] == "create_domain_name")
-            self.assertTrue(zappa_cli.zappa.calls[1][0] == "update_route53_records")
+            zappa_cli.certify()
+            zappa_cli.zappa.create_domain_name.assert_called_once()
+            zappa_cli.zappa.update_route53_records.assert_called_once()
+            zappa_cli.zappa.update_domain_name.assert_not_called()
             log_output = sys.stdout.getvalue()
             self.assertIn("Created a new domain name", log_output)
 
-            zappa_cli.zappa.calls = []
+            zappa_cli.zappa.reset_mock()
             zappa_cli.zappa.domain_names["test.example.com"] = "*.example.com"
             sys.stdout.truncate(0)
-            zappa_cli.certify(no_cleanup=True)
-            self.assertEquals(len(zappa_cli.zappa.calls), 1)
-            self.assertTrue(zappa_cli.zappa.calls[0][0] == "update_domain_name")
+            zappa_cli.certify()
+            zappa_cli.zappa.update_domain_name.assert_called_once()
+            zappa_cli.zappa.update_route53_records.assert_not_called()
+            zappa_cli.zappa.create_domain_name.assert_not_called()
             log_output = sys.stdout.getvalue()
             self.assertNotIn("Created a new domain name", log_output)
 
@@ -1386,16 +1414,60 @@ class TestZappa(unittest.TestCase):
             zappa_cli.zappa_settings["stage"].update({
                 "route53_enabled": False,
             })
-            zappa_cli.zappa.calls = []
+            zappa_cli.zappa.reset_mock()
             zappa_cli.zappa.domain_names["test.example.com"] = ""
             sys.stdout.truncate(0)
-            zappa_cli.certify(no_cleanup=True)
-            self.assertEquals(len(zappa_cli.zappa.calls), 1)
-            self.assertTrue(zappa_cli.zappa.calls[0][0] == "create_domain_name")
+            zappa_cli.certify()
+            zappa_cli.zappa.create_domain_name.assert_called_once()
+            zappa_cli.zappa.update_route53_records.assert_not_called()
+            zappa_cli.zappa.update_domain_name.assert_not_called()
             log_output = sys.stdout.getvalue()
             self.assertIn("Created a new domain name", log_output)
         finally:
             sys.stdout = old_stdout
+
+    @mock.patch('troposphere.Template')
+    @mock.patch('botocore.client')
+    def test_get_domain_respects_route53_setting(self, client, template):
+        zappa_core = Zappa(
+            boto_session=mock.Mock(),
+            profile_name="test",
+            aws_region="test",
+            load_credentials=False
+        )
+        zappa_core.apigateway_client = mock.Mock()
+        zappa_core.route53 = mock.Mock()
+
+        # Check it returns valid and exits early
+        record = zappa_core.get_domain_name('test_domain', route53=False)
+        self.assertIsNotNone(record)
+        zappa_core.apigateway_client.get_domain_name.assert_called_once()
+        zappa_core.route53.list_hosted_zones.assert_not_called()
+
+        zappa_core.apigateway_client.reset_mock()
+        zappa_core.route53.reset_mock()
+
+        # And that the route53 path still works
+        zappa_core.route53.list_hosted_zones.return_value = {
+            'HostedZones': [
+                {
+                    'Id': 'somezone'
+                }
+            ]
+        }
+        zappa_core.route53.list_resource_record_sets.return_value = {
+            'ResourceRecordSets': [{
+                'Type': 'CNAME',
+                'Name': 'test_domain1'
+            }]
+        }
+
+        record = zappa_core.get_domain_name('test_domain')
+        self.assertIsNotNone(record)
+        zappa_core.apigateway_client.get_domain_name.assert_called_once()
+        zappa_core.route53.list_hosted_zones.assert_called_once()
+        zappa_core.route53.list_resource_record_sets.assert_called_once_with(
+            HostedZoneId='somezone')
 
     ##
     # Django
@@ -1741,6 +1813,30 @@ USE_TZ = True
             zappa_cli.create_package()
         self.assertEqual('Environment variable keys must be ascii.', str(context.exception))
 
+
+    def test_titlecase_keys(self):
+        raw = {
+            'hOSt': 'github.com',
+            'ConnECtiOn': 'keep-alive',
+            'UpGRAde-InSecuRE-ReQueSts': '1',
+            'uSer-AGEnT': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36',
+            'cONtENt-TYPe': 'text/html; charset=utf-8',
+            'aCCEpT': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+            'ACcePT-encoDInG': 'gzip, deflate, br',
+            'AcCEpT-lAnGUagE': 'en-US,en;q=0.9'
+        }
+        transformed= titlecase_keys(raw)
+        expected = {
+            'Host': 'github.com',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36',
+            'Content-Type': 'text/html; charset=utf-8',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Accept-Language': 'en-US,en;q=0.9'
+        }
+        self.assertEqual(expected, transformed)
 
 
 if __name__ == '__main__':

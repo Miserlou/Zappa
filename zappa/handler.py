@@ -264,7 +264,12 @@ class LambdaHandler(object):
         Given a function and event context,
         detect signature and execute, returning any result.
         """
-        args, varargs, keywords, defaults = inspect.getargspec(app_function)
+        # getargspec does not support python 3 method with type hints
+        # Related issue: https://github.com/Miserlou/Zappa/issues/1452
+        if hasattr(inspect, "getfullargspec"):  # Python 3
+            args, varargs, keywords, defaults, _, _, _ = inspect.getfullargspec(app_function)
+        else:  # Python 2
+            args, varargs, keywords, defaults = inspect.getargspec(app_function)
         num_args = len(args)
         if num_args == 0:
             result = app_function(event, context) if varargs else app_function()
@@ -284,7 +289,8 @@ class LambdaHandler(object):
         Support S3, SNS, DynamoDB and kinesis events
         """
         if 's3' in record:
-            return record['s3']['configurationId'].split(':')[-1]
+            if ':' in record['s3']['configurationId']:
+                return record['s3']['configurationId'].split(':')[-1]
 
         arn = None
         if 'Sns' in record:
@@ -297,11 +303,25 @@ class LambdaHandler(object):
             arn = record['Sns'].get('TopicArn')
         elif 'dynamodb' in record or 'kinesis' in record:
             arn = record.get('eventSourceARN')
+        elif 's3' in record:
+            arn = record['s3']['bucket']['arn']
 
         if arn:
             return self.settings.AWS_EVENT_MAPPING.get(arn)
 
         return None
+
+    def get_function_from_bot_intent_trigger(self, event):
+        """
+        For the given event build ARN and return the configured function
+        """
+        intent = event.get('currentIntent')
+        if intent:
+            intent = intent.get('name')
+            if intent:
+                return self.settings.AWS_BOT_EVENT_MAPPING.get(
+                    "{}:{}".format(intent, event.get('invocationSource'))
+                )
 
     def get_function_for_cognito_trigger(self, trigger):
         """
@@ -397,6 +417,18 @@ class LambdaHandler(object):
                 logger.error("Cannot find a function to process the triggered event.")
             return result
 
+        # this is an AWS-event triggered from Lex bot's intent
+        elif event.get('bot'):
+            result = None
+            whole_function = self.get_function_from_bot_intent_trigger(event)
+            if whole_function:
+                app_function = self.import_module_and_get_function(whole_function)
+                result = self.run_function(app_function, event, context)
+                logger.debug(result)
+            else:
+                logger.error("Cannot find a function to process the triggered event.")
+            return result
+
         # This is an API Gateway authorizer event
         elif event.get('type') == u'TOKEN':
             whole_function = self.settings.AUTHORIZER_FUNCTION
@@ -467,6 +499,7 @@ class LambdaHandler(object):
                 environ['HTTPS'] = 'on'
                 environ['wsgi.url_scheme'] = 'https'
                 environ['lambda.context'] = context
+                environ['lambda.event'] = event
 
                 # Execute the application
                 response = Response.from_app(self.wsgi_app, environ)
@@ -480,7 +513,7 @@ class LambdaHandler(object):
                         if not response.mimetype.startswith("text/") \
                             or response.mimetype != "application/json":
                                 zappa_returndict['body'] = base64.b64encode(response.data).decode('utf-8')
-                                zappa_returndict["isBase64Encoded"] = "true"
+                                zappa_returndict["isBase64Encoded"] = True
                         else:
                             zappa_returndict['body'] = response.data
                     else:
@@ -514,6 +547,11 @@ class LambdaHandler(object):
                     self.app_module
                 except NameError as ne:
                     message = 'Failed to import module: {}'.format(ne.message)
+
+            # Call exception handler for unhandled exceptions
+            exception_handler = self.settings.EXCEPTION_HANDLER
+            self._process_exception(exception_handler=exception_handler,
+                                    event=event, context=context, exception=e)
 
             # Return this unspecified exception as a 500, using template that API Gateway expects.
             content = collections.OrderedDict()
