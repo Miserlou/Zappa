@@ -387,6 +387,10 @@ class ZappaCLI(object):
             '--force-color', action='store_true',
             help='Force coloring log tail output even if coloring support is not auto-detected. (example: piping)'
         )
+        tail_parser.add_argument(
+            '--disable-keep-open', action='store_true',
+            help="Exit after printing the last available log, rather than keeping the log open."
+        )
 
         ##
         # Undeploy
@@ -593,6 +597,7 @@ class ZappaCLI(object):
                 since=self.vargs['since'],
                 filter_pattern=self.vargs['filter'],
                 force_colorize=self.vargs['force_color'] or None,
+                keep_open=not self.vargs['disable_keep_open']
             )
         elif command == 'undeploy': # pragma: no cover
             self.undeploy(
@@ -1103,7 +1108,7 @@ class ZappaCLI(object):
 
             gateway_id = self.zappa.undeploy_api_gateway(
                 self.lambda_name,
-                domain_name=domain_name, 
+                domain_name=domain_name,
                 base_path=base_path
             )
 
