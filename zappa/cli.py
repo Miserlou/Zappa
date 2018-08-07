@@ -657,15 +657,15 @@ class ZappaCLI(object):
         self.zappa.credentials_arn = role_arn
 
         # Create the template!
-        template = self.zappa.create_stack_template(
-                                            lambda_arn=lambda_arn,
-                                            lambda_name=self.lambda_name,
-                                            api_key_required=self.api_key_required,
-                                            iam_authorization=self.iam_authorization,
-                                            authorizer=self.authorizer,
-                                            cors_options=self.cors,
-                                            description=self.apigateway_description
-                                        )
+        self.zappa.create_stack_template(
+            lambda_arn=lambda_arn,
+            lambda_name=self.lambda_name,
+            api_key_required=self.api_key_required,
+            iam_authorization=self.iam_authorization,
+            authorizer=self.authorizer,
+            cors_options=self.cors,
+            description=self.apigateway_description
+        )
 
         if not output:
             template_file = self.lambda_name + '-template-' + str(int(time.time())) + '.json'
