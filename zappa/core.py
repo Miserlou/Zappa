@@ -240,7 +240,9 @@ class Zappa(object):
             desired_role_name=None,
             desired_role_arn=None,
             runtime='python2.7', # Detected at runtime in CLI
-            tags=(),
+            lambda_tags={},
+            bucket_tags={},
+            cloudformation_tags={},
             endpoint_urls={},
             xray_tracing=False
         ):
@@ -307,7 +309,8 @@ class Zappa(object):
             self.cognito_client = self.boto_client('cognito-idp')
             self.sts_client = self.boto_client('sts')
 
-        self.tags = tags
+        self.bucket_tags = bucket_tags
+        self.cloudformation_tags = cloudformation_tags
         self.cf_template = troposphere.Template()
         self.cf_api_resources = []
         self.cf_parameters = {}
@@ -923,11 +926,11 @@ class Zappa(object):
                     CreateBucketConfiguration={'LocationConstraint': self.aws_region},
                 )
 
-        if self.tags:
-            tags = {
-                'TagSet': [{'Key': key, 'Value': self.tags[key]} for key in self.tags.keys()]
+        if self.bucket_tags:
+            bucket_tags = {
+                'TagSet': [{'Key': key, 'Value': self.bucket_tags[key]} in self.bucket_tags.items()]
             }
-            self.s3_client.put_bucket_tagging(Bucket=bucket_name, Tagging=tags)
+            self.s3_client.put_bucket_tagging(Bucket=bucket_name, Tagging=bucket_tags)
 
         if not os.path.isfile(source_path) or os.stat(source_path).st_size == 0:
             print("Problem with source file {}".format(source_path))
@@ -1029,7 +1032,8 @@ class Zappa(object):
                                 aws_environment_variables=None,
                                 aws_kms_key_arn=None,
                                 xray_tracing=False,
-                                local_zip=None
+                                local_zip=None,
+                                lambda_tags={}
                             ):
         """
         Given a bucket and key (or a local path) of a valid Lambda-zip, a function name and a handler, register that Lambda function.
@@ -1076,15 +1080,17 @@ class Zappa(object):
 
         resource_arn = response['FunctionArn']
 
-        if self.tags:
-            self.lambda_client.tag_resource(Resource=resource_arn, Tags=self.tags)
+        existing_lambda_tags = self.lambda_client.list_tags(Resource=resource_arn)['Tags']
+        existing_lambda_tags.update(self.lambda_tags)
+        self.lambda_client.tag_resource(Resource=resource_arn, Tags=existing_lambda_tags)
 
         return resource_arn
 
-    def update_lambda_function(self, bucket, function_name, s3_key=None, publish=True, local_zip=None, num_revisions=None):
+    def update_lambda_function(self, bucket, function_name, s3_key=None, publish=True, local_zip=None,
+                               num_revisions=None):
         """
-        Given a bucket and key (or a local path) of a valid Lambda-zip, a function name and a handler, update that Lambda function's code.
-        Optionally, delete previous versions if they exceed the optional limit.
+        Given a bucket and key (or a local path) of a valid Lambda-zip, a function name and a handler, update that
+        Lambda function's code.  Optionally, delete previous versions if they exceed the optional limit.
         """
         print("Updating Lambda function code..")
 
@@ -1118,18 +1124,19 @@ class Zappa(object):
 
         return response['FunctionArn']
 
-    def update_lambda_configuration(    self,
-                                        lambda_arn,
-                                        function_name,
-                                        handler,
-                                        description='Zappa Deployment',
-                                        timeout=30,
-                                        memory_size=512,
-                                        publish=True,
-                                        vpc_config=None,
-                                        runtime='python2.7',
-                                        aws_environment_variables=None,
-                                        aws_kms_key_arn=None
+    def update_lambda_configuration(self,
+                                    lambda_arn,
+                                    function_name,
+                                    handler,
+                                    description='Zappa Deployment',
+                                    timeout=30,
+                                    memory_size=512,
+                                    publish=True,
+                                    vpc_config=None,
+                                    runtime='python2.7',
+                                    aws_environment_variables=None,
+                                    aws_kms_key_arn=None,
+                                    tags=None
                                     ):
         """
         Given an existing function ARN, update the configuration variables.
@@ -1173,9 +1180,9 @@ class Zappa(object):
 
         resource_arn = response['FunctionArn']
 
-        if self.tags:
-            self.lambda_client.tag_resource(Resource=resource_arn, Tags=self.tags)
-
+#        existing_lambda_tags = self.lambda_client.list_tags(Resource=resource_arn).get('Tags', {})
+#        existing_lambda_tags.update(self.lambda_tags)
+#        self.lambda_client.tag_resource(Resource=self.lambda_arn, Tags=existing_lambda_tags)
         return resource_arn
 
     def invoke_lambda_function( self,
@@ -1814,13 +1821,13 @@ class Zappa(object):
         Delete the CF stack managed by Zappa.
         """
         try:
-            stack = self.cf_client.describe_stacks(StackName=name)['Stacks'][0]
+            stack_tags = self.cf_client.describe_stacks(StackName=name)['Stacks'][0]
         except: # pragma: no cover
             print('No Zappa stack named {0}'.format(name))
             return False
 
-        tags = {x['Key']:x['Value'] for x in stack['Tags']}
-        if tags.get('ZappaProject') == name:
+        stack_tags = {x['Key']:x['Value'] for x in stack['Tags']}
+        if stack.get('ZappaProject') == name:
             self.cf_client.delete_stack(StackName=name)
             if wait:
                 waiter = self.cf_client.get_waiter('stack_delete_complete')
@@ -1889,10 +1896,11 @@ class Zappa(object):
         else:
             url = 'https://s3.amazonaws.com/{0}/{1}'.format(working_bucket, template)
 
-        tags = [{'Key': key, 'Value': self.tags[key]}
-                for key in self.tags.keys()
-                if key != 'ZappaProject']
-        tags.append({'Key':'ZappaProject','Value':name})
+        stags = self.cloudformation_tags
+    
+
+        cloudformation_tags = [{'Key': key, 'Value': stags[key]} for key in stags.keys() if key != 'ZappaProject']
+        cloudformation_tags .append({'Key':'ZappaProject','Value':name})
         update = True
 
         try:
@@ -1908,14 +1916,14 @@ class Zappa(object):
             self.cf_client.create_stack(StackName=name,
                                         Capabilities=capabilities,
                                         TemplateURL=url,
-                                        Tags=tags)
+                                        Tags=cloudformation_tags)
             print('Waiting for stack {0} to create (this can take a bit)..'.format(name))
         else:
             try:
                 self.cf_client.update_stack(StackName=name,
                                             Capabilities=capabilities,
                                             TemplateURL=url,
-                                            Tags=tags)
+                                            Tags=cloudformation_tags)
                 print('Waiting for stack {0} to update..'.format(name))
             except botocore.client.ClientError as e:
                 if e.response['Error']['Message'] == 'No updates are to be performed.':
