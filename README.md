@@ -59,6 +59,7 @@
     - [IAM Policy](#iam-policy)
     - [API Gateway Lambda Authorizers](#api-gateway-lambda-authorizers)
     - [Cognito User Pool Authorizer](#cognito-user-pool-authorizer)
+    - [API Gateway Resource Policy](#api-gateway-resource-policy)
   - [Setting Environment Variables](#setting-environment-variables)
     - [Local Environment Variables](#local-environment-variables)
     - [Remote AWS Environment Variables](#remote-aws-environment-variables)
@@ -820,6 +821,7 @@ to change Zappa's behavior. Use these at your own risk!
         "apigateway_description": "My funky application!", // Define a custom description for the API Gateway console. Default None.
         "assume_policy": "my_assume_policy.json", // optional, IAM assume policy JSON file
         "attach_policy": "my_attach_policy.json", // optional, IAM attach policy JSON file
+        "apigateway_policy": "my_apigateway_policy.json", // optional, API Gateway resource policy JSON file
         "async_source": "sns", // Source of async tasks. Defaults to "lambda"
         "async_resources": true, // Create the SNS topic and DynamoDB table to use. Defaults to true.
         "async_response_table": "your_dynamodb_table_name",  // the DynamoDB table name to use for captured async responses; defaults to None (can't capture)
@@ -1061,6 +1063,31 @@ You can also use AWS Cognito User Pool Authorizer by adding:
             "arn:aws:cognito-idp:{region}:{account_id}:userpool/{user_pool_id}"
         ]
     }
+}
+```
+
+#### API Gateway Resource Policy
+
+You can also use API Gateway Resource Policies. Example of IP Whitelisting:
+
+```javascript
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "execute-api:Invoke",
+            "Resource": "execute-api:/*",
+            "Condition": {
+                "IpAddress": {
+                    "aws:SourceIp": [
+                        "1.2.3.4/32"
+                    ]
+                }
+            }
+        }
+    ]
 }
 ```
 
