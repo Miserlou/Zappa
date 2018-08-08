@@ -309,6 +309,7 @@ class Zappa(object):
             self.cognito_client = self.boto_client('cognito-idp')
             self.sts_client = self.boto_client('sts')
 
+        self.lambda_tags = lambda_tags
         self.bucket_tags = bucket_tags
         self.cloudformation_tags = cloudformation_tags
         self.cf_template = troposphere.Template()
