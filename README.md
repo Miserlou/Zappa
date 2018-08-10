@@ -374,6 +374,11 @@ You can filter out the contents of the logs with `--filter`, like so:
 
 Note that this uses the [CloudWatch Logs filter syntax](http://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/FilterAndPatternSyntax.html).
 
+To tail logs without following (to exit immediately after displaying the end of the requested logs, pass `--disable-keep-open`:
+
+    $ zappa tail production --since 1h --disable-keep-open
+
+
 ### Remote Function Invocation
 
 You can execute any function in your application directly at any time by using the `invoke` command.
