@@ -1,0 +1,14 @@
+API_STAGE = 'dev'
+APP_FUNCTION = 'app'
+APP_MODULE = 'tests.test_wsgi_script_name_app'
+BINARY_SUPPORT = False
+CONTEXT_HEADER_MAPPINGS = {}
+DEBUG = 'True'
+DJANGO_SETTINGS = None
+DOMAIN = 'api.example.com'
+ENVIRONMENT_VARIABLES = {}
+LOG_LEVEL = 'DEBUG'
+PROJECT_NAME = 'wsgi_script_name_settings'
+COGNITO_TRIGGER_MAPPING = {}
+AWS_BOT_EVENT_MAPPING = {}
+AWS_CONNECT_EVENT_MAPPING = {'arn:aws:connect:aws-region:1234567890:instance/c8c0e68d-2200-4265-82c0-XXXXXXXXXX': 'tests.test_handler.handle_aws_connect_event'}
