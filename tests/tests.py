@@ -1615,14 +1615,13 @@ USE_TZ = True
         # Sanity
         settings_modules = detect_flask_apps()
 
-    @placebo_session
-    def test_warnings_are_ignored(self, session):
-        zappa = Zappa(boto_session=session)
+    def test_warnings_are_ignored(self):
+        zappa = Zappa()
         zappa.aws_region = 'us-west-1'
         self.assertRaises(Warning, zappa.load_credentials)
 
         zappa.ignore_warnings = True
-        zappa.load_credentials(boto_session=session)
+        zappa.load_credentials()
 
         zappa_cli = ZappaCLI()
         zappa_cli.api_stage = 'ttt888'
@@ -1634,7 +1633,6 @@ USE_TZ = True
 
     def test_shameless(self):
         shamelessly_promote()
-
 
     def test_s3_url_parser(self):
         remote_bucket, remote_file = parse_s3_url('s3://my-project-config-files/filename.json')
