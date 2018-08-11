@@ -26,6 +26,7 @@ import zipfile
 from builtins import bytes, int
 from distutils.dir_util import copy_tree
 from io import open
+import struct
 
 import requests
 from setuptools import find_packages
@@ -691,6 +692,30 @@ class Zappa(object):
 
                         if pyc_time > py_time:
                             continue
+
+                # Ensure that the file has the correct magic number for this Python version
+                # https://github.com/Miserlou/Zappa/issues/1356
+                # https://github.com/google/pytype/blob/d1cb7537171106346956310462641657ec8ffdb1/pytype/pyc/magic.py
+                if filename[-4:] == '.pyc':
+                    abs_filename = os.path.join(root, filename)
+                    with open(abs_filename, 'rb') as f:
+                        magic = f.read(2)
+                        magic_int = struct.unpack("<H", magic)[0]
+
+                    if self.runtime == "python3.6":
+                        magic_number_ok = (magic_int in [3360, 3361, 3370, 3371, 3372, 3373, 3375, 3376, 3377, 3378, 3379])
+
+                    else:  # 2.7
+                        magic_number_ok = (magic_int in [62171, 62181, 62191, 62201, 62211])
+
+
+                    if not magic_number_ok:
+                        logger.warning(
+                            "File {} has an invalid magic number for this python runtime: {}. Excluding it from the package.".format(
+                                abs_filename, magic_int
+                            )
+                        )
+                        continue
 
                 # Make sure that the files are all correctly chmodded
                 # Related: https://github.com/Miserlou/Zappa/issues/484
@@ -2161,7 +2186,7 @@ class Zappa(object):
                                                               "path" : "/certificateArn",
                                                               "value" : certificate_arn}
                                                          ])
-    
+
     def update_domain_base_path_mapping(self, domain_name, lambda_name, stage, base_path):
         """
         Update domain base path mapping on API Gateway if it was changed
@@ -2179,8 +2204,8 @@ class Zappa(object):
                     self.apigateway_client.update_base_path_mapping(domainName=domain_name,
                                                                     basePath=base_path_mapping['basePath'],
                                                                     patchOperations=[
-                                                                        {"op" : "replace", 
-                                                                         "path" : "/basePath", 
+                                                                        {"op" : "replace",
+                                                                         "path" : "/basePath",
                                                                          "value" : base_path}
                                                                     ])
         if not found:
@@ -2190,7 +2215,7 @@ class Zappa(object):
                 restApiId=api_id,
                 stage=stage
             )
-        
+
 
     def get_domain_name(self, domain_name, route53=True):
         """
