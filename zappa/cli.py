@@ -2074,22 +2074,18 @@ class ZappaCLI(object):
         self.tags = self.stage_config.get('tags', {})
 
         desired_role_name = self.lambda_name + "-ZappaLambdaExecutionRole"
-        try:
-            self.zappa = Zappa( boto_session=session,
-                                profile_name=self.profile_name,
-                                aws_region=self.aws_region,
-                                load_credentials=self.load_credentials,
-                                desired_role_name=desired_role_name,
-                                desired_role_arn=self.desired_role_arn,
-                                runtime=self.runtime,
-                                tags=self.tags,
-                                endpoint_urls=self.stage_config.get('aws_endpoint_urls',{}),
-                                xray_tracing=self.xray_tracing
-                            )
-        except Warning as warn:
-            click.echo(click.style("Warning!", fg="yellow", bold=True) + warn.message)
-            if self.ignore_warnings is False:
-                self.exit_with_warning()
+
+        self.zappa = Zappa( boto_session=session,
+                            profile_name=self.profile_name,
+                            aws_region=self.aws_region,
+                            load_credentials=self.load_credentials,
+                            desired_role_name=desired_role_name,
+                            desired_role_arn=self.desired_role_arn,
+                            runtime=self.runtime,
+                            tags=self.tags,
+                            endpoint_urls=self.stage_config.get('aws_endpoint_urls',{}),
+                            xray_tracing=self.xray_tracing
+                        )
 
         for setting in CUSTOM_SETTINGS:
             if setting in self.stage_config:

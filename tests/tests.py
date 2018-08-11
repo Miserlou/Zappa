@@ -218,7 +218,7 @@ class TestZappa(unittest.TestCase):
         creds = {
             'AWS_ACCESS_KEY_ID': 'AK123',
             'AWS_SECRET_ACCESS_KEY': 'JKL456',
-            'AWS_DEFAULT_REGION': 'us-east-2'
+            'AWS_DEFAULT_REGION': 'us-east-1'
         }
         with mock.patch.dict('os.environ', creds):
             z.aws_region = None
@@ -227,7 +227,7 @@ class TestZappa(unittest.TestCase):
 
         self.assertEqual(loaded_creds.access_key, 'AK123')
         self.assertEqual(loaded_creds.secret_key, 'JKL456')
-        self.assertEqual(z.boto_session.region_name, 'us-east-2')
+        self.assertEqual(z.boto_session.region_name, 'us-east-1')
 
     def test_create_api_gateway_routes_with_different_auth_methods(self):
         z = Zappa()
