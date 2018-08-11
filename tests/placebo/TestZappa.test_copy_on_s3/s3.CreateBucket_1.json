@@ -1,0 +1,11 @@
+{
+    "status_code": 200, 
+    "data": {
+        "Location": "/test_zappa_upload_s3", 
+        "ResponseMetadata": {
+            "HTTPStatusCode": 200, 
+            "HostId": "8sXq+Uc6Ao7tM6js+GCOK99fJGbL2cNEZsug+9karxoklp9ml5MxqSJiTOw6yHlCWEGDGv7BZFw=", 
+            "RequestId": "B99377D822A42891"
+        }
+    }
+}

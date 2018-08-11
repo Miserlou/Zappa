@@ -10,6 +10,7 @@ openssl genrsa 2048 > account.key # Keep it secret, keep safe!
 
 """
 
+import atexit
 import base64
 import copy
 import json
@@ -18,7 +19,10 @@ import logging
 import re
 import subprocess
 import os
+import shutil
+import sys
 import time
+import tempfile
 
 import binascii
 import textwrap
@@ -40,113 +44,121 @@ LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())
 
 
-def get_cert_and_update_domain(zappa_instance, lambda_name, api_stage, domain, clean_up=True):
+def get_cert_and_update_domain(
+                                zappa_instance,
+                                lambda_name,
+                                api_stage,
+                                domain=None,
+                                manual=False,
+                            ):
     """
     Main cert installer path.
     """
+
     try:
         create_domain_key()
         create_domain_csr(domain)
         get_cert(zappa_instance)
         create_chained_certificate()
 
-        with open('/tmp/signed.crt') as f:
+        with open('{}/signed.crt'.format(gettempdir())) as f:
             certificate_body = f.read()
 
-        with open('/tmp/domain.key') as f:
+        with open('{}/domain.key'.format(gettempdir())) as f:
             certificate_private_key = f.read()
 
-        with open('/tmp/intermediate.pem') as f:
+        with open('{}/intermediate.pem'.format(gettempdir())) as f:
             certificate_chain = f.read()
 
-        if not zappa_instance.get_domain_name(domain):
-
-            zappa_instance.create_domain_name(
-                domain,
-                domain + "-Zappa-LE-Cert",
-                certificate_body,
-                certificate_private_key,
-                certificate_chain,
-                lambda_name,
-                api_stage
-            )
-            print("Created a new domain name. Please note that it can take up to 40 minutes for this domain to be created and propagated through AWS, but it requires no further work on your part.")
+        if not manual:
+            if domain:
+                if not zappa_instance.get_domain_name(domain):
+                    zappa_instance.create_domain_name(
+                        domain_name=domain,
+                        certificate_name=domain + "-Zappa-LE-Cert",
+                        certificate_body=certificate_body,
+                        certificate_private_key=certificate_private_key,
+                        certificate_chain=certificate_chain,
+                        certificate_arn=None,
+                        lambda_name=lambda_name,
+                        stage=api_stage
+                    )
+                    print("Created a new domain name. Please note that it can take up to 40 minutes for this domain to be created and propagated through AWS, but it requires no further work on your part.")
+                else:
+                    zappa_instance.update_domain_name(
+                        domain_name=domain,
+                        certificate_name=domain + "-Zappa-LE-Cert",
+                        certificate_body=certificate_body,
+                        certificate_private_key=certificate_private_key,
+                        certificate_chain=certificate_chain,
+                        certificate_arn=None,
+                        lambda_name=lambda_name,
+                        stage=api_stage
+                    )
         else:
-            zappa_instance.update_domain_name(
-                domain,
-                domain + "-Zappa-LE-Cert",
-                certificate_body,
-                certificate_private_key,
-                certificate_chain
-            )
+            print("Cerificate body:\n")
+            print(certificate_body)
+
+            print("\nCerificate private key:\n")
+            print(certificate_private_key)
+
+            print("\nCerificate chain:\n")
+            print(certificate_chain)
 
     except Exception as e:
         print(e)
         return False
 
-    if clean_up:
-        cleanup()
     return True
 
 
 def create_domain_key():
-    """
-    """
-    proc = subprocess.Popen(
-        ["openssl genrsa 2048 > /tmp/domain.key"],
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        shell=True
-    )
-    out, err = proc.communicate()
-    if proc.returncode != 0:
-        raise IOError("OpenSSL Error: {0}".format(err))
-    return True
+    devnull = open(os.devnull, 'wb')
+    out = subprocess.check_output(['openssl', 'genrsa', '2048'], stderr=devnull)
+    with open(os.path.join(gettempdir(), 'domain.key'), 'wb') as f:
+        f.write(out)
 
 
 def create_domain_csr(domain):
     subj = "/CN=" + domain
-    cmd = 'openssl req -new -sha256 -key /tmp/domain.key -subj "{}"  > /tmp/domain.csr'.format(subj)
-    proc = subprocess.Popen(
-        [cmd],
-        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
-    )
-    out, err = proc.communicate()
-    if proc.returncode != 0:
-        raise IOError("OpenSSL Error: {0}".format(err))
-    return True
+    cmd = [
+        'openssl', 'req',
+        '-new',
+        '-sha256',
+        '-key', os.path.join(gettempdir(), 'domain.key'),
+        '-subj', subj
+    ]
+
+    devnull = open(os.devnull, 'wb')
+    out = subprocess.check_output(cmd, stderr=devnull)
+    with open(os.path.join(gettempdir(), 'domain.csr'), 'wb') as f:
+        f.write(out)
 
 
 def create_chained_certificate():
+    signed_crt = open(os.path.join(gettempdir(), 'signed.crt'), 'rb').read()
+
     cross_cert_url = "https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem"
     cert = requests.get(cross_cert_url)
-    with open('/tmp/intermediate.pem', 'wb') as intermediate_pem:
+    with open(os.path.join(gettempdir(), 'intermediate.pem'), 'wb') as intermediate_pem:
         intermediate_pem.write(cert.content)
 
-    proc = subprocess.Popen(
-        ["cat /tmp/signed.crt /tmp/intermediate.pem > /tmp/chained.pem"],
-        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
-    )
-    out, err = proc.communicate()
-    if proc.returncode != 0:
-        raise IOError("Error: {0}".format(err))
-
-    return True
+    with open(os.path.join(gettempdir(), 'chained.pem'), 'wb') as chained_pem:
+        chained_pem.write(signed_crt)
+        chained_pem.write(cert.content)
 
 
 def parse_account_key():
     """Parse account key to get public key"""
     LOGGER.info("Parsing account key...")
-    proc = subprocess.Popen(
-        ["openssl rsa -in /tmp/account.key -noout -text"],
-        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
-    )
-    out, err = proc.communicate()
-    if proc.returncode != 0:
-        raise IOError("OpenSSL Error: {0}".format(err))
-
-    return out
+    cmd = [
+        'openssl', 'rsa',
+        '-in', os.path.join(gettempdir(), 'account.key'),
+        '-noout',
+        '-text'
+    ]
+    devnull = open(os.devnull, 'wb')
+    return subprocess.check_output(cmd, stderr=devnull)
 
 
 def parse_csr():
@@ -154,16 +166,16 @@ def parse_csr():
     Parse certificate signing request for domains
     """
     LOGGER.info("Parsing CSR...")
-    csr_filename = '/tmp/domain.csr'
-    proc = subprocess.Popen(
-        ["openssl req -in {} -noout -text".format(csr_filename)],
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
-    )
-    out, err = proc.communicate()
-    if proc.returncode != 0:
-        raise IOError("Error loading {0}: {1}".format(csr_filename, err))
+    cmd = [
+        'openssl', 'req',
+        '-in', os.path.join(gettempdir(), 'domain.csr'),
+        '-noout',
+        '-text'
+    ]
+    devnull = open(os.devnull, 'wb')
+    out = subprocess.check_output(cmd, stderr=devnull)
     domains = set([])
-    common_name = re.search(r"Subject:.*? CN=([^\s,;/]+)", out.decode('utf8'))
+    common_name = re.search(r"Subject:.*? CN\s?=\s?([^\s,;/]+)", out.decode('utf8'))
     if common_name is not None:
         domains.add(common_name.group(1))
     subject_alt_names = re.search(r"X509v3 Subject Alternative Name: \n +([^\n]+)\n", out.decode('utf8'), re.MULTILINE | re.DOTALL)
@@ -204,7 +216,7 @@ def register_account():
     LOGGER.info("Registering account...")
     code, result = _send_signed_request(DEFAULT_CA + "/acme/new-reg", {
         "resource": "new-reg",
-        "agreement": "https://letsencrypt.org/documents/LE-SA-v1.1.1-August-1-2016.pdf",
+        "agreement": "https://letsencrypt.org/documents/LE-SA-v1.2-November-15-2017.pdf",
     })
     if code == 201:  # pragma: no cover
         LOGGER.info("Registered!")
@@ -243,7 +255,7 @@ def get_cert(zappa_instance, log=LOGGER, CA=DEFAULT_CA):
 
         challenge = [ch for ch in json.loads(result.decode('utf8'))['challenges'] if ch['type'] == "dns-01"][0]
         token = re.sub(r"[^A-Za-z0-9_\-]", "_", challenge['token'])
-        keyauthorization = "{0}.{1}".format(token, thumbprint)
+        keyauthorization = "{0}.{1}".format(token, thumbprint).encode('utf-8')
 
         # sha256_b64
         digest = _b64(hashlib.sha256(keyauthorization).digest())
@@ -262,7 +274,7 @@ def get_cert(zappa_instance, log=LOGGER, CA=DEFAULT_CA):
         # notify challenge are met
         code, result = _send_signed_request(challenge['uri'], {
             "resource": "challenge",
-            "keyAuthorization": keyauthorization,
+            "keyAuthorization": keyauthorization.decode('utf-8'),
         })
         if code != 202:
             raise ValueError("Error triggering challenge: {0} {1}".format(code, result))
@@ -271,7 +283,7 @@ def get_cert(zappa_instance, log=LOGGER, CA=DEFAULT_CA):
         verify_challenge(challenge['uri'])
 
         # Challenge verified, clean up R53
-        zappa_instance.remove_dns_challenge_txt(zone_id, domain)
+        zappa_instance.remove_dns_challenge_txt(zone_id, domain, digest)
 
     # Sign
     result = sign_certificate()
@@ -309,11 +321,13 @@ def sign_certificate():
 
     """
     LOGGER.info("Signing certificate...")
-    proc = subprocess.Popen(
-        ["openssl req -in /tmp/domain.csr -outform DER"],
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
-    )
-    csr_der, err = proc.communicate()
+    cmd = [
+        'openssl', 'req',
+        '-in', os.path.join(gettempdir(), 'domain.csr'),
+        '-outform', 'DER'
+    ]
+    devnull = open(os.devnull, 'wb')
+    csr_der = subprocess.check_output(cmd, stderr=devnull)
     code, result = _send_signed_request(DEFAULT_CA + "/acme/new-cert", {
         "resource": "new-cert",
         "csr": _b64(csr_der),
@@ -331,7 +345,7 @@ def encode_certificate(result):
     """
     cert_body = """-----BEGIN CERTIFICATE-----\n{0}\n-----END CERTIFICATE-----\n""".format(
         "\n".join(textwrap.wrap(base64.b64encode(result).decode('utf8'), 64)))
-    signed_crt = open("/tmp/signed.crt", "w")
+    signed_crt = open("{}/signed.crt".format(gettempdir()), "w")
     signed_crt.write(cert_body)
     signed_crt.close()
 
@@ -361,12 +375,17 @@ def _send_signed_request(url, payload):
     protected = copy.deepcopy(header)
     protected["nonce"] = urlopen(DEFAULT_CA + "/directory").headers['Replay-Nonce']
     protected64 = _b64(json.dumps(protected).encode('utf8'))
+    cmd = [
+        'openssl', 'dgst',
+        '-sha256',
+        '-sign', os.path.join(gettempdir(), 'account.key')
+    ]
     proc = subprocess.Popen(
-        ["openssl dgst -sha256 -sign /tmp/account.key"],
-        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
+        cmd,
+        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
     out, err = proc.communicate("{0}.{1}".format(protected64, payload64).encode('utf8'))
-    if proc.returncode != 0:
+    if proc.returncode != 0: # pragma: no cover
         raise IOError("OpenSSL Error: {0}".format(err))
     data = json.dumps({
         "header": header, "protected": protected64,
@@ -379,29 +398,30 @@ def _send_signed_request(url, payload):
         return getattr(e, "code", None), getattr(e, "read", e.__str__)()
 
 ##
-# File Utility
+# Temporary Directory Utility
 ##
 
 
+__tempdir = None
+
+def gettempdir():
+    """
+    Lazily creates a temporary directory in a secure manner. When Python exits,
+    or the cleanup() function is called, the directory is erased.
+    """
+    global __tempdir
+    if __tempdir is not None:
+        return __tempdir 
+    __tempdir = tempfile.mkdtemp()
+    return __tempdir
+
+
+@atexit.register
 def cleanup():
     """
     Delete any temporary files.
     """
-    filenames = [
-        '/tmp/account.key',
-        '/tmp/domain.key',
-        '/tmp/key.key',
-        '/tmp/domain.csr',
-        '/tmp/signed.crt',
-        '/tmp/intermediate.pem',
-        '/tmp/chained.pem',
-        '/tmp/lets-encrypt-x3-cross-signed.pem'
-    ]
-
-    for filename in filenames:
-        try:
-            os.remove(filename)
-        except OSError:
-            pass
-
-    return True
+    global __tempdir
+    if __tempdir is not None:
+        shutil.rmtree(__tempdir)
+        __tempdir = None

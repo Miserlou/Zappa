@@ -1,18 +1,24 @@
-base58==0.2.3
-botocore==1.4.65
-boto3==1.4.1
-docutils==0.12
-futures==3.0.5
-hjson==2.0.2
-jmespath==0.9.0
+argcomplete==1.9.3
+base58==1.0.0
+botocore>=1.7.19
+boto3>=1.4.7
+docutils>=0.12
+durationpy==0.5
+future==0.16.0
+futures==3.2.0; python_version < '3'
+hjson==3.0.1
+jmespath==0.9.3
 kappa==0.6.0
-lambda-packages==0.10.0
-python-dateutil==2.5.3
-python-slugify==1.2.1
+lambda-packages==0.20.0
+pip>=9.0.1, <=10.1.0
+python-dateutil>=2.6.1, <2.7.0
+python-slugify==1.2.4
+PyYAML==3.12
 requests>=2.10.0
-six==1.10.0
-tqdm==4.8.4
-troposphere==1.8.2
-Werkzeug==0.11.11
-wheel==0.29.0
+six>=1.11.0
+toml>=0.9.4
+tqdm==4.19.1
+troposphere>=1.9.0
+Werkzeug>=0.14
+wheel>=0.30.0
 wsgi-request-logger==0.4.6

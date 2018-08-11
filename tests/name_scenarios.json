@@ -1,0 +1,66 @@
+[
+  {
+    "id": "integer",
+    "value": 12,
+    "is_valid": false
+  },
+  {
+    "id": "float",
+    "value": 3.1415,
+    "is_valid": false
+  },
+  {
+    "id": "list",
+    "value": [
+      "a",
+      1,
+      null
+    ],
+    "is_valid": false
+  },
+  {
+    "id": null,
+    "value": null,
+    "is_valid": false
+  },
+  {
+    "id": "empty string",
+    "value": "",
+    "is_valid": false
+  },
+  {
+    "id": "ok",
+    "value": "FrancoZappa",
+    "is_valid": true
+  },
+  {
+    "id": "with space",
+    "value": "Franco Zappa",
+    "is_valid": false
+  },
+  {
+    "id": "one char",
+    "value": "A",
+    "is_valid": true
+  },
+  {
+    "id": "one digit",
+    "value": "5",
+    "is_valid": true
+  },
+  {
+    "id": "80 chars",
+    "value": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+    "is_valid": true
+  },
+  {
+    "id": "81 chars",
+    "value": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzza",
+    "is_valid": false
+  },
+  {
+    "id": "bad_chars",
+    "value": "hi&bye",
+    "is_valid": false
+  }
+]

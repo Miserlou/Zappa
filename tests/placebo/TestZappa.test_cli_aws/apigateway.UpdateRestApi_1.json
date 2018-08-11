@@ -1,0 +1,30 @@
+{
+    "status_code": 200, 
+    "data": {
+        "id": "9q10y8x8j9", 
+        "name": "image-fly-test5", 
+        "description": "Created automatically by Zappa.", 
+        "ResponseMetadata": {
+            "RetryAttempts": 0, 
+            "HTTPStatusCode": 200, 
+            "RequestId": "6c33e026-ef2b-11e6-8557-cbcea87a07dc", 
+            "HTTPHeaders": {
+                "date": "Fri, 10 Feb 2017 00:54:05 GMT", 
+                "x-amzn-requestid": "6c33e026-ef2b-11e6-8557-cbcea87a07dc", 
+                "content-length": "118", 
+                "content-type": "application/json", 
+                "connection": "keep-alive"
+            }
+        }, 
+        "createdDate": {
+            "hour": 20, 
+            "__class__": "datetime", 
+            "month": 2, 
+            "second": 13, 
+            "microsecond": 0, 
+            "year": 2017, 
+            "day": 9, 
+            "minute": 24
+        }
+    }
+}

@@ -3,15 +3,23 @@
        "touch": false,
        "s3_bucket": "lmbda",
        "app_function": "tests.test_app.hello_world",
+       "use_precompiled_packages": false,
        "callbacks": {
-           "settings": "test_settings.callback",
-           "post": "test_settings.callback",
+           "settings": "tests.test_app.callback",
+           "post": "tests.test_app.callback",
            "zip": "test_settings.callback"
        },
        "delete_local_zip": true,
        "debug": true,
-       "parameter_depth": 2, 
-       "prebuild_script": "test_settings.prebuild_me",
+       "parameter_depth": 2,
+       "prebuild_script": "tests.test_app.prebuild_me",
+       "environment_variables": {
+           "TEST_ENV_VAR": "test_value"
+       },
+       "context_header_mappings": {
+           "CognitoIdentityId": "identity.cognitoIdentityId",
+           "APIStage": "stage"
+       },
        "events": [
            {
                "function": "tests.test_app.schedule_me",
@@ -25,8 +33,29 @@
                      "sns:Publish"
                    ]
                }
+           },
+           {
+               "function": "test.test_app.method_filters",
+               "event_source": {
+                   "arn": "arn:aws:sns:::with-filters",
+                   "filters": {
+                        "interests": ["python", "aws", "zappa"],
+                        "version": ["1.0"]
+                    },
+                   "events": [
+                     "sns:Publish"
+                   ]
+               }
            }
-       ]
+       ],
+       "cognito": {
+           "user_pool": "user-pool-id",
+           "triggers": [
+                {"source": "PreSignUp_SignUp",
+                 "function": "test.tasks.pre_signup_function"
+                }
+            ]
+      }
     },
     "devor": {
        "s3_bucket": "lmbda",
@@ -38,11 +67,54 @@
        },
        "delete_local_zip": true,
        "debug": true,
-       "parameter_depth": 2, 
+       "parameter_depth": 2,
        "prebuild_script": "test_settings.prebuild_me",
        "events": [{
           "function": "tests.test_app.schedule_me",
           "expression": "rate(1 minute)"
        }]
+    },
+    "extendo": {
+       "extends": "ttt888",
+       "touch": true,
+       "prebuild_script": "test_settings.prebuild_me",
+       "environment_variables": {
+          "EXTENDO": "You bet"
+       }
+    },
+    "extendo2": {
+       "extends": "extendo",
+       "s3_bucket": "lmbda2"
+    },
+    "slim_handler": {
+       "extends": "ttt888",
+       "slim_handler": true,
+       "delete_local_zip": true
+    },
+    "deprecated_remote_env": {
+       "s3_bucket": "lmbda",
+       "remote_env_bucket": "lmbda-env",
+       "remote_env_file": "dev/env.json"
+    },
+    "remote_env": {
+       "s3_bucket": "lmbda",
+       "remote_env": "s3://lmbda-env/prod/env.json"
+    },
+    "extendofail": {
+       "extends": "failfail",
+       "prebuild_script": "test_settings.prebuild_me",
+       "environment_variables": {
+          "EXTENDO": "You bet"
+       }
+    },
+    "build_package_only_delete_local_zip_false": {
+      "delete_local_zip": false,
+      "use_precompiled_packages": false,
+      "delete_s3_zip": false
+    },
+    "build_package_only_delete_local_zip_true": {
+      "delete_local_zip": true,
+      "use_precompiled_packages": false,
+      "delete_s3_zip": false
     }
 }
