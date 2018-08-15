@@ -937,7 +937,7 @@ class Zappa(object):
         try:
             source_size = os.stat(source_path).st_size
             print("Uploading {0} ({1})..".format(dest_path, human_size(source_size)))
-            progress = tqdm(total=float(os.path.getsize(source_path)), unit_scale=True, unit='B', disable=disable_progress)
+            progress = tqdm(total=float(os.path.getsize(source_path)), unit_scale=True, unit_divisor=1024, unit='iB', disable=disable_progress)
 
             # Attempt to upload to S3 using the S3 meta client with the progress bar.
             # If we're unable to do that, try one more time using a session client,
