@@ -2,6 +2,7 @@ import calendar
 import datetime
 import durationpy
 import fnmatch
+import io
 import json
 import os
 import re
@@ -143,7 +144,7 @@ def detect_flask_apps():
 
             full = os.path.join(root, filename)
 
-            with open(full, 'r') as f:
+            with io.open(full, 'r', encoding='utf-8') as f:
                 lines = f.readlines()
                 for line in lines:
                     app = None

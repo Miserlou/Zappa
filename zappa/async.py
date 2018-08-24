@@ -381,13 +381,13 @@ def task(*args, **kwargs):
 
     if not kwargs:  # Default Values
         service = 'lambda'
-        lambda_function_name = os.environ.get('AWS_LAMBDA_FUNCTION_NAME')
-        aws_region = os.environ.get('AWS_REGION')
+        lambda_function_name_arg = None
+        aws_region_arg = None
 
     else:  # Arguments were passed
         service = kwargs.get('service', 'lambda')
-        lambda_function_name = kwargs.get('remote_aws_lambda_function_name') or os.environ.get('AWS_LAMBDA_FUNCTION_NAME')
-        aws_region = kwargs.get('remote_aws_region') or os.environ.get('AWS_REGION')
+        lambda_function_name_arg = kwargs.get('remote_aws_lambda_function_name')
+        aws_region_arg = kwargs.get('remote_aws_region')
 
     capture_response = kwargs.get('capture_response', False)
 
@@ -415,6 +415,9 @@ def task(*args, **kwargs):
                 When outside of Lambda, the func passed to @task is run and we
                 return the actual value.
             """
+            lambda_function_name = lambda_function_name_arg or os.environ.get('AWS_LAMBDA_FUNCTION_NAME')
+            aws_region = aws_region_arg or os.environ.get('AWS_REGION')
+
             if (service in ASYNC_CLASSES) and (lambda_function_name):
                 send_result = ASYNC_CLASSES[service](lambda_function_name=lambda_function_name,
                                                      aws_region=aws_region,
