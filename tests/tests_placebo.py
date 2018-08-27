@@ -9,7 +9,7 @@ from .utils import placebo_session
 
 from zappa.cli import ZappaCLI
 from zappa.handler import LambdaHandler
-from zappa.utilities import (add_event_source, remove_event_source)
+from zappa.utilities import (add_event_source, get_event_source_status, remove_event_source)
 from zappa.core import Zappa
 
 
@@ -462,8 +462,8 @@ class TestZappa(unittest.TestCase):
                     "s3:ObjectCreated:*"
                   ]}
         add_event_source(event_source, 'lambda:lambda:lambda:lambda', 'test_settings.callback', session, dry=True)
+        get_event_source_status(event_source, 'lambda:lambda:lambda:lambda', 'test_settings.callback', session, dry=True)
         remove_event_source(event_source, 'lambda:lambda:lambda:lambda', 'test_settings.callback', session, dry=True)
-        # get_event_source_status(event_source, 'lambda:lambda:lambda:lambda', 'test_settings.callback', session, dry=True)
 
     @placebo_session
     def test_cognito_trigger(self, session):
