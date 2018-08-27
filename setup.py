@@ -10,7 +10,7 @@ try:
     README = convert('README.md', 'rst')
 except ImportError:
     README = open(os.path.join(os.path.dirname(__file__), 'README.md'), 'r', encoding="utf-8").read()
-
+dependency_links = []
 with open(os.path.join(os.path.dirname(__file__), 'requirements.txt')) as f:
     if sys.version_info[0] == 2:
         required = f.read().splitlines()
@@ -22,7 +22,11 @@ with open(os.path.join(os.path.dirname(__file__), 'requirements.txt')) as f:
         required = []
         for package in f.read().splitlines():
             if 'futures' not in package:
-                required.append(package)
+                if '://' in package:
+                    dependency_links.append(package.replace('-e ', '') + '-0')
+                    required.append(package.split('egg=')[1])
+                else:
+                    required.append(package)
 
 with open(os.path.join(os.path.dirname(__file__), 'test_requirements.txt')) as f:
     test_required = f.read().splitlines()
@@ -31,6 +35,7 @@ setup(
     name='zappa',
     version=__version__,
     packages=['zappa'],
+    dependency_links=dependency_links,
     install_requires=required,
     tests_require=test_required,
     test_suite='nose.collector',
