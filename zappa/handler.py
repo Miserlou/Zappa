@@ -408,6 +408,7 @@ class LambdaHandler(object):
             records = event.get('Records')
             result = None
             #whole_function = self.get_function_for_aws_event(records[0])
+            # that didn't work. Lets just get it from the the Zappa settings instead
             whole_function = '{}.{}'.format(self.settings.APP_MODULE, self.settings.APP_FUNCTION)
             if whole_function:
                 app_function = self.import_module_and_get_function(whole_function)
