@@ -344,7 +344,7 @@ class LambdaHandler(object):
         # If in DEBUG mode, log all raw incoming events.
         if settings.DEBUG:
             logger.debug('Zappa Event: {}'.format(event))
-            logger.debug('settings {}'.format(self.settings))
+            logger.debug('settings {}'.format(dir(self.settings)))
             logger.debug('setting_name {}'.format(self.settings_name))
         # Set any API Gateway defined Stage Variables
         # as env vars
@@ -411,7 +411,8 @@ class LambdaHandler(object):
 
             records = event.get('Records')
             result = None
-            whole_function = self.get_function_for_aws_event(records[0])
+            #whole_function = self.get_function_for_aws_event(records[0])
+            whole_function = '{}.{}'.format(self.settings.APP_MODULE, self.settings.APP_FUNCTION)
             if whole_function:
                 app_function = self.import_module_and_get_function(whole_function)
                 result = self.run_function(app_function, event, context)
