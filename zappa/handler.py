@@ -227,6 +227,7 @@ class LambdaHandler(object):
         Given a modular path to a function, import that module
         and return the function.
         """
+        logging.debug('whole fcn is {}'.format(whole_function))
         module, function = whole_function.rsplit('.', 1)
         app_module = importlib.import_module(module)
         app_function = getattr(app_module, function)
