@@ -228,6 +228,7 @@ class LambdaHandler(object):
         and return the function.
         """
         logging.debug('whole fcn is {}'.format(whole_function))
+
         module, function = whole_function.rsplit('.', 1)
         app_module = importlib.import_module(module)
         app_function = getattr(app_module, function)
@@ -343,7 +344,8 @@ class LambdaHandler(object):
         # If in DEBUG mode, log all raw incoming events.
         if settings.DEBUG:
             logger.debug('Zappa Event: {}'.format(event))
-
+            logger.debug('settings {}'.format(self.settings))
+            logger.debug('setting_name {}'.format(self.settings_name))
         # Set any API Gateway defined Stage Variables
         # as env vars
         if event.get('stageVariables'):
