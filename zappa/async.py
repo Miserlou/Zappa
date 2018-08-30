@@ -129,7 +129,7 @@ class LambdaAsyncResponse(object):
     Base Response Dispatcher class
     Can be used directly or subclassed if the method to send the message is changed.
     """
-    def __init__(self, lambda_function_name=None, aws_region=None, capture_response=False, **kwargs):
+    def __init__(self, lambda_function_name=None, aws_region=None, capture_response=False, allow_update_status=False, **kwargs):
         """ """
         if kwargs.get('boto_session'):
             self.client = kwargs.get('boto_session').client('lambda')
@@ -154,6 +154,7 @@ class LambdaAsyncResponse(object):
             self.response_id = None
 
         self.capture_response = capture_response
+        self.allow_update_status = allow_update_status
 
 
     def send(self, task_path, args, kwargs):
@@ -163,6 +164,7 @@ class LambdaAsyncResponse(object):
         message = {
                 'task_path': task_path,
                 'capture_response': self.capture_response,
+                'allow_update_status': self.allow_update_status,
                 'response_id': self.response_id,
                 'args': args,
                 'kwargs': kwargs
@@ -190,7 +192,7 @@ class SnsAsyncResponse(LambdaAsyncResponse):
     Send a SNS message to a specified SNS topic
     Serialise the func path and arguments
     """
-    def __init__(self, lambda_function_name=None, aws_region=None, capture_response=False, **kwargs):
+    def __init__(self, lambda_function_name=None, aws_region=None, capture_response=False, allow_update_status=False, **kwargs):
 
         self.lambda_function_name = lambda_function_name
         self.aws_region=aws_region
@@ -297,7 +299,9 @@ def run_message(message):
                 'async_response': {'S': str(json.dumps('N/A'))},
             }
         )
-        message['kwargs']['response_id'] = message['response_id']
+        if message.get('allow_update_status', False):
+            # If true, async task must include **kwargs in function parameters
+            message['kwargs']['response_id'] = message['response_id']
 
     func = import_and_get_task(message['task_path'])
     if hasattr(func, 'sync'):
@@ -329,7 +333,7 @@ def run_message(message):
 ##
 
 
-def run(func, args=[], kwargs={}, service='lambda', capture_response=False,
+def run(func, args=[], kwargs={}, service='lambda', capture_response=False, allow_update_status=False,
         remote_aws_lambda_function_name=None, remote_aws_region=None, **task_kwargs):
     """
     Instead of decorating a function with @task, you can just run it directly.
@@ -351,6 +355,7 @@ def run(func, args=[], kwargs={}, service='lambda', capture_response=False,
     return ASYNC_CLASSES[service](lambda_function_name=lambda_function_name,
                                   aws_region=aws_region,
                                   capture_response=capture_response,
+                                  allow_update_status=allow_update_status,
                                   **task_kwargs).send(task_path, args, kwargs)
 
 
@@ -391,6 +396,7 @@ def task(*args, **kwargs):
         aws_region_arg = kwargs.get('remote_aws_region')
 
     capture_response = kwargs.get('capture_response', False)
+    allow_update_status = kwargs.get('allow_update_status', False)
 
     def func_wrapper(func):
 
@@ -422,7 +428,8 @@ def task(*args, **kwargs):
             if (service in ASYNC_CLASSES) and (lambda_function_name):
                 send_result = ASYNC_CLASSES[service](lambda_function_name=lambda_function_name,
                                                      aws_region=aws_region,
-                                                     capture_response=capture_response).send(task_path, args, kwargs)
+                                                     capture_response=capture_response,
+                                                     allow_update_status=allow_update_status).send(task_path, args, kwargs)
                 return send_result
             else:
                 return func(*args, **kwargs)
