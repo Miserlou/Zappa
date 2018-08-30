@@ -2651,9 +2651,9 @@ class ZappaCLI(object):
         req = requests.get(endpoint_url + touch_path)
 
         # Sometimes on really large packages, it can take 60-90 secs to be
-        # ready and requests will retrun 504 status_code until ready. 
+        # ready and requests will return 504 status_code until ready. 
         # So, if we get a 504 status code, rerun the request up to 4 times or 
-        # until we dont get a 504 error
+        # until we don't get a 504 error
         if req.status_code == 504:
             i = 0
             status_code = 504
