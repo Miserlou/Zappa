@@ -297,6 +297,7 @@ def run_message(message):
                 'async_response': {'S': str(json.dumps('N/A'))},
             }
         )
+        message['kwargs']['response_id'] = message['response_id']
 
     func = import_and_get_task(message['task_path'])
     if hasattr(func, 'sync'):
@@ -485,3 +486,21 @@ def get_async_response(response_id):
         'status': response['Item']['async_status']['S'],
         'response': json.loads(response['Item']['async_response']['S']),
     }
+
+
+def update_async_response(response_id, updated_status):
+    """
+    Update the response from the async table
+    """
+    response = DYNAMODB_CLIENT.update_item(
+        TableName=ASYNC_RESPONSE_TABLE,
+        Key={'id': {'S': str(response_id)}},
+        UpdateExpression="set async_status = :s",
+        ExpressionAttributeValues={
+            ':s': {'S': updated_status},
+        },
+        ReturnValues="UPDATED_NEW"
+    )
+
+    print("UpdateItem succeeded:")
+    print(json.dumps(response, indent=4))
