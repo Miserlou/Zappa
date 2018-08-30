@@ -2655,12 +2655,12 @@ class ZappaCLI(object):
         # So, if we get a 504 status code, rerun the request up to 4 times or 
         # until we dont get a 504 error
         if req.status_code == 504:
-            max_tries = 0
+            i = 0
             status_code = 504
-            while status_code == 504 and max_tries <= 4:
+            while status_code == 504 and i <= 4:
                 req = requests.get(endpoint_url + touch_path)
                 status_code = req.status_code
-                max_tries += 1
+                i += 1
 
         if req.status_code >= 500:
             raise ClickException(click.style("Warning!", fg="red", bold=True) +
