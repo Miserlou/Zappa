@@ -1,0 +1,18 @@
+{
+    "status_code": 200,
+    "data": {
+        "items": [
+            {
+                "description": "Api Key for rdrde6pecd",
+                "enabled": true,
+                "stageKeys": [
+                    "rdrde6pecd/devor"
+                ],
+                "lastUpdatedDate": 1470384739,
+                "createdDate": 1470384739,
+                "id": "W9QTptojpE3bsg816Rrjh4was83amtaAx5s6NXaAl",
+                "name": "devor_rdrde6pecd"
+            }
+       ]
+    }
+}
