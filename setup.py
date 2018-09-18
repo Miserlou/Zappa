@@ -6,8 +6,8 @@ from zappa import __version__
 
 # Set external files
 try:
-    from pypandoc import convert
-    README = convert('README.md', 'rst')
+    from pypandoc import convert_file
+    README = convert_file('README.md', 'rst')
 except ImportError:
     README = open(os.path.join(os.path.dirname(__file__), 'README.md'), 'r', encoding="utf-8").read()
 
