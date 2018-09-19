@@ -8,7 +8,7 @@ future==0.16.0
 futures==3.2.0; python_version < '3'
 hjson==3.0.1
 jmespath==0.9.3
-kappa==0.6.0
+-e git+https://github.com/jneves/kappa@9156d35127b0d09b8f7c99f4d7f7f3733f168514#egg=kappa
 lambda-packages==0.20.0
 pip>=9.0.1, <=10.1.0
 python-dateutil>=2.6.1, <2.7.0
