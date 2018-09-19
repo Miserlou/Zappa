@@ -2364,10 +2364,10 @@ class Zappa(object):
             http://docs.aws.amazon.com/lambda/latest/dg/tutorial-scheduled-events-schedule-expressions.html
         """
 
-        # The two stream sources - DynamoDB and Kinesis - are working differently than the other services (pull vs push)
+        # The stream sources - DynamoDB, Kinesis and SQS - are working differently than the other services (pull vs push)
         # and do not require event permissions. They do require additional permissions on the Lambda roles though.
         # http://docs.aws.amazon.com/lambda/latest/dg/lambda-api-permissions-ref.html
-        pull_services = ['dynamodb', 'kinesis']
+        pull_services = ['dynamodb', 'kinesis', 'sqs']
 
         # XXX: Not available in Lambda yet.
         # We probably want to execute the latest code.
@@ -2612,7 +2612,10 @@ class Zappa(object):
                     function,
                     self.boto_session
                 )
-                print("Removed event " + name + " (" + str(event_source['events']) + ").")
+                print("Removed event {}{}.".format(
+                        name,
+                        " ({})".format(str(event_source['events'])) if 'events' in event_source else '')
+                )
 
     ###
     # Async / SNS

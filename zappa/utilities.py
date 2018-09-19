@@ -206,6 +206,7 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
     import kappa.event_source.kinesis
     import kappa.event_source.s3
     import kappa.event_source.sns
+    import kappa.event_source.sqs
     import kappa.event_source.cloudwatch
     import kappa.policy
     import kappa.role
@@ -248,6 +249,7 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
         'kinesis': kappa.event_source.kinesis.KinesisEventSource,
         's3': kappa.event_source.s3.S3EventSource,
         'sns': ExtendedSnsEventSource,
+        'sqs': kappa.event_source.sqs.SqsEventSource,
         'events': kappa.event_source.cloudwatch.CloudWatchEventSource
     }
 
