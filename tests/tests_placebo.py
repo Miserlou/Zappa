@@ -376,6 +376,29 @@ class TestZappa(unittest.TestCase):
         }
         self.assertEqual("AWS KINESIS EVENT", lh.handler(event, None))
 
+        # Test AWS SQS event
+        event = {
+            u"Records": [
+                {
+                    u"messageId": u"c80e8021-a70a-42c7-a470-796e1186f753",
+                    u"receiptHandle": u"AQEBJQ+/u6NsnT5t8Q/VbVxgdUl4TMKZ5FqhksRdIQvLBhwNvADoBxYSOVeCBXdnS9P+erlTtwEALHsnBXynkfPLH3BOUqmgzP25U8kl8eHzq6RAlzrSOfTO8ox9dcp6GLmW33YjO3zkq5VRYyQlJgLCiAZUpY2D4UQcE5D1Vm8RoKfbE+xtVaOctYeINjaQJ1u3mWx9T7tork3uAlOe1uyFjCWU5aPX/1OHhWCGi2EPPZj6vchNqDOJC/Y2k1gkivqCjz1CZl6FlZ7UVPOx3AMoszPuOYZ+Nuqpx2uCE2MHTtMHD8PVjlsWirt56oUr6JPp9aRGo6bitPIOmi4dX0FmuMKD6u/JnuZCp+AXtJVTmSHS8IXt/twsKU7A+fiMK01NtD5msNgVPoe9JbFtlGwvTQ==",
+                    u"body": u"{\"foo\":\"bar\"}",
+                    u"attributes": {
+                        u"ApproximateReceiveCount": u"3",
+                        u"SentTimestamp": u"1529104986221",
+                        u"SenderId": u"594035263019",
+                        u"ApproximateFirstReceiveTimestamp": u"1529104986230"
+                        },
+                    u"messageAttributes": {},
+                    u"md5OfBody": u"9bb58f26192e4ba00f01e2e7b136bbd8",
+                    u"eventSource": u"aws:sqs",
+                    u"eventSourceARN": u"arn:aws:sqs:us-west-2:594035263019:NOTFIFOQUEUE",
+                    u"awsRegion": u"us-west-2"
+                    }
+                ]
+            }
+        self.assertEqual("AWS SQS EVENT", lh.handler(event, None))
+
         # Test Authorizer event
         event = {u'authorizationToken': u'hubtoken1', u'methodArn': u'arn:aws:execute-api:us-west-2:1234:xxxxx/dev/GET/v1/endpoint/param', u'type': u'TOKEN'}
         self.assertEqual("AUTHORIZER_EVENT", lh.handler(event, None))
