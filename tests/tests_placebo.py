@@ -393,7 +393,7 @@ class TestZappa(unittest.TestCase):
                     u"md5OfBody": u"9bb58f26192e4ba00f01e2e7b136bbd8",
                     u"eventSource": u"aws:sqs",
                     u"eventSourceARN": u"arn:aws:sqs:1",
-                    u"awsRegion": u"us-west-2"
+                    u"awsRegion": u"us-east-1"
                     }
                 ]
             }
