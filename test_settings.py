@@ -65,3 +65,4 @@ def authorizer_event(event, content):
 
 def command():
     print("command")
+
