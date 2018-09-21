@@ -286,7 +286,7 @@ class LambdaHandler(object):
         """
         Get the associated function to execute for a triggered AWS event
 
-        Support S3, SNS, DynamoDB and kinesis events
+        Support S3, SNS, DynamoDB, kinesis and SQS events
         """
         if 's3' in record:
             if ':' in record['s3']['configurationId']:
@@ -301,7 +301,7 @@ class LambdaHandler(object):
             except ValueError:
                 pass
             arn = record['Sns'].get('TopicArn')
-        elif 'dynamodb' in record or 'kinesis' in record:
+        elif 'dynamodb' in record or 'kinesis' in record or 'sqs' in record:
             arn = record.get('eventSourceARN')
         elif 's3' in record:
             arn = record['s3']['bucket']['arn']
