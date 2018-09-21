@@ -301,7 +301,9 @@ class LambdaHandler(object):
             except ValueError:
                 pass
             arn = record['Sns'].get('TopicArn')
-        elif 'dynamodb' in record or 'kinesis' in record or 'sqs' in record:
+        elif 'dynamodb' in record or 'kinesis' in record:
+            arn = record.get('eventSourceARN')
+        elif 'eventSource' in record and record.get('eventSource') == 'aws:sqs':
             arn = record.get('eventSourceARN')
         elif 's3' in record:
             arn = record['s3']['bucket']['arn']
