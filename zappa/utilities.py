@@ -4,6 +4,7 @@ import durationpy
 import fnmatch
 import io
 import json
+import logging
 import os
 import re
 import shutil
@@ -16,6 +17,8 @@ if sys.version_info[0] < 3:
     from urlparse import urlparse
 else:
     from urllib.parse import urlparse
+
+LOG = logging.getLogger(__name__)
 
 ##
 # Settings / Packaging
