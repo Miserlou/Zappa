@@ -472,7 +472,14 @@ In your *zappa_settings.json* file, define your [event sources](http://docs.aws.
                   "arn":  "arn:aws:s3:::my-bucket",
                   "events": [
                     "s3:ObjectCreated:*" // Supported event types: http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html#supported-notification-event-types
-                  ]
+                  ],
+		  "key_filters": [{
+                     "type":"prefix",
+                     "value":"input/"
+                  },{
+                     "type":"suffix",
+                     "value":".png"
+                  }]
                }
             }],
        ...
