@@ -6,7 +6,7 @@ python:
 cache:
   - pip
 install:
-  - "pip install setuptools --upgrade; pip install -r test_requirements.txt; pip install -e git+https://github.com/django/django-contrib-comments.git#egg=django-contrib-comments; python setup.py install" 
+  - "pip install pipenv --upgrade --upgrade-strategy=only-if-needed; pipenv install --dev; pip install -e git+https://github.com/django/django-contrib-comments.git#egg=django-contrib-comments"
 # command to run tests
 env:
   - TESTCASE=tests/test_handler.py
@@ -14,8 +14,8 @@ env:
   - TESTCASE=tests/tests_placebo.py
   - TESTCASE=tests/tests_async.py
   - TESTCASE=tests/tests.py
-script: 
-  - nosetests $TESTCASE --with-coverage --cover-package=zappa --with-timer
+script:
+  - pipenv run nosetests $TESTCASE --with-coverage --cover-package=zappa --with-timer
     #  - coverage combine --append
 after_success:
   coveralls

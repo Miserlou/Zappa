@@ -1,0 +1,25 @@
+[[source]]
+
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+
+[packages]
+
+
+
+[dev-packages]
+
+nose = "*"
+mock = "*"
+placebo = "*"
+zappa = {path = ".", editable = true}
+flask = "*"
+coverage = "*"
+nose-timer = "*"
+futures = {version = "*", python_version = "<'3.0.0'"}
+
+[scripts]
+
+"tests" = "bash ./test.sh"

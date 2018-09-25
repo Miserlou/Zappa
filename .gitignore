@@ -1,5 +1,6 @@
 *~
 *.zip
+*.tar.gz
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -85,3 +86,5 @@ zappa_settings.json
 # Sublime Text stuff
 *.sublime-project
 *.sublime-workspace
+
+/dj_test_settings.py
