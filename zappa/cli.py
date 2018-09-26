@@ -2332,10 +2332,17 @@ class ZappaCLI(object):
             event_mapping = {}
             events = self.stage_config.get('events', [])
             for event in events:
-                arn = event.get('event_source', {}).get('arn')
                 function = event.get('function')
-                if arn and function:
-                    event_mapping[arn] = function
+                if not function:
+                    continue
+
+                arns = event.get('event_source', {}).get('arn')
+                if not isinstance(arns, list):
+                    arns = [arns]
+
+                for arn in arns:
+                    if arn:
+                        event_mapping[arn] = function
             settings_s = settings_s + "AWS_EVENT_MAPPING={0!s}\n".format(event_mapping)
 
             # Map Lext bot events

@@ -2463,33 +2463,41 @@ class Zappa(object):
                         print("Problem scheduling {} with expression {}.".format(rule_name, expression))
 
             elif event_source:
-                service = self.service_from_arn(event_source['arn'])
+                arns = event_source['arn']
+                if not isinstance(event_source['arn'], list):
+                    arns = [event_source['arn']]
 
-                if service not in pull_services:
-                    svc = ','.join(event['event_source']['events'])
-                    self.create_event_permission(
-                        lambda_name,
-                        service + '.amazonaws.com',
-                        event['event_source']['arn']
+                for arn in arns:
+                    service = self.service_from_arn(arn)
+
+                    if service not in pull_services:
+                        svc = ','.join(event['event_source']['events'])
+                        self.create_event_permission(
+                            lambda_name,
+                            service + '.amazonaws.com',
+                            arn
+                        )
+                    else:
+                        svc = service
+
+                    rule_response = add_event_source(
+                        {
+                            'arn': arn,
+                            'events': event_source['events']
+                        },
+                        lambda_arn,
+                        function,
+                        self.boto_session
                     )
-                else:
-                    svc = service
 
-                rule_response = add_event_source(
-                    event_source,
-                    lambda_arn,
-                    function,
-                    self.boto_session
-                )
-
-                if rule_response == 'successful':
-                    print("Created {} event schedule for {}!".format(svc, function))
-                elif rule_response == 'failed':
-                    print("Problem creating {} event schedule for {}!".format(svc, function))
-                elif rule_response == 'exists':
-                    print("{} event schedule for {} already exists - Nothing to do here.".format(svc, function))
-                elif rule_response == 'dryrun':
-                    print("Dryrun for creating {} event schedule for {}!!".format(svc, function))
+                    if rule_response == 'successful':
+                        print("Created {} event schedule for {}:{}!".format(svc, function, arn))
+                    elif rule_response == 'failed':
+                        print("Problem creating {} event schedule for {}:{}!".format(svc, function, arn))
+                    elif rule_response == 'exists':
+                        print("{} event schedule for {}:{} already exists - Nothing to do here.".format(svc, function, arn))
+                    elif rule_response == 'dryrun':
+                        print("Dryrun for creating {} event schedule for {}:{}!!".format(svc, function, arn))
             else:
                 print("Could not create event {} - Please define either an expression or an event source".format(name))
 
@@ -2601,17 +2609,25 @@ class Zappa(object):
             function = event['function']
             name = event.get('name', function)
             event_source = event.get('event_source', function)
-            service = self.service_from_arn(event_source['arn'])
-            # DynamoDB and Kinesis streams take quite a while to setup after they are created and do not need to be
-            # re-scheduled when a new Lambda function is deployed. Therefore, they should not be removed during zappa
-            # update or zappa schedule.
-            if service not in excluded_source_services:
-                remove_event_source(
-                    event_source,
-                    lambda_arn,
-                    function,
-                    self.boto_session
-                )
+            arns = event_source['arn']
+            if not isinstance(arns, list):
+                arns = [event_source['arn']]
+            for arn in arns:
+                service = self.service_from_arn(arn)
+                # DynamoDB and Kinesis streams take quite a while to setup after they are created and do not need to be
+                # re-scheduled when a new Lambda function is deployed. Therefore, they should not be removed during zappa
+                # update or zappa schedule.
+                if service not in excluded_source_services:
+                    remove_event_source(
+                        {
+                            'arn': arn,
+                            'events': event_source['events']
+                        },
+                        lambda_arn,
+                        function,
+                        self.boto_session
+                    )
+
                 print("Removed event " + name + " (" + str(event_source['events']) + ").")
 
     ###
