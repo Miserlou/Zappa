@@ -625,6 +625,37 @@ When calls to @task decorated functions or the zappa.async.run command occur out
 the functions will execute immediately and locally. The zappa async functionality only works
 when in the Lambda environment or when specifying [Remote Invocations](https://github.com/Miserlou/zappa#remote-invocations).
 
+### Catching Exceptions
+Putting a try..except block on an asynchronous task like this:
+
+```python
+@task
+def make_pie():
+    try:
+	ingredients = get_ingredients()
+	pie = bake(ingredients)
+	deliver(pie)
+	
+    except Fault as error:
+    	"""send an email"""
+	...
+	return Response('Web services down', status=503)
+```
+
+will cause an email to be sent twice for the same error. See [asynchronous retries at AWS](https://docs.aws.amazon.com/lambda/latest/dg/retries-on-errors.html). To work around this side-effect, and have the fault handler execute only once, change the return value to:
+
+```python
+@task
+def make_pie():
+    try:
+	"""code block"""
+	
+    except Fault as error:
+    	"""send an email"""
+	...
+	return {} #or return True
+```
+
 ### Task Sources
 
 By default, this feature uses direct AWS Lambda invocation. You can instead use AWS Simple Notification Service as the task event source by using the `task_sns` decorator, like so:
