@@ -586,7 +586,7 @@ To get the keyword arguments you will need to look inside the event dictionary:
 
 ```python
 def your_recurring_function(event, context):
-    my_kwargs = event.get(kwargs)  # dict of kwargs given in zappa_settings file
+    my_kwargs = event.get("kwargs")  # dict of kwargs given in zappa_settings file
 
 ```
 
