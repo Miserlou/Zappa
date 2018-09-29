@@ -272,7 +272,7 @@ class Zappa(object):
         self.endpoint_urls = endpoint_urls
         self.xray_tracing = xray_tracing
 
-        # Some common invokations, such as DB migrations,
+        # Some common invocations, such as DB migrations,
         # can take longer than the default.
 
         # Note that this is set to 300s, but if connected to
