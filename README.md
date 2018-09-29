@@ -1380,8 +1380,10 @@ Are you using Zappa? Let us know and we'll list your site here!
 * [travis-build-repeat](https://github.com/bcongdon/travis-build-repeat) - Repeat TravisCI builds to avoid stale test results.
 * [wunderskill-alexa-skill](https://github.com/mcrowson/wunderlist-alexa-skill) - An Alexa skill for adding to a Wunderlist.
 * [xrayvision](https://github.com/mathom/xrayvision) - Utilities and wrappers for using AWS X-Ray with Zappa.
+* [terraform-aws-zappa](https://github.com/dpetzold/terraform-aws-zappa) - Terraform modules for creating a VPC, RDS instance, ElastiCache Redis and CloudFront Distribution for use with Zappa.
 * [zappa-sentry](https://github.com/jneves/zappa-sentry) - Integration with Zappa and Sentry
 * [IOpipe](https://github.com/iopipe/iopipe-python#zappa) - Monitor, profile and analyze your Zappa apps.
+
 
 ## Hacks
 
