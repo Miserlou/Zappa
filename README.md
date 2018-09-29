@@ -1189,12 +1189,14 @@ You may still need a similar exception handler inside your application, this is 
 
 By default, AWS Lambda will attempt to retry an event based (non-API Gateway, e.g. CloudWatch) invocation if an exception has been thrown. However, you can prevent this by returning True, as in example above, so Zappa that will not re-raise the uncaught exception, thus preventing AWS Lambda from retrying the current invocation.
 
-### Using Custom AWS IAM Roles and Policies for Deployment
+### Using Custom AWS IAM Roles and Policies
+
+#### Custom AWS IAM Roles and Policies for Deployment
 
 You can specify which _local_ profile to use for deploying your Zappa application by defining
 the `profile_name` setting, which will correspond to a profile in your AWS credentials file.
 
-### Using Custom AWS IAM Roles and Policies for Execution
+#### Custom AWS IAM Roles and Policies for Execution
 
 The default IAM policy created by Zappa for executing the Lambda is very permissive.
 It grants access to all actions for
