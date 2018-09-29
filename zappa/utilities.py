@@ -2,6 +2,7 @@ import calendar
 import datetime
 import durationpy
 import fnmatch
+import io
 import json
 import os
 import re
@@ -143,7 +144,7 @@ def detect_flask_apps():
 
             full = os.path.join(root, filename)
 
-            with open(full, 'r') as f:
+            with io.open(full, 'r', encoding='utf-8') as f:
                 lines = f.readlines()
                 for line in lines:
                     app = None
@@ -215,11 +216,35 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
         def __init__(self):
             return
 
+    class ExtendedSnsEventSource(kappa.event_source.sns.SNSEventSource):
+        @property
+        def filters(self):
+            return self._config.get('filters')
+
+        def add_filters(self, function):
+            try:
+                subscription = self.exists(function)
+                if subscription:
+                    response = self._sns.call(
+                        'set_subscription_attributes',
+                        SubscriptionArn=subscription['SubscriptionArn'],
+                        AttributeName='FilterPolicy',
+                        AttributeValue=json.dumps(self.filters)
+                    )
+                    kappa.event_source.sns.LOG.debug(response)
+            except Exception:
+                kappa.event_source.sns.LOG.exception('Unable to add filters for SNS topic %s', self.arn)
+
+        def add(self, function):
+            super(ExtendedSnsEventSource, self).add(function)
+            if self.filters:
+                self.add_filters(function)
+
     event_source_map = {
         'dynamodb': kappa.event_source.dynamodb_stream.DynamoDBStreamEventSource,
         'kinesis': kappa.event_source.kinesis.KinesisEventSource,
         's3': kappa.event_source.s3.S3EventSource,
-        'sns': kappa.event_source.sns.SNSEventSource,
+        'sns': ExtendedSnsEventSource,
         'events': kappa.event_source.cloudwatch.CloudWatchEventSource
     }
 
@@ -367,7 +392,7 @@ def validate_name(name, maxlen=80):
 
 def contains_python_files_or_subdirs(folder):
     """
-    Checks (recursively) if the directory contains .py or .pyc files 
+    Checks (recursively) if the directory contains .py or .pyc files
     """
     for root, dirs, files in os.walk(folder):
         if [filename for filename in files if filename.endswith('.py') or filename.endswith('.pyc')]:
@@ -389,3 +414,11 @@ def conflicts_with_a_neighbouring_module(directory_path):
     neighbours = os.listdir(parent_dir_path)
     conflicting_neighbour_filename = current_dir_name+'.py'
     return conflicting_neighbour_filename in neighbours
+
+
+# https://github.com/Miserlou/Zappa/issues/1188
+def titlecase_keys(d):
+    """
+    Takes a dict with keys of type str and returns a new dict with all keys titlecased.
+    """
+    return {k.title(): v for k, v in d.items()}

@@ -8,8 +8,6 @@ Zappa core library. You may also want to look at `cli.py` and `util.py`.
 
 from __future__ import print_function
 
-import boto3
-import botocore
 import getpass
 import glob
 import hashlib
@@ -17,34 +15,38 @@ import json
 import logging
 import os
 import random
-import requests
 import shutil
 import string
 import subprocess
 import tarfile
 import tempfile
 import time
+import uuid
+import zipfile
+from builtins import bytes, int
+from distutils.dir_util import copy_tree
+from io import open
+
+import requests
+from setuptools import find_packages
+
+import boto3
+import botocore
 import troposphere
 import troposphere.apigateway
-import zipfile
-import uuid
-
-from builtins import int, bytes
 from botocore.exceptions import ClientError
-from distutils.dir_util import copy_tree
-from io import BytesIO, open
 from lambda_packages import lambda_packages as lambda_packages_orig
-from setuptools import find_packages
 from tqdm import tqdm
 
-from .utilities import (copytree,
-                    add_event_source,
-                    remove_event_source,
-                    human_size,
-                    get_topic_name,
-                    contains_python_files_or_subdirs,
-                    conflicts_with_a_neighbouring_module,
-                    get_venv_from_python_version)
+from .utilities import (add_event_source, conflicts_with_a_neighbouring_module,
+                        contains_python_files_or_subdirs, copytree,
+                        get_topic_name, get_venv_from_python_version,
+                        human_size, remove_event_source)
+
+try:
+    unicode        # Python 2
+except NameError:
+    unicode = str  # Python 3
 
 # We lower-case lambda package keys to match lower-cased keys in get_installed_packages()
 lambda_packages = {package_name.lower(): val for package_name, val in lambda_packages_orig.items()}
@@ -270,7 +272,7 @@ class Zappa(object):
         self.endpoint_urls = endpoint_urls
         self.xray_tracing = xray_tracing
 
-        # Some common invokations, such as DB migrations,
+        # Some common invocations, such as DB migrations,
         # can take longer than the default.
 
         # Note that this is set to 300s, but if connected to
@@ -359,10 +361,13 @@ class Zappa(object):
         """
         For a given package, returns a list of required packages. Recursive.
         """
-        import pip
+        # https://github.com/Miserlou/Zappa/issues/1478.  Using `pkg_resources`
+        # instead of `pip` is the recommended approach.  The usage is nearly
+        # identical.
+        import pkg_resources
         deps = []
         if not installed_distros:
-            installed_distros = pip.get_installed_distributions()
+            installed_distros = pkg_resources.WorkingSet()
         for package in installed_distros:
             if package.project_name.lower() == pkg_name.lower():
                 deps = [(package.project_name, package.version)]
@@ -374,7 +379,7 @@ class Zappa(object):
         """
         Takes the installed zappa and brings it into a fresh virtualenv-like folder. All dependencies are then downloaded.
         """
-        import pip
+        import subprocess
 
         # We will need the currenv venv to pull Zappa from
         current_venv = self.get_current_venv()
@@ -403,7 +408,18 @@ class Zappa(object):
 
         # Need to manually add setuptools
         pkg_list.append('setuptools')
-        pip.main(["install", "--quiet", "--target", venv_site_packages_dir] + pkg_list)
+        command = ["pip", "install", "--quiet", "--target", venv_site_packages_dir] + pkg_list
+
+        # This is the recommended method for installing packages if you don't
+        # to depend on `setuptools`
+        # https://github.com/pypa/pip/issues/5240#issuecomment-381662679
+        pip_process = subprocess.Popen(command, stdout=subprocess.PIPE)
+        # Using communicate() to avoid deadlocks
+        pip_process.communicate()
+        pip_return_code = pip_process.returncode
+
+        if pip_return_code:
+          raise EnvironmentError("Pypi lookup failed")
 
         return ve_path
 
@@ -748,7 +764,8 @@ class Zappa(object):
         """
         Returns a dict of installed packages that Zappa cares about.
         """
-        import pip  # this is to avoid 'funkiness' with global import
+        import pkg_resources
+
         package_to_keep = []
         if os.path.isdir(site_packages):
             package_to_keep += os.listdir(site_packages)
@@ -758,9 +775,9 @@ class Zappa(object):
         package_to_keep = [x.lower() for x in package_to_keep]
 
         installed_packages = {package.project_name.lower(): package.version for package in
-                              pip.get_installed_distributions()
+                              pkg_resources.WorkingSet()
                               if package.project_name.lower() in package_to_keep
-                              or package.location in [site_packages, site_packages_64]}
+                              or package.location.lower() in [site_packages.lower(), site_packages_64.lower()]}
 
         return installed_packages
 
@@ -990,7 +1007,7 @@ class Zappa(object):
         try:
             self.s3_client.delete_object(Bucket=bucket_name, Key=file_name)
             return True
-        except botocore.exceptions.ClientError:  # pragma: no cover
+        except (botocore.exceptions.ParamValidationError, botocore.exceptions.ClientError):  # pragma: no cover
             return False
 
     ##
@@ -1064,9 +1081,10 @@ class Zappa(object):
 
         return resource_arn
 
-    def update_lambda_function(self, bucket, function_name, s3_key=None, publish=True, local_zip=None):
+    def update_lambda_function(self, bucket, function_name, s3_key=None, publish=True, local_zip=None, num_revisions=None):
         """
         Given a bucket and key (or a local path) of a valid Lambda-zip, a function name and a handler, update that Lambda function's code.
+        Optionally, delete previous versions if they exceed the optional limit.
         """
         print("Updating Lambda function code..")
 
@@ -1081,6 +1099,22 @@ class Zappa(object):
             kwargs['S3Key'] = s3_key
 
         response = self.lambda_client.update_function_code(**kwargs)
+
+        if num_revisions:
+            # Find the existing revision IDs for the given function
+            # Related: https://github.com/Miserlou/Zappa/issues/1402
+            versions_in_lambda = []
+            versions = self.lambda_client.list_versions_by_function(FunctionName=function_name)
+            for version in versions['Versions']:
+                versions_in_lambda.append(version['Version'])
+            while 'NextMarker' in versions:
+                versions = self.lambda_client.list_versions_by_function(FunctionName=function_name,Marker=versions['NextMarker'])
+                for version in versions['Versions']:
+                    versions_in_lambda.append(version['Version'])
+            versions_in_lambda.remove('$LATEST')
+            # Delete older revisions if their number exceeds the specified limit
+            for version in versions_in_lambda[::-1][num_revisions:]:
+                self.lambda_client.delete_function(FunctionName=function_name,Qualifier=version)
 
         return response['FunctionArn']
 
@@ -1250,10 +1284,15 @@ class Zappa(object):
         if not description:
             description = 'Created automatically by Zappa.'
         restapi.Description = description
+        if self.boto_session.region_name == "us-gov-west-1":
+            endpoint = troposphere.apigateway.EndpointConfiguration()
+            endpoint.Types = ["REGIONAL"]
+            restapi.EndpointConfiguration = endpoint
         self.cf_template.add_resource(restapi)
 
         root_id = troposphere.GetAtt(restapi, 'RootResourceId')
-        invocations_uri = 'arn:aws:apigateway:' + self.boto_session.region_name + ':lambda:path/2015-03-31/functions/' + lambda_arn + '/invocations'
+        invocation_prefix = "aws" if self.boto_session.region_name != "us-gov-west-1" else "aws-us-gov"
+        invocations_uri = 'arn:' + invocation_prefix + ':apigateway:' + self.boto_session.region_name + ':lambda:path/2015-03-31/functions/' + lambda_arn + '/invocations'
 
         ##
         # The Resources
@@ -1261,7 +1300,8 @@ class Zappa(object):
         authorizer_resource = None
         if authorizer:
             authorizer_lambda_arn = authorizer.get('arn', lambda_arn)
-            lambda_uri = 'arn:aws:apigateway:{region_name}:lambda:path/2015-03-31/functions/{lambda_arn}/invocations'.format(
+            lambda_uri = 'arn:{invocation_prefix}:apigateway:{region_name}:lambda:path/2015-03-31/functions/{lambda_arn}/invocations'.format(
+                invocation_prefix=invocation_prefix,
                 region_name=self.boto_session.region_name,
                 lambda_arn=authorizer_lambda_arn
             )
@@ -1572,6 +1612,35 @@ class Zappa(object):
                     ]
                 )
 
+    def add_api_compression(self, api_id, min_compression_size):
+        """
+        Add Rest API compression
+        """
+        self.apigateway_client.update_rest_api(
+            restApiId=api_id,
+            patchOperations=[
+                {
+                    'op': 'replace',
+                    'path': '/minimumCompressionSize',
+                    'value': str(min_compression_size)
+                }
+            ]
+        )
+
+    def remove_api_compression(self, api_id):
+        """
+        Remove Rest API compression
+        """
+        self.apigateway_client.update_rest_api(
+            restApiId=api_id,
+            patchOperations=[
+                {
+                    'op': 'replace',
+                    'path': '/minimumCompressionSize',
+                }
+            ]
+        )
+
     def get_api_keys(self, api_id, stage_name):
         """
         Generator that allows to iterate per API keys associated to an api_id and a stage_name.
@@ -1649,7 +1718,7 @@ class Zappa(object):
                 continue
             yield api
 
-    def undeploy_api_gateway(self, lambda_name, domain_name=None):
+    def undeploy_api_gateway(self, lambda_name, domain_name=None, base_path=None):
         """
         Delete a deployed REST API Gateway.
         """
@@ -1665,7 +1734,7 @@ class Zappa(object):
             try:
                 self.apigateway_client.delete_base_path_mapping(
                     domainName=domain_name,
-                    basePath='(none)'
+                    basePath='(none)' if base_path is None else base_path
                 )
             except Exception as e:
                 # We may not have actually set up the domain.
@@ -1815,8 +1884,11 @@ class Zappa(object):
             out.write(bytes(self.cf_template.to_json(indent=None, separators=(',',':')), "utf-8"))
 
         self.upload_to_s3(template, working_bucket, disable_progress=disable_progress)
+        if self.boto_session.region_name == "us-gov-west-1":
+            url = 'https://s3-us-gov-west-1.amazonaws.com/{0}/{1}'.format(working_bucket, template)
+        else:
+            url = 'https://s3.amazonaws.com/{0}/{1}'.format(working_bucket, template)
 
-        url = 'https://s3.amazonaws.com/{0}/{1}'.format(working_bucket, template)
         tags = [{'Key': key, 'Value': self.tags[key]}
                 for key in self.tags.keys()
                 if key != 'ZappaProject']
@@ -1951,7 +2023,8 @@ class Zappa(object):
                            certificate_chain=None,
                            certificate_arn=None,
                            lambda_name=None,
-                           stage=None):
+                           stage=None,
+                           base_path=None):
         """
         Creates the API GW domain and returns the resulting DNS name.
         """
@@ -1979,7 +2052,7 @@ class Zappa(object):
 
         self.apigateway_client.create_base_path_mapping(
             domainName=domain_name,
-            basePath='',
+            basePath='' if base_path is None else base_path,
             restApiId=api_id,
             stage=stage
         )
@@ -2046,7 +2119,8 @@ class Zappa(object):
                            certificate_arn=None,
                            lambda_name=None,
                            stage=None,
-                           route53=True):
+                           route53=True,
+                           base_path=None):
         """
         This updates your certificate information for an existing domain,
         with similar arguments to boto's update_domain_name API Gateway api.
@@ -2076,6 +2150,8 @@ class Zappa(object):
                                                                  CertificateChain=certificate_chain)
             certificate_arn = acm_certificate['CertificateArn']
 
+        self.update_domain_base_path_mapping(domain_name, lambda_name, stage, base_path)
+
         return self.apigateway_client.update_domain_name(domainName=domain_name,
                                                          patchOperations=[
                                                              {"op" : "replace",
@@ -2085,8 +2161,38 @@ class Zappa(object):
                                                               "path" : "/certificateArn",
                                                               "value" : certificate_arn}
                                                          ])
+    
+    def update_domain_base_path_mapping(self, domain_name, lambda_name, stage, base_path):
+        """
+        Update domain base path mapping on API Gateway if it was changed
+        """
+        api_id = self.get_api_id(lambda_name)
+        if not api_id:
+            print("Warning! Can't update base path mapping!")
+            return
+        base_path_mappings = self.apigateway_client.get_base_path_mappings(domainName=domain_name)
+        found = False
+        for base_path_mapping in base_path_mappings['items']:
+            if base_path_mapping['restApiId'] == api_id and base_path_mapping['stage'] == stage:
+                found = True
+                if base_path_mapping['basePath'] != base_path:
+                    self.apigateway_client.update_base_path_mapping(domainName=domain_name,
+                                                                    basePath=base_path_mapping['basePath'],
+                                                                    patchOperations=[
+                                                                        {"op" : "replace", 
+                                                                         "path" : "/basePath", 
+                                                                         "value" : base_path}
+                                                                    ])
+        if not found:
+            self.apigateway_client.create_base_path_mapping(
+                domainName=domain_name,
+                basePath='' if base_path is None else base_path,
+                restApiId=api_id,
+                stage=stage
+            )
+        
 
-    def get_domain_name(self, domain_name):
+    def get_domain_name(self, domain_name, route53=True):
         """
         Scan our hosted zones for the record of a given name.
 
@@ -2098,6 +2204,9 @@ class Zappa(object):
             self.apigateway_client.get_domain_name(domainName=domain_name)
         except Exception:
             return None
+
+        if not route53:
+            return True
 
         try:
             zones = self.route53.list_hosted_zones()

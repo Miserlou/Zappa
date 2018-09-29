@@ -1,7 +1,31 @@
 # Zappa Changelog
 
+## 0.46.1
+* Hotfix for pipenv support (pip >10.0.1)
+* Adds AWS GovCloud support!
+* Test fix
+
 ## 0.46.0
+_Okay, I dropped the ball for a long time. Bad BDFL!_
+_New releases will come much faster once again_
+* Pip10 compatability
+* Add support for base path configuration in API gateway custom domain.
+* Fix path case sensitivity in get_installed_packages
+* Move task decorator async decision from import time to call time.
+* Fix documentation error in authorizer stanza of zappa_settings.json.
+* Adding explicit UTF-8 encoding for Flask app detection
+* Bump lambda packages version
+* Fix for work with latest Werkezeug
+* Fixed parameter name from 'FunctionNmae' -> 'FunctionName'
+* Remove `use`; fixes #1522
+* Philippe Trounev is awesome
+* fix case sensitivity problem for comparing package location
+* isBase64Encoded is a boolean flag instead of string true
+* check pip return code as sometimes pypi lookup fails
+* Add support to delete old versions of lambda functions.
+* Reactor title casing of dict keys into a utility function
 * Add `role_arn` settings variable
+* ..and too many more, check the changelog!
 
 ## 0.45.1
 * Make `package_info.json` consistent across Python versions
