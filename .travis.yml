@@ -6,7 +6,7 @@ python:
 cache:
   - pip
 install:
-  - "pip install setuptools --upgrade; pip install -r test_requirements.txt; pip install -e git+https://github.com/django/django-contrib-comments.git#egg=django-contrib-comments; python setup.py install" 
+  - "pip install setuptools --upgrade; pip install -r test_requirements.txt; pip install -e git+https://github.com/django/django-contrib-comments.git#egg=django-contrib-comments; python setup.py install; pip -V" 
 # command to run tests
 env:
   - TESYCASE=tests/tests_docs.py
