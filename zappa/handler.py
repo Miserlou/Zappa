@@ -123,17 +123,25 @@ class LambdaHandler(object):
             if not hasattr(self.settings, 'APP_MODULE') and not self.settings.DJANGO_SETTINGS:
                 self.app_module = None
                 wsgi_app_function = None
-            # This is probably a normal WSGI app
-            elif not self.settings.DJANGO_SETTINGS:
+            # This is probably a normal WSGI app (Or django with overloaded wsgi application)
+            # https://github.com/Miserlou/Zappa/issues/1164
+            elif hasattr(self.settings, 'APP_MODULE'):
+                if self.settings.DJANGO_SETTINGS:
+                    sys.path.append('/var/task')
+                    from django.conf import ENVIRONMENT_VARIABLE as SETTINGS_ENVIRONMENT_VARIABLE
+                    # add the Lambda root path into the sys.path
+                    self.trailing_slash = True
+                    os.environ[SETTINGS_ENVIRONMENT_VARIABLE] = self.settings.DJANGO_SETTINGS
+                else:
+                    self.trailing_slash = False
+
                 # The app module
                 self.app_module = importlib.import_module(self.settings.APP_MODULE)
 
                 # The application
                 wsgi_app_function = getattr(self.app_module, self.settings.APP_FUNCTION)
-                self.trailing_slash = False
             # Django gets special treatment.
             else:
-
                 try:  # Support both for tests
                     from zappa.ext.django_zappa import get_django_wsgi
                 except ImportError:  # pragma: no cover
