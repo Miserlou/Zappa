@@ -26,6 +26,7 @@ import importlib
 import logging
 import os
 import pkg_resources
+import pylev
 import random
 import re
 import requests
@@ -45,6 +46,7 @@ from dateutil import parser
 from datetime import datetime, timedelta
 
 from .core import Zappa, logger, API_GATEWAY_REGIONS
+from .valid_settings import VALID_SETTINGS
 from .utilities import (check_new_version_available, detect_django_settings,
                   detect_flask_apps, parse_s3_url, human_size,
                   validate_name, InvalidAwsLambdaName,
@@ -1968,6 +1970,9 @@ class ZappaCLI(object):
         # Load up file
         self.load_settings_file(settings_file)
 
+        # Verify that all used keys are valid and print a warning otherwise
+        self.verify_settings()
+
         # Make sure that the stages are valid names:
         for stage_name in self.zappa_settings.keys():
             try:
@@ -2140,6 +2145,60 @@ class ZappaCLI(object):
                     self.zappa_settings = json.load(json_file)
                 except ValueError: # pragma: no cover
                     raise ValueError("Unable to load the Zappa settings JSON. It may be malformed.")
+
+    def verify_settings(self):
+        """
+        Verify that all keys used in the settings are valid by looking them up in a whitelist (VALID_SETTINGS).
+        Tries to suggest a correction for wrong settings by finding the closest known option.
+        """
+        def _verify_settings(settings, allowed_keys, path_to_key):
+            """
+            Verify that each key in `settings` is valid by checking its existence in the optional dict `allowed_values`.
+            Each value in `allowed_values` needs to be a dict or None itself.
+
+            If any value in `settings` a dict, call _verify_settings recursively on it as well with
+            allowed_values set to allowed_values[key].
+
+            If any value in `settings` is a list, call _verify_settings recursively on each key that is dict.
+
+            `path_to_key` contains the path from the top level of the settings file to the current key.
+            It is used to help the user locate a wrong key
+            """
+            def _in(d, val):
+                """
+                A defaultdict(None) is used to signal that any value is allowed but no nested dicts
+                x in defaultdict returns False for an empty defaultdict though.
+                """
+                if type(d) == collections.defaultdict:
+                    return True
+                else:
+                    return val in d
+
+            for key, value in settings.items():
+                if not _in(allowed_keys, key):
+                    context = " → ".join(path_to_key + [click.style(key, bold=True)])
+                    if allowed_keys:
+                        most_likely_replacement = click.style(min(allowed_keys.keys(), key=lambda word: pylev.levenshtein(key, word)), bold=True)
+                        print(click.style("Warning!", fg="red", bold=True) + " Unknown option {}, did you mean {}?".format(context, most_likely_replacement)) 
+                    else:
+                        print(click.style("Warning!", fg="red", bold=True) + " Unknown option {}.".format(context)) 
+                else:
+                    if key == "use_apigateway":
+                        print(click.style("Warning!", fg="red", bold=True) + " Deprecated option 'use_apigateway', please use 'apigateway_enabled' instead.")
+
+                    if key == "remote_env_file" or key == "remote_env_bucket":
+                        print(click.style("Warning!", fg="red", bold=True) + " Deprecated option '{}', please use 'remote_env' instead.".format(key))
+
+                    if type(value) in [dict, collections.OrderedDict]:
+                        _verify_settings(value, allowed_keys[key], path_to_key + [key])
+                    elif type(value) is list:
+                        for subvalue in value:
+                            if type(subvalue) in [dict, collections.OrderedDict]:
+                                _verify_settings(subvalue, allowed_keys[key], path_to_key + [key])
+
+        for stage_name, stage_settings in self.zappa_settings.items():
+            _verify_settings(stage_settings, VALID_SETTINGS, ["in stage {}".format(stage_name)])
+
 
     def create_package(self, output=None):
         """
