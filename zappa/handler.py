@@ -123,17 +123,25 @@ class LambdaHandler(object):
             if not hasattr(self.settings, 'APP_MODULE') and not self.settings.DJANGO_SETTINGS:
                 self.app_module = None
                 wsgi_app_function = None
-            # This is probably a normal WSGI app
-            elif not self.settings.DJANGO_SETTINGS:
+            # This is probably a normal WSGI app (Or django with overloaded wsgi application)
+            # https://github.com/Miserlou/Zappa/issues/1164
+            elif hasattr(self.settings, 'APP_MODULE'):
+                if self.settings.DJANGO_SETTINGS:
+                    sys.path.append('/var/task')
+                    from django.conf import ENVIRONMENT_VARIABLE as SETTINGS_ENVIRONMENT_VARIABLE
+                    # add the Lambda root path into the sys.path
+                    self.trailing_slash = True
+                    os.environ[SETTINGS_ENVIRONMENT_VARIABLE] = self.settings.DJANGO_SETTINGS
+                else:
+                    self.trailing_slash = False
+
                 # The app module
                 self.app_module = importlib.import_module(self.settings.APP_MODULE)
 
                 # The application
                 wsgi_app_function = getattr(self.app_module, self.settings.APP_FUNCTION)
-                self.trailing_slash = False
             # Django gets special treatment.
             else:
-
                 try:  # Support both for tests
                     from zappa.ext.django_zappa import get_django_wsgi
                 except ImportError:  # pragma: no cover
@@ -264,7 +272,12 @@ class LambdaHandler(object):
         Given a function and event context,
         detect signature and execute, returning any result.
         """
-        args, varargs, keywords, defaults = inspect.getargspec(app_function)
+        # getargspec does not support python 3 method with type hints
+        # Related issue: https://github.com/Miserlou/Zappa/issues/1452
+        if hasattr(inspect, "getfullargspec"):  # Python 3
+            args, varargs, keywords, defaults, _, _, _ = inspect.getfullargspec(app_function)
+        else:  # Python 2
+            args, varargs, keywords, defaults = inspect.getargspec(app_function)
         num_args = len(args)
         if num_args == 0:
             result = app_function(event, context) if varargs else app_function()
@@ -284,7 +297,8 @@ class LambdaHandler(object):
         Support S3, SNS, DynamoDB and kinesis events
         """
         if 's3' in record:
-            return record['s3']['configurationId'].split(':')[-1]
+            if ':' in record['s3']['configurationId']:
+                return record['s3']['configurationId'].split(':')[-1]
 
         arn = None
         if 'Sns' in record:
@@ -297,6 +311,8 @@ class LambdaHandler(object):
             arn = record['Sns'].get('TopicArn')
         elif 'dynamodb' in record or 'kinesis' in record:
             arn = record.get('eventSourceARN')
+        elif 's3' in record:
+            arn = record['s3']['bucket']['arn']
 
         if arn:
             return self.settings.AWS_EVENT_MAPPING.get(arn)
@@ -491,6 +507,7 @@ class LambdaHandler(object):
                 environ['HTTPS'] = 'on'
                 environ['wsgi.url_scheme'] = 'https'
                 environ['lambda.context'] = context
+                environ['lambda.event'] = event
 
                 # Execute the application
                 response = Response.from_app(self.wsgi_app, environ)
@@ -504,7 +521,7 @@ class LambdaHandler(object):
                         if not response.mimetype.startswith("text/") \
                             or response.mimetype != "application/json":
                                 zappa_returndict['body'] = base64.b64encode(response.data).decode('utf-8')
-                                zappa_returndict["isBase64Encoded"] = "true"
+                                zappa_returndict["isBase64Encoded"] = True
                         else:
                             zappa_returndict['body'] = response.data
                     else:
@@ -538,6 +555,11 @@ class LambdaHandler(object):
                     self.app_module
                 except NameError as ne:
                     message = 'Failed to import module: {}'.format(ne.message)
+
+            # Call exception handler for unhandled exceptions
+            exception_handler = self.settings.EXCEPTION_HANDLER
+            self._process_exception(exception_handler=exception_handler,
+                                    event=event, context=context, exception=e)
 
             # Return this unspecified exception as a 500, using template that API Gateway expects.
             content = collections.OrderedDict()

@@ -1,0 +1,153 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "RoleManager",
+            "Effect": "Allow",
+            "Action": [
+                "iam:AttachRolePolicy",
+                "iam:CreateRole",
+                "iam:GetRole",
+                "iam:PutRolePolicy"
+            ],
+            "Resource": [
+                "*"
+            ]
+        },
+        {
+            "Sid": "RoleDelegation",
+            "Effect": "Allow",
+            "Action": [
+                "iam:PassRole"
+            ],
+            "Resource": [
+                "arn:aws:iam::<account_id>:role/*-ZappaLambdaExecutionRole"
+            ]
+        },
+        {
+            "Sid": "Core",
+            "Effect": "Allow",
+            "Action": [
+                "lambda:AddPermission",
+                "lambda:CreateFunction",
+                "lambda:DeleteFunction",
+                "lambda:GetFunction",
+                "lambda:GetFunctionConfiguration",
+                "lambda:GetPolicy",
+                "lambda:InvokeFunction",
+                "lambda:ListVersionsByFunction",
+                "lambda:RemovePermission",
+                "lambda:UpdateFunctionCode",
+                "lambda:UpdateFunctionConfiguration",
+                "cloudformation:CreateStack",
+                "cloudformation:DeleteStack",
+                "cloudformation:DescribeStackResource",
+                "cloudformation:DescribeStacks",
+                "cloudformation:ListStackResources",
+                "cloudformation:UpdateStack",
+                "logs:DescribeLogStreams",
+                "logs:DeleteLogGroup",
+                "logs:FilterLogEvents",
+                "s3:CreateBucket"
+            ],
+            "Resource": [
+                "*"
+            ]
+        },
+        {
+            "Sid": "CoreS3List",
+            "Effect": "Allow",
+            "Action": [
+                "s3:ListBucket"
+            ],
+            "Resource": [
+                "arn:aws:s3:::<s3_bucket from zappa_settings.json>"
+            ]
+        },
+        {
+            "Sid": "CoreS3Object",
+            "Effect": "Allow",
+            "Action": [
+                "s3:DeleteObject",
+                "s3:GetObject",
+                "s3:PutObject",
+                "s3:AbortMultipartUpload",
+                "s3:ListMultipartUploadParts",
+                "s3:ListBucketMultipartUploads"
+            ],
+            "Resource": [
+                "arn:aws:s3:::<s3_bucket from zappa_settings.json>/*"
+            ]
+        },
+        {
+            "Sid": "APIGateway",
+            "Effect": "Allow",
+            "Action": [
+                "apigateway:OPTIONS",
+                "apigateway:DELETE",
+                "apigateway:GET",
+                "apigateway:PATCH",
+                "apigateway:POST",
+                "apigateway:PUT"
+            ],
+            "Resource": [
+                "*"
+            ]
+        },
+        {
+            "Sid": "Domain",
+            "Effect": "Allow",
+            "Action": [
+                "route53:ListHostedZones",
+                "route53:ListResourceRecordSets",
+                "route53:ChangeResourceRecordSets",
+                "route53:GetHostedZone"
+            ],
+            "Resource": [
+                "*"
+            ]
+        },
+        {
+            "Sid": "Events",
+            "Effect": "Allow",
+            "Action": [
+                "events:DeleteRule",
+                "events:DescribeRule",
+                "events:ListRules",
+                "events:ListTargetsByRule",
+                "events:ListRuleNamesByTarget",
+                "events:PutRule",
+                "events:PutTargets",
+                "events:RemoveTargets"
+            ],
+            "Resource": [
+                "*"
+            ]
+        },
+        {
+            "Sid": "SNS",
+            "Effect": "Allow",
+            "Action": [
+                "SNS:ListSubscriptionsByTopic",
+                "SNS:Unsubscribe",
+                "SNS:Subscribe"
+            ],
+            "Resource": [
+                "*"
+            ]
+        },
+        {
+            "Sid": "VPCSecurity",
+            "Effect": "Allow",
+            "Action": [
+                "ec2:DescribeSecurityGroups",
+                "ec2:DescribeSubnets",
+                "ec2:DescribeVpcs",
+                "ec2:DescribeVpcsRequest"
+            ],
+            "Resource": [
+                "*"
+            ]
+        }
+    ]
+}
