@@ -1,6 +1,7 @@
 coveralls>=1.1
 coverage>=4.3.1
-Django>=1.10.5, <2.0
+Django>=1.10.5, <2.0; python_version < '3'
+Djang>=2.0; python_version >= '3'
 Flask>=0.12
 mock>=2.0.0
 nose>=1.3.7
