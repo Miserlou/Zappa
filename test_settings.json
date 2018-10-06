@@ -33,8 +33,29 @@
                      "sns:Publish"
                    ]
                }
+           },
+           {
+               "function": "test.test_app.method_filters",
+               "event_source": {
+                   "arn": "arn:aws:sns:::with-filters",
+                   "filters": {
+                        "interests": ["python", "aws", "zappa"],
+                        "version": ["1.0"]
+                    },
+                   "events": [
+                     "sns:Publish"
+                   ]
+               }
            }
-       ]
+       ],
+       "cognito": {
+           "user_pool": "user-pool-id",
+           "triggers": [
+                {"source": "PreSignUp_SignUp",
+                 "function": "test.tasks.pre_signup_function"
+                }
+            ]
+      }
     },
     "devor": {
        "s3_bucket": "lmbda",
@@ -63,7 +84,7 @@
     },
     "extendo2": {
        "extends": "extendo",
-       "s3_bucket": "lmbda2",
+       "s3_bucket": "lmbda2"
     },
     "slim_handler": {
        "extends": "ttt888",

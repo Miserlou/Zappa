@@ -65,7 +65,7 @@ Discussion of this comes from:
 
 5. The new lambda instance is invoked with the message above,
    and Zappa runs its usual bootstrapping context, and inside
-   zappa.handler, the existance of the 'command' key in the message
+   zappa.handler, the existence of the 'command' key in the message
    dispatches the full message to zappa.async.route_lambda_task, which
    in turn calls `run_message(message)`
 
@@ -193,7 +193,7 @@ class SnsAsyncResponse(LambdaAsyncResponse):
     def __init__(self, lambda_function_name=None, aws_region=None, capture_response=False, **kwargs):
 
         self.lambda_function_name = lambda_function_name
-        self.aws_region=aws_region
+        self.aws_region = aws_region
 
         if kwargs.get('boto_session'):
             self.client = kwargs.get('boto_session').client('sns')
@@ -215,9 +215,25 @@ class SnsAsyncResponse(LambdaAsyncResponse):
                                     topic_name=get_topic_name(self.lambda_function_name)
                                 )
 
+        # Issue: https://github.com/Miserlou/Zappa/issues/1209
+        # TODO: Refactor
         self.capture_response = capture_response
         if capture_response:
-            self.response_id = str(uuid.uuid4())
+            if ASYNC_RESPONSE_TABLE is None:
+                print(
+                    "Warning! Attempted to capture a response without "
+                    "async_response_table configured in settings (you won't "
+                    "capture async responses)."
+                )
+                capture_response = False
+                self.response_id = "MISCONFIGURED"
+
+            else:
+                self.response_id = str(uuid.uuid4())
+        else:
+            self.response_id = None
+
+        self.capture_response = capture_response
 
 
     def _send(self, message):
@@ -363,15 +379,15 @@ def task(*args, **kwargs):
     if len(args) == 1 and callable(args[0]):
         func = args[0]
 
-    if func:  # Default Values
+    if not kwargs:  # Default Values
         service = 'lambda'
-        lambda_function_name = os.environ.get('AWS_LAMBDA_FUNCTION_NAME')
-        aws_region = os.environ.get('AWS_REGION')
+        lambda_function_name_arg = None
+        aws_region_arg = None
 
     else:  # Arguments were passed
         service = kwargs.get('service', 'lambda')
-        lambda_function_name = kwargs.get('remote_aws_lambda_function_name') or os.environ.get('AWS_LAMBDA_FUNCTION_NAME')
-        aws_region = kwargs.get('remote_aws_region') or os.environ.get('AWS_REGION')
+        lambda_function_name_arg = kwargs.get('remote_aws_lambda_function_name')
+        aws_region_arg = kwargs.get('remote_aws_region')
 
     capture_response = kwargs.get('capture_response', False)
 
@@ -399,6 +415,9 @@ def task(*args, **kwargs):
                 When outside of Lambda, the func passed to @task is run and we
                 return the actual value.
             """
+            lambda_function_name = lambda_function_name_arg or os.environ.get('AWS_LAMBDA_FUNCTION_NAME')
+            aws_region = aws_region_arg or os.environ.get('AWS_REGION')
+
             if (service in ASYNC_CLASSES) and (lambda_function_name):
                 send_result = ASYNC_CLASSES[service](lambda_function_name=lambda_function_name,
                                                      aws_region=aws_region,
@@ -452,6 +471,9 @@ def get_func_task_path(func):
 
 
 def get_async_response(response_id):
+    """
+    Get the response from the async table
+    """
     response = DYNAMODB_CLIENT.get_item(
         TableName=ASYNC_RESPONSE_TABLE,
         Key={'id': {'S': str(response_id)}}
