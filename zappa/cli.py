@@ -387,6 +387,10 @@ class ZappaCLI(object):
             '--force-color', action='store_true',
             help='Force coloring log tail output even if coloring support is not auto-detected. (example: piping)'
         )
+        tail_parser.add_argument(
+            '--disable-keep-open', action='store_true',
+            help="Exit after printing the last available log, rather than keeping the log open."
+        )
 
         ##
         # Undeploy
@@ -593,6 +597,7 @@ class ZappaCLI(object):
                 since=self.vargs['since'],
                 filter_pattern=self.vargs['filter'],
                 force_colorize=self.vargs['force_color'] or None,
+                keep_open=not self.vargs['disable_keep_open']
             )
         elif command == 'undeploy': # pragma: no cover
             self.undeploy(
@@ -703,7 +708,7 @@ class ZappaCLI(object):
                         "You may " + click.style("lack the necessary AWS permissions", bold=True) +
                         " to automatically manage a Zappa execution role.\n" +
                         "To fix this, see here: " +
-                        click.style("https://github.com/Miserlou/Zappa#using-custom-aws-iam-roles-and-policies", bold=True)
+                        click.style("https://github.com/Miserlou/Zappa#custom-aws-iam-roles-and-policies-for-deployment", bold=True)
                         + '\n')
 
             # Create the Lambda Zip
@@ -875,7 +880,7 @@ class ZappaCLI(object):
                     click.echo("You may " + click.style("lack the necessary AWS permissions", bold=True) +
                                " to automatically manage a Zappa execution role.")
                     click.echo("To fix this, see here: " +
-                               click.style("https://github.com/Miserlou/Zappa#using-custom-aws-iam-roles-and-policies",
+                               click.style("https://github.com/Miserlou/Zappa#custom-aws-iam-roles-and-policies-for-deployment",
                                            bold=True))
                     sys.exit(-1)
 
@@ -915,7 +920,8 @@ class ZappaCLI(object):
             self.lambda_arn = self.zappa.update_lambda_function(
                                             bucket,
                                             self.lambda_name,
-                                            key_name
+                                            key_name,
+                                            num_revisions=self.num_retained_versions
                                         )
         elif source_zip and not source_zip.startswith('s3://'):
             with open(source_zip, mode='rb') as fh:
@@ -923,14 +929,16 @@ class ZappaCLI(object):
             self.lambda_arn = self.zappa.update_lambda_function(
                                             self.s3_bucket_name,
                                             self.lambda_name,
-                                            local_zip=byte_stream
+                                            local_zip=byte_stream,
+                                            num_revisions=self.num_retained_versions
                                         )
         else:
             if not no_upload:
                 self.lambda_arn = self.zappa.update_lambda_function(
                                                 self.s3_bucket_name,
                                                 self.lambda_name,
-                                                handler_file
+                                                handler_file,
+                                                num_revisions=self.num_retained_versions
                                             )
 
         # Remove the uploaded zip from S3, because it is now registered..
@@ -1091,6 +1099,7 @@ class ZappaCLI(object):
                 self.zappa.remove_api_gateway_logs(self.lambda_name)
 
             domain_name = self.stage_config.get('domain', None)
+            base_path = self.stage_config.get('base_path', None)
 
             # Only remove the api key when not specified
             if self.api_key_required and self.api_key is None:
@@ -1099,7 +1108,8 @@ class ZappaCLI(object):
 
             gateway_id = self.zappa.undeploy_api_gateway(
                 self.lambda_name,
-                domain_name=domain_name
+                domain_name=domain_name,
+                base_path=base_path
             )
 
         self.unschedule()  # removes event triggers, including warm up event.
@@ -1268,7 +1278,7 @@ class ZappaCLI(object):
         # https://github.com/Miserlou/Zappa/pull/1254/
         if 'FunctionError' in response:
             raise ClickException(
-                "{} error occured while invoking command.".format(response['FunctionError'])
+                "{} error occurred while invoking command.".format(response['FunctionError'])
 )
 
     def format_invoke_command(self, string):
@@ -1602,7 +1612,7 @@ class ZappaCLI(object):
         click.echo("\nYour Zappa deployments will need to be uploaded to a " + click.style("private S3 bucket", bold=True)  + ".")
         click.echo("If you don't have a bucket yet, we'll create one for you too.")
         default_bucket = "zappa-" + ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(9))
-        bucket = input("What do you want call your bucket? (default '%s'): " % default_bucket) or default_bucket
+        bucket = input("What do you want to call your bucket? (default '%s'): " % default_bucket) or default_bucket
 
         # Detect Django/Flask
         try: # pragma: no cover
@@ -1768,6 +1778,7 @@ class ZappaCLI(object):
         cert_key_location = self.stage_config.get('certificate_key', None)
         cert_chain_location = self.stage_config.get('certificate_chain', None)
         cert_arn = self.stage_config.get('certificate_arn', None)
+        base_path = self.stage_config.get('base_path', None)
 
         # These are sensitive
         certificate_body = None
@@ -1834,7 +1845,8 @@ class ZappaCLI(object):
                     certificate_chain=certificate_chain,
                     certificate_arn=cert_arn,
                     lambda_name=self.lambda_name,
-                    stage=self.api_stage
+                    stage=self.api_stage,
+                    base_path=base_path
                 )
                 if route53:
                     self.zappa.update_route53_records(self.domain, dns_name)
@@ -1850,7 +1862,8 @@ class ZappaCLI(object):
                     certificate_arn=cert_arn,
                     lambda_name=self.lambda_name,
                     stage=self.api_stage,
-                    route53=route53
+                    route53=route53,
+                    base_path=base_path
                 )
 
             cert_success = True
@@ -1996,6 +2009,13 @@ class ZappaCLI(object):
         dead_letter_arn = self.stage_config.get('dead_letter_arn', '')
         self.dead_letter_config = {'TargetArn': dead_letter_arn} if dead_letter_arn else {}
         self.cognito = self.stage_config.get('cognito', None)
+        self.num_retained_versions = self.stage_config.get('num_retained_versions',None)
+
+        # Check for valid values of num_retained_versions
+        if self.num_retained_versions is not None and type(self.num_retained_versions) is not int:
+            raise ClickException("Please supply either an integer or null for num_retained_versions in the zappa_settings.json. Found %s" % type(self.num_retained_versions))
+        elif type(self.num_retained_versions) is int and self.num_retained_versions<1:
+            raise ClickException("The value for num_retained_versions in the zappa_settings.json should be greater than 0.")
 
         # Provide legacy support for `use_apigateway`, now `apigateway_enabled`.
         # https://github.com/Miserlou/Zappa/issues/490

@@ -9,6 +9,7 @@ install:
   - "pip install setuptools --upgrade; pip install -r test_requirements.txt; pip install -e git+https://github.com/django/django-contrib-comments.git#egg=django-contrib-comments; python setup.py install" 
 # command to run tests
 env:
+  - TESYCASE=tests/tests_docs.py
   - TESTCASE=tests/test_handler.py
   - TESTCASE=tests/tests_middleware.py
   - TESTCASE=tests/tests_placebo.py
