@@ -22,9 +22,12 @@ from zappa.ext.django_zappa import get_django_wsgi
 from zappa.letsencrypt import get_cert_and_update_domain, create_domain_key, create_domain_csr, \
     create_chained_certificate, cleanup, parse_account_key, parse_csr, sign_certificate, encode_certificate,\
     register_account, verify_challenge, gettempdir
-from zappa.utilities import (detect_django_settings, detect_flask_apps,  parse_s3_url, human_size, string_to_timestamp,
-                             validate_name, InvalidAwsLambdaName, contains_python_files_or_subdirs,
-                             conflicts_with_a_neighbouring_module)
+from zappa.utilities import (
+    conflicts_with_a_neighbouring_module, contains_python_files_or_subdirs,
+    detect_django_settings, detect_flask_apps, get_venv_from_python_version,
+    human_size, InvalidAwsLambdaName, parse_s3_url, string_to_timestamp,
+    titlecase_keys, validate_name
+)
 from zappa.wsgi import create_wsgi_request, common_log
 from zappa.core import Zappa, ASSUME_POLICY, ATTACH_POLICY
 
@@ -71,44 +74,55 @@ class TestZappa(unittest.TestCase):
         disable_click_colors()
         assert resolve_color_default() is False
 
-    # @mock.patch('zappa.zappa.find_packages')
-    # @mock.patch('os.remove')
-    # def test_copy_editable_packages(self, mock_remove, mock_find_packages):
-    #     temp_package_dir = '/var/folders/rn/9tj3_p0n1ln4q4jn1lgqy4br0000gn/T/1480455339'
-    #     egg_links = [
-    #         '/user/test/.virtualenvs/test/lib/' + get_venv_from_python_version() + '/site-packages/package-python.egg-link'
-    #     ]
-    #     egg_path = "/some/other/directory/package"
-    #     mock_find_packages.return_value = ["package", "package.subpackage", "package.another"]
-    #     temp_egg_link = os.path.join(temp_package_dir, 'package-python.egg-link')
+    @mock.patch('zappa.core.find_packages')
+    @mock.patch('os.remove')
+    def test_copy_editable_packages(self, mock_remove, mock_find_packages):
+        virtual_env = os.environ.get("VIRTUAL_ENV")
+        if not virtual_env:
+            return self.skipTest(
+                "test_copy_editable_packages must be run in a virtualenv")
 
-    #     if sys.version_info[0] < 3:
-    #         z = Zappa()
-    #         with nested(
-    #                 patch_open(), mock.patch('glob.glob'), mock.patch('zappa.zappa.copytree')
-    #         ) as ((mock_open, mock_file), mock_glob, mock_copytree):
-    #             # We read in the contents of the egg-link file
-    #             mock_file.read.return_value = "{}\n.".format(egg_path)
+        temp_package_dir = tempfile.mkdtemp()
+        try:
+            egg_links = [os.path.join(
+                virtual_env, "lib", get_venv_from_python_version(),
+                "site-packages", "test-copy-editable-packages.egg-link")]
+            egg_path = "/some/other/directory/package"
+            mock_find_packages.return_value = [
+                "package", "package.subpackage", "package.another"]
+            temp_egg_link = os.path.join(
+                temp_package_dir, 'package-python.egg-link')
 
-    #             # we use glob.glob to get the egg-links in the temp packages directory
-    #             mock_glob.return_value = [temp_egg_link]
+            z = Zappa()
+            mock_open = mock.mock_open(read_data=egg_path.encode("utf-8"))
+            with mock.patch("zappa.core.open", mock_open), \
+                    mock.patch("glob.glob") as mock_glob, \
+                    mock.patch("zappa.core.copytree") as mock_copytree:
+                # we use glob.glob to get the egg-links in the temp packages
+                # directory
+                mock_glob.return_value = [temp_egg_link]
 
-    #             z.copy_editable_packages(egg_links, temp_package_dir)
+                z.copy_editable_packages(egg_links, temp_package_dir)
 
-    #             # make sure we copied the right directories
-    #             mock_copytree.assert_called_with(
-    #                 os.path.join(egg_path, 'package'),
-    #                 os.path.join(temp_package_dir, 'package'),
-    #                 symlinks=False
-    #             )
-    #             self.assertEqual(mock_copytree.call_count, 1)
+                # make sure we copied the right directories
+                mock_copytree.assert_called_with(
+                    os.path.join(egg_path, 'package'),
+                    os.path.join(temp_package_dir, 'package'),
+                    metadata=False, symlinks=False
+                )
+                self.assertEqual(mock_copytree.call_count, 1)
 
-    #             # make sure it removes the egg-link from the temp packages directory
-    #             mock_remove.assert_called_with(temp_egg_link)
-    #             self.assertEqual(mock_remove.call_count, 1)
+                # make sure it removes the egg-link from the temp packages
+                # directory
+                mock_remove.assert_called_with(temp_egg_link)
+                self.assertEqual(mock_remove.call_count, 1)
+        finally:
+            shutil.rmtree(temp_package_dir)
+
+        return
 
     def test_create_lambda_package(self):
-        # mock the pip.get_installed_distributions() to include a known package in lambda_packages so that the code
+        # mock the pkg_resources.WorkingSet() to include a known package in lambda_packages so that the code
         # for zipping pre-compiled packages gets called
         mock_installed_packages = {'psycopg2': '2.6.1'}
         with mock.patch('zappa.core.Zappa.get_installed_packages', return_value=mock_installed_packages):
@@ -159,28 +173,48 @@ class TestZappa(unittest.TestCase):
     def test_getting_installed_packages(self, *args):
         z = Zappa(runtime='python2.7')
 
-        # mock pip packages call to be same as what our mocked site packages dir has
+        # mock pkg_resources call to be same as what our mocked site packages dir has
         mock_package = collections.namedtuple('mock_package', ['project_name', 'version', 'location'])
         mock_pip_installed_packages = [mock_package('super_package', '0.1', '/venv/site-packages')]
 
         with mock.patch('os.path.isdir', return_value=True):
             with mock.patch('os.listdir', return_value=['super_package']):
-                import pip  # this gets called in non-test Zappa mode
-                with mock.patch('pip.get_installed_distributions', return_value=mock_pip_installed_packages):
+                import pkg_resources  # this gets called in non-test Zappa mode
+                with mock.patch('pkg_resources.WorkingSet', return_value=mock_pip_installed_packages):
                     self.assertDictEqual(z.get_installed_packages('',''), {'super_package' : '0.1'})
+
+    def test_getting_installed_packages_mixed_case_location(self, *args):
+        z = Zappa(runtime='python2.7')
+
+        # mock pip packages call to be same as what our mocked site packages dir has
+        mock_package = collections.namedtuple('mock_package', ['project_name', 'version', 'location'])
+        mock_pip_installed_packages = [
+            mock_package('SuperPackage', '0.1', '/Venv/site-packages'),
+            mock_package('SuperPackage64', '0.1', '/Venv/site-packages64'),
+        ]
+
+        with mock.patch('os.path.isdir', return_value=True):
+            with mock.patch('os.listdir', return_value=[]):
+                import pkg_resources  # this gets called in non-test Zappa mode
+                with mock.patch('pkg_resources.WorkingSet', return_value=mock_pip_installed_packages):
+                    self.assertDictEqual(z.get_installed_packages('/venv/Site-packages','/venv/site-packages64'), {
+                       'superpackage': '0.1',
+                       'superpackage64': '0.1',
+                })
 
     def test_getting_installed_packages_mixed_case(self, *args):
         z = Zappa(runtime='python2.7')
 
-        # mock pip packages call to be same as what our mocked site packages dir has
+        # mock pkg_resources call to be same as what our mocked site packages dir has
         mock_package = collections.namedtuple('mock_package', ['project_name', 'version', 'location'])
         mock_pip_installed_packages = [mock_package('SuperPackage', '0.1', '/venv/site-packages')]
 
         with mock.patch('os.path.isdir', return_value=True):
             with mock.patch('os.listdir', return_value=['superpackage']):
-                import pip  # this gets called in non-test Zappa mode
-                with mock.patch('pip.get_installed_distributions', return_value=mock_pip_installed_packages):
+                import pkg_resources  # this gets called in non-test Zappa mode
+                with mock.patch('pkg_resources.WorkingSet', return_value=mock_pip_installed_packages):
                     self.assertDictEqual(z.get_installed_packages('',''), {'superpackage' : '0.1'})
+
 
     def test_load_credentials(self):
         z = Zappa()
@@ -1245,15 +1279,18 @@ class TestZappa(unittest.TestCase):
         except ValueError as e:
             pass # that's fine.
 
-        result = verify_challenge('http://echo.jsontest.com/status/valid')
-        try:
-            result = verify_challenge('http://echo.jsontest.com/status/fail')
-        except ValueError as e:
-            pass # that's fine.
-        try:
-            result = verify_challenge('http://bing.com')
-        except ValueError as e:
-            pass # that's fine.
+        # This service fails due to remote "over-quota" errors,
+        # so let's retire it until we can find a better provider.
+
+        # result = verify_challenge('http://echo.jsontest.com/status/valid')
+        # try:
+        #     result = verify_challenge('http://echo.jsontest.com/status/fail')
+        # except ValueError as e:
+        #     pass # that's fine.
+        # try:
+        #     result = verify_challenge('http://bing.com')
+        # except ValueError as e:
+        #     pass # that's fine.
 
         encode_certificate(b'123')
 
@@ -1790,6 +1827,30 @@ USE_TZ = True
             zappa_cli.create_package()
         self.assertEqual('Environment variable keys must be ascii.', str(context.exception))
 
+
+    def test_titlecase_keys(self):
+        raw = {
+            'hOSt': 'github.com',
+            'ConnECtiOn': 'keep-alive',
+            'UpGRAde-InSecuRE-ReQueSts': '1',
+            'uSer-AGEnT': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36',
+            'cONtENt-TYPe': 'text/html; charset=utf-8',
+            'aCCEpT': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+            'ACcePT-encoDInG': 'gzip, deflate, br',
+            'AcCEpT-lAnGUagE': 'en-US,en;q=0.9'
+        }
+        transformed= titlecase_keys(raw)
+        expected = {
+            'Host': 'github.com',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36',
+            'Content-Type': 'text/html; charset=utf-8',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Accept-Language': 'en-US,en;q=0.9'
+        }
+        self.assertEqual(expected, transformed)
 
 
 if __name__ == '__main__':

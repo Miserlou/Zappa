@@ -39,6 +39,7 @@
     - [Deploying to a Domain With Your Own SSL Certs](#deploying-to-a-domain-with-your-own-ssl-certs)
 - [Executing in Response to AWS Events](#executing-in-response-to-aws-events)
 - [Asynchronous Task Execution](#asynchronous-task-execution)
+  - [Catching Exceptions](#catching-exceptions)
   - [Task Sources](#task-sources)
   - [Direct Invocation](#direct-invocation)
   - [Remote Invocations](#remote-invocations)
@@ -56,7 +57,7 @@
   - [Enabling Secure Endpoints on API Gateway](#enabling-secure-endpoints-on-api-gateway)
     - [API Key](#api-key)
     - [IAM Policy](#iam-policy)
-    - [API Gateway Authorizers](#api-gateway-authorizers)
+    - [API Gateway Lambda Authorizers](#api-gateway-lambda-authorizers)
     - [Cognito User Pool Authorizer](#cognito-user-pool-authorizer)
   - [Setting Environment Variables](#setting-environment-variables)
     - [Local Environment Variables](#local-environment-variables)
@@ -65,8 +66,9 @@
     - [Remote Environment Variables (via an S3 file)](#remote-environment-variables-via-an-s3-file)
   - [API Gateway Context Variables](#api-gateway-context-variables)
   - [Catching Unhandled Exceptions](#catching-unhandled-exceptions)
-  - [Using Custom AWS IAM Roles and Policies for Deployment](#using-custom-aws-iam-roles-and-policies-for-deployment)
-  - [Using Custom AWS IAM Roles and Policies for Execution](#using-custom-aws-iam-roles-and-policies-for-execution)
+  - [Using Custom AWS IAM Roles and Policies](#using-custom-aws-iam-roles-and-policies)
+    - [Custom AWS IAM Roles and Policies for Deployment](#custom-aws-iam-roles-and-policies-for-deployment)
+    - [Custom AWS IAM Roles and Policies for Execution](#custom-aws-iam-roles-and-policies-for-execution)
   - [AWS X-Ray](#aws-x-ray)
   - [Globally Available Server-less Architectures](#globally-available-server-less-architectures)
   - [Raising AWS Service Limits](#raising-aws-service-limits)
@@ -200,7 +202,7 @@ To explain what's going on, when you call `deploy`, Zappa will automatically pac
 
 Be aware that the default IAM role and policy created for executing Lambda applies a liberal set of permissions.
 These are most likely not appropriate for production deployment of important applications.  See the section
-[Using Custom AWS IAM Roles and Policies for Execution](#using-custom-aws-iam-roles-and-policies-for-Execution) for more detail.
+[Custom AWS IAM Roles and Policies for Execution](#custom-aws-iam-roles-and-policies-for-execution) for more detail.
 
 ### Updates
 
@@ -336,7 +338,7 @@ Similarly to `package`, if you only want the API Gateway CloudFormation template
 
 Note that you must supply your own Lambda ARN and Role ARNs in this case, as they may not have been created for you.
 
-You can use get the JSON output directly with `--json`, and specify the output file with `--output`.
+You can get the JSON output directly with `--json`, and specify the output file with `--output`.
 
 ### Status
 
@@ -374,6 +376,11 @@ You can filter out the contents of the logs with `--filter`, like so:
 
 Note that this uses the [CloudWatch Logs filter syntax](http://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/FilterAndPatternSyntax.html).
 
+To tail logs without following (to exit immediately after displaying the end of the requested logs, pass `--disable-keep-open`:
+
+    $ zappa tail production --since 1h --disable-keep-open
+
+
 ### Remote Function Invocation
 
 You can execute any function in your application directly at any time by using the `invoke` command.
@@ -402,7 +409,9 @@ For commands which have their own arguments, you can also pass the command in as
 
 Commands which require direct user input, such as `createsuperuser`, should be [replaced by commands](http://stackoverflow.com/a/26091252) which use `zappa invoke <env> --raw`.
 
-_(Please note that commands which take over 30 seconds to execute may time-out. See [this related issue](https://github.com/Miserlou/Zappa/issues/205#issuecomment-236391248) for a work-around.)_
+For more Django integration, take a look at the [zappa-django-utils](https://github.com/Miserlou/zappa-django-utils) project.
+
+_(Please note that commands which take over 30 seconds to execute may time-out preventing output from being returned - but the command may continue to run. See [this related issue](https://github.com/Miserlou/Zappa/issues/205#issuecomment-236391248) for a work-around.)_
 
 ### SSL Certification
 
@@ -579,7 +588,7 @@ To get the keyword arguments you will need to look inside the event dictionary:
 
 ```python
 def your_recurring_function(event, context):
-    my_kwargs = event.get(kwargs)  # dict of kwargs given in zappa_settings file
+    my_kwargs = event.get("kwargs")  # dict of kwargs given in zappa_settings file
 
 ```
 
@@ -617,6 +626,37 @@ And that's it! Your API response will return immediately, while the `make_pie` f
 When calls to @task decorated functions or the zappa.async.run command occur outside of Lambda, such as your local dev environment,
 the functions will execute immediately and locally. The zappa async functionality only works
 when in the Lambda environment or when specifying [Remote Invocations](https://github.com/Miserlou/zappa#remote-invocations).
+
+### Catching Exceptions
+Putting a try..except block on an asynchronous task like this:
+
+```python
+@task
+def make_pie():
+    try:
+	ingredients = get_ingredients()
+	pie = bake(ingredients)
+	deliver(pie)
+	
+    except Fault as error:
+    	"""send an email"""
+	...
+	return Response('Web services down', status=503)
+```
+
+will cause an email to be sent twice for the same error. See [asynchronous retries at AWS](https://docs.aws.amazon.com/lambda/latest/dg/retries-on-errors.html). To work around this side-effect, and have the fault handler execute only once, change the return value to:
+
+```python
+@task
+def make_pie():
+    try:
+	"""code block"""
+	
+    except Fault as error:
+    	"""send an email"""
+	...
+	return {} #or return True
+```
 
 ### Task Sources
 
@@ -806,6 +846,7 @@ to change Zappa's behavior. Use these at your own risk!
         "delete_s3_zip": true, // Delete the s3 zip archive. Default true.
         "django_settings": "your_project.production_settings", // The modular path to your Django project's settings. For Django projects only.
         "domain": "yourapp.yourdomain.com", // Required if you're using a domain
+        "base_path": "your-base-path", // Optional base path for API gateway custom domain base path mapping. Default None.
         "environment_variables": {"your_key": "your_value"}, // A dictionary of environment variables that will be available to your deployed app. See also "remote_env" and "aws_environment_variables". Default {}.
         "events": [
             {   // Recurring events
@@ -836,7 +877,7 @@ to change Zappa's behavior. Use these at your own risk!
             "function": "your_module.your_auth_function", // Local function to run for token validation. For more information about the function see below.
             "arn": "arn:aws:lambda:<region>:<account_id>:function:<function_name>", // Existing Lambda function to run for token validation.
             "result_ttl": 300, // Optional. Default 300. The time-to-live (TTL) period, in seconds, that specifies how long API Gateway caches authorizer results. Currently, the maximum TTL value is 3600 seconds.
-            "token_source": "Authorization", // Optional. Default 'Authorization'. The name of a custom authorization header containing the token that clients submit as part of their requests.
+            "token_header": "Authorization", // Optional. Default 'Authorization'. The name of a custom authorization header containing the token that clients submit as part of their requests.
             "validation_expression": "^Bearer \\w+$", // Optional. A validation expression for the incoming token, specify a regular expression.
         },
         "keep_warm": true, // Create CloudWatch events to keep the server warm. Default true. To remove, set to false and then `unschedule`.
@@ -847,6 +888,7 @@ to change Zappa's behavior. Use these at your own risk!
         "log_level": "DEBUG", // Set the Zappa log level. Can be one of CRITICAL, ERROR, WARNING, INFO and DEBUG. Default: DEBUG
         "manage_roles": true, // Have Zappa automatically create and define IAM execution roles and policies. Default true. If false, you must define your own IAM Role and role_name setting.
         "memory_size": 512, // Lambda function memory in MB. Default 512.
+        "num_retained_versions":null, // Indicates the number of old versions to retain for the lambda. If absent, keeps all the versions of the function.
         "payload_compression": true, // Whether or not to enable API gateway payload compression (default: true)
         "payload_minimum_compression_size": 0, // The threshold size (in bytes) below which payload compression will not be applied (default: 0)
         "prebuild_script": "your_module.your_function", // Function to execute before uploading code
@@ -964,8 +1006,8 @@ You can use the `api_key_required` setting to generate an API key to all the rou
 
 You can enable IAM-based (v4 signing) authorization on an API by setting the `iam_authorization` setting to `true`. Your API will then require signed requests and access can be controlled via [IAM policy](https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-iam-policy-examples.html). Unsigned requests will receive a 403 response, as will requesters who are not authorized to access the API. Enabling this will override the Authorizer configuration (see below).
 
-#### API Gateway Authorizers
-If you deploy an API endpoint with Zappa, you can take advantage of [API Gateway Authorizers](http://docs.aws.amazon.com/apigateway/latest/developerguide/use-custom-authorizer.html) to implement a token-based authentication - all you need to do is to provide a function to create the required output, Zappa takes care of the rest. A good start for the function is the [AWS Labs blueprint example](https://github.com/awslabs/aws-apigateway-lambda-authorizer-blueprints/blob/master/blueprints/python/api-gateway-authorizer-python.py).
+#### API Gateway Lambda Authorizers
+If you deploy an API endpoint with Zappa, you can take advantage of [API Gateway Lambda Authorizers](https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-use-lambda-authorizer.html) to implement a token-based authentication - all you need to do is to provide a function to create the required output, Zappa takes care of the rest. A good start for the function is the [AWS Labs blueprint example](https://github.com/awslabs/aws-apigateway-lambda-authorizer-blueprints/blob/master/blueprints/python/api-gateway-authorizer-python.py).
 
 If you are wondering for what you would use an Authorizer, here are some potential use cases:
 
@@ -1149,12 +1191,14 @@ You may still need a similar exception handler inside your application, this is 
 
 By default, AWS Lambda will attempt to retry an event based (non-API Gateway, e.g. CloudWatch) invocation if an exception has been thrown. However, you can prevent this by returning True, as in example above, so Zappa that will not re-raise the uncaught exception, thus preventing AWS Lambda from retrying the current invocation.
 
-### Using Custom AWS IAM Roles and Policies for Deployment
+### Using Custom AWS IAM Roles and Policies
+
+#### Custom AWS IAM Roles and Policies for Deployment
 
 You can specify which _local_ profile to use for deploying your Zappa application by defining
 the `profile_name` setting, which will correspond to a profile in your AWS credentials file.
 
-### Using Custom AWS IAM Roles and Policies for Execution
+#### Custom AWS IAM Roles and Policies for Execution
 
 The default IAM policy created by Zappa for executing the Lambda is very permissive.
 It grants access to all actions for
@@ -1289,6 +1333,8 @@ For monitoring of different deployments, a unique UUID for each package is avail
 * [Building A Serverless Image Processing SaaS using Zappa](http://www.99serverless.com/index.php/2017/11/25/building-a-serverless-image-processing-saas/)
 * [Serverless Slack Slash Commands with Python and Zappa](https://renzo.lucioni.xyz/serverless-slash-commands-with-python/)
 * [Bringing Tokusatsu to AWS using Python, Flask, Zappa and Contentful](https://www.contentful.com/blog/2018/03/07/bringing-tokusatsu-to-aws-using-python-flask-zappa-and-contentful/)
+* [AWS Summit 2018 Seoul - Zappa와 함께하는 Serverless Microservice](https://www.slideshare.net/YunSeopSong/zappa-serverless-microservice-94410308/)
+* [Book - Building Serverless Python Web Services with Zappa](https://github.com/PacktPublishing/Building-Serverless-Python-Web-Services-with-Zappa)
 * _Your guide here?_
 
 ## Zappa in the Press
@@ -1338,7 +1384,10 @@ Are you using Zappa? Let us know and we'll list your site here!
 * [travis-build-repeat](https://github.com/bcongdon/travis-build-repeat) - Repeat TravisCI builds to avoid stale test results.
 * [wunderskill-alexa-skill](https://github.com/mcrowson/wunderlist-alexa-skill) - An Alexa skill for adding to a Wunderlist.
 * [xrayvision](https://github.com/mathom/xrayvision) - Utilities and wrappers for using AWS X-Ray with Zappa.
+* [terraform-aws-zappa](https://github.com/dpetzold/terraform-aws-zappa) - Terraform modules for creating a VPC, RDS instance, ElastiCache Redis and CloudFront Distribution for use with Zappa.
 * [zappa-sentry](https://github.com/jneves/zappa-sentry) - Integration with Zappa and Sentry
+* [IOpipe](https://github.com/iopipe/iopipe-python#zappa) - Monitor, profile and analyze your Zappa apps.
+
 
 ## Hacks
 
@@ -1362,6 +1411,8 @@ Please include the GitHub issue or pull request URL that has discussion related 
 
 Please feel free to work on any open ticket, especially any ticket marked with the "help-wanted" label. If you get stuck or want to discuss an issue further, please join [our Slack channel](https://slack.zappa.io), where you'll find a community of smart and interesting people working dilligently on hard problems.
 
+Zappa does not intend to conform to PEP8, isolate your commits so that changes to functionality with changes made by your linter.
+
 #### Using a Local Repo
 
 To use the git HEAD, you *probably can't* use `pip install -e `. Instead, you should clone the repo to your machine and then `pip install /path/to/zappa/repo` or `ln -s /path/to/zappa/repo/zappa zappa` in your local project.
@@ -1380,6 +1431,24 @@ Zappa is currently supported by these awesome individuals and companies:
   * Theo Chitayat
   * George Sibble
   * Joe Weiss
+  * Nik Bora
+  * Zerong Toby Wang
+  * Gareth E
+  * Matt Jackson
+  * Sean Coates
+  * Alexander Loschilov
+  * Korey Peters
+  * Joe Weiss
+  * Kimmo Parvianen-Jalanko
+  * Patrick Agin
+  * Roberto Martinez
+  * Charles Dimino
+  * Doug Beney
+  * Dan "The Man" Gayle
+  * Juancito
+  * Will Childs-Klein
+  * Efi Merdler Kravitz
+  * **Philippe Trounev**
 
 Thank you very, very much!
 

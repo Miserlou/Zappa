@@ -2,6 +2,7 @@ import calendar
 import datetime
 import durationpy
 import fnmatch
+import io
 import json
 import os
 import re
@@ -143,7 +144,7 @@ def detect_flask_apps():
 
             full = os.path.join(root, filename)
 
-            with open(full, 'r') as f:
+            with io.open(full, 'r', encoding='utf-8') as f:
                 lines = f.readlines()
                 for line in lines:
                     app = None
@@ -413,3 +414,11 @@ def conflicts_with_a_neighbouring_module(directory_path):
     neighbours = os.listdir(parent_dir_path)
     conflicting_neighbour_filename = current_dir_name+'.py'
     return conflicting_neighbour_filename in neighbours
+
+
+# https://github.com/Miserlou/Zappa/issues/1188
+def titlecase_keys(d):
+    """
+    Takes a dict with keys of type str and returns a new dict with all keys titlecased.
+    """
+    return {k.title(): v for k, v in d.items()}
