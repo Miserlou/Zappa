@@ -291,8 +291,11 @@ class Zappa(object):
         if load_credentials:
             self.load_credentials(boto_session, profile_name)
 
+            # Gives us the option to skip SSL when in the context of a proxy
+            use_ssl = os.environ.get('ZAPPA_NO_VERIFY_SSL', '') != '1'
+
             # Initialize clients
-            self.s3_client = self.boto_client('s3')
+            self.s3_client = self.boto_client('s3', use_ssl=use_ssl)
             self.lambda_client = self.boto_client('lambda', config=long_config)
             self.events_client = self.boto_client('events')
             self.apigateway_client = self.boto_client('apigateway')
@@ -2164,7 +2167,7 @@ class Zappa(object):
                                                               "path" : "/certificateArn",
                                                               "value" : certificate_arn}
                                                          ])
-    
+
     def update_domain_base_path_mapping(self, domain_name, lambda_name, stage, base_path):
         """
         Update domain base path mapping on API Gateway if it was changed
@@ -2182,8 +2185,8 @@ class Zappa(object):
                     self.apigateway_client.update_base_path_mapping(domainName=domain_name,
                                                                     basePath=base_path_mapping['basePath'],
                                                                     patchOperations=[
-                                                                        {"op" : "replace", 
-                                                                         "path" : "/basePath", 
+                                                                        {"op" : "replace",
+                                                                         "path" : "/basePath",
                                                                          "value" : '' if base_path is None else base_path}
                                                                     ])
         if not found:
@@ -2193,7 +2196,7 @@ class Zappa(object):
                 restApiId=api_id,
                 stage=stage
             )
-        
+
 
     def get_domain_name(self, domain_name, route53=True):
         """

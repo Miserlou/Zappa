@@ -2660,7 +2660,7 @@ class ZappaCLI(object):
         """
 
         touch_path = self.stage_config.get('touch_path', '/')
-        req = requests.get(endpoint_url + touch_path)
+        req = requests.get(endpoint_url + touch_path, verify=os.getenv('ZAPPA_NO_VERIFY_SSL', "0") != "1")
 
         if req.status_code >= 500:
             raise ClickException(click.style("Warning!", fg="red", bold=True) +
