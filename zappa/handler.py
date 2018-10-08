@@ -494,10 +494,13 @@ class LambdaHandler(object):
                         # API stage
                         script_name = '/' + settings.API_STAGE
 
+                base_path = getattr(settings, 'BASE_PATH', None)
+
                 # Create the environment for WSGI and handle the request
                 environ = create_wsgi_request(
                     event,
                     script_name=script_name,
+                    base_path=base_path,
                     trailing_slash=self.trailing_slash,
                     binary_support=settings.BINARY_SUPPORT,
                     context_header_mappings=settings.CONTEXT_HEADER_MAPPINGS

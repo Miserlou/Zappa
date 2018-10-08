@@ -32,6 +32,7 @@ def create_wsgi_request(event_info,
                         script_name=None,
                         trailing_slash=True,
                         binary_support=False,
+                        base_path=None,
                         context_header_mappings={}
                         ):
         """
@@ -87,6 +88,11 @@ def create_wsgi_request(event_info,
         headers = titlecase_keys(headers)
 
         path = urls.url_unquote(event_info['path'])
+        if base_path:
+            script_name = '/' + base_path
+
+            if path.startswith(script_name):
+                path = path[len(script_name):]
 
         if query:
             query_string = urlencode(query)

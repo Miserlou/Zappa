@@ -2184,7 +2184,7 @@ class Zappa(object):
                                                                     patchOperations=[
                                                                         {"op" : "replace", 
                                                                          "path" : "/basePath", 
-                                                                         "value" : base_path}
+                                                                         "value" : '' if base_path is None else base_path}
                                                                     ])
         if not found:
             self.apigateway_client.create_base_path_mapping(
