@@ -1,5 +1,4 @@
 argcomplete==1.9.3
-base58==1.0.0
 botocore>=1.7.19
 boto3>=1.4.7
 docutils>=0.12
