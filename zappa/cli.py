@@ -1203,6 +1203,15 @@ class ZappaCLI(object):
             )
             click.echo('SNS Topic created: %s' % topic_arn)
 
+        # Add async tasks SQS
+        if self.stage_config.get('async_source', None) == 'sqs' and self.stage_config.get('async_resources', True):
+            self.lambda_arn = self.zappa.get_lambda_function(function_name=self.lambda_name)
+            queue_arn, event_source_result = self.zappa.create_async_sqs_queue(
+                lambda_name=self.lambda_name,
+                lambda_arn=self.lambda_arn
+            )
+            click.echo('SQS Queue (%s) and event source (%s) created' % (queue_arn, event_source_result))
+
         # Add async tasks DynamoDB
         table_name = self.stage_config.get('async_response_table', False)
         read_capacity = self.stage_config.get('async_response_table_read_capacity', 1)
@@ -1256,6 +1265,12 @@ class ZappaCLI(object):
            and self.stage_config.get('async_resources', True):
             removed_arns = self.zappa.remove_async_sns_topic(self.lambda_name)
             click.echo('SNS Topic removed: %s' % ', '.join(removed_arns))
+
+        # Remove async task SQS.
+        if self.stage_config.get('async_source', None) == 'sqs' and self.stage_config.get('async_resources', True):
+            removed_url = self.zappa.remove_async_sqs_queue(self.lambda_name, function_arn)
+            if removed_url:
+                click.echo('SQS Queue removed: %s' % removed_url)
 
     def invoke(self, function_name, raw_python=False, command=None, no_color=False):
         """

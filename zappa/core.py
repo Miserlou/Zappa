@@ -41,7 +41,7 @@ from tqdm import tqdm
 from .utilities import (add_event_source, conflicts_with_a_neighbouring_module,
                         contains_python_files_or_subdirs, copytree,
                         get_topic_name, get_venv_from_python_version,
-                        human_size, remove_event_source)
+                        human_size, remove_event_source, get_queue_name)
 
 try:
     unicode        # Python 2
@@ -319,6 +319,7 @@ class Zappa(object):
             self.dynamodb_client = self.boto_client('dynamodb')
             self.cognito_client = self.boto_client('cognito-idp')
             self.sts_client = self.boto_client('sts')
+            self.sqs_client = self.boto_client('sqs')
 
         self.tags = tags
         self.cf_template = troposphere.Template()
@@ -2925,7 +2926,7 @@ class Zappa(object):
                 "events": ["sns:Publish"]
             },
             lambda_arn=lambda_arn,
-            target_function="zappa.asynchronous.route_task",
+            target_function=None,
             boto_session=self.boto_session
         )
         return topic_arn
@@ -2941,6 +2942,61 @@ class Zappa(object):
                 self.sns_client.delete_topic(TopicArn=sub['TopicArn'])
                 removed_arns.append(sub['TopicArn'])
         return removed_arns
+
+
+    ###
+    # Async / SQS
+    ##
+
+    def create_async_sqs_queue(self, lambda_name, lambda_arn):
+        """
+        Create the SQS-based async queue.
+        """
+        queue_name = get_queue_name(lambda_name)
+        # No problem if the queue already exists, unless their attributes differ.
+        queue_url = self.sqs_client.create_queue(QueueName=queue_name)['QueueUrl']
+        queue_arn = self.sqs_client.get_queue_attributes(
+            QueueUrl=queue_url,
+            AttributeNames=['All']
+        )['Attributes']['QueueArn']
+
+        # Add rule for SQS queue as an event source
+        event_source_result = add_event_source(
+            event_source={
+                "arn": queue_arn,
+                "batch_size": 1,
+                "enabled": True,
+            },
+            lambda_arn=lambda_arn,
+            target_function=None,
+            boto_session=self.boto_session
+        )
+        return queue_arn, event_source_result
+
+    def remove_async_sqs_queue(self, lambda_name, lambda_arn):
+        """
+        Remove the async SQS queue.
+        """
+        queue_name = get_queue_name(lambda_name)
+        try:
+            queue_url = self.sqs_client.get_queue_url(QueueName=queue_name)['QueueUrl']
+        except self.sqs_client.exceptions.QueueDoesNotExist:
+            return
+        queue_arn = self.sqs_client.get_queue_attributes(
+            QueueUrl=queue_url,
+            AttributeNames=['All']
+        )['Attributes']['QueueArn']
+
+        remove_event_source(
+            event_source={
+                "arn": queue_arn
+            },
+            lambda_arn=lambda_arn,
+            target_function=None,
+            boto_session=self.boto_session
+        )
+        self.sqs_client.delete_queue(QueueUrl=queue_url)
+        return queue_url
 
 
     ###
