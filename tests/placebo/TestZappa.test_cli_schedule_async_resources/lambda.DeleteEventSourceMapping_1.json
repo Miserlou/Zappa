@@ -1,0 +1,33 @@
+{
+    "status_code": 202,
+    "data": {
+        "ResponseMetadata": {
+            "RequestId": "e5d30982-cd79-11e8-9113-050713473215",
+            "HTTPStatusCode": 202,
+            "HTTPHeaders": {
+                "date": "Thu, 11 Oct 2018 17:20:06 GMT",
+                "content-type": "application/json",
+                "content-length": "330",
+                "connection": "keep-alive",
+                "x-amzn-requestid": "e5d30982-cd79-11e8-9113-050713473215"
+            },
+            "RetryAttempts": 0
+        },
+        "UUID": "df7f0807-40d0-4876-bc39-6e6080d68952",
+        "BatchSize": 1,
+        "EventSourceArn": "arn:aws:sqs:eu-west-1:687300752731:test",
+        "FunctionArn": "arn:aws:lambda:eu-west-1:687300752731:function:mimesys-gateway-dev-ireland",
+        "LastModified": {
+            "__class__": "datetime",
+            "year": 2018,
+            "month": 10,
+            "day": 11,
+            "hour": 19,
+            "minute": 20,
+            "second": 6,
+            "microsecond": 580000
+        },
+        "State": "Deleting",
+        "StateTransitionReason": "USER_INITIATED"
+    }
+}

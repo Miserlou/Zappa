@@ -28,6 +28,11 @@ def remote_async_me(arg1, **kwargs):
     return "run async always on lambda %s%s" % (arg1, kwargs.get('foo', ''))
 
 
+@task(service='sqs')
+def async_sqs_me(arg1, **kwargs):
+    return "run async with sqs service when on lambda %s%s" % (arg1, kwargs.get('foo', ''))
+
+
 def callback(self):
     print("this is a callback")
 

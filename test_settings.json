@@ -116,5 +116,10 @@
       "delete_local_zip": true,
       "use_precompiled_packages": false,
       "delete_s3_zip": false
+    },
+    "schedule_async_resources_sqs": {
+      "keep_warm": false,
+      "async_source": "sqs",
+      "async_resources": true
     }
 }

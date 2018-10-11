@@ -399,6 +399,30 @@ class TestZappa(unittest.TestCase):
             }
         self.assertEqual("AWS SQS EVENT", lh.handler(event, None))
 
+        # Test AWS SQS async event
+        event = {
+            u'Records': [
+                {
+                    u'messageId': u'9f884e48-9445-48e8-9eb4-62e86ee69033',
+                    u'receiptHandle': u'AQEBJQ+/u6NsnT5t8Q/VbVxgdUl4TMKZ5FqhksRdIQvLBhwNvADoBxYSOVeCBXdnS9P+erlTtwEALHsnBXynkfPLH3BOUqmgzP25U8kl8eHzq6RAlzrSOfTO8ox9dcp6GLmW33YjO3zkq5VRYyQlJgLCiAZUpY2D4UQcE5D1Vm8RoKfbE+xtVaOctYeINjaQJ1u3mWx9T7tork3uAlOe1uyFjCWU5aPX/1OHhWCGi2EPPZj6vchNqDOJC/Y2k1gkivqCjz1CZl6FlZ7UVPOx3AMoszPuOYZ+Nuqpx2uCE2MHTtMHD8PVjlsWirt56oUr6JPp9aRGo6bitPIOmi4dX0FmuMKD6u/JnuZCp+AXtJVTmSHS8IXt/twsKU7A+fiMK01NtD5msNgVPoe9JbFtlGwvTQ==',
+                    u'body': u'{"task_path": "test_settings.aws_async_sqs_event", "capture_response": false, "response_id": null, "args": ["arg1", "arg2"], "kwargs": {"arg3": "varg3"}, "zappaAsyncCommand": "zappa.asynchronous.route_sqs_task"}',
+                    u'attributes': {
+                        u'ApproximateReceiveCount': u'1',
+                        u'SentTimestamp': u'1539243935446',
+                        u'SenderId': u'AROAIPI3A42BPBEHOTBFA',
+                        u'ApproximateFirstReceiveTimestamp': u'1539243935452'
+                    },
+                    u'messageAttributes': {},
+                    u'md5OfBody': u'7412d5bfaa2241ec53d5415535f4ee14',
+                    u'eventSource': u'aws:sqs',
+                    u'eventSourceARN': u'arn:aws:sqs:1',
+                    u'awsRegion': u'us-east-1'
+                }
+            ]
+        }
+        self.assertEqual("AWS ASYNC SQS EVENT", lh.handler(event, None))
+
+
         # Test Authorizer event
         event = {u'authorizationToken': u'hubtoken1', u'methodArn': u'arn:aws:execute-api:us-west-2:1234:xxxxx/dev/GET/v1/endpoint/param', u'type': u'TOKEN'}
         self.assertEqual("AUTHORIZER_EVENT", lh.handler(event, None))
@@ -455,6 +479,14 @@ class TestZappa(unittest.TestCase):
         zappa_cli.lambda_name = 'baby-flask-devor'
         zappa_cli.zappa.credentials_arn = 'arn:aws:iam::12345:role/ZappaLambdaExecution'
         resp = zappa_cli.status()
+
+    @placebo_session
+    def test_cli_schedule_async_resources(self, session):
+        zappa_cli = ZappaCLI()
+        zappa_cli.api_stage = 'schedule_async_resources_sqs'
+        zappa_cli.load_settings('test_settings.json', session)
+        zappa_cli.schedule()
+        zappa_cli.unschedule()
 
     ##
     # Let's Encrypt / ACME

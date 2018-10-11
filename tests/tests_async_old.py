@@ -13,12 +13,13 @@ except ImportError:
 
 # It cannot be imported normally with Python 3.7
 zappa_async = __import__('zappa.async', fromlist=[
-    'AsyncException', 'LambdaAsyncResponse', 'SnsAsyncResponse',
+    'AsyncException', 'LambdaAsyncResponse', 'SnsAsyncResponse', 'SqsAsyncResponse',
     'import_and_get_task', 'get_func_task_path'
 ])
 AsyncException      = zappa_async.AsyncException
 LambdaAsyncResponse = zappa_async.LambdaAsyncResponse
 SnsAsyncResponse    = zappa_async.SnsAsyncResponse
+SqsAsyncResponse    = zappa_async.SqsAsyncResponse
 import_and_get_task = zappa_async.import_and_get_task
 get_func_task_path  = zappa_async.get_func_task_path
 
@@ -57,6 +58,7 @@ class TestZappa(unittest.TestCase):
         l = LambdaAsyncResponse(boto_session=boto_session)
         # s = SnsAsyncResponse()
         s = SnsAsyncResponse(arn="arn:abc:def", boto_session=boto_session)
+        q = SqsAsyncResponse(queue_url="https://example.com", boto_session=boto_session)
 
     def test_nofails_funcs(self):
         funk = import_and_get_task("tests.test_app.async_me")
@@ -97,6 +99,7 @@ class TestZappa(unittest.TestCase):
         lambda_async_mock.assert_called_once()
         lambda_async_mock.assert_called_with(aws_region='us-east-1',
                                              capture_response=False,
+                                             delay_seconds=0,
                                              lambda_function_name="MyLambda")
         lambda_async_mock.return_value.send.assert_called_with(
             get_func_task_path(async_me), ("qux",), {})

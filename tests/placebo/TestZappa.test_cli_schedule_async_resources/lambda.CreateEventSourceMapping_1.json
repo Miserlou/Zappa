@@ -1,0 +1,33 @@
+{
+    "status_code": 202,
+    "data": {
+        "ResponseMetadata": {
+            "RequestId": "f148dfad-cd76-11e8-95ba-bde635c07b45",
+            "HTTPStatusCode": 202,
+            "HTTPHeaders": {
+                "date": "Thu, 11 Oct 2018 16:58:57 GMT",
+                "content-type": "application/json",
+                "content-length": "330",
+                "connection": "keep-alive",
+                "x-amzn-requestid": "f148dfad-cd76-11e8-95ba-bde635c07b45"
+            },
+            "RetryAttempts": 0
+        },
+        "UUID": "df7f0807-40d0-4876-bc39-6e6080d68952",
+        "BatchSize": 1,
+        "EventSourceArn": "arn:aws:sqs:eu-west-1:687300752731:test",
+        "FunctionArn": "arn:aws:lambda:eu-west-1:687300752731:function:zappa-test",
+        "LastModified": {
+            "__class__": "datetime",
+            "year": 2018,
+            "month": 10,
+            "day": 11,
+            "hour": 18,
+            "minute": 58,
+            "second": 57,
+            "microsecond": 360000
+        },
+        "State": "Creating",
+        "StateTransitionReason": "USER_INITIATED"
+    }
+}

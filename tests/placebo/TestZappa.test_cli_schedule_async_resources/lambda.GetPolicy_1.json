@@ -1,0 +1,22 @@
+{
+    "status_code": 404,
+    "data": {
+        "ResponseMetadata": {
+            "RetryAttempts": 0,
+            "HTTPStatusCode": 404,
+            "RequestId": "43c3f6fc-7105-11e6-b082-7b8efc14ebe8",
+            "HTTPHeaders": {
+                "x-amzn-requestid": "43c3f6fc-7105-11e6-b082-7b8efc14ebe8",
+                "content-length": "107",
+                "connection": "keep-alive",
+                "date": "Fri, 02 Sep 2016 12:03:30 GMT",
+                "content-type": "application/json",
+                "x-amzn-errortype": "ResourceNotFoundException"
+            }
+        },
+        "Error": {
+            "Message": "Policy not found: arn:aws:lambda:us-east-1:032345039960:function:zappa-ttt888",
+            "Code": "ResourceNotFoundException"
+        }
+    }
+}
