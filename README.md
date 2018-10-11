@@ -460,7 +460,7 @@ However, it's now far easier to use Route 53-based DNS authentication, which wil
 
 ## Executing in Response to AWS Events
 
-Similarly, you can have your functions execute in response to events that happen in the AWS ecosystem, such as S3 uploads, DynamoDB entries, Kinesis streams, and SNS messages.
+Similarly, you can have your functions execute in response to events that happen in the AWS ecosystem, such as S3 uploads, DynamoDB entries, Kinesis streams, SNS messages, and SQS queues.
 
 In your *zappa_settings.json* file, define your [event sources](http://docs.aws.amazon.com/lambda/latest/dg/invoking-lambda-function.html) and the function you wish to execute. For instance, this will execute `your_module.process_upload_function` in response to new objects in your `my-bucket` S3 bucket. Note that `process_upload_function` must accept `event` and `context` parameters.
 
@@ -552,6 +552,21 @@ Optionally you can add [SNS message filters](http://docs.aws.amazon.com/sns/late
                     "arn":  "arn:aws:dynamodb:us-east-1:1234554:table/YourTable/stream/2016-05-11T00:00:00.000",
                     "starting_position": "TRIM_HORIZON", // Supported values: TRIM_HORIZON, LATEST
                     "batch_size": 50, // Max: 1000
+                    "enabled": true // Default is false
+               }
+           }
+       ]
+```
+
+[SQS](https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html) is also pulling messages from a stream.  At this time, [only "Standard" queues can trigger lambda events, not "FIFO" queues](https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html).  Read the AWS Documentation carefully since Lambda calls the SQS DeleteMessage API on your behalf once your function completes successfully.  
+
+```javascript
+       "events": [
+           {
+               "function": "your_module.process_messages",
+               "event_source": {
+                    "arn":  "arn:aws:sqs:us-east-1:12341234:your-queue-name-arn",
+                    "batch_size": 10, // Max: 10. Use 1 to trigger immediate processing
                     "enabled": true // Default is false
                }
            }
