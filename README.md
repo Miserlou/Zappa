@@ -43,6 +43,7 @@
   - [Task Sources](#task-sources)
   - [Direct Invocation](#direct-invocation)
   - [Remote Invocations](#remote-invocations)
+  - [Delayed Invocations](#delayed-invocations)
   - [Restrictions](#restrictions)
   - [Running Tasks in a VPC](#running-tasks-in-a-vpc)
   - [Responses](#responses)
@@ -680,29 +681,31 @@ def make_pie():
 
 ### Task Sources
 
-By default, this feature uses direct AWS Lambda invocation. You can instead use AWS Simple Notification Service as the task event source by using the `task_sns` decorator, like so:
+By default, this feature uses direct AWS Lambda invocation. You can instead use AWS Simple Notification Service or the AWS Simple Queue Service as the task event source by using the `task_sns` or `task_sqs` decorators, like so:
 
 ```python
-from zappa.asynchronous import task_sns
-@task_sns
+from zappa.asynchronous import task_sns, task_sqs
+
+@task_sns  # or @task_sqs
+def make_pie():
 ```
 
-Using SNS also requires setting the following settings in your `zappa_settings`:
+Using SNS or SQS also requires setting the following settings in your `zappa_settings`:
 
 ```javascript
 {
   "dev": {
     ..
-      "async_source": "sns", // Source of async tasks. Defaults to "lambda"
-      "async_resources": true, // Create the SNS topic to use. Defaults to true.
+      "async_source": "sns", // Source of async tasks [lambda|sns|sqs]. Defaults to "lambda".
+      "async_resources": true, // Create the SNS topic or SQS queue to use. Defaults to true.
     ..
     }
 }
 ```
 
-This will automatically create and subscribe to the SNS topic the code will use when you call the `zappa schedule` command.
+This will automatically create and subscribe to the SNS topic or the SQS queue when you call the `zappa schedule` command.
 
-Using SNS will also return a message ID in case you need to track your invocations.
+Using SNS or SQS will also return a message ID in case you need to track your invocations.
 
 ### Direct Invocation
 
@@ -713,6 +716,7 @@ from zappa.asynchronous import run
 
 run(your_function, args, kwargs) # Using Lambda
 run(your_function, args, kwargs, service='sns') # Using SNS
+run(your_function, args, kwargs, service='sqs') # Using SQS
 ```
 
 ### Remote Invocations
@@ -735,13 +739,25 @@ def make_pie():
 If those task() parameters were not used, then EC2 would execute the function locally. These same
  `remote_aws_lambda_function_name` and `remote_aws_region` arguments can be used on the zappa.asynchronous.run() function as well.
 
+### Delayed Invocations
+
+If you use SQS as a task source you can delay invocation of the task for up to 900 seconds (15 minutes). This allows you
+to schedule tasks to be run in the near future. Here is an example:
+
+```python
+@task(service='sqs', delay_seconds=600)
+def deliver(pie):
+    """ The pie needs to cool 10 minutes after baking before wrapping """
+    wrap(pie)
+```
+
 ### Restrictions
 
 The following restrictions to this feature apply:
 
 * Functions must have a clean import path -- i.e. no closures, lambdas, or methods.
 * `args` and `kwargs` must be JSON-serializable.
-* The JSON-serialized arguments must be within the size limits for Lambda (256K) or SNS (256K) events.
+* The JSON-serialized arguments must be within the size limits for Lambda (256K), SNS (256K) or SQS (256K) events.
 
 All of this code is still backwards-compatible with non-Lambda environments - it simply executes in a blocking fashion and returns the result.
 
@@ -832,8 +848,8 @@ to change Zappa's behavior. Use these at your own risk!
         "assume_policy": "my_assume_policy.json", // optional, IAM assume policy JSON file
         "attach_policy": "my_attach_policy.json", // optional, IAM attach policy JSON file
         "apigateway_policy": "my_apigateway_policy.json", // optional, API Gateway resource policy JSON file
-        "async_source": "sns", // Source of async tasks. Defaults to "lambda"
-        "async_resources": true, // Create the SNS topic and DynamoDB table to use. Defaults to true.
+        "async_source": "sns", // Source of async tasks [lambda|sns|sqs]. Defaults to "lambda"
+        "async_resources": true, // Create the SNS topic, SQS queue and DynamoDB table to use. Defaults to true.
         "async_response_table": "your_dynamodb_table_name",  // the DynamoDB table name to use for captured async responses; defaults to None (can't capture)
         "async_response_table_read_capacity": 1,  // DynamoDB table read capacity; defaults to 1
         "async_response_table_write_capacity": 1,  // DynamoDB table write capacity; defaults to 1
