@@ -421,10 +421,10 @@ Currently, the easiest of these to use are the AWS Certificate Manager certifica
 
 Once configured as described below, all of these methods use the same command:
 
-    $ zappa certify 
+    $ zappa certify
 
 When deploying from a CI/CD system, you can use:
-    
+
     $ zappa certify --yes
 
 to skip the confirmation prompt.
@@ -585,7 +585,7 @@ For configuring Lex Bot's intent triggered events:
             }
         }
 	]
- 
+
 ```
 
 Events can also take keyword arguments:
@@ -652,7 +652,7 @@ def make_pie():
 	ingredients = get_ingredients()
 	pie = bake(ingredients)
 	deliver(pie)
-	
+
     except Fault as error:
     	"""send an email"""
 	...
@@ -666,7 +666,7 @@ will cause an email to be sent twice for the same error. See [asynchronous retri
 def make_pie():
     try:
 	"""code block"""
-	
+
     except Fault as error:
     	"""send an email"""
 	...
@@ -917,6 +917,7 @@ to change Zappa's behavior. Use these at your own risk!
         "s3_bucket": "dev-bucket", // Zappa zip bucket,
         "slim_handler": false, // Useful if project >50M. Set true to just upload a small handler to Lambda and load actual project from S3 at runtime. Default false.
         "settings_file": "~/Projects/MyApp/settings/dev_settings.py", // Server side settings file location,
+        "stack_role_arn": null, // The role for CloudFormation to use when provisioning, updating, or deleting the stack, by default it will use the role you or acting as when invoking Zappa.
         "tags": { // Attach additional tags to AWS Resources
             "Key": "Value",  // Example Key and value
             "Key2": "Value2",

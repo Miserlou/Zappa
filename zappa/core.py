@@ -242,6 +242,7 @@ class Zappa(object):
             load_credentials=True,
             desired_role_name=None,
             desired_role_arn=None,
+            stack_role_arn=None,
             runtime='python2.7', # Detected at runtime in CLI
             tags=(),
             endpoint_urls={},
@@ -314,6 +315,7 @@ class Zappa(object):
         self.cf_template = troposphere.Template()
         self.cf_api_resources = []
         self.cf_parameters = {}
+        self.stack_role_arn = stack_role_arn
 
     def configure_boto_session_method_kwargs(self, service, kw):
         """Allow for custom endpoint urls for non-AWS (testing and bootleg cloud) deployments"""
@@ -1824,7 +1826,10 @@ class Zappa(object):
 
         tags = {x['Key']:x['Value'] for x in stack['Tags']}
         if tags.get('ZappaProject') == name:
-            self.cf_client.delete_stack(StackName=name)
+            delete_options = {'StackName': name}
+            if self.stack_role_arn:
+                delete_options['RoleARN'] = self.stack_role_arn
+            self.cf_client.delete_stack(**delete_options)
             if wait:
                 waiter = self.cf_client.get_waiter('stack_delete_complete')
                 print('Waiting for stack {0} to be deleted..'.format(name))
@@ -1907,18 +1912,16 @@ class Zappa(object):
             print('CloudFormation stack missing, re-deploy to enable updates')
             return
 
+        create_or_update_options = {'StackName': name, 'Capabilities': capabilities, 'TemplateURL': url, 'Tags': tags }
+        if self.stack_role_arn:
+            create_or_update_options['RoleARN'] = self.stack_role_arn
+
         if not update:
-            self.cf_client.create_stack(StackName=name,
-                                        Capabilities=capabilities,
-                                        TemplateURL=url,
-                                        Tags=tags)
+            self.cf_client.create_stack(**create_or_update_options)
             print('Waiting for stack {0} to create (this can take a bit)..'.format(name))
         else:
             try:
-                self.cf_client.update_stack(StackName=name,
-                                            Capabilities=capabilities,
-                                            TemplateURL=url,
-                                            Tags=tags)
+                self.cf_client.update_stack(**create_or_update_options)
                 print('Waiting for stack {0} to update..'.format(name))
             except botocore.client.ClientError as e:
                 if e.response['Error']['Message'] == 'No updates are to be performed.':
@@ -2164,7 +2167,7 @@ class Zappa(object):
                                                               "path" : "/certificateArn",
                                                               "value" : certificate_arn}
                                                          ])
-    
+
     def update_domain_base_path_mapping(self, domain_name, lambda_name, stage, base_path):
         """
         Update domain base path mapping on API Gateway if it was changed
@@ -2182,8 +2185,8 @@ class Zappa(object):
                     self.apigateway_client.update_base_path_mapping(domainName=domain_name,
                                                                     basePath=base_path_mapping['basePath'],
                                                                     patchOperations=[
-                                                                        {"op" : "replace", 
-                                                                         "path" : "/basePath", 
+                                                                        {"op" : "replace",
+                                                                         "path" : "/basePath",
                                                                          "value" : '' if base_path is None else base_path}
                                                                     ])
         if not found:
@@ -2193,7 +2196,7 @@ class Zappa(object):
                 restApiId=api_id,
                 stage=stage
             )
-        
+
 
     def get_domain_name(self, domain_name, route53=True):
         """
