@@ -1,0 +1,10 @@
+{
+    "status_code": 200, 
+    "data": {
+      "Tags": {
+        "alpha": "beta",
+        "gamma": "delta",
+        "epsilon": "zeta"
+      }
+    }
+}

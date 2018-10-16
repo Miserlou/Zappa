@@ -70,6 +70,7 @@ BOTO3_CONFIG_DOCS_URL = 'https://boto3.readthedocs.io/en/latest/guide/quickstart
 # Main Input Processing
 ##
 
+
 class ZappaCLI(object):
     """
     ZappaCLI object is responsible for loading the settings,
@@ -115,7 +116,8 @@ class ZappaCLI(object):
     xray_tracing = False
     aws_kms_key_arn = ''
     context_header_mappings = None
-    tags = []
+    lambda_tags = {}
+    stage_tags = {}
 
     stage_name_env_pattern = re.compile('^[a-zA-Z0-9_]+$')
 
@@ -249,6 +251,9 @@ class ZappaCLI(object):
         )
         deploy_parser.add_argument(
             '-z', '--zip', help='Deploy Lambda with specific local or S3 hosted zip package'
+        )
+        deploy_parser.add_argument(
+            '-t', '--lambda-tags', help='Deploy Lambda with tags provided as a json mapping'
         )
 
         ##
@@ -425,6 +430,9 @@ class ZappaCLI(object):
         update_parser.add_argument(
             '-n', '--no-upload', help="Update configuration where appropriate, but don't upload new code"
         )
+        update_parser.add_argument(
+            '-t', '--lambda-tags', help='Update Lambda with tags provided as a json mapping'
+        )
 
         ##
         # Debug
@@ -542,7 +550,7 @@ class ZappaCLI(object):
 
         # Hand it off
         if command == 'deploy': # pragma: no cover
-            self.deploy(self.vargs['zip'])
+            self.deploy(self.vargs['zip'], self.vargs['lambda_tags'])
         if command == 'package': # pragma: no cover
             self.package(self.vargs['output'])
         if command == 'template': # pragma: no cover
@@ -552,7 +560,7 @@ class ZappaCLI(object):
                                 json=self.vargs['json']
                             )
         elif command == 'update': # pragma: no cover
-            self.update(self.vargs['zip'], self.vargs['no_upload'])
+            self.update(self.vargs['zip'], self.vargs['no_upload'], self.vargs['lambda_tags'])
         elif command == 'rollback': # pragma: no cover
             self.rollback(self.vargs['num_rollback'])
         elif command == 'invoke': # pragma: no cover
@@ -654,15 +662,15 @@ class ZappaCLI(object):
         self.zappa.credentials_arn = role_arn
 
         # Create the template!
-        template = self.zappa.create_stack_template(
-                                            lambda_arn=lambda_arn,
-                                            lambda_name=self.lambda_name,
-                                            api_key_required=self.api_key_required,
-                                            iam_authorization=self.iam_authorization,
-                                            authorizer=self.authorizer,
-                                            cors_options=self.cors,
-                                            description=self.apigateway_description
-                                        )
+        self.zappa.create_stack_template(
+            lambda_arn=lambda_arn,
+            lambda_name=self.lambda_name,
+            api_key_required=self.api_key_required,
+            iam_authorization=self.iam_authorization,
+            authorizer=self.authorizer,
+            cors_options=self.cors,
+            description=self.apigateway_description
+        )
 
         if not output:
             template_file = self.lambda_name + '-template-' + str(int(time.time())) + '.json'
@@ -677,13 +685,12 @@ class ZappaCLI(object):
             with open(template_file, 'r') as out:
                 print(out.read())
 
-    def deploy(self, source_zip=None):
+    def deploy(self, source_zip=None, lambda_tags=None):
         """
         Package your project, upload it to S3, register the Lambda function
         and create the API Gateway routes.
 
         """
-
         if not source_zip:
             # Make sure we're in a venv.
             self.check_venv()
@@ -838,10 +845,17 @@ class ZappaCLI(object):
 
         click.echo(deployment_string)
 
-    def update(self, source_zip=None, no_upload=False):
+    def update(self, source_zip=None,no_upload=False, lambda_tags=None):
         """
         Repackage and update the function code.
         """
+
+        if lambda_tags is not None:
+            try:
+                lambda_tags = json.loads(lambda_tags)
+            except json.JSONDecodeError:
+                click.echo(click.style("Warning!", fg="red") + "--lambda_tags argument is invalid json. JSONDecodeError.")
+                sys.exit(-1)
 
         if not source_zip:
             # Make sure we're in a venv.
@@ -855,6 +869,7 @@ class ZappaCLI(object):
             try:
                 updated_time = 1472581018
                 function_response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name)
+
                 conf = function_response['Configuration']
                 last_updated = parser.parse(conf['LastModified'])
                 last_updated_unix = time.mktime(last_updated.timetuple())
@@ -926,6 +941,7 @@ class ZappaCLI(object):
         elif source_zip and not source_zip.startswith('s3://'):
             with open(source_zip, mode='rb') as fh:
                 byte_stream = fh.read()
+
             self.lambda_arn = self.zappa.update_lambda_function(
                                             self.s3_bucket_name,
                                             self.lambda_name,
@@ -958,6 +974,11 @@ class ZappaCLI(object):
                                                         aws_environment_variables=self.aws_environment_variables,
                                                         aws_kms_key_arn=self.aws_kms_key_arn
                                                     )
+
+        if lambda_tags:
+            if self.stage_config.get('tags'):
+                lambda_tags.update(self.stage_config['tags'])
+            self.zappa.lambda_client.tag_resource(Resource=self.lambda_arn, Tags=lambda_tags)
 
         # Finally, delete the local copy our zip package
         if not source_zip and not no_upload:
@@ -1393,12 +1414,15 @@ class ZappaCLI(object):
         status_dict = collections.OrderedDict()
         status_dict["Lambda Versions"] = len(lambda_versions)
         function_response = self.zappa.lambda_client.get_function(FunctionName=self.lambda_name)
+
         conf = function_response['Configuration']
+        tags = function_response.get('Tags','')
         self.lambda_arn = conf['FunctionArn']
         status_dict["Lambda Name"] = self.lambda_name
         status_dict["Lambda ARN"] = self.lambda_arn
         status_dict["Lambda Role ARN"] = conf['Role']
         status_dict["Lambda Handler"] = conf['Handler']
+        status_dict["Lambda Tags"] = tags
         status_dict["Lambda Code Size"] = conf['CodeSize']
         status_dict["Lambda Version"] = conf['Version']
         status_dict["Lambda Last Modified"] = conf['LastModified']
@@ -2057,8 +2081,7 @@ class ZappaCLI(object):
         self.desired_role_arn = self.stage_config.get('role_arn')
 
         # Additional tags
-        self.tags = self.stage_config.get('tags', {})
-
+        self.stage_tags = self.stage_config.get('tags', {})
         desired_role_name = self.lambda_name + "-ZappaLambdaExecutionRole"
         self.zappa = Zappa( boto_session=session,
                             profile_name=self.profile_name,
@@ -2067,7 +2090,6 @@ class ZappaCLI(object):
                             desired_role_name=desired_role_name,
                             desired_role_arn=self.desired_role_arn,
                             runtime=self.runtime,
-                            tags=self.tags,
                             endpoint_urls=self.stage_config.get('aws_endpoint_urls',{}),
                             xray_tracing=self.xray_tracing
                         )
