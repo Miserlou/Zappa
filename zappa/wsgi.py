@@ -41,7 +41,7 @@ def create_wsgi_request(event_info,
         """
         method = event_info['httpMethod']
         params = event_info['pathParameters']
-        query = event_info['queryStringParameters'] # APIGW won't allow multiple entries, ex ?id=a&id=b
+        query = event_info['multiValueQueryStringParameters']
         headers = event_info['headers'] or {} # Allow for the AGW console 'Test' button to work (Pull #735)
 
         if context_header_mappings:
@@ -95,7 +95,7 @@ def create_wsgi_request(event_info,
                 path = path[len(script_name):]
 
         if query:
-            query_string = urlencode(query)
+            query_string = urlencode(query, True)
         else:
             query_string = ""
 
