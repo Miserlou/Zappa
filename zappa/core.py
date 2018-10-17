@@ -2199,7 +2199,7 @@ class Zappa(object):
         zones = {'HostedZones': []}
 
         new_zones = self.route53.list_hosted_zones(MaxItems='100')
-        while new_zones['isTruncated']:
+        while new_zones['IsTruncated']:
             zones['HostedZones'] += new_zones['HostedZones']
             new_zones = self.route53.list_hosted_zones(Marker=new_zones['NextMarker'], MaxItems='100')
 
