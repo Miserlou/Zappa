@@ -2678,6 +2678,9 @@ class ZappaCLI(object):
             cloudwatch_log_level=self.stage_config.get('cloudwatch_log_level', 'OFF'),
             cloudwatch_data_trace=self.stage_config.get('cloudwatch_data_trace', False),
             cloudwatch_metrics_enabled=self.stage_config.get('cloudwatch_metrics_enabled', False),
+            access_logging=self.stage_config.get('access_logging', False),
+            access_logging_log_format=self.stage_config.get('access_logging_log_format'),
+            access_logging_cloudwatch_group=self.stage_config.get('access_logging_cloudwatch_group'),
             cache_cluster_ttl=self.stage_config.get('cache_cluster_ttl', 300),
             cache_cluster_encrypted=self.stage_config.get('cache_cluster_encrypted', False)
         )

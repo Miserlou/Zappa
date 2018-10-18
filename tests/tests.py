@@ -802,6 +802,25 @@ class TestZappa(unittest.TestCase):
         zappa_cli.load_settings('tests/test_settings.toml')
         self.assertEqual(False, zappa_cli.stage_config['touch'])
 
+    def test_load_settings_access_logging(self):
+        zappa_cli = ZappaCLI()
+        zappa_cli.api_stage = 'access_logging_enabled'
+        zappa_cli.load_settings('test_settings.json')
+        self.assertEqual(True, zappa_cli.stage_config['access_logging'])
+        assert 'access_logging_log_format' not in zappa_cli.stage_config
+        assert 'access_logging_cloudwatch_group' not in zappa_cli.stage_config
+
+    def test_load_settings_access_logging__custom_params(self):
+        zappa_cli = ZappaCLI()
+        zappa_cli.api_stage = 'access_logging_custom'
+        zappa_cli.load_settings('test_settings.json')
+        self.assertEqual(True, zappa_cli.stage_config['access_logging'])
+        self.assertEqual("{ \"requestId\": \"$context.requestId\",}",
+                         zappa_cli.stage_config['access_logging_log_format'])
+        self.assertEqual("arn:aws:logs:::log-group:custom_name",
+                         zappa_cli.stage_config['access_logging_cloudwatch_group'])
+
+
     def test_settings_extension(self):
         """
         Make sure Zappa uses settings in the proper order: JSON, TOML, YAML.
@@ -2188,6 +2207,90 @@ USE_TZ = True
         lambda_stubber.activate()
         elbv2_stubber.activate()
         zappa_core.undeploy_lambda_alb(**kwargs)
+
+    @mock.patch('botocore.client')
+    def test_get_access_logging_patch__defaults(self, client):
+        boto_mock = mock.MagicMock()
+        zappa_core = Zappa(
+            boto_session=boto_mock,
+            profile_name="test",
+            aws_region="test",
+            load_credentials=True
+        )
+        access_logging_patch = zappa_core.get_access_logging_patch(
+            access_logging=True,
+            access_logging_log_format=None,
+            access_logging_cloudwatch_group=None,
+            api_id='test_api_id',
+            stage_name='test_stage_name',
+        )
+        assert access_logging_patch == [
+            {'op': 'replace',
+             'path': '/accessLogSettings/format',
+             'value': '{ "requestId": "$context.requestId", '
+                      '"ip": "$context.identity.sourceIp", '
+                      '"caller": "$context.identity.caller", '
+                      '"requestTime": "$context.requestTimeEpoch", '
+                      '"httpMethod": "$context.httpMethod", '
+                      '"resourcePath": "$context.resourcePath", '
+                      '"status": "$context.status", '
+                      '"protocol": "$context.protocol", '
+                      '"responseLength": "$context.responseLength" }'
+             },
+            {'op': 'replace',
+             'path': '/accessLogSettings/destinationArn',
+             'value': "arn:aws:logs:{region_name}:{account_id}:"
+                      "log-group:API-Gateway-Access-Logs_test_api_id/"
+                      "test_stage_name".format(
+                            region_name=boto_mock.region_name,
+                            account_id=boto_mock.client().get_caller_identity().get())
+             }
+        ]
+
+    @mock.patch('botocore.client')
+    def test_get_access_logging_patch__custom(self, client):
+        boto_mock = mock.MagicMock()
+        zappa_core = Zappa(
+            boto_session=boto_mock,
+            profile_name="test",
+            aws_region="test",
+            load_credentials=True
+        )
+        access_logging_patch = zappa_core.get_access_logging_patch(
+            access_logging=True,
+            access_logging_log_format="custom_log_format",
+            access_logging_cloudwatch_group="custom_cloudwatch_group",
+            api_id='test_api_id',
+            stage_name='test_stage_name',
+        )
+        assert access_logging_patch == [
+            {'op': 'replace',
+             'path': '/accessLogSettings/format',
+             'value': "custom_log_format"
+             },
+            {'op': 'replace',
+             'path': '/accessLogSettings/destinationArn',
+             'value': "custom_cloudwatch_group"
+             }
+        ]
+
+    @mock.patch('botocore.client')
+    def test_get_access_logging_patch__disabled(self, client):
+        boto_mock = mock.MagicMock()
+        zappa_core = Zappa(
+            boto_session=boto_mock,
+            profile_name="test",
+            aws_region="test",
+            load_credentials=True
+        )
+        access_logging_patch = zappa_core.get_access_logging_patch(
+            access_logging=False,
+            access_logging_log_format=None,
+            access_logging_cloudwatch_group=None,
+            api_id='test_api_id',
+            stage_name='test_stage_name',
+        )
+        assert access_logging_patch == []
 
 
     @mock.patch('botocore.client')

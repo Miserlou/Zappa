@@ -819,6 +819,9 @@ to change Zappa's behavior. Use these at your own risk!
 ```javascript
  {
     "dev": {
+        "access_logging": false, // Add in logging of who accesses the API
+        "access_logging_log_format": "See https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-logging.html", // Optional. SON is default if not supplied
+        "access_logging_cloudwatch_group": "arn:aws:logs:{region_name}:{account_id}:log-group:API-Gateway-Access-Logs_{api_id}/{stage_name}", // The ARN of the cloudwatch logs to log to, optional. Default is in the format shown.        "api_key_required": false, // enable securing API Gateway endpoints with x-api-key header (default False)
         "alb_enabled": false, // enable provisioning of application load balancing resources. If set to true, you _must_ fill out the alb_vpc_config option as well.
         "alb_vpc_config": {
             "CertificateArn": "your_acm_certificate_arn", // ACM certificate ARN for ALB

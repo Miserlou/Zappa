@@ -120,5 +120,15 @@
     "lambda_concurrency_enabled": {
         "extends": "ttt888",
         "lambda_concurrency": 6
-     }
+    },
+    "access_logging_enabled": {
+       "extends": "ttt888",
+       "access_logging": true
+    },
+    "access_logging_custom": {
+       "extends": "ttt888",
+       "access_logging": true,
+       "access_logging_log_format": "{ \"requestId\": \"$context.requestId\",}",
+       "access_logging_cloudwatch_group": "arn:aws:logs:::log-group:custom_name"
+    }
 }
