@@ -11,4 +11,4 @@ if (python_major_version, python_minor_version) not in SUPPORTED_VERSIONS:
               'Zappa (and AWS Lambda) support the following versions of Python: {}'.format(formatted_supported_versions)
     raise RuntimeError(err_msg)
 
-__version__ = '0.47.0'
+__version__ = '0.47.1'
