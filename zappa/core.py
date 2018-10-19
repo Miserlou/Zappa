@@ -2742,7 +2742,7 @@ class Zappa(object):
         Remove the DynamoDB Table used for async return values
         """
 
-        topic_name = get_topic_name(lambda_name)
+        topic_name = get_topic_name(table_name)
         removed_arns = []
         for sub in self.sns_client.list_subscriptions()['Subscriptions']:
             if topic_name in sub['TopicArn']:
