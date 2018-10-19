@@ -6,6 +6,4 @@ mock>=2.0.0
 nose>=1.3.7
 nose-timer==0.6.0
 placebo>=0.8.1
-# requests has issues with urllib3 1.24
-# and if we install 1.24 here python setup.py install keeps both versions
-urllib3<=1.23
+
