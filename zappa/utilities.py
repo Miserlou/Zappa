@@ -367,7 +367,7 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
     ctx.session = boto_session
 
     funk = PseudoFunction()
-    funk.name = lambda_arn
+    funk.name  = lambda_arn.split(':')[-1]
 
     # Kappa 0.6.0 requires this nasty hacking,
     # hopefully we can remove at least some of this soon.

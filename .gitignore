@@ -69,6 +69,10 @@ target/
 #  Project settings from the PyCharm IDE are stored in the .idea folder
 .idea/
 
+# VSC
+.vs
+.vscode
+
 # Apple OS X specific files are put into the .DS_Store file
 .DS_Store
 
