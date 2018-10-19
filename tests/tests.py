@@ -1463,6 +1463,7 @@ class TestZappa(unittest.TestCase):
 
         # And that the route53 path still works
         zappa_core.route53.list_hosted_zones.return_value = {
+            'IsTruncated': False,
             'HostedZones': [
                 {
                     'Id': 'somezone'
