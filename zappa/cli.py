@@ -52,6 +52,7 @@ from .utilities import (check_new_version_available, detect_django_settings,
 
 
 CUSTOM_SETTINGS = [
+    'apigateway_policy',
     'assume_policy',
     'attach_policy',
     'aws_region',
@@ -661,7 +662,8 @@ class ZappaCLI(object):
                                             iam_authorization=self.iam_authorization,
                                             authorizer=self.authorizer,
                                             cors_options=self.cors,
-                                            description=self.apigateway_description
+                                            description=self.apigateway_description,
+                                            policy=self.apigateway_policy
                                         )
 
         if not output:
