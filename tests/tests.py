@@ -1463,6 +1463,7 @@ class TestZappa(unittest.TestCase):
 
         # And that the route53 path still works
         zappa_core.route53.list_hosted_zones.return_value = {
+            'IsTruncated': False,
             'HostedZones': [
                 {
                     'Id': 'somezone'
@@ -1482,6 +1483,70 @@ class TestZappa(unittest.TestCase):
         zappa_core.route53.list_hosted_zones.assert_called_once()
         zappa_core.route53.list_resource_record_sets.assert_called_once_with(
             HostedZoneId='somezone')
+
+    @mock.patch('botocore.client')
+    def test_get_all_zones_normal_case(self, client):
+        zappa_core = Zappa(
+            boto_session=mock.Mock(),
+            profile_name="test",
+            aws_region="test",
+            load_credentials=False
+        )
+        zappa_core.route53 = mock.Mock()
+
+        # Check that it handle the normal case
+        zappa_core.route53.list_hosted_zones.return_value = {
+            'IsTruncated': False,
+            'HostedZones': [
+                {
+                    'Id': 'somezone'
+                }
+            ]
+        }
+
+        zones = zappa_core.get_all_zones()
+        zappa_core.route53.list_hosted_zones.assert_called_with(MaxItems='100')
+        self.assertListEqual(zones['HostedZones'], [{'Id': 'somezone'}])
+
+    @mock.patch('botocore.client')
+    def test_get_all_zones_two_pages(self, client):
+        zappa_core = Zappa(
+            boto_session=mock.Mock(),
+            profile_name="test",
+            aws_region="test",
+            load_credentials=False
+        )
+        zappa_core.route53 = mock.Mock()
+
+        # Check that it handle the normal case
+        zappa_core.route53.list_hosted_zones.side_effect = [
+            {
+                'IsTruncated': True,
+                'HostedZones': [
+                    {
+                        'Id': 'zone1'
+                    }
+                ],
+                'NextMarker': "101"
+            },
+            {
+                'IsTruncated': False,
+                'HostedZones': [
+                    {
+                        'Id': 'zone2'
+                    }
+                ]
+            }
+        ]
+
+        zones = zappa_core.get_all_zones()
+        zappa_core.route53.list_hosted_zones.assert_has_calls(
+            [
+                mock.call(MaxItems='100'),
+                mock.call(MaxItems='100', Marker='101'),
+            ]
+        )
+        self.assertListEqual(zones['HostedZones'], [{'Id': 'zone1'}, {'Id': 'zone2'}])
 
     ##
     # Django

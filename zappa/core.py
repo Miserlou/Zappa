@@ -2196,7 +2196,18 @@ class Zappa(object):
                 restApiId=api_id,
                 stage=stage
             )
+        
+    def get_all_zones(self):
+        """Same behaviour of list_host_zones, but transparently handling pagination."""
+        zones = {'HostedZones': []}
 
+        new_zones = self.route53.list_hosted_zones(MaxItems='100')
+        while new_zones['IsTruncated']:
+            zones['HostedZones'] += new_zones['HostedZones']
+            new_zones = self.route53.list_hosted_zones(Marker=new_zones['NextMarker'], MaxItems='100')
+
+        zones['HostedZones'] += new_zones['HostedZones']
+        return zones
 
     def get_domain_name(self, domain_name, route53=True):
         """
@@ -2215,7 +2226,7 @@ class Zappa(object):
             return True
 
         try:
-            zones = self.route53.list_hosted_zones()
+            zones = self.get_all_zones()
             for zone in zones['HostedZones']:
                 records = self.route53.list_resource_record_sets(HostedZoneId=zone['Id'])
                 for record in records['ResourceRecordSets']:
@@ -2817,7 +2828,7 @@ class Zappa(object):
         Get the Hosted Zone ID for a given domain.
 
         """
-        all_zones = self.route53.list_hosted_zones()
+        all_zones = self.get_all_zones()
         return self.get_best_match_zone(all_zones, domain)
 
     @staticmethod
