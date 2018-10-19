@@ -1,5 +1,4 @@
 argcomplete==1.9.3
-base58==1.0.0
 botocore>=1.7.19
 boto3>=1.4.7
 docutils>=0.12
@@ -15,6 +14,8 @@ python-dateutil>=2.6.1, <2.7.0
 python-slugify==1.2.4
 PyYAML==3.13
 requests>=2.10.0
+# requests has issues with urllib3 1.24
+urllib3<=1.23
 six>=1.11.0
 toml>=0.9.4
 tqdm==4.19.1

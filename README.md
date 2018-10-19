@@ -59,6 +59,7 @@
     - [IAM Policy](#iam-policy)
     - [API Gateway Lambda Authorizers](#api-gateway-lambda-authorizers)
     - [Cognito User Pool Authorizer](#cognito-user-pool-authorizer)
+    - [API Gateway Resource Policy](#api-gateway-resource-policy)
   - [Setting Environment Variables](#setting-environment-variables)
     - [Local Environment Variables](#local-environment-variables)
     - [Remote AWS Environment Variables](#remote-aws-environment-variables)
@@ -156,7 +157,7 @@ This will automatically detect your application type (Flask/Django - Pyramid use
     // The name of your stage
     "dev": {
         // The name of your S3 bucket
-        "s3_bucket": "lmbda",
+        "s3_bucket": "lambda",
 
         // The modular python path to your WSGI application function.
         // In Flask and Bottle, this is your 'app' object.
@@ -174,7 +175,7 @@ or for Django:
 ```javascript
 {
     "dev": { // The name of your stage
-       "s3_bucket": "lmbda", // The name of your S3 bucket
+       "s3_bucket": "lambda", // The name of your S3 bucket
        "django_settings": "your_project.settings" // The python path to your Django settings.
     }
 }
@@ -460,7 +461,7 @@ However, it's now far easier to use Route 53-based DNS authentication, which wil
 
 ## Executing in Response to AWS Events
 
-Similarly, you can have your functions execute in response to events that happen in the AWS ecosystem, such as S3 uploads, DynamoDB entries, Kinesis streams, and SNS messages.
+Similarly, you can have your functions execute in response to events that happen in the AWS ecosystem, such as S3 uploads, DynamoDB entries, Kinesis streams, SNS messages, and SQS queues.
 
 In your *zappa_settings.json* file, define your [event sources](http://docs.aws.amazon.com/lambda/latest/dg/invoking-lambda-function.html) and the function you wish to execute. For instance, this will execute `your_module.process_upload_function` in response to new objects in your `my-bucket` S3 bucket. Note that `process_upload_function` must accept `event` and `context` parameters.
 
@@ -552,6 +553,21 @@ Optionally you can add [SNS message filters](http://docs.aws.amazon.com/sns/late
                     "arn":  "arn:aws:dynamodb:us-east-1:1234554:table/YourTable/stream/2016-05-11T00:00:00.000",
                     "starting_position": "TRIM_HORIZON", // Supported values: TRIM_HORIZON, LATEST
                     "batch_size": 50, // Max: 1000
+                    "enabled": true // Default is false
+               }
+           }
+       ]
+```
+
+[SQS](https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html) is also pulling messages from a stream.  At this time, [only "Standard" queues can trigger lambda events, not "FIFO" queues](https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html).  Read the AWS Documentation carefully since Lambda calls the SQS DeleteMessage API on your behalf once your function completes successfully.  
+
+```javascript
+       "events": [
+           {
+               "function": "your_module.process_messages",
+               "event_source": {
+                    "arn":  "arn:aws:sqs:us-east-1:12341234:your-queue-name-arn",
+                    "batch_size": 10, // Max: 10. Use 1 to trigger immediate processing
                     "enabled": true // Default is false
                }
            }
@@ -805,6 +821,7 @@ to change Zappa's behavior. Use these at your own risk!
         "apigateway_description": "My funky application!", // Define a custom description for the API Gateway console. Default None.
         "assume_policy": "my_assume_policy.json", // optional, IAM assume policy JSON file
         "attach_policy": "my_attach_policy.json", // optional, IAM attach policy JSON file
+        "apigateway_policy": "my_apigateway_policy.json", // optional, API Gateway resource policy JSON file
         "async_source": "sns", // Source of async tasks. Defaults to "lambda"
         "async_resources": true, // Create the SNS topic and DynamoDB table to use. Defaults to true.
         "async_response_table": "your_dynamodb_table_name",  // the DynamoDB table name to use for captured async responses; defaults to None (can't capture)
@@ -906,7 +923,7 @@ to change Zappa's behavior. Use these at your own risk!
             "Key": "Value",  // Example Key and value
             "Key2": "Value2",
             },
-        "timeout_seconds": 30, // Maximum lifespan for the Lambda function (default 30, max 300.)
+        "timeout_seconds": 30, // Maximum lifespan for the Lambda function (default 30, max 900.)
         "touch": true, // GET the production URL upon initial deployment (default True)
         "touch_path": "/", // The endpoint path to GET when checking the initial deployment (default "/")
         "use_precompiled_packages": true, // If possible, use C-extension packages which have been pre-compiled for AWS Lambda. Default true.
@@ -1046,6 +1063,31 @@ You can also use AWS Cognito User Pool Authorizer by adding:
             "arn:aws:cognito-idp:{region}:{account_id}:userpool/{user_pool_id}"
         ]
     }
+}
+```
+
+#### API Gateway Resource Policy
+
+You can also use API Gateway Resource Policies. Example of IP Whitelisting:
+
+```javascript
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "execute-api:Invoke",
+            "Resource": "execute-api:/*",
+            "Condition": {
+                "IpAddress": {
+                    "aws:SourceIp": [
+                        "1.2.3.4/32"
+                    ]
+                }
+            }
+        }
+    ]
 }
 ```
 

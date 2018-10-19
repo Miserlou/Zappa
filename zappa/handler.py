@@ -294,7 +294,7 @@ class LambdaHandler(object):
         """
         Get the associated function to execute for a triggered AWS event
 
-        Support S3, SNS, DynamoDB and kinesis events
+        Support S3, SNS, DynamoDB, kinesis and SQS events
         """
         if 's3' in record:
             if ':' in record['s3']['configurationId']:
@@ -310,6 +310,8 @@ class LambdaHandler(object):
                 pass
             arn = record['Sns'].get('TopicArn')
         elif 'dynamodb' in record or 'kinesis' in record:
+            arn = record.get('eventSourceARN')
+        elif 'eventSource' in record and record.get('eventSource') == 'aws:sqs':
             arn = record.get('eventSourceARN')
         elif 's3' in record:
             arn = record['s3']['bucket']['arn']
@@ -494,10 +496,13 @@ class LambdaHandler(object):
                         # API stage
                         script_name = '/' + settings.API_STAGE
 
+                base_path = getattr(settings, 'BASE_PATH', None)
+
                 # Create the environment for WSGI and handle the request
                 environ = create_wsgi_request(
                     event,
                     script_name=script_name,
+                    base_path=base_path,
                     trailing_slash=self.trailing_slash,
                     binary_support=settings.BINARY_SUPPORT,
                     context_header_mappings=settings.CONTEXT_HEADER_MAPPINGS

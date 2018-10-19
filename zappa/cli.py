@@ -52,6 +52,7 @@ from .utilities import (check_new_version_available, detect_django_settings,
 
 
 CUSTOM_SETTINGS = [
+    'apigateway_policy',
     'assume_policy',
     'attach_policy',
     'aws_region',
@@ -661,7 +662,8 @@ class ZappaCLI(object):
                                             iam_authorization=self.iam_authorization,
                                             authorizer=self.authorizer,
                                             cors_options=self.cors,
-                                            description=self.apigateway_description
+                                            description=self.apigateway_description,
+                                            policy=self.apigateway_policy
                                         )
 
         if not output:
@@ -1017,6 +1019,9 @@ class ZappaCLI(object):
 
         if endpoint_url and 'https://' not in endpoint_url:
             endpoint_url = 'https://' + endpoint_url
+
+        if self.base_path:
+            endpoint_url += '/' + self.base_path
 
         deployed_string = "Your updated Zappa deployment is " + click.style("live", fg='green', bold=True) + "!"
         if self.use_apigateway:
@@ -1459,8 +1464,11 @@ class ZappaCLI(object):
             # There literally isn't a better way to do this.
             # AWS provides no way to tie a APIGW domain name to its Lambda function.
             domain_url = self.stage_config.get('domain', None)
+            base_path = self.stage_config.get('base_path', None)
             if domain_url:
                 status_dict["Domain URL"] = 'https://' + domain_url
+                if base_path:
+                    status_dict["Domain URL"] += '/' + base_path
             else:
                 status_dict["Domain URL"] = "None Supplied"
 
@@ -2005,6 +2013,7 @@ class ZappaCLI(object):
         self.profile_name = self.stage_config.get('profile_name', None)
         self.log_level = self.stage_config.get('log_level', "DEBUG")
         self.domain = self.stage_config.get('domain', None)
+        self.base_path = self.stage_config.get('base_path', None)
         self.timeout_seconds = self.stage_config.get('timeout_seconds', 30)
         dead_letter_arn = self.stage_config.get('dead_letter_arn', '')
         self.dead_letter_config = {'TargetArn': dead_letter_arn} if dead_letter_arn else {}
@@ -2270,6 +2279,11 @@ class ZappaCLI(object):
                 settings_s = settings_s + "DOMAIN='{0!s}'\n".format((self.domain))
             else:
                 settings_s = settings_s + "DOMAIN=None\n"
+
+            if self.base_path:
+                settings_s = settings_s + "BASE_PATH='{0!s}'\n".format((self.base_path))
+            else:
+                settings_s = settings_s + "BASE_PATH=None\n"
 
             # Pass through remote config bucket and path
             if self.remote_env:

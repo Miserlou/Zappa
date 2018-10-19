@@ -201,7 +201,7 @@ LAMBDA_REGIONS = ['us-east-1', 'us-east-2',
 # Related: https://github.com/Miserlou/Zappa/pull/581
 ZIP_EXCLUDES = [
     '*.exe', '*.DS_Store', '*.Python', '*.git', '.git/*', '*.zip', '*.tar.gz',
-    '*.hg', '*.egg-info', 'pip', 'docutils*', 'setuputils*', '__pycache__/*'
+    '*.hg', 'pip', 'docutils*', 'setuputils*', '__pycache__/*'
 ]
 
 ##
@@ -225,6 +225,7 @@ class Zappa(object):
     extra_permissions = None
     assume_policy = ASSUME_POLICY
     attach_policy = ATTACH_POLICY
+    apigateway_policy = None
     cloudwatch_log_levels = ['OFF', 'ERROR', 'INFO']
     xray_tracing = False
 
@@ -1291,6 +1292,8 @@ class Zappa(object):
             endpoint = troposphere.apigateway.EndpointConfiguration()
             endpoint.Types = ["REGIONAL"]
             restapi.EndpointConfiguration = endpoint
+        if self.apigateway_policy:
+            restapi.Policy = json.loads(self.apigateway_policy)
         self.cf_template.add_resource(restapi)
 
         root_id = troposphere.GetAtt(restapi, 'RootResourceId')
@@ -2164,7 +2167,7 @@ class Zappa(object):
                                                               "path" : "/certificateArn",
                                                               "value" : certificate_arn}
                                                          ])
-    
+
     def update_domain_base_path_mapping(self, domain_name, lambda_name, stage, base_path):
         """
         Update domain base path mapping on API Gateway if it was changed
@@ -2182,9 +2185,9 @@ class Zappa(object):
                     self.apigateway_client.update_base_path_mapping(domainName=domain_name,
                                                                     basePath=base_path_mapping['basePath'],
                                                                     patchOperations=[
-                                                                        {"op" : "replace", 
-                                                                         "path" : "/basePath", 
-                                                                         "value" : base_path}
+                                                                        {"op" : "replace",
+                                                                         "path" : "/basePath",
+                                                                         "value" : '' if base_path is None else base_path}
                                                                     ])
         if not found:
             self.apigateway_client.create_base_path_mapping(
@@ -2194,6 +2197,17 @@ class Zappa(object):
                 stage=stage
             )
         
+    def get_all_zones(self):
+        """Same behaviour of list_host_zones, but transparently handling pagination."""
+        zones = {'HostedZones': []}
+
+        new_zones = self.route53.list_hosted_zones(MaxItems='100')
+        while new_zones['IsTruncated']:
+            zones['HostedZones'] += new_zones['HostedZones']
+            new_zones = self.route53.list_hosted_zones(Marker=new_zones['NextMarker'], MaxItems='100')
+
+        zones['HostedZones'] += new_zones['HostedZones']
+        return zones
 
     def get_domain_name(self, domain_name, route53=True):
         """
@@ -2212,7 +2226,7 @@ class Zappa(object):
             return True
 
         try:
-            zones = self.route53.list_hosted_zones()
+            zones = self.get_all_zones()
             for zone in zones['HostedZones']:
                 records = self.route53.list_resource_record_sets(HostedZoneId=zone['Id'])
                 for record in records['ResourceRecordSets']:
@@ -2367,10 +2381,10 @@ class Zappa(object):
             http://docs.aws.amazon.com/lambda/latest/dg/tutorial-scheduled-events-schedule-expressions.html
         """
 
-        # The two stream sources - DynamoDB and Kinesis - are working differently than the other services (pull vs push)
+        # The stream sources - DynamoDB, Kinesis and SQS - are working differently than the other services (pull vs push)
         # and do not require event permissions. They do require additional permissions on the Lambda roles though.
         # http://docs.aws.amazon.com/lambda/latest/dg/lambda-api-permissions-ref.html
-        pull_services = ['dynamodb', 'kinesis']
+        pull_services = ['dynamodb', 'kinesis', 'sqs']
 
         # XXX: Not available in Lambda yet.
         # We probably want to execute the latest code.
@@ -2615,7 +2629,10 @@ class Zappa(object):
                     function,
                     self.boto_session
                 )
-                print("Removed event " + name + " (" + str(event_source['events']) + ").")
+                print("Removed event {}{}.".format(
+                        name,
+                        " ({})".format(str(event_source['events'])) if 'events' in event_source else '')
+                )
 
     ###
     # Async / SNS
@@ -2811,7 +2828,7 @@ class Zappa(object):
         Get the Hosted Zone ID for a given domain.
 
         """
-        all_zones = self.route53.list_hosted_zones()
+        all_zones = self.get_all_zones()
         return self.get_best_match_zone(all_zones, domain)
 
     @staticmethod
