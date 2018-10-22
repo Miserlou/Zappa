@@ -1,6 +1,8 @@
 import botocore
 import calendar
 import datetime
+import itertools
+
 import durationpy
 import fnmatch
 import io
@@ -525,3 +527,11 @@ def titlecase_keys(d):
     Takes a dict with keys of type str and returns a new dict with all keys titlecased.
     """
     return {k.title(): v for k, v in d.items()}
+
+
+def transform_multi_value_dict(multi_value_dict):
+    """
+    Takes a dict with values of type list and returns a tuple of key, value pairs
+    """
+    keys, values = zip(*multi_value_dict.items())
+    return tuple(next(zip(keys, v)) for v in itertools.product(*values))
