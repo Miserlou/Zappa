@@ -15,7 +15,7 @@ if sys.version_info[0] < 3:
 else:
     from urllib.parse import urlencode
 
-from .utilities import titlecase_keys
+from .utilities import titlecase_keys, transform_multi_value_dict
 
 BINARY_METHODS = [
                     "POST",
@@ -42,6 +42,7 @@ def create_wsgi_request(event_info,
         method = event_info['httpMethod']
         params = event_info['pathParameters']
         query = event_info['queryStringParameters'] # APIGW won't allow multiple entries, ex ?id=a&id=b
+        multi_query = event_info.get('multiValueQueryStringParameters', {}) # APIGW stores multiple entry values in this key (issues #1508)
         headers = event_info['headers'] or {} # Allow for the AGW console 'Test' button to work (Pull #735)
 
         if context_header_mappings:
@@ -94,7 +95,10 @@ def create_wsgi_request(event_info,
             if path.startswith(script_name):
                 path = path[len(script_name):]
 
-        if query:
+        # Related: https://github.com/Miserlou/Zappa/issues/1508
+        if multi_query:
+            query_string = urlencode(transform_multi_value_dict(multi_query))
+        elif query:
             query_string = urlencode(query)
         else:
             query_string = ""
