@@ -151,7 +151,7 @@ class LambdaHandler(object):
                 wsgi_app_function = get_django_wsgi(self.settings.DJANGO_SETTINGS)
                 self.trailing_slash = True
 
-            self.wsgi_app = ZappaWSGIMiddleware(wsgi_app_function)
+            self.wsgi_app = wsgi_app_function
 
     def load_remote_project_archive(self, project_zip_path):
         """
@@ -534,8 +534,10 @@ class LambdaHandler(object):
 
                 zappa_returndict['statusCode'] = response.status_code
                 zappa_returndict['headers'] = {}
+                zappa_returndict['multiValueHeaders'] = collections.defaultdict(list)
                 for key, value in response.headers:
                     zappa_returndict['headers'][key] = value
+                    zappa_returndict['multiValueHeaders'][key].append(value)
 
                 # Calculate the total response time,
                 # and log it in the Common Log format.
