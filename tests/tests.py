@@ -491,6 +491,7 @@ class TestZappa(unittest.TestCase):
                     },
                 u'stage': u'devorr',
                 },
+            u'queryStringParameters': None,
             u'multiValueQueryStringParameters': None,
             u'httpMethod': u'GET',
             u'pathParameters': None,
@@ -512,54 +513,44 @@ class TestZappa(unittest.TestCase):
                 u'User-Agent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:48.0) Gecko/20100101 Firefox/48.0',
                 u'CloudFront-Is-Mobile-Viewer': u'false',
                 u'CloudFront-Is-Desktop-Viewer': u'true',
-                },
+            },
+            u'multiValueHeaders': {
+                u'Via': [u'1.1 6801928d54163af944bf854db8d5520e.cloudfront.net (CloudFront)'],
+                u'Accept-Language': [u'en-US,en;q=0.5'],
+                u'Accept-Encoding': [u'gzip, deflate, br'],
+                u'CloudFront-Is-SmartTV-Viewer': [u'false'],
+                u'CloudFront-Forwarded-Proto': [u'https'],
+                u'X-Forwarded-For': [u'50.191.225.98, 204.246.168.101'],
+                u'CloudFront-Viewer-Country': [u'US'],
+                u'Accept': [u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'],
+                u'Upgrade-Insecure-Requests': [u'1'],
+                u'Host': [u'9itr2lba55.execute-api.us-east-1.amazonaws.com'],
+                u'X-Forwarded-Proto': [u'https'],
+                u'X-Amz-Cf-Id': [u'qgNdqKT0_3RMttu5KjUdnvHI3OKm1BWF8mGD2lX8_rVrJQhhp-MLDw=='],
+                u'CloudFront-Is-Tablet-Viewer': [u'false'],
+                u'X-Forwarded-Port': [u'443'],
+                u'User-Agent': [u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:48.0) Gecko/20100101 Firefox/48.0'],
+                u'CloudFront-Is-Mobile-Viewer': [u'false'],
+                u'CloudFront-Is-Desktop-Viewer': [u'true'],
+            },
             u'stageVariables': None,
             u'path': u'/',
-            }
+        }
 
         request = create_wsgi_request(event)
 
-
-    # def test_wsgi_path_info(self):
-    #     # Test no parameters (site.com/)
-    #     event = {
-    #         "body": {},
-    #         "headers": {},
-    #         "pathParameters": {},
-    #         "path": u'/',
-    #         "httpMethod": "GET",
-    #         "multiValueQueryStringParameters": {}
-    #     }
-
-    #     request = create_wsgi_request(event, trailing_slash=True)
-    #     self.assertEqual("/", request['PATH_INFO'])
-
-    #     request = create_wsgi_request(event, trailing_slash=False)
-    #     self.assertEqual("/", request['PATH_INFO'])
-
-    #     # Test parameters (site.com/asdf1/asdf2 or site.com/asdf1/asdf2/)
-    #     event_asdf2 = {u'body': None, u'resource': u'/{proxy+}', u'requestContext': {u'resourceId': u'dg451y', u'apiId': u'79gqbxq31c', u'resourcePath': u'/{proxy+}', u'httpMethod': u'GET', u'requestId': u'766df67f-8991-11e6-b2c4-d120fedb94e5', u'accountId': u'724336686645', u'identity': {u'apiKey': None, u'userArn': None, u'cognitoAuthenticationType': None, u'caller': None, u'userAgent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:49.0) Gecko/20100101 Firefox/49.0', u'user': None, u'cognitoIdentityPoolId': None, u'cognitoIdentityId': None, u'cognitoAuthenticationProvider': None, u'sourceIp': u'96.90.37.59', u'accountId': None}, u'stage': u'devorr'}, u'multiValueQueryStringParameters': None, u'httpMethod': u'GET', u'pathParameters': {u'proxy': u'asdf1/asdf2'}, u'headers': {u'Via': u'1.1 b2aeb492548a8a2d4036401355f928dd.cloudfront.net (CloudFront)', u'Accept-Language': u'en-US,en;q=0.5', u'Accept-Encoding': u'gzip, deflate, br', u'X-Forwarded-Port': u'443', u'X-Forwarded-For': u'96.90.37.59, 54.240.144.50', u'CloudFront-Viewer-Country': u'US', u'Accept': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', u'Upgrade-Insecure-Requests': u'1', u'Host': u'79gqbxq31c.execute-api.us-east-1.amazonaws.com', u'X-Forwarded-Proto': u'https', u'X-Amz-Cf-Id': u'BBFP-RhGDrQGOzoCqjnfB2I_YzWt_dac9S5vBcSAEaoM4NfYhAQy7Q==', u'User-Agent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:49.0) Gecko/20100101 Firefox/49.0', u'CloudFront-Forwarded-Proto': u'https'}, u'stageVariables': None, u'path': u'/asdf1/asdf2'}
-    #     event_asdf2_slash = {u'body': None, u'resource': u'/{proxy+}', u'requestContext': {u'resourceId': u'dg451y', u'apiId': u'79gqbxq31c', u'resourcePath': u'/{proxy+}', u'httpMethod': u'GET', u'requestId': u'd6fda925-8991-11e6-8bd8-b5ec6db19d57', u'accountId': u'724336686645', u'identity': {u'apiKey': None, u'userArn': None, u'cognitoAuthenticationType': None, u'caller': None, u'userAgent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:49.0) Gecko/20100101 Firefox/49.0', u'user': None, u'cognitoIdentityPoolId': None, u'cognitoIdentityId': None, u'cognitoAuthenticationProvider': None, u'sourceIp': u'96.90.37.59', u'accountId': None}, u'stage': u'devorr'}, u'multiValueQueryStringParameters': None, u'httpMethod': u'GET', u'pathParameters': {u'proxy': u'asdf1/asdf2'}, u'headers': {u'Via': u'1.1 c70173a50d0076c99b5e680eb32d40bb.cloudfront.net (CloudFront)', u'Accept-Language': u'en-US,en;q=0.5', u'Accept-Encoding': u'gzip, deflate, br', u'X-Forwarded-Port': u'443', u'X-Forwarded-For': u'96.90.37.59, 54.240.144.53', u'CloudFront-Viewer-Country': u'US', u'Accept': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', u'Upgrade-Insecure-Requests': u'1', u'Host': u'79gqbxq31c.execute-api.us-east-1.amazonaws.com', u'X-Forwarded-Proto': u'https', u'Cookie': u'zappa=AQ4', u'X-Amz-Cf-Id': u'aU_i-iuT3llVUfXv2zv6uU-m77Oga7ANhd5ZYrCoqXBy4K7I2x3FZQ==', u'User-Agent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:49.0) Gecko/20100101 Firefox/49.0', u'CloudFront-Forwarded-Proto': u'https'}, u'stageVariables': None, u'path': u'/asdf1/asdf2/'}
-
-    #     request = create_wsgi_request(event, trailing_slash=True)
-    #     self.assertEqual("/asdf1/asdf2/", request['PATH_INFO'])
-
-    #     request = create_wsgi_request(event, trailing_slash=False)
-    #     self.assertEqual("/asdf1/asdf2", request['PATH_INFO'])
-
-    #     request = create_wsgi_request(event, trailing_slash=False, script_name='asdf1')
-    #     self.assertEqual("/asdf1/asdf2", request['PATH_INFO'])
-
     def test_wsgi_path_info_unquoted(self):
         event = {
-                "body": {},
-                "headers": {},
-                "pathParameters": {},
-                "path": '/path%3A1', # encoded /path:1
-                "httpMethod": "GET",
-                "multiValueQueryStringParameters": {},
-                "requestContext": {}
-            }
+            "body": {},
+            "headers": {},
+            "multiValueHeaders": {},
+            "pathParameters": {},
+            "path": '/path%3A1', # encoded /path:1
+            "httpMethod": "GET",
+            "queryStringParameters": {},
+            "multiValueQueryStringParameters": {},
+            "requestContext": {}
+        }
         request = create_wsgi_request(event, trailing_slash=True)
         self.assertEqual("/path:1", request['PATH_INFO'])
 
@@ -567,9 +558,11 @@ class TestZappa(unittest.TestCase):
         event = {
             "body": {},
             "headers": {},
+            "multiValueHeaders": {},
             "pathParameters": {},
             "path": '/path/%E4%BB%8A%E6%97%A5%E3%81%AF',
             "httpMethod": "GET",
+            "queryStringParameters": {"a": "%E4%BB%8A%E6%97%A5%E3%81%AF"},
             "multiValueQueryStringParameters": {"a": ["%E4%BB%8A%E6%97%A5%E3%81%AF"]},
             "requestContext": {}
         }
@@ -591,7 +584,66 @@ class TestZappa(unittest.TestCase):
         #     "query": {}
         # }
 
-        event = {u'body': None, u'resource': u'/{proxy+}', u'requestContext': {u'resourceId': u'dg451y', u'apiId': u'79gqbxq31c', u'resourcePath': u'/{proxy+}', u'httpMethod': u'GET', u'requestId': u'766df67f-8991-11e6-b2c4-d120fedb94e5', u'accountId': u'724336686645', u'identity': {u'apiKey': None, u'userArn': None, u'cognitoAuthenticationType': None, u'caller': None, u'userAgent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:49.0) Gecko/20100101 Firefox/49.0', u'user': None, u'cognitoIdentityPoolId': None, u'cognitoIdentityId': None, u'cognitoAuthenticationProvider': None, u'sourceIp': u'96.90.37.59', u'accountId': None}, u'stage': u'devorr'}, u'multiValueQueryStringParameters': None, u'httpMethod': u'GET', u'pathParameters': {u'proxy': u'asdf1/asdf2'}, u'headers': {u'Via': u'1.1 b2aeb492548a8a2d4036401355f928dd.cloudfront.net (CloudFront)', u'Accept-Language': u'en-US,en;q=0.5', u'Accept-Encoding': u'gzip, deflate, br', u'X-Forwarded-Port': u'443', u'X-Forwarded-For': u'96.90.37.59, 54.240.144.50', u'CloudFront-Viewer-Country': u'US', u'Accept': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', u'Upgrade-Insecure-Requests': u'1', u'Host': u'79gqbxq31c.execute-api.us-east-1.amazonaws.com', u'X-Forwarded-Proto': u'https', u'X-Amz-Cf-Id': u'BBFP-RhGDrQGOzoCqjnfB2I_YzWt_dac9S5vBcSAEaoM4NfYhAQy7Q==', u'User-Agent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:49.0) Gecko/20100101 Firefox/49.0', u'CloudFront-Forwarded-Proto': u'https'}, u'stageVariables': None, u'path': u'/asdf1/asdf2'}
+        event = {
+            u'body': None,
+            u'resource': u'/{proxy+}',
+            u'requestContext': {
+                u'resourceId': u'dg451y',
+                u'apiId': u'79gqbxq31c',
+                u'resourcePath': u'/{proxy+}',
+                u'httpMethod': u'GET',
+                u'requestId': u'766df67f-8991-11e6-b2c4-d120fedb94e5',
+                u'accountId': u'724336686645',
+                u'identity': {u'apiKey': None,
+                u'userArn': None,
+                u'cognitoAuthenticationType': None,
+                u'caller': None,
+                u'userAgent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:49.0) Gecko/20100101 Firefox/49.0',
+                u'user': None,
+                u'cognitoIdentityPoolId': None,
+                u'cognitoIdentityId': None,
+                u'cognitoAuthenticationProvider': None,
+                u'sourceIp': u'96.90.37.59',
+                u'accountId': None},
+                u'stage': u'devorr'
+            },
+            u'queryStringParameters': None,
+            u'multiValueQueryStringParameters': None,
+            u'httpMethod': u'GET',
+            u'pathParameters': {u'proxy': u'asdf1/asdf2'},
+            u'headers': {
+                u'Via': u'1.1 b2aeb492548a8a2d4036401355f928dd.cloudfront.net (CloudFront)',
+                u'Accept-Language': u'en-US,en;q=0.5',
+                u'Accept-Encoding': u'gzip, deflate, br',
+                u'X-Forwarded-Port': u'443',
+                u'X-Forwarded-For': u'96.90.37.59, 54.240.144.50',
+                u'CloudFront-Viewer-Country': u'US',
+                u'Accept': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                u'Upgrade-Insecure-Requests': u'1',
+                u'Host': u'79gqbxq31c.execute-api.us-east-1.amazonaws.com',
+                u'X-Forwarded-Proto': u'https',
+                u'X-Amz-Cf-Id': u'BBFP-RhGDrQGOzoCqjnfB2I_YzWt_dac9S5vBcSAEaoM4NfYhAQy7Q==',
+                u'User-Agent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:49.0) Gecko/20100101 Firefox/49.0',
+                u'CloudFront-Forwarded-Proto': u'https'
+            },
+            u'multiValueHeaders': {
+                u'Via': [u'1.1 b2aeb492548a8a2d4036401355f928dd.cloudfront.net (CloudFront)'],
+                u'Accept-Language': [u'en-US,en;q=0.5'],
+                u'Accept-Encoding': [u'gzip, deflate, br'],
+                u'X-Forwarded-Port': [u'443'],
+                u'X-Forwarded-For': [u'96.90.37.59, 54.240.144.50'],
+                u'CloudFront-Viewer-Country': [u'US'],
+                u'Accept': [u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'],
+                u'Upgrade-Insecure-Requests': [u'1'],
+                u'Host': [u'79gqbxq31c.execute-api.us-east-1.amazonaws.com'],
+                u'X-Forwarded-Proto': [u'https'],
+                u'X-Amz-Cf-Id': [u'BBFP-RhGDrQGOzoCqjnfB2I_YzWt_dac9S5vBcSAEaoM4NfYhAQy7Q=='],
+                u'User-Agent': [u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:49.0) Gecko/20100101 Firefox/49.0'],
+                u'CloudFront-Forwarded-Proto': [u'https']
+            },
+            u'stageVariables': None,
+            u'path': u'/asdf1/asdf2'
+        }
 
         environ = create_wsgi_request(event, trailing_slash=False)
         response_tuple = collections.namedtuple('Response', ['status_code', 'content'])
@@ -600,8 +652,6 @@ class TestZappa(unittest.TestCase):
         le = common_log(environ, response, response_time=False)
 
     def test_wsgi_multipart(self):
-        #event = {u'body': u'LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS03Njk1MjI4NDg0Njc4MTc2NTgwNjMwOTYxDQpDb250ZW50LURpc3Bvc2l0aW9uOiBmb3JtLWRhdGE7IG5hbWU9Im15c3RyaW5nIg0KDQpkZGQNCi0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tNzY5NTIyODQ4NDY3ODE3NjU4MDYzMDk2MS0tDQo=', u'headers': {u'Content-Type': u'multipart/form-data; boundary=---------------------------7695228484678176580630961', u'Via': u'1.1 38205a04d96d60185e88658d3185ccee.cloudfront.net (CloudFront)', u'Accept-Language': u'en-US,en;q=0.5', u'Accept-Encoding': u'gzip, deflate, br', u'CloudFront-Is-SmartTV-Viewer': u'false', u'CloudFront-Forwarded-Proto': u'https', u'X-Forwarded-For': u'71.231.27.57, 104.246.180.51', u'CloudFront-Viewer-Country': u'US', u'Accept': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', u'User-Agent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:45.0) Gecko/20100101 Firefox/45.0', u'Host': u'xo2z7zafjh.execute-api.us-east-1.amazonaws.com', u'X-Forwarded-Proto': u'https', u'Cookie': u'zappa=AQ4', u'CloudFront-Is-Tablet-Viewer': u'false', u'X-Forwarded-Port': u'443', u'Referer': u'https://xo8z7zafjh.execute-api.us-east-1.amazonaws.com/former/post', u'CloudFront-Is-Mobile-Viewer': u'false', u'X-Amz-Cf-Id': u'31zxcUcVyUxBOMk320yh5NOhihn5knqrlYQYpGGyOngKKwJb0J0BAQ==', u'CloudFront-Is-Desktop-Viewer': u'true'}, u'params': {u'parameter_1': u'post'}, u'method': u'POST', u'query': {}}
-
         event = {
             u'body': u'LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS03Njk1MjI4NDg0Njc4MTc2NTgwNjMwOTYxDQpDb250ZW50LURpc3Bvc2l0aW9uOiBmb3JtLWRhdGE7IG5hbWU9Im15c3RyaW5nIg0KDQpkZGQNCi0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tNzY5NTIyODQ4NDY3ODE3NjU4MDYzMDk2MS0tDQo=',
             u'resource': u'/',
@@ -627,13 +677,55 @@ class TestZappa(unittest.TestCase):
                     },
                 u'stage': u'devorr',
                 },
+            u'queryStringParameters': None,
             u'multiValueQueryStringParameters': None,
             u'httpMethod': u'POST',
             u'pathParameters': None,
-            u'headers': {u'Content-Type': u'multipart/form-data; boundary=---------------------------7695228484678176580630961', u'Via': u'1.1 38205a04d96d60185e88658d3185ccee.cloudfront.net (CloudFront)', u'Accept-Language': u'en-US,en;q=0.5', u'Accept-Encoding': u'gzip, deflate, br', u'CloudFront-Is-SmartTV-Viewer': u'false', u'CloudFront-Forwarded-Proto': u'https', u'X-Forwarded-For': u'71.231.27.57, 104.246.180.51', u'CloudFront-Viewer-Country': u'US', u'Accept': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', u'User-Agent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:45.0) Gecko/20100101 Firefox/45.0', u'Host': u'xo2z7zafjh.execute-api.us-east-1.amazonaws.com', u'X-Forwarded-Proto': u'https', u'Cookie': u'zappa=AQ4', u'CloudFront-Is-Tablet-Viewer': u'false', u'X-Forwarded-Port': u'443', u'Referer': u'https://xo8z7zafjh.execute-api.us-east-1.amazonaws.com/former/post', u'CloudFront-Is-Mobile-Viewer': u'false', u'X-Amz-Cf-Id': u'31zxcUcVyUxBOMk320yh5NOhihn5knqrlYQYpGGyOngKKwJb0J0BAQ==', u'CloudFront-Is-Desktop-Viewer': u'true'},
+            u'headers': {
+                u'Content-Type': u'multipart/form-data; boundary=---------------------------7695228484678176580630961',
+                u'Via': u'1.1 38205a04d96d60185e88658d3185ccee.cloudfront.net (CloudFront)',
+                u'Accept-Language': u'en-US,en;q=0.5',
+                u'Accept-Encoding': u'gzip, deflate, br',
+                u'CloudFront-Is-SmartTV-Viewer': u'false',
+                u'CloudFront-Forwarded-Proto': u'https',
+                u'X-Forwarded-For': u'71.231.27.57, 104.246.180.51',
+                u'CloudFront-Viewer-Country': u'US',
+                u'Accept': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                u'User-Agent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:45.0) Gecko/20100101 Firefox/45.0',
+                u'Host': u'xo2z7zafjh.execute-api.us-east-1.amazonaws.com',
+                u'X-Forwarded-Proto': u'https',
+                u'Cookie': u'zappa=AQ4',
+                u'CloudFront-Is-Tablet-Viewer': u'false',
+                u'X-Forwarded-Port': u'443',
+                u'Referer': u'https://xo8z7zafjh.execute-api.us-east-1.amazonaws.com/former/post',
+                u'CloudFront-Is-Mobile-Viewer': u'false',
+                u'X-Amz-Cf-Id': u'31zxcUcVyUxBOMk320yh5NOhihn5knqrlYQYpGGyOngKKwJb0J0BAQ==',
+                u'CloudFront-Is-Desktop-Viewer': u'true'
+            },
+            u'multiValueHeaders': {
+                u'Content-Type': [u'multipart/form-data; boundary=---------------------------7695228484678176580630961'],
+                u'Via': [u'1.1 38205a04d96d60185e88658d3185ccee.cloudfront.net (CloudFront)'],
+                u'Accept-Language': [u'en-US,en;q=0.5'],
+                u'Accept-Encoding': [u'gzip, deflate, br'],
+                u'CloudFront-Is-SmartTV-Viewer': [u'false'],
+                u'CloudFront-Forwarded-Proto': [u'https'],
+                u'X-Forwarded-For': [u'71.231.27.57, 104.246.180.51'],
+                u'CloudFront-Viewer-Country': [u'US'],
+                u'Accept': [u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'],
+                u'User-Agent': [u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:45.0) Gecko/20100101 Firefox/45.0'],
+                u'Host': [u'xo2z7zafjh.execute-api.us-east-1.amazonaws.com'],
+                u'X-Forwarded-Proto': [u'https'],
+                u'Cookie': [u'zappa=AQ4'],
+                u'CloudFront-Is-Tablet-Viewer': [u'false'],
+                u'X-Forwarded-Port': [u'443'],
+                u'Referer': [u'https://xo8z7zafjh.execute-api.us-east-1.amazonaws.com/former/post'],
+                u'CloudFront-Is-Mobile-Viewer': [u'false'],
+                u'X-Amz-Cf-Id': [u'31zxcUcVyUxBOMk320yh5NOhihn5knqrlYQYpGGyOngKKwJb0J0BAQ=='],
+                u'CloudFront-Is-Desktop-Viewer': [u'true']
+            },
             u'stageVariables': None,
             u'path': u'/',
-            }
+        }
 
         environ = create_wsgi_request(event, trailing_slash=False)
         response_tuple = collections.namedtuple('Response', ['status_code', 'content'])
@@ -666,14 +758,54 @@ class TestZappa(unittest.TestCase):
                     },
                 u'stage': u'devorr',
                 },
+            u'queryStringParameters': None,
             u'multiValueQueryStringParameters': None,
             u'httpMethod': u'POST',
             u'pathParameters': None,
-            u'headers': {u'Via': u'1.1 38205a04d96d60185e88658d3185ccee.cloudfront.net (CloudFront)', u'Accept-Language': u'en-US,en;q=0.5', u'Accept-Encoding': u'gzip, deflate, br', u'CloudFront-Is-SmartTV-Viewer': u'false', u'CloudFront-Forwarded-Proto': u'https', u'X-Forwarded-For': u'71.231.27.57, 104.246.180.51', u'CloudFront-Viewer-Country': u'US', u'Accept': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', u'User-Agent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:45.0) Gecko/20100101 Firefox/45.0', u'Host': u'xo2z7zafjh.execute-api.us-east-1.amazonaws.com', u'X-Forwarded-Proto': u'https', u'Cookie': u'zappa=AQ4', u'CloudFront-Is-Tablet-Viewer': u'false', u'X-Forwarded-Port': u'443', u'Referer': u'https://xo8z7zafjh.execute-api.us-east-1.amazonaws.com/former/post', u'CloudFront-Is-Mobile-Viewer': u'false', u'X-Amz-Cf-Id': u'31zxcUcVyUxBOMk320yh5NOhihn5knqrlYQYpGGyOngKKwJb0J0BAQ==', u'CloudFront-Is-Desktop-Viewer': u'true'},
+            u'headers': {
+                u'Via': u'1.1 38205a04d96d60185e88658d3185ccee.cloudfront.net (CloudFront)',
+                u'Accept-Language': u'en-US,en;q=0.5',
+                u'Accept-Encoding': u'gzip, deflate, br',
+                u'CloudFront-Is-SmartTV-Viewer': u'false',
+                u'CloudFront-Forwarded-Proto': u'https',
+                u'X-Forwarded-For': u'71.231.27.57, 104.246.180.51',
+                u'CloudFront-Viewer-Country': u'US',
+                u'Accept': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                u'User-Agent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:45.0) Gecko/20100101 Firefox/45.0',
+                u'Host': u'xo2z7zafjh.execute-api.us-east-1.amazonaws.com',
+                u'X-Forwarded-Proto': u'https',
+                u'Cookie': u'zappa=AQ4',
+                u'CloudFront-Is-Tablet-Viewer': u'false',
+                u'X-Forwarded-Port': u'443',
+                u'Referer': u'https://xo8z7zafjh.execute-api.us-east-1.amazonaws.com/former/post',
+                u'CloudFront-Is-Mobile-Viewer': u'false',
+                u'X-Amz-Cf-Id': u'31zxcUcVyUxBOMk320yh5NOhihn5knqrlYQYpGGyOngKKwJb0J0BAQ==',
+                u'CloudFront-Is-Desktop-Viewer': u'true'
+            },
+            u'multiValueHeaders': {
+                u'Via': [u'1.1 38205a04d96d60185e88658d3185ccee.cloudfront.net (CloudFront)'],
+                u'Accept-Language': [u'en-US,en;q=0.5'],
+                u'Accept-Encoding': [u'gzip, deflate, br'],
+                u'CloudFront-Is-SmartTV-Viewer': [u'false'],
+                u'CloudFront-Forwarded-Proto': [u'https'],
+                u'X-Forwarded-For': [u'71.231.27.57, 104.246.180.51'],
+                u'CloudFront-Viewer-Country': [u'US'],
+                u'Accept': [u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'],
+                u'User-Agent': [u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:45.0) Gecko/20100101 Firefox/45.0'],
+                u'Host': [u'xo2z7zafjh.execute-api.us-east-1.amazonaws.com'],
+                u'X-Forwarded-Proto': [u'https'],
+                u'Cookie': [u'zappa=AQ4'],
+                u'CloudFront-Is-Tablet-Viewer': [u'false'],
+                u'X-Forwarded-Port': [u'443'],
+                u'Referer': [u'https://xo8z7zafjh.execute-api.us-east-1.amazonaws.com/former/post'],
+                u'CloudFront-Is-Mobile-Viewer': [u'false'],
+                u'X-Amz-Cf-Id': [u'31zxcUcVyUxBOMk320yh5NOhihn5knqrlYQYpGGyOngKKwJb0J0BAQ=='],
+                u'CloudFront-Is-Desktop-Viewer': [u'true']
+            },
             u'stageVariables': None,
             u'path': u'/',
             u'isBase64Encoded': True
-            }
+        }
 
         environ = create_wsgi_request(event, trailing_slash=False)
         response_tuple = collections.namedtuple('Response', ['status_code', 'content'])
@@ -690,6 +822,8 @@ class TestZappa(unittest.TestCase):
             "path": "/",
             "httpMethod": "GET",
             "headers": None,
+            "multiValueHeaders": None,
+            "queryStringParameters": None,
             "multiValueQueryStringParameters": None,
             "pathParameters": None,
             "stageVariables": None,
@@ -1740,14 +1874,16 @@ USE_TZ = True
         https://github.com/Miserlou/Zappa/issues/283
         """
         event = {
-                "body": {},
-                "headers": {},
-                "pathParameters": {},
-                "path": '/',
-                "httpMethod": "GET",
-                "multiValueQueryStringParameters": {},
-                "requestContext": {}
-            }
+            "body": {},
+            "headers": {},
+            "multiValueHeaders": {},
+            "pathParameters": {},
+            "path": '/',
+            "httpMethod": "GET",
+            "queryStringParameters": {},
+            "multiValueQueryStringParameters": {},
+            "requestContext": {}
+        }
 
         old_stderr = sys.stderr
         sys.stderr = BytesIO()

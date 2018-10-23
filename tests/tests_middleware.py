@@ -85,12 +85,16 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
         # With user
         event = {
             u'httpMethod': u'GET',
+            u'queryStringParameters': None,
             u'multiValueQueryStringParameters': None,
             u'path': u'/v1/runs',
             u'params': {},
             u'body': {},
             u'headers': {
                 u'Content-Type': u'application/json'
+            },
+            u'multiValueHeaders': {
+                u'Content-Type': [u'application/json']
             },
             u'pathParameters': {
                 u'proxy': 'v1/runs'
@@ -110,12 +114,16 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
         # With empty authorizer, should not include REMOTE_USER
         event = {
             u'httpMethod': u'GET',
+            u'queryStringParameters': None,
             u'multiValueQueryStringParameters': None,
             u'path': u'/v1/runs',
             u'params': {},
             u'body': {},
             u'headers': {
                 u'Content-Type': u'application/json'
+            },
+            u'multiValueHeaders': {
+                u'Content-Type': [u'application/json']
             },
             u'pathParameters': {
                 u'proxy': 'v1/runs'
@@ -136,12 +144,16 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
         # With missing authorizer, should not include REMOTE_USER
         event = {
             u'httpMethod': u'GET',
+            u'queryStringParameters': None,
             u'multiValueQueryStringParameters': None,
             u'path': u'/v1/runs',
             u'params': {},
             u'body': {},
             u'headers': {
                 u'Content-Type': u'application/json'
+            },
+            u'multiValueHeaders': {
+                u'Content-Type': [u'application/json']
             },
             u'pathParameters': {
                 u'proxy': 'v1/runs'
@@ -158,12 +170,16 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
         # With empty authorizer, should not include REMOTE_USER
         event = {
             u'httpMethod': u'GET',
+            u'queryStringParameters': None,
             u'multiValueQueryStringParameters': None,
             u'path': u'/v1/runs',
             u'params': {},
             u'body': {},
             u'headers': {
                 u'Content-Type': u'application/json'
+            },
+            u'multiValueHeaders': {
+                u'Content-Type': [u'application/json']
             },
             u'pathParameters': {
                 u'proxy': 'v1/runs'
@@ -184,12 +200,16 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
         # Validate a single context value mapping is translated into a HTTP header
         event = {
             u'httpMethod': u'GET',
+            u'queryStringParameters': None,
             u'multiValueQueryStringParameters': None,
             u'path': u'/v1/runs',
             u'params': {},
             u'body': {},
             u'headers': {
                 u'Content-Type': u'application/json'
+            },
+            u'multiValueHeaders': {
+                u'Content-Type': [u'application/json']
             },
             u'pathParameters': {
                 u'proxy': 'v1/runs'
@@ -212,12 +232,16 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
         # Invalid mapping should be ignored
         event = {
             u'httpMethod': u'GET',
+            u'queryStringParameters': None,
             u'multiValueQueryStringParameters': None,
             u'path': u'/v1/runs',
             u'params': {},
             u'body': {},
             u'headers': {
                 u'Content-Type': u'application/json'
+            },
+            u'multiValueHeaders': {
+                u'Content-Type': [u'application/json']
             },
             u'pathParameters': {
                 u'proxy': 'v1/runs'
