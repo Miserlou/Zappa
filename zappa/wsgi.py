@@ -43,7 +43,11 @@ def create_wsgi_request(event_info,
         params = event_info['pathParameters']
         query = event_info['queryStringParameters'] # APIGW won't allow multiple entries, ex ?id=a&id=b
         headers = event_info['headers'] or {} # Allow for the AGW console 'Test' button to work (Pull #735)
-        multi_headers = transform_multi_value_dict(event_info.get('multiValueHeaders', {})) # collect multivalue headers but don't use them
+        multi_headers_dict = event_info.get('multiValueHeaders', {}) # collect multivalue headers but don't use them
+        if multi_headers_dict:
+            multi_headers = transform_multi_value_dict(multi_headers_dict)
+        else:
+            multi_headers = ()
 
         if context_header_mappings:
             for key, value in context_header_mappings.items():
