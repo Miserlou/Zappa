@@ -356,14 +356,14 @@ class Zappa(object):
     # Packaging
     ##
 
-    def copy_editable_packages(self, egg_links, temp_package_path):
+    def copy_editable_packages(self, egg_links, temp_package_path, ignore=None):
         """ """
         for egg_link in egg_links:
             with open(egg_link, 'rb') as df:
                 egg_path = df.read().decode('utf-8').splitlines()[0].strip()
                 pkgs = set([x.split(".")[0] for x in find_packages(egg_path, exclude=['test', 'tests'])])
                 for pkg in pkgs:
-                    copytree(os.path.join(egg_path, pkg), os.path.join(temp_package_path, pkg), metadata=False, symlinks=False)
+                    copytree(os.path.join(egg_path, pkg), os.path.join(temp_package_path, pkg), metadata=False, symlinks=False, ignore=ignore)
 
         if temp_package_path:
             # now remove any egg-links as they will cause issues if they still exist
@@ -540,8 +540,7 @@ class Zappa(object):
             # Slim handler does not take the project files.
             if minify:
                 # Related: https://github.com/Miserlou/Zappa/issues/744
-                excludes = ZIP_EXCLUDES + exclude + [split_venv[-1]]
-                copytree(cwd, temp_project_path, metadata=False, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
+                copytree(cwd, temp_project_path, metadata=False, symlinks=False, ignore=shutil.ignore_patterns(*(ZIP_EXCLUDES + exclude + [split_venv[-1]])))
             else:
                 copytree(cwd, temp_project_path, metadata=False, symlinks=False)
 
@@ -607,8 +606,8 @@ class Zappa(object):
             site_packages = os.path.join(venv, 'lib', get_venv_from_python_version(), 'site-packages')
         egg_links.extend(glob.glob(os.path.join(site_packages, '*.egg-link')))
 
+        excludes = ZIP_EXCLUDES + exclude
         if minify:
-            excludes = ZIP_EXCLUDES + exclude
             copytree(site_packages, temp_package_path, metadata=False, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
         else:
             copytree(site_packages, temp_package_path, metadata=False, symlinks=False)
@@ -618,13 +617,12 @@ class Zappa(object):
         if os.path.exists(site_packages_64):
             egg_links.extend(glob.glob(os.path.join(site_packages_64, '*.egg-link')))
             if minify:
-                excludes = ZIP_EXCLUDES + exclude
                 copytree(site_packages_64, temp_package_path, metadata = False, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
             else:
                 copytree(site_packages_64, temp_package_path, metadata = False, symlinks=False)
 
         if egg_links:
-            self.copy_editable_packages(egg_links, temp_package_path)
+            self.copy_editable_packages(egg_links, temp_package_path, ignore=shutil.ignore_patterns(*excludes))
 
         copy_tree(temp_package_path, temp_project_path, update=True)
 

@@ -112,7 +112,7 @@ class TestZappa(unittest.TestCase):
                 mock_copytree.assert_called_with(
                     os.path.join(egg_path, 'package'),
                     os.path.join(temp_package_dir, 'package'),
-                    metadata=False, symlinks=False
+                    ignore=None, metadata=False, symlinks=False,
                 )
                 self.assertEqual(mock_copytree.call_count, 1)
 
