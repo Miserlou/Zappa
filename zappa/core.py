@@ -2741,14 +2741,7 @@ class Zappa(object):
         """
         Remove the DynamoDB Table used for async return values
         """
-
-        topic_name = get_topic_name(lambda_name)
-        removed_arns = []
-        for sub in self.sns_client.list_subscriptions()['Subscriptions']:
-            if topic_name in sub['TopicArn']:
-                self.sns_client.delete_topic(TopicArn=sub['TopicArn'])
-                removed_arns.append(sub['TopicArn'])
-        return removed_arns
+        self.dynamodb_client.delete_table(TableName=table_name)
 
     ##
     # CloudWatch Logging
