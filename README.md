@@ -840,7 +840,7 @@ to change Zappa's behavior. Use these at your own risk!
         "cache_cluster_enabled": false, // Use APIGW cache cluster (default False)
         "cache_cluster_size": 0.5, // APIGW Cache Cluster size (default 0.5)
         "cache_cluster_ttl": 300, // APIGW Cache Cluster time-to-live (default 300)
-        "cache_cluster_encrypted": false, // Whether or now APIGW Cache Cluster encrypts data (default False)
+        "cache_cluster_encrypted": false, // Whether or not APIGW Cache Cluster encrypts data (default False)
         "certificate": "my_cert.crt", // SSL certificate file location. Used to manually certify a custom domain
         "certificate_key": "my_key.key", // SSL key file location. Used to manually certify a custom domain
         "certificate_chain": "my_cert_chain.pem", // SSL certificate chain file location. Used to manually certify a custom domain
