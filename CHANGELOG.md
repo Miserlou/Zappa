@@ -1,5 +1,10 @@
 # Zappa Changelog
 
+## 0.47.1
+* Handle accounts with more than 100 domains in route 53
+* Force requests upgrade to 2.20.0 for compatibility with urllib3 1.24
+* Allow defining API Gateway policies (including restricting access to one IP address)
+
 ## 0.47.0
 * Support for SQS events
 * Added test to enforce running of doctoc

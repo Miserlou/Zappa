@@ -13,9 +13,8 @@ pip>=9.0.1
 python-dateutil>=2.6.1, <2.7.0
 python-slugify==1.2.4
 PyYAML==3.13
-requests>=2.10.0
-# requests has issues with urllib3 1.24
-urllib3<=1.23
+# previous version don't work with urllib3 1.24
+requests>=2.20.0
 six>=1.11.0
 toml>=0.9.4
 tqdm==4.19.1
