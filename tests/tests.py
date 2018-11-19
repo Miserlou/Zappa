@@ -26,7 +26,7 @@ from zappa.utilities import (
     conflicts_with_a_neighbouring_module, contains_python_files_or_subdirs,
     detect_django_settings, detect_flask_apps, get_venv_from_python_version,
     human_size, InvalidAwsLambdaName, parse_s3_url, string_to_timestamp,
-    titlecase_keys, validate_name
+    titlecase_keys, is_valid_bucket_name, validate_name
 )
 from zappa.wsgi import create_wsgi_request, common_log
 from zappa.core import Zappa, ASSUME_POLICY, ATTACH_POLICY
@@ -1463,6 +1463,7 @@ class TestZappa(unittest.TestCase):
 
         # And that the route53 path still works
         zappa_core.route53.list_hosted_zones.return_value = {
+            'IsTruncated': False,
             'HostedZones': [
                 {
                     'Id': 'somezone'
@@ -1482,6 +1483,70 @@ class TestZappa(unittest.TestCase):
         zappa_core.route53.list_hosted_zones.assert_called_once()
         zappa_core.route53.list_resource_record_sets.assert_called_once_with(
             HostedZoneId='somezone')
+
+    @mock.patch('botocore.client')
+    def test_get_all_zones_normal_case(self, client):
+        zappa_core = Zappa(
+            boto_session=mock.Mock(),
+            profile_name="test",
+            aws_region="test",
+            load_credentials=False
+        )
+        zappa_core.route53 = mock.Mock()
+
+        # Check that it handle the normal case
+        zappa_core.route53.list_hosted_zones.return_value = {
+            'IsTruncated': False,
+            'HostedZones': [
+                {
+                    'Id': 'somezone'
+                }
+            ]
+        }
+
+        zones = zappa_core.get_all_zones()
+        zappa_core.route53.list_hosted_zones.assert_called_with(MaxItems='100')
+        self.assertListEqual(zones['HostedZones'], [{'Id': 'somezone'}])
+
+    @mock.patch('botocore.client')
+    def test_get_all_zones_two_pages(self, client):
+        zappa_core = Zappa(
+            boto_session=mock.Mock(),
+            profile_name="test",
+            aws_region="test",
+            load_credentials=False
+        )
+        zappa_core.route53 = mock.Mock()
+
+        # Check that it handle the normal case
+        zappa_core.route53.list_hosted_zones.side_effect = [
+            {
+                'IsTruncated': True,
+                'HostedZones': [
+                    {
+                        'Id': 'zone1'
+                    }
+                ],
+                'NextMarker': "101"
+            },
+            {
+                'IsTruncated': False,
+                'HostedZones': [
+                    {
+                        'Id': 'zone2'
+                    }
+                ]
+            }
+        ]
+
+        zones = zappa_core.get_all_zones()
+        zappa_core.route53.list_hosted_zones.assert_has_calls(
+            [
+                mock.call(MaxItems='100'),
+                mock.call(MaxItems='100', Marker='101'),
+            ]
+        )
+        self.assertListEqual(zones['HostedZones'], [{'Id': 'zone1'}, {'Id': 'zone2'}])
 
     ##
     # Django
@@ -1852,6 +1917,30 @@ USE_TZ = True
         }
         self.assertEqual(expected, transformed)
 
+    def test_is_valid_bucket_name(self):
+        # Bucket names must be at least 3 and no more than 63 characters long.
+        self.assertFalse(is_valid_bucket_name("ab"))
+        self.assertFalse(is_valid_bucket_name("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefhijlmn"))
+        # Bucket names must not contain uppercase characters or underscores.
+        self.assertFalse(is_valid_bucket_name("aaaBaaa"))
+        self.assertFalse(is_valid_bucket_name("aaa_aaa"))
+        # Bucket names must start with a lowercase letter or number.
+        self.assertFalse(is_valid_bucket_name(".abbbaba"))
+        self.assertFalse(is_valid_bucket_name("abbaba."))
+        self.assertFalse(is_valid_bucket_name("-abbaba"))
+        self.assertFalse(is_valid_bucket_name("ababab-"))
+        # Bucket names must be a series of one or more labels. Adjacent labels are separated by a single period (.). 
+        # Each label must start and end with a lowercase letter or a number.
+        self.assertFalse(is_valid_bucket_name("aaa..bbbb"))
+        self.assertFalse(is_valid_bucket_name("aaa.-bbb.ccc"))
+        self.assertFalse(is_valid_bucket_name("aaa-.bbb.ccc"))
+        # Bucket names must not be formatted as an IP address (for example, 192.168.5.4).
+        self.assertFalse(is_valid_bucket_name("192.168.5.4"))
+        self.assertFalse(is_valid_bucket_name("127.0.0.1"))
+        self.assertFalse(is_valid_bucket_name("255.255.255.255"))
+
+        self.assertTrue(is_valid_bucket_name("valid-formed-s3-bucket-name"))
+        self.assertTrue(is_valid_bucket_name("worst.bucket.ever"))
 
 if __name__ == '__main__':
     unittest.main()

@@ -59,6 +59,7 @@
     - [IAM Policy](#iam-policy)
     - [API Gateway Lambda Authorizers](#api-gateway-lambda-authorizers)
     - [Cognito User Pool Authorizer](#cognito-user-pool-authorizer)
+    - [API Gateway Resource Policy](#api-gateway-resource-policy)
   - [Setting Environment Variables](#setting-environment-variables)
     - [Local Environment Variables](#local-environment-variables)
     - [Remote AWS Environment Variables](#remote-aws-environment-variables)
@@ -156,7 +157,7 @@ This will automatically detect your application type (Flask/Django - Pyramid use
     // The name of your stage
     "dev": {
         // The name of your S3 bucket
-        "s3_bucket": "lmbda",
+        "s3_bucket": "lambda",
 
         // The modular python path to your WSGI application function.
         // In Flask and Bottle, this is your 'app' object.
@@ -174,7 +175,7 @@ or for Django:
 ```javascript
 {
     "dev": { // The name of your stage
-       "s3_bucket": "lmbda", // The name of your S3 bucket
+       "s3_bucket": "lambda", // The name of your S3 bucket
        "django_settings": "your_project.settings" // The python path to your Django settings.
     }
 }
@@ -820,6 +821,7 @@ to change Zappa's behavior. Use these at your own risk!
         "apigateway_description": "My funky application!", // Define a custom description for the API Gateway console. Default None.
         "assume_policy": "my_assume_policy.json", // optional, IAM assume policy JSON file
         "attach_policy": "my_attach_policy.json", // optional, IAM attach policy JSON file
+        "apigateway_policy": "my_apigateway_policy.json", // optional, API Gateway resource policy JSON file
         "async_source": "sns", // Source of async tasks. Defaults to "lambda"
         "async_resources": true, // Create the SNS topic and DynamoDB table to use. Defaults to true.
         "async_response_table": "your_dynamodb_table_name",  // the DynamoDB table name to use for captured async responses; defaults to None (can't capture)
@@ -838,7 +840,7 @@ to change Zappa's behavior. Use these at your own risk!
         "cache_cluster_enabled": false, // Use APIGW cache cluster (default False)
         "cache_cluster_size": 0.5, // APIGW Cache Cluster size (default 0.5)
         "cache_cluster_ttl": 300, // APIGW Cache Cluster time-to-live (default 300)
-        "cache_cluster_encrypted": false, // Whether or now APIGW Cache Cluster encrypts data (default False)
+        "cache_cluster_encrypted": false, // Whether or not APIGW Cache Cluster encrypts data (default False)
         "certificate": "my_cert.crt", // SSL certificate file location. Used to manually certify a custom domain
         "certificate_key": "my_key.key", // SSL key file location. Used to manually certify a custom domain
         "certificate_chain": "my_cert_chain.pem", // SSL certificate chain file location. Used to manually certify a custom domain
@@ -922,7 +924,7 @@ to change Zappa's behavior. Use these at your own risk!
             "Key": "Value",  // Example Key and value
             "Key2": "Value2",
             },
-        "timeout_seconds": 30, // Maximum lifespan for the Lambda function (default 30, max 300.)
+        "timeout_seconds": 30, // Maximum lifespan for the Lambda function (default 30, max 900.)
         "touch": true, // GET the production URL upon initial deployment (default True)
         "touch_path": "/", // The endpoint path to GET when checking the initial deployment (default "/")
         "use_precompiled_packages": true, // If possible, use C-extension packages which have been pre-compiled for AWS Lambda. Default true.
@@ -1062,6 +1064,31 @@ You can also use AWS Cognito User Pool Authorizer by adding:
             "arn:aws:cognito-idp:{region}:{account_id}:userpool/{user_pool_id}"
         ]
     }
+}
+```
+
+#### API Gateway Resource Policy
+
+You can also use API Gateway Resource Policies. Example of IP Whitelisting:
+
+```javascript
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "execute-api:Invoke",
+            "Resource": "execute-api:/*",
+            "Condition": {
+                "IpAddress": {
+                    "aws:SourceIp": [
+                        "1.2.3.4/32"
+                    ]
+                }
+            }
+        }
+    ]
 }
 ```
 

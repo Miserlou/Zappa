@@ -1,5 +1,26 @@
 # Zappa Changelog
 
+## 0.47.1
+* Handle accounts with more than 100 domains in route 53
+* Force requests upgrade to 2.20.0 for compatibility with urllib3 1.24
+* Allow defining API Gateway policies (including restricting access to one IP address)
+
+## 0.47.0
+* Support for SQS events
+* Added test to enforce running of doctoc
+* Add support for running django as a WSGI app (for NewRelic and others)
+* Updates AWS regions for lambda and API Gateway
+* Fix support for gcloud and other packages with slim_handler
+* Add --disable-keep-open to zappa tail
+* Dependency updates
+* Fix pyenv invocation
+* Add custom base_path stripping support
+* Multiple documentation fixes and improvements
+* first iteration of a documented deploy policy
+
+## 0.46.2
+* hotfix for creating virtual environments
+
 ## 0.46.1
 * Hotfix for pipenv support (pip >10.0.1)
 * Adds AWS GovCloud support!

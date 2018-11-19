@@ -48,10 +48,11 @@ from .core import Zappa, logger, API_GATEWAY_REGIONS
 from .utilities import (check_new_version_available, detect_django_settings,
                   detect_flask_apps, parse_s3_url, human_size,
                   validate_name, InvalidAwsLambdaName,
-                  get_runtime_from_python_version, string_to_timestamp)
+                  get_runtime_from_python_version, string_to_timestamp, is_valid_bucket_name)
 
 
 CUSTOM_SETTINGS = [
+    'apigateway_policy',
     'assume_policy',
     'attach_policy',
     'aws_region',
@@ -662,7 +663,8 @@ class ZappaCLI(object):
                                             iam_authorization=self.iam_authorization,
                                             authorizer=self.authorizer,
                                             cors_options=self.cors,
-                                            description=self.apigateway_description
+                                            description=self.apigateway_description,
+                                            policy=self.apigateway_policy
                                         )
 
         if not output:
@@ -1616,7 +1618,29 @@ class ZappaCLI(object):
         click.echo("\nYour Zappa deployments will need to be uploaded to a " + click.style("private S3 bucket", bold=True)  + ".")
         click.echo("If you don't have a bucket yet, we'll create one for you too.")
         default_bucket = "zappa-" + ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(9))
-        bucket = input("What do you want to call your bucket? (default '%s'): " % default_bucket) or default_bucket
+        while True:
+            bucket = input("What do you want to call your bucket? (default '%s'): " % default_bucket) or default_bucket
+          
+            if is_valid_bucket_name(bucket):
+                break
+            
+            click.echo(click.style("Invalid bucket name!", bold=True))
+            click.echo("S3 buckets must be named according to the following rules:")
+            click.echo("""* Bucket names must be unique across all existing bucket names in Amazon S3.
+* Bucket names must comply with DNS naming conventions.
+* Bucket names must be at least 3 and no more than 63 characters long.
+* Bucket names must not contain uppercase characters or underscores.
+* Bucket names must start with a lowercase letter or number.
+* Bucket names must be a series of one or more labels. Adjacent labels are separated 
+  by a single period (.). Bucket names can contain lowercase letters, numbers, and
+  hyphens. Each label must start and end with a lowercase letter or a number.
+* Bucket names must not be formatted as an IP address (for example, 192.168.5.4).
+* When you use virtual hosted–style buckets with Secure Sockets Layer (SSL), the SSL 
+  wildcard certificate only matches buckets that don't contain periods. To work around 
+  this, use HTTP or write your own certificate verification logic. We recommend that 
+  you do not use periods (".") in bucket names when using virtual hosted–style buckets.
+""")
+
 
         # Detect Django/Flask
         try: # pragma: no cover
@@ -2661,6 +2685,18 @@ class ZappaCLI(object):
 
         touch_path = self.stage_config.get('touch_path', '/')
         req = requests.get(endpoint_url + touch_path)
+
+        # Sometimes on really large packages, it can take 60-90 secs to be
+        # ready and requests will return 504 status_code until ready. 
+        # So, if we get a 504 status code, rerun the request up to 4 times or 
+        # until we don't get a 504 error
+        if req.status_code == 504:
+            i = 0
+            status_code = 504
+            while status_code == 504 and i <= 4:
+                req = requests.get(endpoint_url + touch_path)
+                status_code = req.status_code
+                i += 1
 
         if req.status_code >= 500:
             raise ClickException(click.style("Warning!", fg="red", bold=True) +
