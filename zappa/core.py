@@ -927,11 +927,11 @@ class Zappa(object):
                     CreateBucketConfiguration={'LocationConstraint': self.aws_region},
                 )
 
-        if self.tags:
-            tags = {
-                'TagSet': [{'Key': key, 'Value': self.tags[key]} for key in self.tags.keys()]
-            }
-            self.s3_client.put_bucket_tagging(Bucket=bucket_name, Tagging=tags)
+            if self.tags:
+                tags = {
+                    'TagSet': [{'Key': key, 'Value': self.tags[key]} for key in self.tags.keys()]
+                }
+                self.s3_client.put_bucket_tagging(Bucket=bucket_name, Tagging=tags)
 
         if not os.path.isfile(source_path) or os.stat(source_path).st_size == 0:
             print("Problem with source file {}".format(source_path))
