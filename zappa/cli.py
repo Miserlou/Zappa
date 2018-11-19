@@ -2686,6 +2686,18 @@ class ZappaCLI(object):
         touch_path = self.stage_config.get('touch_path', '/')
         req = requests.get(endpoint_url + touch_path)
 
+        # Sometimes on really large packages, it can take 60-90 secs to be
+        # ready and requests will return 504 status_code until ready. 
+        # So, if we get a 504 status code, rerun the request up to 4 times or 
+        # until we don't get a 504 error
+        if req.status_code == 504:
+            i = 0
+            status_code = 504
+            while status_code == 504 and i <= 4:
+                req = requests.get(endpoint_url + touch_path)
+                status_code = req.status_code
+                i += 1
+
         if req.status_code >= 500:
             raise ClickException(click.style("Warning!", fg="red", bold=True) +
                 " Status check on the deployed lambda failed." +
