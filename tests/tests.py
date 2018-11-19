@@ -26,7 +26,7 @@ from zappa.utilities import (
     conflicts_with_a_neighbouring_module, contains_python_files_or_subdirs,
     detect_django_settings, detect_flask_apps, get_venv_from_python_version,
     human_size, InvalidAwsLambdaName, parse_s3_url, string_to_timestamp,
-    titlecase_keys, validate_name
+    titlecase_keys, is_valid_bucket_name, validate_name
 )
 from zappa.wsgi import create_wsgi_request, common_log
 from zappa.core import Zappa, ASSUME_POLICY, ATTACH_POLICY
@@ -1917,6 +1917,30 @@ USE_TZ = True
         }
         self.assertEqual(expected, transformed)
 
+    def test_is_valid_bucket_name(self):
+        # Bucket names must be at least 3 and no more than 63 characters long.
+        self.assertFalse(is_valid_bucket_name("ab"))
+        self.assertFalse(is_valid_bucket_name("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefhijlmn"))
+        # Bucket names must not contain uppercase characters or underscores.
+        self.assertFalse(is_valid_bucket_name("aaaBaaa"))
+        self.assertFalse(is_valid_bucket_name("aaa_aaa"))
+        # Bucket names must start with a lowercase letter or number.
+        self.assertFalse(is_valid_bucket_name(".abbbaba"))
+        self.assertFalse(is_valid_bucket_name("abbaba."))
+        self.assertFalse(is_valid_bucket_name("-abbaba"))
+        self.assertFalse(is_valid_bucket_name("ababab-"))
+        # Bucket names must be a series of one or more labels. Adjacent labels are separated by a single period (.). 
+        # Each label must start and end with a lowercase letter or a number.
+        self.assertFalse(is_valid_bucket_name("aaa..bbbb"))
+        self.assertFalse(is_valid_bucket_name("aaa.-bbb.ccc"))
+        self.assertFalse(is_valid_bucket_name("aaa-.bbb.ccc"))
+        # Bucket names must not be formatted as an IP address (for example, 192.168.5.4).
+        self.assertFalse(is_valid_bucket_name("192.168.5.4"))
+        self.assertFalse(is_valid_bucket_name("127.0.0.1"))
+        self.assertFalse(is_valid_bucket_name("255.255.255.255"))
+
+        self.assertTrue(is_valid_bucket_name("valid-formed-s3-bucket-name"))
+        self.assertTrue(is_valid_bucket_name("worst.bucket.ever"))
 
 if __name__ == '__main__':
     unittest.main()
