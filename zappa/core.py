@@ -532,9 +532,9 @@ class Zappa(object):
             if minify:
                 # Related: https://github.com/Miserlou/Zappa/issues/744
                 excludes = ZIP_EXCLUDES + exclude + [split_venv[-1]]
-                copytree(cwd, temp_project_path, metadata=False, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
+                copytree(cwd, temp_project_path, metadata=False, symlinks=True, ignore=shutil.ignore_patterns(*excludes))
             else:
-                copytree(cwd, temp_project_path, metadata=False, symlinks=False)
+                copytree(cwd, temp_project_path, metadata=False, symlinks=True)
 
         # If a handler_file is supplied, copy that to the root of the package,
         # because that's where AWS Lambda looks for it. It can't be inside a package.
@@ -707,8 +707,16 @@ class Zappa(object):
                     zipi = zipfile.ZipInfo(os.path.join(root.replace(temp_project_path, '').lstrip(os.sep), filename))
                     zipi.create_system = 3
                     zipi.external_attr = 0o755 << int(16) # Is this P2/P3 functional?
-                    with open(os.path.join(root, filename), 'rb') as f:
-                        archivef.writestr(zipi, f.read(), compression_method)
+                    file_path = os.path.join(root, filename)
+
+                    # Symlinks need special handling
+                    # Related: https://github.com/Miserlou/Zappa/issues/754
+                    if os.path.islink(file_path):
+                        zipi.external_attr |= 0o120000 << int(16)
+                        archivef.writestr(zipi, os.readlink(file_path), zipfile.ZIP_STORED)
+                    else:
+                        with open(file_path, 'rb') as f:
+                            archivef.writestr(zipi, f.read(), compression_method)
                 elif archive_format == 'tarball':
                     tarinfo = tarfile.TarInfo(os.path.join(root.replace(temp_project_path, '').lstrip(os.sep), filename))
                     tarinfo.mode = 0o755

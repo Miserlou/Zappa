@@ -382,6 +382,36 @@ class TestZappa(unittest.TestCase):
             self.assertEqual(mock_client.update_function_configuration.call_args[1]["Environment"], { "Variables": end_result_should_be})
 
 
+    def test_package_symlink(self):
+        """Packaging a symlink to a file only includes the file once.
+        """
+        with mock.patch('zappa.core.Zappa.get_installed_packages', return_value={}):
+            with tempfile.TemporaryDirectory() as working_directory:
+                os.chdir(working_directory)
+                with open('./real_file', 'w') as out_file:
+                    out_file.write('abc')
+
+                os.symlink('./real_file', './link')
+
+                z = Zappa()
+                path = z.create_lambda_zip()
+                self.assertTrue(os.path.isfile(path))
+
+                with zipfile.ZipFile(path) as lambda_zip:
+                    self.assertIn('real_file', lambda_zip.namelist())
+                    self.assertIn('link', lambda_zip.namelist())
+
+                    # We can't extract the zip to test the symlink,
+                    # because zipfile.extract() doesn't preserve symlinks.
+                    link_info = lambda_zip.getinfo('link')
+                    zip_file_flag = 0o120000 << int(16)
+                    self.assertEqual(link_info.external_attr & zip_file_flag, zip_file_flag)
+
+                    with lambda_zip.open('link') as link_data:
+                        self.assertEqual(link_data.read(), b'./real_file')
+
+                os.remove(path)
+
     ##
     # Logging
     ##
