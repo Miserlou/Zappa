@@ -663,7 +663,8 @@ class ZappaCLI(object):
                                             authorizer=self.authorizer,
                                             cors_options=self.cors,
                                             description=self.apigateway_description,
-                                            policy=self.apigateway_policy
+                                            policy=self.apigateway_policy,
+                                            endpoint_configuration=self.endpoint_configuration
                                         )
 
         if not output:
@@ -791,7 +792,8 @@ class ZappaCLI(object):
                                                         iam_authorization=self.iam_authorization,
                                                         authorizer=self.authorizer,
                                                         cors_options=self.cors,
-                                                        description=self.apigateway_description
+                                                        description=self.apigateway_description,
+                                                        endpoint_configuration=self.endpoint_configuration
                                                     )
 
             self.zappa.update_stack(
@@ -975,7 +977,8 @@ class ZappaCLI(object):
                                             iam_authorization=self.iam_authorization,
                                             authorizer=self.authorizer,
                                             cors_options=self.cors,
-                                            description=self.apigateway_description
+                                            description=self.apigateway_description,
+                                            endpoint_configuration=self.endpoint_configuration
                                         )
             self.zappa.update_stack(
                                     self.lambda_name,
@@ -2067,6 +2070,7 @@ class ZappaCLI(object):
         self.binary_support = self.stage_config.get('binary_support', True)
         self.api_key_required = self.stage_config.get('api_key_required', False)
         self.api_key = self.stage_config.get('api_key')
+        self.endpoint_configuration = self.stage_config.get('endpoint_configuration', None)
         self.iam_authorization = self.stage_config.get('iam_authorization', False)
         self.cors = self.stage_config.get("cors", False)
         self.lambda_description = self.stage_config.get('lambda_description', "Zappa Deployment")

@@ -1275,7 +1275,8 @@ class Zappa(object):
                                     authorization_type='NONE',
                                     authorizer=None,
                                     cors_options=None,
-                                    description=None
+                                    description=None,
+                                    endpoint_configuration=None
                                 ):
         """
         Create the API Gateway for this Zappa deployment.
@@ -1288,9 +1289,12 @@ class Zappa(object):
         if not description:
             description = 'Created automatically by Zappa.'
         restapi.Description = description
+        endpoint_configuration = [] if endpoint_configuration is None else endpoint_configuration
         if self.boto_session.region_name == "us-gov-west-1":
+            endpoint_configuration.append("REGIONAL")
+        if endpoint_configuration:
             endpoint = troposphere.apigateway.EndpointConfiguration()
-            endpoint.Types = ["REGIONAL"]
+            endpoint.Types = list(set(endpoint_configuration))
             restapi.EndpointConfiguration = endpoint
         if self.apigateway_policy:
             restapi.Policy = json.loads(self.apigateway_policy)
@@ -1844,7 +1848,8 @@ class Zappa(object):
                                 iam_authorization,
                                 authorizer,
                                 cors_options=None,
-                                description=None
+                                description=None,
+                                endpoint_configuration=None
                             ):
         """
         Build the entire CF stack.
@@ -1875,7 +1880,8 @@ class Zappa(object):
                                             authorization_type=auth_type,
                                             authorizer=authorizer,
                                             cors_options=cors_options,
-                                            description=description
+                                            description=description,
+                                            endpoint_configuration=endpoint_configuration
                                         )
         return self.cf_template
 
