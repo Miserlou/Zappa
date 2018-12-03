@@ -102,7 +102,7 @@ class LambdaHandler(object):
                 self.load_remote_project_archive(project_archive_path)
 
 
-            # Load compliled library to the PythonPath
+            # Load compiled library to the PythonPath
             # checks if we are the slim_handler since this is not needed otherwise
             # https://github.com/Miserlou/Zappa/issues/776
             is_slim_handler = getattr(self.settings, 'SLIM_HANDLER', False)
@@ -413,7 +413,7 @@ class LambdaHandler(object):
             management.call_command(*event['manage'].split(' '))
             return {}
 
-        # This is an AWS-event triggered invokation.
+        # This is an AWS-event triggered invocation.
         elif event.get('Records', None):
 
             records = event.get('Records')

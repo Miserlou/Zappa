@@ -29,7 +29,7 @@
 ## 0.46.0
 _Okay, I dropped the ball for a long time. Bad BDFL!_
 _New releases will come much faster once again_
-* Pip10 compatability
+* Pip10 compatibility
 * Add support for base path configuration in API gateway custom domain.
 * Fix path case sensitivity in get_installed_packages
 * Move task decorator async decision from import time to call time.
