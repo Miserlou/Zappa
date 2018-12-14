@@ -76,7 +76,7 @@
   - [Using Zappa With Docker](#using-zappa-with-docker)
   - [Dead Letter Queues](#dead-letter-queues)
   - [Unique Package ID](#unique-package-id)
-  - [Using Application Load Balancer for Event Source](#alb-event-source)
+  - [ALB Event Source](#alb-event-source)
 - [Zappa Guides](#zappa-guides)
 - [Zappa in the Press](#zappa-in-the-press)
 - [Sites Using Zappa](#sites-using-zappa)
