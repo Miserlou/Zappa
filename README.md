@@ -76,6 +76,7 @@
   - [Using Zappa With Docker](#using-zappa-with-docker)
   - [Dead Letter Queues](#dead-letter-queues)
   - [Unique Package ID](#unique-package-id)
+  - [Using Application Load Balancer for Event Source](#alb-event-source)
 - [Zappa Guides](#zappa-guides)
 - [Zappa in the Press](#zappa-in-the-press)
 - [Sites Using Zappa](#sites-using-zappa)
@@ -1357,6 +1358,17 @@ For monitoring of different deployments, a unique UUID for each package is avail
   "uuid": "9c2df9e6-30f4-4c0a-ac4d-4ecb51831a74"
 }
 ```
+
+### ALB Event Source
+
+Zappa can be used to handle events triggered by Application Load Balancer (ALB). This can be useful when you have functions which may require execution wait times exceeding the hard-limit timeout of 30 seconds imposed by API Gateway/CloudFront, or, you want a straightforward means of housing all components in your VPC.
+[More information](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html)
+To accomplish this:
+1. You probably want to set `use_apigateway` to False in your settings to disable API gateway stack setup/deployment (but both can be supported)
+2. Use `zappa deploy` to deploy the lambda function if it is not already deployed
+3. Manually provision/configure ALB. Manually configure targeting to route to the lambda function. Take care to ensure the security group access is correct. Also ensure the AZs for the load balancer aligns with the lambda function.
+
+The zappa request handler logic supports both API Gateway and ELB forwarded event formats.
 
 ## Zappa Guides
 

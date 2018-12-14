@@ -470,31 +470,43 @@ class LambdaHandler(object):
 
             # This is a normal HTTP request
             if event.get('httpMethod', None):
-
                 script_name = ''
                 headers = event.get('headers')
-                if headers:
-                    host = headers.get('Host')
+                if event.get('requestContext', None) and event['requestContext'].get('elb', None):
+                    # Related: https://github.com/Miserlou/Zappa/issues/1715
+                    # inputs/outputs for lambda loadbalancer
+                    # https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html
+                    logger.debug('elasticloadbalancingv2 request detected')
+                    # host is lower-case when forwarded from ELB
+                    host = headers.get('host')
+                    # TODO: pathParameters is a first-class citizen in apigateway but not available without
+                    # some parsing work for ELB (is this parameter used for anything?)
+                    event['pathParameters'] = ''
                 else:
-                    host = None
-
-                if host:
-                    if 'amazonaws.com' in host:
-                        # The path provided in th event doesn't include the
-                        # stage, so we must tell Flask to include the API
-                        # stage in the url it calculates. See https://github.com/Miserlou/Zappa/issues/1014
-                        script_name = '/' + settings.API_STAGE
-                else:
-                    # This is a test request sent from the AWS console
-                    if settings.DOMAIN:
-                        # Assume the requests received will be on the specified
-                        # domain. No special handling is required
-                        pass
+                    if headers:
+                        host = headers.get('Host')
                     else:
-                        # Assume the requests received will be to the
-                        # amazonaws.com endpoint, so tell Flask to include the
-                        # API stage
-                        script_name = '/' + settings.API_STAGE
+                        host = None
+                    logger.debug('host found: [{}]'.format(host))
+
+                    if host:
+                        if 'amazonaws.com' in host:
+                            logger.debug('amazonaws found in host')
+                            # The path provided in th event doesn't include the
+                            # stage, so we must tell Flask to include the API
+                            # stage in the url it calculates. See https://github.com/Miserlou/Zappa/issues/1014
+                            script_name = '/' + settings.API_STAGE
+                    else:
+                        # This is a test request sent from the AWS console
+                        if settings.DOMAIN:
+                            # Assume the requests received will be on the specified
+                            # domain. No special handling is required
+                            pass
+                        else:
+                            # Assume the requests received will be to the
+                            # amazonaws.com endpoint, so tell Flask to include the
+                            # API stage
+                            script_name = '/' + settings.API_STAGE
 
                 base_path = getattr(settings, 'BASE_PATH', None)
 
@@ -547,7 +559,6 @@ class LambdaHandler(object):
 
                 return zappa_returndict
         except Exception as e:  # pragma: no cover
-
             # Print statements are visible in the logs either way
             print(e)
             exc_info = sys.exc_info()
