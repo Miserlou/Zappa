@@ -337,9 +337,46 @@ class TestZappa(unittest.TestCase):
         response = lh.lambda_handler(event, None)
         mocked_exception_handler.assert_called
 
-        #
-    # Header merging - see https://github.com/Miserlou/Zappa/pull/1802.
-    #
+ def test_wsgi_script_name_on_alb_event(self):
+        """
+        Ensure ALB-triggered events are properly handled by LambdaHandler
+        ALB-forwarded events have a slightly different request structure than API-Gateway
+        https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html
+        """
+        lh = LambdaHandler('tests.test_wsgi_script_name_settings')
+
+        event = {
+            'requestContext': {
+                'elb': {
+                    'targetGroupArn': 'arn:aws:elasticloadbalancing:region:123456789012:targetgroup/my-target-group/6d0ecf831eec9f09'
+                }
+            },
+            'httpMethod': 'GET',
+            'path': '/return/request/url',
+            'queryStringParameters': {},
+            'headers': {
+                'accept': 'text/html,application/xhtml+xml',
+                'accept-language': 'en-US,en;q=0.8',
+                'content-type': 'text/plain',
+                'cookie': 'cookies',
+                'host': '1234567890.execute-api.us-east-1.amazonaws.com',
+                'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6)',
+                'x-amzn-trace-id': 'Root=1-5bdb40ca-556d8b0c50dc66f0511bf520',
+                'x-forwarded-for': '72.21.198.66',
+                'x-forwarded-port': '443',
+                'x-forwarded-proto': 'https'
+            },
+            'isBase64Encoded': False,
+            'body': ''
+        }
+        response = lh.handler(event, None)
+
+        self.assertEqual(response['statusCode'], 200)
+        self.assertEqual(
+            response['body'],
+            'https://1234567890.execute-api.us-east-1.amazonaws.com/return/request/url'
+        )
+
     def test_merge_headers_no_multi_value(self):
         event = {
             'headers': {
