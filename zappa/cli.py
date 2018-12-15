@@ -268,6 +268,26 @@ class ZappaCLI(object):
         )
 
         ##
+        # Set Environment Variable
+        ##
+        set_envvar_parser = subparsers.add_parser(
+            'set-environment-variable',
+            parents=[env_parser],
+            help='Set an environment variable for a running stage.'
+        )
+        set_envvar_parser.add_argument(
+            '-k', '--key', help='The name of the variable.'
+        )
+        set_envvar_parser.add_argument(
+            '-v', '--value', help='The value to set for the env var.'
+        )
+        set_envvar_parser.add_argument(
+            '-o', '--overwrite',
+            help='If provided, will overwrite an existing env var with the same key.',
+            action='store_true'
+        )
+
+        ##
         # Template
         ##
         template_parser = subparsers.add_parser(
@@ -618,6 +638,12 @@ class ZappaCLI(object):
             )
         elif command == 'shell': # pragma: no cover
             self.shell()
+        elif command == 'set-environment-variable': # pragma: no cover
+            self.set_environment_variable(
+                key=self.vargs['key'],
+                value=self.vargs['value'],
+                overwrite=self.vargs['overwrite']
+            )
 
     ##
     # The Commands
@@ -1622,10 +1648,10 @@ class ZappaCLI(object):
         default_bucket = "zappa-" + ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(9))
         while True:
             bucket = input("What do you want to call your bucket? (default '%s'): " % default_bucket) or default_bucket
-          
+
             if is_valid_bucket_name(bucket):
                 break
-            
+
             click.echo(click.style("Invalid bucket name!", bold=True))
             click.echo("S3 buckets must be named according to the following rules:")
             click.echo("""* Bucket names must be unique across all existing bucket names in Amazon S3.
@@ -1633,13 +1659,13 @@ class ZappaCLI(object):
 * Bucket names must be at least 3 and no more than 63 characters long.
 * Bucket names must not contain uppercase characters or underscores.
 * Bucket names must start with a lowercase letter or number.
-* Bucket names must be a series of one or more labels. Adjacent labels are separated 
+* Bucket names must be a series of one or more labels. Adjacent labels are separated
   by a single period (.). Bucket names can contain lowercase letters, numbers, and
   hyphens. Each label must start and end with a lowercase letter or a number.
 * Bucket names must not be formatted as an IP address (for example, 192.168.5.4).
-* When you use virtual hosted–style buckets with Secure Sockets Layer (SSL), the SSL 
-  wildcard certificate only matches buckets that don't contain periods. To work around 
-  this, use HTTP or write your own certificate verification logic. We recommend that 
+* When you use virtual hosted–style buckets with Secure Sockets Layer (SSL), the SSL
+  wildcard certificate only matches buckets that don't contain periods. To work around
+  this, use HTTP or write your own certificate verification logic. We recommend that
   you do not use periods (".") in bucket names when using virtual hosted–style buckets.
 """)
 
@@ -1915,6 +1941,16 @@ class ZappaCLI(object):
         click.echo(click.style("NOTICE!", fg="yellow", bold=True) + " This is a " + click.style("local", fg="green", bold=True) + " shell, inside a " + click.style("Zappa", bold=True) + " object!")
         self.zappa.shell()
         return
+
+    ##
+    # Set environment variable
+    ##
+    def set_environment_variable(self, key, value, overwrite):
+        """
+        Set an environment variable on a deployed application.
+        """
+        self.zappa.set_lambda_environment_variable(
+            self.lambda_name, key, value, overwrite)
 
     ##
     # Utility
@@ -2687,8 +2723,8 @@ class ZappaCLI(object):
         req = requests.get(endpoint_url + touch_path)
 
         # Sometimes on really large packages, it can take 60-90 secs to be
-        # ready and requests will return 504 status_code until ready. 
-        # So, if we get a 504 status code, rerun the request up to 4 times or 
+        # ready and requests will return 504 status_code until ready.
+        # So, if we get a 504 status code, rerun the request up to 4 times or
         # until we don't get a 504 error
         if req.status_code == 504:
             i = 0

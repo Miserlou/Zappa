@@ -1201,6 +1201,44 @@ class Zappa(object):
             Payload=payload
         )
 
+    def set_lambda_environment_variable(self,
+                                        function_name,
+                                        key,
+                                        value,
+                                        overwrite):
+        """
+        Sets an environment variable for a running lambda.
+        """
+        response = self.lambda_client.get_function(
+            FunctionName=function_name)
+
+        config = response['Configuration']
+        lambda_arn = config['FunctionArn']
+
+        # The only way to set a new variable is to call boto's
+        # `update_function_configuration` function, but we'll need
+        # all the existing environment variables to ensure we don't
+        # remove any of them. If the function doesn't have any variables
+        # yet, boto won't return the key in its response.
+        environment_variables = {}
+        if 'Environment' in config:
+            environment_variables = config['Environment']['Variables']
+            if key in environment_variables and not overwrite:
+                error_message = (
+                    "An environment variable with the key {} "
+                    "already exists. Use the --overwrite flag to "
+                    "replace the existing value.")
+                raise KeyError(error_message.format(key))
+
+        # Update the variable dict with our new key and value.
+        environment_variables[key] = value
+
+        # Now, update the running configuration.
+        return self.lambda_client.update_function_configuration(
+            FunctionName=lambda_arn,
+            Environment={'Variables': environment_variables}
+        )
+
     def rollback_lambda_function_version(self, function_name, versions_back=1, publish=True):
         """
         Rollback the lambda function code 'versions_back' number of revisions.
@@ -2196,7 +2234,7 @@ class Zappa(object):
                 restApiId=api_id,
                 stage=stage
             )
-        
+
     def get_all_zones(self):
         """Same behaviour of list_host_zones, but transparently handling pagination."""
         zones = {'HostedZones': []}
