@@ -1318,7 +1318,7 @@ class TestZappa(unittest.TestCase):
             try:
                 zappa_cli.certify()
             except AttributeError:
-                # Since zappa_cli.zappa isn't initalized, the certify() call
+                # Since zappa_cli.zappa isn't initialized, the certify() call
                 # fails when it tries to inspect what Zappa has deployed.
                 pass
 

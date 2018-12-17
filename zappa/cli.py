@@ -525,7 +525,7 @@ class ZappaCLI(object):
                 click.echo("Calling " + click.style(command, fg="green", bold=True) + " for stage " +
                            click.style(self.api_stage, bold=True) + ".." )
 
-        # Explicity define the app function.
+        # Explicitly define the app function.
         # Related: https://github.com/Miserlou/Zappa/issues/832
         if self.vargs.get('app_function', None):
             self.app_function = self.vargs['app_function']
@@ -1288,7 +1288,7 @@ class ZappaCLI(object):
 
     def format_invoke_command(self, string):
         """
-        Formats correctly the string ouput from the invoke() method,
+        Formats correctly the string output from the invoke() method,
         replacing line breaks and tabs when necessary.
         """
 
@@ -1308,7 +1308,7 @@ class ZappaCLI(object):
     def colorize_invoke_command(self, string):
         """
         Apply various heuristics to return a colorized version the invoke
-        comman string. If these fail, simply return the string in plaintext.
+        command string. If these fail, simply return the string in plaintext.
 
         Inspired by colorize_log_entry().
         """
@@ -1380,7 +1380,7 @@ class ZappaCLI(object):
 
         def tabular_print(title, value):
             """
-            Convience function for priting formatted table items.
+            Convenience function for priting formatted table items.
             """
             click.echo('%-*s%s' % (32, click.style("\t" + title, fg='green') + ':', str(value)))
             return
@@ -2255,7 +2255,7 @@ class ZappaCLI(object):
                 print('\n\nWarning: Application zip package is likely to be too large for AWS Lambda. '
                       'Try setting "slim_handler" to true in your Zappa settings file.\n\n')
 
-        # Throw custom setings into the zip that handles requests
+        # Throw custom settings into the zip that handles requests
         if self.stage_config.get('slim_handler', False):
             handler_zip = self.handler_path
         else:

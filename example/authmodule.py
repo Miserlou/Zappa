@@ -83,7 +83,7 @@ class AuthPolicy(object):
     """these are the internal lists of allowed and denied methods. These are lists
     of objects and each object has 2 properties: A resource ARN and a nullable
     conditions statement.
-    the build method processes these lists and generates the approriate
+    the build method processes these lists and generates the appropriate
     statements for the final policy"""
     allowMethods = []
     denyMethods = []
