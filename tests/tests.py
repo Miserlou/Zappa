@@ -386,12 +386,19 @@ class TestZappa(unittest.TestCase):
         """Packaging a symlink to a file only includes the file once.
         """
         with mock.patch('zappa.core.Zappa.get_installed_packages', return_value={}):
-            with tempfile.TemporaryDirectory() as working_directory:
+            with tempfile.TemporaryDirectory() as temp_directory:
+                working_directory = os.path.join(temp_directory, 'working')
+                os.mkdir(working_directory)
                 os.chdir(working_directory)
                 with open('./real_file', 'w') as out_file:
                     out_file.write('abc')
 
+                with open('../external_file', 'w') as out_file:
+                    out_file.write('def')
+
                 os.symlink('./real_file', './link')
+                os.symlink('../external_file', './external_link')
+                os.symlink(os.path.join(temp_directory, 'external_file'), './external_absolute_link')
 
                 z = Zappa()
                 path = z.create_lambda_zip()
@@ -400,6 +407,8 @@ class TestZappa(unittest.TestCase):
                 with zipfile.ZipFile(path) as lambda_zip:
                     self.assertIn('real_file', lambda_zip.namelist())
                     self.assertIn('link', lambda_zip.namelist())
+                    self.assertIn('external_link', lambda_zip.namelist())
+                    self.assertIn('external_absolute_link', lambda_zip.namelist())
 
                     # We can't extract the zip to test the symlink,
                     # because zipfile.extract() doesn't preserve symlinks.
@@ -407,8 +416,22 @@ class TestZappa(unittest.TestCase):
                     zip_file_flag = 0o120000 << int(16)
                     self.assertEqual(link_info.external_attr & zip_file_flag, zip_file_flag)
 
+                    # The link to an external file should not be a
+                    # symlink, since it's not inside the directory
+                    # being packaged.
+                    external_link_info = lambda_zip.getinfo('external_link')
+                    self.assertEqual(external_link_info.external_attr & zip_file_flag, 0)
+                    external_absolute_link_info = lambda_zip.getinfo('external_absolute_link')
+                    self.assertEqual(external_absolute_link_info.external_attr & zip_file_flag, 0)
+
                     with lambda_zip.open('link') as link_data:
                         self.assertEqual(link_data.read(), b'./real_file')
+
+                    with lambda_zip.open('external_link') as external_link_data:
+                        self.assertEqual(external_link_data.read(), b'def')
+
+                    with lambda_zip.open('external_absolute_link') as external_absolute_link_data:
+                        self.assertEqual(external_absolute_link_data.read(), b'def')
 
                 os.remove(path)
 

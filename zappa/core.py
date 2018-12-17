@@ -536,6 +536,16 @@ class Zappa(object):
             else:
                 copytree(cwd, temp_project_path, metadata=False, symlinks=True)
 
+            # Fix any broken symlinks to files that are outside the
+            # project directory.
+            for root, dirs, files in os.walk(temp_project_path):
+                for filename in files:
+                    file_path = os.path.join(root, filename)
+                    if os.path.islink(file_path) and not os.path.realpath(file_path).startswith(temp_project_path):
+                        original_file_path = os.path.join(cwd, os.path.relpath(file_path, temp_project_path))
+                        os.remove(file_path)
+                        shutil.copy2(original_file_path, file_path)
+
         # If a handler_file is supplied, copy that to the root of the package,
         # because that's where AWS Lambda looks for it. It can't be inside a package.
         if handler_file:
