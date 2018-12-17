@@ -737,7 +737,7 @@ The following restrictions to this feature apply:
 
 * Functions must have a clean import path -- i.e. no closures, lambdas, or methods.
 * `args` and `kwargs` must be JSON-serializable.
-* The JSON-serialized arguments must be within the size limits for Lambda (128K) or SNS (256K) events.
+* The JSON-serialized arguments must be within the size limits for Lambda (256K) or SNS (256K) events.
 
 All of this code is still backwards-compatible with non-Lambda environments - it simply executes in a blocking fashion and returns the result.
 
