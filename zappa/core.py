@@ -2336,7 +2336,7 @@ class Zappa(object):
                         StatementId=s['Sid']
                     )
                     if delete_response['ResponseMetadata']['HTTPStatusCode'] != 204:
-                        logger.error('Failed to delete an obsolete policy statement: {}'.format())
+                        logger.error('Failed to delete an obsolete policy statement: {}'.format(policy_response))
             else:
                 logger.debug('Failed to load Lambda function policy: {}'.format(policy_response))
         except ClientError as e:
