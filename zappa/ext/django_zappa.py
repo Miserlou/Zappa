@@ -6,8 +6,12 @@ sys.path.append('/var/task')
 
 
 def get_django_wsgi(settings_module):
-    from django.core.wsgi import get_wsgi_application
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", settings_module)
+    try:
+        # in case the user is using django-configurations
+        from configurations.wsgi import get_wsgi_application
+    except ImportError:
+        from django.core.wsgi import get_wsgi_application
 
     import django
 
