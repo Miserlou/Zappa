@@ -1551,12 +1551,25 @@ class ZappaCLI(object):
             raise ClickException("This project already has a " + click.style("{0!s} file".format(settings_file), fg="red", bold=True) + "!")
 
         # Explain system.
-        click.echo(click.style(u"""\n███████╗ █████╗ ██████╗ ██████╗  █████╗
+        # On windows, the following text fails to decode causing zappa init to fail.
+        # If this fails, fall back on a "safe" but still fancy title text
+        # Related: https://github.com/Miserlou/Zappa/issues/825        
+        try:
+            click.echo(click.style(u"""\n███████╗ █████╗ ██████╗ ██████╗  █████╗
 ╚══███╔╝██╔══██╗██╔══██╗██╔══██╗██╔══██╗
   ███╔╝ ███████║██████╔╝██████╔╝███████║
  ███╔╝  ██╔══██║██╔═══╝ ██╔═══╝ ██╔══██║
 ███████╗██║  ██║██║     ██║     ██║  ██║
 ╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝     ╚═╝  ╚═╝\n""", fg='green', bold=True))
+        except :
+            click.echo(click.style(u"""\n$$$$$$$$\  $$$$$$\  $$$$$$$\  $$$$$$$\   $$$$$$\  
+\____$$  |$$  __$$\ $$  __$$\ $$  __$$\ $$  __$$\ 
+    $$  / $$ /  $$ |$$ |  $$ |$$ |  $$ |$$ /  $$ |
+   $$  /  $$$$$$$$ |$$$$$$$  |$$$$$$$  |$$$$$$$$ |
+  $$  /   $$  __$$ |$$  ____/ $$  ____/ $$  __$$ |
+ $$  /    $$ |  $$ |$$ |      $$ |      $$ |  $$ |
+$$$$$$$$\ $$ |  $$ |$$ |      $$ |      $$ |  $$ |
+\________|\__|  \__|\__|      \__|      \__|  \__|\n""", fg='green', bold=True))
 
         click.echo(click.style("Welcome to ", bold=True) + click.style("Zappa", fg='green', bold=True) + click.style("!\n", bold=True))
         click.echo(click.style("Zappa", bold=True) + " is a system for running server-less Python web applications"
