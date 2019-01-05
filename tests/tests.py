@@ -389,6 +389,7 @@ class TestZappa(unittest.TestCase):
             temp_directory = tempfile.mkdtemp()
             working_directory = os.path.join(temp_directory, 'working')
             os.mkdir(working_directory)
+            orig_cwd = os.getcwd()
             os.chdir(working_directory)
             with open('./real_file', 'w') as out_file:
                 out_file.write('abc')
@@ -435,6 +436,7 @@ class TestZappa(unittest.TestCase):
 
             os.remove(path)
             shutil.rmtree(temp_directory)
+            os.chdir(orig_cwd)
 
     ##
     # Logging
