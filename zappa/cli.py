@@ -1208,7 +1208,8 @@ class ZappaCLI(object):
             self.lambda_arn = self.zappa.get_lambda_function(function_name=self.lambda_name)
             queue_arn, event_source_result = self.zappa.create_async_sqs_queue(
                 lambda_name=self.lambda_name,
-                lambda_arn=self.lambda_arn
+                lambda_arn=self.lambda_arn,
+                lambda_timeout=self.timeout_seconds
             )
             click.echo('SQS Queue (%s) and event source (%s) created' % (queue_arn, event_source_result))
 

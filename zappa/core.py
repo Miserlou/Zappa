@@ -2948,15 +2948,22 @@ class Zappa(object):
     # Async / SQS
     ##
 
-    def create_async_sqs_queue(self, lambda_name, lambda_arn):
+    def create_async_sqs_queue(self, lambda_name, lambda_arn, lambda_timeout):
         """
         Create the SQS-based async queue.
         """
         queue_name = get_queue_name(lambda_name)
         # No problem if the queue already exists, unless their attributes differ.
-        queue_url = self.sqs_client.create_queue(QueueName=queue_name)['QueueUrl']
+        queue = self.sqs_client.create_queue(
+            QueueName=queue_name,
+            Attributes={
+                # Recommendation is to have visibility timeout >= 6 * lambda timeout.
+                # See https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html#events-sqs-queueconfig
+                'VisibilityTimeout': str(6 * lambda_timeout)
+            }
+        )
         queue_arn = self.sqs_client.get_queue_attributes(
-            QueueUrl=queue_url,
+            QueueUrl=queue['QueueUrl'],
             AttributeNames=['All']
         )['Attributes']['QueueArn']
 
