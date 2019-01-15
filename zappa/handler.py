@@ -488,9 +488,7 @@ class LambdaHandler(object):
 
                 script_name = ''
                 headers = self._merge_headers(event)
-                print headers
-                if 'headers' in event:
-                    event['headers'] = headers
+                event['headers'] = headers
                 if headers:
                     host = headers.get('Host')
                 else:
