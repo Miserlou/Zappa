@@ -340,6 +340,21 @@ class LambdaHandler(object):
         print("get_function_for_cognito_trigger", self.settings.COGNITO_TRIGGER_MAPPING, trigger, self.settings.COGNITO_TRIGGER_MAPPING.get(trigger))
         return self.settings.COGNITO_TRIGGER_MAPPING.get(trigger)
 
+    def _merge_headers(self, event):
+        """
+        Merge the values of headers and multiValueHeaders into a single dict.
+        """
+        headers = event.get('headers') or {}
+        multi_headers = (event.get('multiValueHeaders') or {}).copy()
+        for h in (set(multi_headers.keys()) | set(headers.keys())):
+            if h not in multi_headers:
+                multi_headers[h] = [headers[h]]
+            elif h in headers:
+                multi_headers[h].append(headers[h])
+            multi_headers[h] = ', '.join(multi_headers[h])
+        return multi_headers
+        
+
     def handler(self, event, context):
         """
         An AWS Lambda function which parses specific API Gateway input into a
@@ -472,7 +487,9 @@ class LambdaHandler(object):
             if event.get('httpMethod', None):
 
                 script_name = ''
-                headers = event.get('headers')
+                headers = self._merge_headers(event)
+                event['headers'] = headers
+                print(event)
                 if headers:
                     host = headers.get('Host')
                 else:
@@ -562,7 +579,7 @@ class LambdaHandler(object):
                     message = 'Failed to import module: {}'.format(ne.message)
 
             # Call exception handler for unhandled exceptions
-            exception_handler = self.settings.EXCEPTION_HANDLER
+            #exception_handler = self.settings.EXCEPTION_HANDLER
             self._process_exception(exception_handler=exception_handler,
                                     event=event, context=context, exception=e)
 
