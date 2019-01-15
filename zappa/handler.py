@@ -488,8 +488,9 @@ class LambdaHandler(object):
 
                 script_name = ''
                 headers = self._merge_headers(event)
-                event['headers'] = headers
-                print(event)
+                print headers
+                if 'headers' in event:
+                    event['headers'] = headers
                 if headers:
                     host = headers.get('Host')
                 else:
@@ -579,7 +580,7 @@ class LambdaHandler(object):
                     message = 'Failed to import module: {}'.format(ne.message)
 
             # Call exception handler for unhandled exceptions
-            #exception_handler = self.settings.EXCEPTION_HANDLER
+            exception_handler = self.settings.EXCEPTION_HANDLER
             self._process_exception(exception_handler=exception_handler,
                                     event=event, context=context, exception=e)
 
