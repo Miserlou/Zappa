@@ -372,6 +372,8 @@ class TestZappa(unittest.TestCase):
         response = lh.handler(event, None)
 
         self.assertEqual(response['statusCode'], 200)
+        self.assertEqual(response['statusDescription'], '200 OK')
+        self.assertEqual(response['isBase64Encoded'], False)
         self.assertEqual(
             response['body'],
             'https://1234567890.execute-api.us-east-1.amazonaws.com/return/request/url'

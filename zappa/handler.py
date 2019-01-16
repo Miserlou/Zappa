@@ -471,12 +471,13 @@ class LambdaHandler(object):
             # This is a normal HTTP request
             if event.get('httpMethod', None):
                 script_name = ''
+                is_elb_context = False
                 headers = merge_headers(event)
                 if event.get('requestContext', None) and event['requestContext'].get('elb', None):
                     # Related: https://github.com/Miserlou/Zappa/issues/1715
                     # inputs/outputs for lambda loadbalancer
                     # https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html
-                    logger.debug('elasticloadbalancingv2 request detected')
+                    is_elb_context = True
                     # host is lower-case when forwarded from ELB
                     host = headers.get('host')
                     # TODO: pathParameters is a first-class citizen in apigateway but not available without
@@ -531,6 +532,15 @@ class LambdaHandler(object):
                     # This is the object we're going to return.
                     # Pack the WSGI response into our special dictionary.
                     zappa_returndict = dict()
+                    # This is the object we're going to return.
+                    # Pack the WSGI response into our special dictionary.
+                    zappa_returndict = dict()
+
+                    # Issue #1715: ALB support. ALB responses must always include
+                    # base64 encoding and status description
+                    if is_elb_context:
+                        zappa_returndict.setdefault('isBase64Encoded', False)
+                        zappa_returndict.setdefault('statusDescription', response.status)
 
                     if response.data:
                         if settings.BINARY_SUPPORT:
@@ -540,8 +550,6 @@ class LambdaHandler(object):
                                     zappa_returndict["isBase64Encoded"] = True
                             else:
                                 zappa_returndict['body'] = response.data
-                        else:
-                            zappa_returndict['body'] = response.get_data(as_text=True)
 
                     zappa_returndict['statusCode'] = response.status_code
                     if 'headers' in event:
