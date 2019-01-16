@@ -86,7 +86,8 @@ class TestZappa(unittest.TestCase):
         lh = LambdaHandler('tests.test_wsgi_script_name_settings')
         event = {
             'headers': {
-                'a': 'b'
+                'a': 'b',
+                'z': 'q'
             },
             'multiValueHeaders': {
                 'a': ['c'],
@@ -97,6 +98,7 @@ class TestZappa(unittest.TestCase):
         merged = lh._merge_headers(event)
         self.assertEqual(merged['a'], 'c, b')
         self.assertEqual(merged['x'], 'y')
+        self.assertEqual(merged['z'], 'q')
 
     def test_merge_headers_no_single_value(self):
         lh = LambdaHandler('tests.test_wsgi_script_name_settings')
