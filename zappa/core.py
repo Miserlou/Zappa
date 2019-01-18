@@ -462,7 +462,8 @@ class Zappa(object):
                             venv=None,
                             output=None,
                             disable_progress=False,
-                            archive_format='zip'
+                            archive_format='zip',
+                            timeout=2
                         ):
         """
         Create a Lambda-ready zip file of the current virtualenvironment and working directory.
@@ -810,12 +811,12 @@ class Zappa(object):
         return lambda_packages.get(package_name, {}).get(self.runtime) is not None
 
     @staticmethod
-    def download_url_with_progress(url, stream, disable_progress):
+    def download_url_with_progress(url, stream, disable_progress, timeout=2):
         """
         Downloads a given url in chunks and writes to the provided stream (can be any io stream).
         Displays the progress bar for the download.
         """
-        resp = requests.get(url, timeout=2, stream=True)
+        resp = requests.get(url, timeout=timeout, stream=True)
         resp.raw.decode_content = True
 
         progress = tqdm(unit="B", unit_scale=True, total=int(resp.headers.get('Content-Length', 0)), disable=disable_progress)
@@ -826,7 +827,7 @@ class Zappa(object):
 
         progress.close()
 
-    def get_cached_manylinux_wheel(self, package_name, package_version, disable_progress=False):
+    def get_cached_manylinux_wheel(self, package_name, package_version, disable_progress=False, timeout=1.5):
         """
         Gets the locally stored version of a manylinux wheel. If one does not exist, the function downloads it.
         """
@@ -839,13 +840,13 @@ class Zappa(object):
 
         if not os.path.exists(wheel_path) or not zipfile.is_zipfile(wheel_path):
             # The file is not cached, download it.
-            wheel_url = self.get_manylinux_wheel_url(package_name, package_version)
+            wheel_url = self.get_manylinux_wheel_url(package_name, package_version, timeout=timeout)
             if not wheel_url:
                 return None
 
             print(" - {}=={}: Downloading".format(package_name, package_version))
             with open(wheel_path, 'wb') as f:
-                self.download_url_with_progress(wheel_url, f, disable_progress)
+                self.download_url_with_progress(wheel_url, f, disable_progress, timeout=timeout)
 
             if not zipfile.is_zipfile(wheel_path):
                 return None
@@ -854,7 +855,7 @@ class Zappa(object):
 
         return wheel_path
 
-    def get_manylinux_wheel_url(self, package_name, package_version):
+    def get_manylinux_wheel_url(self, package_name, package_version, timeout=1.5):
         """
         For a given package name, returns a link to the download URL,
         else returns None.
@@ -883,7 +884,7 @@ class Zappa(object):
         else:
             url = 'https://pypi.python.org/pypi/{}/json'.format(package_name)
             try:
-                res = requests.get(url, timeout=1.5)
+                res = requests.get(url, timeout=timeout)
                 data = res.json()
             except Exception as e: # pragma: no cover
                 return None
@@ -2196,7 +2197,7 @@ class Zappa(object):
                 restApiId=api_id,
                 stage=stage
             )
-        
+
     def get_all_zones(self):
         """Same behaviour of list_host_zones, but transparently handling pagination."""
         zones = {'HostedZones': []}

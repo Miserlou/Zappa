@@ -251,6 +251,9 @@ class ZappaCLI(object):
         deploy_parser.add_argument(
             '-z', '--zip', help='Deploy Lambda with specific local or S3 hosted zip package'
         )
+        deploy_parser.add_argument(
+            '-t', '--pypi-timeout', nargs='?', const=2, default=2, type=int, help="Timeout to request a PyPI URL"
+        )
 
         ##
         # Init
@@ -265,6 +268,9 @@ class ZappaCLI(object):
         )
         package_parser.add_argument(
             '-o', '--output', help='Name of file to output the package to.'
+        )
+        package_parser.add_argument(
+            '-t', '--pypi-timeout', nargs='?', const=2, default=2, type=int, help="Timeout to request a PyPI URL"
         )
 
         ##
@@ -426,6 +432,9 @@ class ZappaCLI(object):
         update_parser.add_argument(
             '-n', '--no-upload', help="Update configuration where appropriate, but don't upload new code"
         )
+        update_parser.add_argument(
+            '-t', '--pypi-timeout', nargs='?', const=2, default=2, type=int, help="Timeout to request a PyPI URL"
+        )
 
         ##
         # Debug
@@ -543,9 +552,9 @@ class ZappaCLI(object):
 
         # Hand it off
         if command == 'deploy': # pragma: no cover
-            self.deploy(self.vargs['zip'])
+            self.deploy(self.vargs['zip'], self.vargs['pypi_timeout'])
         if command == 'package': # pragma: no cover
-            self.package(self.vargs['output'])
+            self.package(self.vargs['output'], self.vargs['pypi_timeout'])
         if command == 'template': # pragma: no cover
             self.template(      self.vargs['lambda_arn'],
                                 self.vargs['role_arn'],
@@ -553,7 +562,7 @@ class ZappaCLI(object):
                                 json=self.vargs['json']
                             )
         elif command == 'update': # pragma: no cover
-            self.update(self.vargs['zip'], self.vargs['no_upload'])
+            self.update(self.vargs['zip'], self.vargs['no_upload'], self.vargs['pypi_timeout'])
         elif command == 'rollback': # pragma: no cover
             self.rollback(self.vargs['num_rollback'])
         elif command == 'invoke': # pragma: no cover
@@ -623,7 +632,7 @@ class ZappaCLI(object):
     # The Commands
     ##
 
-    def package(self, output=None):
+    def package(self, output=None, timeout=2):
         """
         Only build the package
         """
@@ -636,7 +645,7 @@ class ZappaCLI(object):
         if self.prebuild_script:
             self.execute_prebuild_script()
         # Create the Lambda Zip
-        self.create_package(output)
+        self.create_package(output, timeout=timeout)
         self.callback('zip')
         size = human_size(os.path.getsize(self.zip_path))
         click.echo(click.style("Package created", fg="green", bold=True) + ": " + click.style(self.zip_path, bold=True) + " (" + size + ")")
@@ -679,7 +688,7 @@ class ZappaCLI(object):
             with open(template_file, 'r') as out:
                 print(out.read())
 
-    def deploy(self, source_zip=None):
+    def deploy(self, source_zip=None, timeout=2):
         """
         Package your project, upload it to S3, register the Lambda function
         and create the API Gateway routes.
@@ -714,7 +723,7 @@ class ZappaCLI(object):
                         + '\n')
 
             # Create the Lambda Zip
-            self.create_package()
+            self.create_package(timeout=timeout)
             self.callback('zip')
 
             # Upload it to S3
@@ -840,7 +849,7 @@ class ZappaCLI(object):
 
         click.echo(deployment_string)
 
-    def update(self, source_zip=None, no_upload=False):
+    def update(self, source_zip=None, no_upload=False, timeout=2):
         """
         Repackage and update the function code.
         """
@@ -888,7 +897,7 @@ class ZappaCLI(object):
 
             # Create the Lambda Zip,
             if not no_upload:
-                self.create_package()
+                self.create_package(timeout=timeout)
                 self.callback('zip')
 
             # Upload it to S3
@@ -1622,10 +1631,10 @@ class ZappaCLI(object):
         default_bucket = "zappa-" + ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(9))
         while True:
             bucket = input("What do you want to call your bucket? (default '%s'): " % default_bucket) or default_bucket
-          
+
             if is_valid_bucket_name(bucket):
                 break
-            
+
             click.echo(click.style("Invalid bucket name!", bold=True))
             click.echo("S3 buckets must be named according to the following rules:")
             click.echo("""* Bucket names must be unique across all existing bucket names in Amazon S3.
@@ -1633,13 +1642,13 @@ class ZappaCLI(object):
 * Bucket names must be at least 3 and no more than 63 characters long.
 * Bucket names must not contain uppercase characters or underscores.
 * Bucket names must start with a lowercase letter or number.
-* Bucket names must be a series of one or more labels. Adjacent labels are separated 
+* Bucket names must be a series of one or more labels. Adjacent labels are separated
   by a single period (.). Bucket names can contain lowercase letters, numbers, and
   hyphens. Each label must start and end with a lowercase letter or a number.
 * Bucket names must not be formatted as an IP address (for example, 192.168.5.4).
-* When you use virtual hosted–style buckets with Secure Sockets Layer (SSL), the SSL 
-  wildcard certificate only matches buckets that don't contain periods. To work around 
-  this, use HTTP or write your own certificate verification logic. We recommend that 
+* When you use virtual hosted–style buckets with Secure Sockets Layer (SSL), the SSL
+  wildcard certificate only matches buckets that don't contain periods. To work around
+  this, use HTTP or write your own certificate verification logic. We recommend that
   you do not use periods (".") in bucket names when using virtual hosted–style buckets.
 """)
 
@@ -2172,7 +2181,7 @@ class ZappaCLI(object):
                 except ValueError: # pragma: no cover
                     raise ValueError("Unable to load the Zappa settings JSON. It may be malformed.")
 
-    def create_package(self, output=None):
+    def create_package(self, output=None, timeout=2):
         """
         Ensure that the package can be properly configured,
         and then create it.
@@ -2195,7 +2204,8 @@ class ZappaCLI(object):
                 use_precompiled_packages=self.stage_config.get('use_precompiled_packages', True),
                 exclude=self.stage_config.get('exclude', []),
                 disable_progress=self.disable_progress,
-                archive_format='tarball'
+                archive_format='tarball',
+                timeout=timeout
             )
 
             # Make sure the normal venv is not included in the handler's zip
@@ -2209,7 +2219,8 @@ class ZappaCLI(object):
                 slim_handler=True,
                 exclude=exclude,
                 output=output,
-                disable_progress=self.disable_progress
+                disable_progress=self.disable_progress,
+                timeout=timeout
             )
         else:
 
@@ -2246,7 +2257,8 @@ class ZappaCLI(object):
                 use_precompiled_packages=self.stage_config.get('use_precompiled_packages', True),
                 exclude=exclude,
                 output=output,
-                disable_progress=self.disable_progress
+                disable_progress=self.disable_progress,
+                timeout=timeout
             )
 
             # Warn if this is too large for Lambda.
@@ -2687,8 +2699,8 @@ class ZappaCLI(object):
         req = requests.get(endpoint_url + touch_path)
 
         # Sometimes on really large packages, it can take 60-90 secs to be
-        # ready and requests will return 504 status_code until ready. 
-        # So, if we get a 504 status code, rerun the request up to 4 times or 
+        # ready and requests will return 504 status_code until ready.
+        # So, if we get a 504 status code, rerun the request up to 4 times or
         # until we don't get a 504 error
         if req.status_code == 504:
             i = 0
