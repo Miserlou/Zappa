@@ -1,9 +1,9 @@
 """
-Zappa Async Tasks
+Zappa Asynchronous Tasks
 
 Example:
 ```
-from zappa.async import task
+from zappa.asynchronous import task
 
 @task(service='sns')
 def my_async_func(*args, **kwargs):
@@ -32,7 +32,7 @@ Discussion of this comes from:
 1. In a file called `foo.py`, there is the following code:
 
 ```
-   from zappa.async import task
+   from zappa.asynchronous import task
 
    @task
    def my_async_func(*args, **kwargs):
@@ -56,7 +56,7 @@ Discussion of this comes from:
    AWS Lambda instance with the json message:
 
 ```
-   { "command": "zappa.async.route_lambda_task",
+   { "command": "zappa.asynchronous.route_lambda_task",
      "task_path": "foo.my_async_func",
      "args": [1,2],
      "kwargs": {}
@@ -66,7 +66,7 @@ Discussion of this comes from:
 5. The new lambda instance is invoked with the message above,
    and Zappa runs its usual bootstrapping context, and inside
    zappa.handler, the existence of the 'command' key in the message
-   dispatches the full message to zappa.async.route_lambda_task, which
+   dispatches the full message to zappa.asynchronous.route_lambda_task, which
    in turn calls `run_message(message)`
 
 6. `run_message` loads the task_path value to load the `func` from `foo.py`.
@@ -174,7 +174,7 @@ class LambdaAsyncResponse(object):
         """
         Given a message, directly invoke the lamdba function for this task.
         """
-        message['command'] = 'zappa.async.route_lambda_task'
+        message['command'] = 'zappa.asynchronous.route_lambda_task'
         payload = json.dumps(message).encode('utf-8')
         if len(payload) > 128000: # pragma: no cover
             raise AsyncException("Payload too large for async Lambda call")
@@ -240,7 +240,7 @@ class SnsAsyncResponse(LambdaAsyncResponse):
         """
         Given a message, publish to this topic.
         """
-        message['command'] = 'zappa.async.route_sns_task'
+        message['command'] = 'zappa.asynchronous.route_sns_task'
         payload = json.dumps(message).encode('utf-8')
         if len(payload) > 256000: # pragma: no cover
             raise AsyncException("Payload too large for SNS")
@@ -334,12 +334,12 @@ def run(func, args=[], kwargs={}, service='lambda', capture_response=False,
     Instead of decorating a function with @task, you can just run it directly.
     If you were going to do func(*args, **kwargs), then you will call this:
 
-    import zappa.async.run
-    zappa.async.run(func, args, kwargs)
+    import zappa.asynchronous.run
+    zappa.asynchronous.run(func, args, kwargs)
 
     If you want to use SNS, then do:
 
-    zappa.async.run(func, args, kwargs, service='sns')
+    zappa.asynchronous.run(func, args, kwargs, service='sns')
 
     and other arguments are similar to @task
     """
