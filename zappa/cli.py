@@ -117,6 +117,7 @@ class ZappaCLI(object):
     aws_kms_key_arn = ''
     context_header_mappings = None
     tags = []
+    preserve_symlinks = None
 
     stage_name_env_pattern = re.compile('^[a-zA-Z0-9_]+$')
 
@@ -2041,6 +2042,7 @@ class ZappaCLI(object):
         self.dead_letter_config = {'TargetArn': dead_letter_arn} if dead_letter_arn else {}
         self.cognito = self.stage_config.get('cognito', None)
         self.num_retained_versions = self.stage_config.get('num_retained_versions',None)
+        self.preserve_symlinks = self.stage_config.get('preserve_symlinks', False)
 
         # Check for valid values of num_retained_versions
         if self.num_retained_versions is not None and type(self.num_retained_versions) is not int:
@@ -2093,7 +2095,8 @@ class ZappaCLI(object):
                             runtime=self.runtime,
                             tags=self.tags,
                             endpoint_urls=self.stage_config.get('aws_endpoint_urls',{}),
-                            xray_tracing=self.xray_tracing
+                            xray_tracing=self.xray_tracing,
+                            preserve_symlinks=self.preserve_symlinks
                         )
 
         for setting in CUSTOM_SETTINGS:

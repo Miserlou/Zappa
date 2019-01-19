@@ -246,7 +246,8 @@ class Zappa(object):
             runtime='python2.7', # Detected at runtime in CLI
             tags=(),
             endpoint_urls={},
-            xray_tracing=False
+            xray_tracing=False,
+            preserve_symlinks=False
         ):
         """
         Instantiate this new Zappa instance, loading any custom credentials if necessary.
@@ -275,6 +276,7 @@ class Zappa(object):
 
         self.endpoint_urls = endpoint_urls
         self.xray_tracing = xray_tracing
+        self.preserve_symlinks = preserve_symlinks
 
         # Some common invocations, such as DB migrations,
         # can take longer than the default.
@@ -532,9 +534,9 @@ class Zappa(object):
             if minify:
                 # Related: https://github.com/Miserlou/Zappa/issues/744
                 excludes = ZIP_EXCLUDES + exclude + [split_venv[-1]]
-                copytree(cwd, temp_project_path, metadata=False, symlinks=True, ignore=shutil.ignore_patterns(*excludes))
+                copytree(cwd, temp_project_path, metadata=False, symlinks=self.preserve_symlinks, ignore=shutil.ignore_patterns(*excludes))
             else:
-                copytree(cwd, temp_project_path, metadata=False, symlinks=True)
+                copytree(cwd, temp_project_path, metadata=False, symlinks=self.preserve_symlinks)
 
             # Fix any broken symlinks to files that are outside the
             # project directory.

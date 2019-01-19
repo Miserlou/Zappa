@@ -401,7 +401,7 @@ class TestZappa(unittest.TestCase):
             os.symlink('../external_file', './external_link')
             os.symlink(os.path.join(temp_directory, 'external_file'), './external_absolute_link')
 
-            z = Zappa()
+            z = Zappa(preserve_symlinks=True)
             path = z.create_lambda_zip()
             self.assertTrue(os.path.isfile(path))
 
