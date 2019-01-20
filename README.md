@@ -1304,16 +1304,20 @@ For example, with Flask:
 
 ```python
 from aws_xray_sdk.core import xray_recorder
-from aws_xray_sdk.ext.flask.middleware import XRayMiddleware
 
 app = Flask(__name__)
 
 xray_recorder.configure(service='my_app_name')
-XRayMiddleware(app, xray_recorder)
+
+@route('/hello')
+@xray_recorder.capture('hello')
+def hello_world:
+    return 'Hello'
 ```
 
-The official [X-Ray documentation for Python](http://docs.aws.amazon.com/xray-sdk-for-python/latest/reference/) has more information on how to use this with your code.
+You may use the capture decorator to create subsegments around functions, or `xray_recorder.begin_subsegment('subsegment_name')` and `xray_recorder.end_subsegment()` within a function. The official [X-Ray documentation for Python](http://docs.aws.amazon.com/xray-sdk-for-python/latest/reference/) has more information on how to use this with your code.
 
+Note that you may create subsegments in your code but an exception will be raised if you try to create a segment, as it is [created by the lambda worker](https://github.com/aws/aws-xray-sdk-python/issues/2). This also means that if you use Flask you must not use the [XRayMiddleware the documentation suggests](https://docs.aws.amazon.com/xray/latest/devguide/xray-sdk-python-middleware.html).
 
 ### Globally Available Server-less Architectures
 
