@@ -815,7 +815,7 @@ class Zappa(object):
         Downloads a given url in chunks and writes to the provided stream (can be any io stream).
         Displays the progress bar for the download.
         """
-        resp = requests.get(url, timeout=2, stream=True)
+        resp = requests.get(url, timeout=os.environ.get('PIP_TIMEOUT', 2), stream=True)
         resp.raw.decode_content = True
 
         progress = tqdm(unit="B", unit_scale=True, total=int(resp.headers.get('Content-Length', 0)), disable=disable_progress)
@@ -883,7 +883,7 @@ class Zappa(object):
         else:
             url = 'https://pypi.python.org/pypi/{}/json'.format(package_name)
             try:
-                res = requests.get(url, timeout=1.5)
+                res = requests.get(url, timeout=os.environ.get('PIP_TIMEOUT', 1.5))
                 data = res.json()
             except Exception as e: # pragma: no cover
                 return None
