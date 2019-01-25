@@ -314,7 +314,7 @@ You can also specify the output filename of the package with `-o`:
 
 Zappa will automatically package your active virtual environment into a package which runs smoothly on AWS Lambda.
 
-During this process, it will replace any local dependancies with AWS Lambda compatible versions. Dependencies are included in this order:
+During this process, it will replace any local dependencies with AWS Lambda compatible versions. Dependencies are included in this order:
 
   * Lambda-compatible `manylinux` wheels from a local cache
   * Lambda-compatible `manylinux` wheels from PyPI
@@ -737,7 +737,7 @@ The following restrictions to this feature apply:
 
 * Functions must have a clean import path -- i.e. no closures, lambdas, or methods.
 * `args` and `kwargs` must be JSON-serializable.
-* The JSON-serialized arguments must be within the size limits for Lambda (128K) or SNS (256K) events.
+* The JSON-serialized arguments must be within the size limits for Lambda (256K) or SNS (256K) events.
 
 All of this code is still backwards-compatible with non-Lambda environments - it simply executes in a blocking fashion and returns the result.
 
@@ -840,7 +840,7 @@ to change Zappa's behavior. Use these at your own risk!
         "cache_cluster_enabled": false, // Use APIGW cache cluster (default False)
         "cache_cluster_size": 0.5, // APIGW Cache Cluster size (default 0.5)
         "cache_cluster_ttl": 300, // APIGW Cache Cluster time-to-live (default 300)
-        "cache_cluster_encrypted": false, // Whether or now APIGW Cache Cluster encrypts data (default False)
+        "cache_cluster_encrypted": false, // Whether or not APIGW Cache Cluster encrypts data (default False)
         "certificate": "my_cert.crt", // SSL certificate file location. Used to manually certify a custom domain
         "certificate_key": "my_key.key", // SSL key file location. Used to manually certify a custom domain
         "certificate_chain": "my_cert_chain.pem", // SSL certificate chain file location. Used to manually certify a custom domain

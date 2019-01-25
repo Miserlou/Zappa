@@ -1,5 +1,10 @@
 # Zappa Changelog
 
+## 0.47.1
+* Handle accounts with more than 100 domains in route 53
+* Force requests upgrade to 2.20.0 for compatibility with urllib3 1.24
+* Allow defining API Gateway policies (including restricting access to one IP address)
+
 ## 0.47.0
 * Support for SQS events
 * Added test to enforce running of doctoc
@@ -24,7 +29,7 @@
 ## 0.46.0
 _Okay, I dropped the ball for a long time. Bad BDFL!_
 _New releases will come much faster once again_
-* Pip10 compatability
+* Pip10 compatibility
 * Add support for base path configuration in API gateway custom domain.
 * Fix path case sensitivity in get_installed_packages
 * Move task decorator async decision from import time to call time.

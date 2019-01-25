@@ -927,11 +927,11 @@ class Zappa(object):
                     CreateBucketConfiguration={'LocationConstraint': self.aws_region},
                 )
 
-        if self.tags:
-            tags = {
-                'TagSet': [{'Key': key, 'Value': self.tags[key]} for key in self.tags.keys()]
-            }
-            self.s3_client.put_bucket_tagging(Bucket=bucket_name, Tagging=tags)
+            if self.tags:
+                tags = {
+                    'TagSet': [{'Key': key, 'Value': self.tags[key]} for key in self.tags.keys()]
+                }
+                self.s3_client.put_bucket_tagging(Bucket=bucket_name, Tagging=tags)
 
         if not os.path.isfile(source_path) or os.stat(source_path).st_size == 0:
             print("Problem with source file {}".format(source_path))
@@ -2336,7 +2336,7 @@ class Zappa(object):
                         StatementId=s['Sid']
                     )
                     if delete_response['ResponseMetadata']['HTTPStatusCode'] != 204:
-                        logger.error('Failed to delete an obsolete policy statement: {}'.format())
+                        logger.error('Failed to delete an obsolete policy statement: {}'.format(policy_response))
             else:
                 logger.debug('Failed to load Lambda function policy: {}'.format(policy_response))
         except ClientError as e:
@@ -2741,14 +2741,7 @@ class Zappa(object):
         """
         Remove the DynamoDB Table used for async return values
         """
-
-        topic_name = get_topic_name(table_name)
-        removed_arns = []
-        for sub in self.sns_client.list_subscriptions()['Subscriptions']:
-            if topic_name in sub['TopicArn']:
-                self.sns_client.delete_topic(TopicArn=sub['TopicArn'])
-                removed_arns.append(sub['TopicArn'])
-        return removed_arns
+        self.dynamodb_client.delete_table(TableName=table_name)
 
     ##
     # CloudWatch Logging
