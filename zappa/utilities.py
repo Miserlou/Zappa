@@ -16,7 +16,7 @@ from past.builtins import basestring
 
 try:
     from urllib.parse import urlparse
-except NameError:
+except ImportError:
     from urlparse import urlparse
 
 LOG = logging.getLogger(__name__)
