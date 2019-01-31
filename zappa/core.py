@@ -2178,20 +2178,17 @@ class Zappa(object):
             return
         base_path_mappings = self.apigateway_client.get_base_path_mappings(domainName=domain_name)
         found = False
-        try:
-            for base_path_mapping in base_path_mappings['items']:
-                if base_path_mapping['restApiId'] == api_id and base_path_mapping['stage'] == stage:
-                    found = True
-                    if base_path_mapping['basePath'] != base_path:
-                        self.apigateway_client.update_base_path_mapping(domainName=domain_name,
-                                                                        basePath=base_path_mapping['basePath'],
-                                                                        patchOperations=[
-                                                                            {"op" : "replace",
-                                                                             "path" : "/basePath",
-                                                                             "value" : '' if base_path is None else base_path}
-                                                                        ])
-        except KeyError:  # No ['items'] so not found
-          pass
+        for base_path_mapping in base_path_mappingss.get('items', []):
+            if base_path_mapping['restApiId'] == api_id and base_path_mapping['stage'] == stage:
+                found = True
+                if base_path_mapping['basePath'] != base_path:
+                    self.apigateway_client.update_base_path_mapping(domainName=domain_name,
+                                                                    basePath=base_path_mapping['basePath'],
+                                                                    patchOperations=[
+                                                                        {"op" : "replace",
+                                                                         "path" : "/basePath",
+                                                                         "value" : '' if base_path is None else base_path}
+                                                                    ])
         if not found:
             self.apigateway_client.create_base_path_mapping(
                 domainName=domain_name,
