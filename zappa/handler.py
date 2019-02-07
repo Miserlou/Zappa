@@ -135,6 +135,15 @@ class LambdaHandler:
 
                 # The application
                 wsgi_app_function = getattr(self.app_module, self.settings.APP_FUNCTION)
+
+                # Flask-like app factory support
+                # https://github.com/Miserlou/Zappa/issues/1771
+                if inspect.isfunction(wsgi_app_function):
+                    args, varargs, keywords, _ = self.getargspec(wsgi_app_function)
+                    if len(args) == 0 and not varargs and not keywords:
+                        factory = wsgi_app_function
+                        wsgi_app_function = factory()
+
             # Django gets special treatment.
             else:
                 try:  # Support both for tests
@@ -262,17 +271,23 @@ class LambdaHandler:
         return exception_processed
 
     @staticmethod
+    def getargspec(func):
+        # getargspec does not support python 3 method with type hints
+        # Related issue: https://github.com/Miserlou/Zappa/issues/1452
+        if hasattr(inspect, "getfullargspec"):  # Python 3
+            args, varargs, keywords, defaults, _, _, _ = inspect.getfullargspec(func)
+        else:  # Python 2
+            args, varargs, keywords, defaults = inspect.getargspec(func)
+
+         return args, varargs, keywords, defaults
+
+    @staticmethod
     def run_function(app_function, event, context):
         """
         Given a function and event context,
         detect signature and execute, returning any result.
         """
-        # getargspec does not support python 3 method with type hints
-        # Related issue: https://github.com/Miserlou/Zappa/issues/1452
-        if hasattr(inspect, "getfullargspec"):  # Python 3
-            args, varargs, keywords, defaults, _, _, _ = inspect.getfullargspec(app_function)
-        else:  # Python 2
-            args, varargs, keywords, defaults = inspect.getargspec(app_function)
+        args, varargs, _, _ = LambdaHandler.getargspec(app_function)
         num_args = len(args)
         if num_args == 0:
             result = app_function(event, context) if varargs else app_function()
