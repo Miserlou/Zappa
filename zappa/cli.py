@@ -2053,6 +2053,8 @@ class ZappaCLI(object):
         self.tags = self.stage_config.get('tags', {})
 
         desired_role_name = self.lambda_name + "-ZappaLambdaExecutionRole"
+        if self.desired_role_arn:
+            desired_role_name = self.desired_role_arn.split('/')[-1]
         self.zappa = Zappa( boto_session=session,
                             profile_name=self.profile_name,
                             aws_region=self.aws_region,
