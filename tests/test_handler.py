@@ -36,6 +36,14 @@ def handle_bot_intent(event, context):
     return "Success"
 
 
+def create_app():
+    def hello_world_from_factory(environ, start_response):
+        start_response('200 OK', [('Content-Type', 'text/html')])
+        return 'Hello World from App Factory'
+
+     return hello_world_from_factory
+
+
 mocked_exception_handler = Mock()
 
 
@@ -279,3 +287,32 @@ class TestZappa(unittest.TestCase):
 
         response = lh.lambda_handler(event, None)
         mocked_exception_handler.assert_called
+
+    def test_flask_app_factory(self):
+        """
+        Ensure that Flask application factory works.
+        """
+        lh = LambdaHandler('tests.test_flask_app_factory_settings')
+
+         event = {
+            'body': '',
+            'resource': '/{proxy+}',
+            'requestContext': {},
+            'queryStringParameters': {},
+            'headers': {
+                'Host': '1234567890.execute-api.us-east-1.amazonaws.com',
+            },
+            'pathParameters': {
+                'proxy': 'return/request/url'
+            },
+            'httpMethod': 'GET',
+            'stageVariables': {},
+            'path': '/return/request/url'
+        }
+
+         mocked_exception_handler.assert_not_called()
+        response = lh.handler(event, None)
+
+         self.assertEqual(response['statusCode'], 200)
+        mocked_exception_handler.assert_not_called()
+
