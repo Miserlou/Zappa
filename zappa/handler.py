@@ -284,7 +284,7 @@ class LambdaHandler(object):
         else:  # Python 2
             args, varargs, keywords, defaults = inspect.getargspec(func)
 
-         return args, varargs, keywords, defaults
+        return args, varargs, keywords, defaults
 
     @staticmethod
     def run_function(app_function, event, context):

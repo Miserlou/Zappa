@@ -41,7 +41,7 @@ def create_app():
         start_response('200 OK', [('Content-Type', 'text/html')])
         return 'Hello World from App Factory'
 
-     return hello_world_from_factory
+    return hello_world_from_factory
 
 
 mocked_exception_handler = Mock()
@@ -294,7 +294,7 @@ class TestZappa(unittest.TestCase):
         """
         lh = LambdaHandler('tests.test_flask_app_factory_settings')
 
-         event = {
+        event = {
             'body': '',
             'resource': '/{proxy+}',
             'requestContext': {},
@@ -310,9 +310,9 @@ class TestZappa(unittest.TestCase):
             'path': '/return/request/url'
         }
 
-         mocked_exception_handler.assert_not_called()
+        mocked_exception_handler.assert_not_called()
         response = lh.handler(event, None)
 
-         self.assertEqual(response['statusCode'], 200)
+        self.assertEqual(response['statusCode'], 200)
         mocked_exception_handler.assert_not_called()
 
