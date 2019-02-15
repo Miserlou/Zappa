@@ -1852,6 +1852,7 @@ class ZappaCLI(object):
 
         # Get cert and update domain.
 
+        route53 = self.stage_config.get('route53_enabled', True)
         # Let's Encrypt
         if not cert_location and not cert_arn:
             from .letsencrypt import get_cert_and_update_domain
@@ -1860,12 +1861,12 @@ class ZappaCLI(object):
                     self.lambda_name,
                     self.api_stage,
                     self.domain,
-                    manual
+                    manual,
+                    route53_enabled=route53
                 )
 
         # Custom SSL / ACM
         else:
-            route53 = self.stage_config.get('route53_enabled', True)
             if not self.zappa.get_domain_name(self.domain, route53=route53):
                 dns_name = self.zappa.create_domain_name(
                     domain_name=self.domain,

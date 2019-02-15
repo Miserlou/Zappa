@@ -19,7 +19,7 @@ from click.exceptions import ClickException
 
 from zappa.cli import ZappaCLI, shamelessly_promote, disable_click_colors
 from zappa.ext.django_zappa import get_django_wsgi
-from zappa.letsencrypt import get_cert_and_update_domain, create_domain_key, create_domain_csr, \
+from zappa.letsencrypt import get_cert, get_cert_and_update_domain, create_domain_key, create_domain_csr, \
     create_chained_certificate, cleanup, parse_account_key, parse_csr, sign_certificate, encode_certificate,\
     register_account, verify_challenge, gettempdir
 from zappa.utilities import (
@@ -1301,7 +1301,11 @@ class TestZappa(unittest.TestCase):
         get_cert_and_update_domain(zappa_cli, 'kerplah', 'zzzz', domain=None)
 
 
-    def test_certify_sanity_checks(self):
+    @mock.patch('zappa.letsencrypt.get_cert')
+    @mock.patch('zappa.letsencrypt.create_domain_key')
+    @mock.patch('zappa.letsencrypt.create_domain_csr')
+    @mock.patch('zappa.letsencrypt.create_chained_certificate')
+    def test_certify_sanity_checks(self, get_cert_mock, create_domain_key_mock, create_domain_csr_mock, create_chained_certificate_mock):
         """
         Make sure 'zappa certify':
         * Errors out when a deployment hasn't taken place.
@@ -1396,7 +1400,37 @@ class TestZappa(unittest.TestCase):
                 self.assertIn("certificate_chain", log_output)
 
             # With all certificate settings, make sure Zappa's domain calls
-            # are executed.
+            # are executed with letsencrypt.
+            m = mock.mock_open()
+            cert_file = tempfile.NamedTemporaryFile()
+            cert_file.write(b"Hello world")
+            cert_file.flush()
+            zappa_cli.zappa_settings["stage"].update({
+                "certificate": "",
+                "certificate_arn": "",
+                "lets_encrypt_key": cert_file.name
+            })
+            sys.stdout.truncate(0)
+
+            try:
+                with mock.patch('__builtin__.open', m, create=True):
+                    zappa_cli.certify()
+            except:
+                with mock.patch('builtins.open', m, create=True) as mock_open:
+                    import io
+                    mock_open.return_value = mock.MagicMock(spec=io.IOBase)
+                    zappa_cli.certify()
+
+            get_cert_mock.assert_called_once()
+            zappa_cli.zappa.update_route53_records.assert_called_once()
+            zappa_cli.zappa.update_domain_name.assert_not_called()
+            log_output = sys.stdout.getvalue()
+            self.assertIn("Created a new domain name", log_output)
+
+            zappa_cli.zappa.reset_mock()
+
+            # With all certificate settings, make sure Zappa's domain calls
+            # are executed with own certificate.
             cert_file = tempfile.NamedTemporaryFile()
             cert_file.write(b"Hello world")
             cert_file.flush()
