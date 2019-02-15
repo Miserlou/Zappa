@@ -1301,7 +1301,11 @@ class TestZappa(unittest.TestCase):
         get_cert_and_update_domain(zappa_cli, 'kerplah', 'zzzz', domain=None)
 
 
-    def test_certify_sanity_checks(self):
+    @mock.patch('zappa.letsencrypt.get_cert')
+    @mock.patch('zappa.letsencrypt.create_domain_key')
+    @mock.patch('zappa.letsencrypt.create_domain_csr')
+    @mock.patch('zappa.letsencrypt.create_chained_certificate')
+    def test_certify_sanity_checks(self, get_cert_mock, create_domain_key_mock, create_domain_csr_mock, create_chained_certificate_mock):
         """
         Make sure 'zappa certify':
         * Errors out when a deployment hasn't taken place.
@@ -1396,7 +1400,35 @@ class TestZappa(unittest.TestCase):
                 self.assertIn("certificate_chain", log_output)
 
             # With all certificate settings, make sure Zappa's domain calls
-            # are executed.
+            # are executed with Let's Encrypt.
+            signed_file = tempfile.NamedTemporaryFile()
+            signed_file.flush()
+            os.link(signed_file.name, gettempdir() + '/signed.crt')
+            os.link(signed_file.name, gettempdir() + '/domain.key')
+            os.link(signed_file.name, gettempdir() + '/intermediate.pem')
+
+            cert_file = tempfile.NamedTemporaryFile()
+            cert_file.write(b"Hello world")
+            cert_file.flush()
+            zappa_cli.zappa_settings["stage"].update({
+                "certificate": "",
+                "certificate_arn": "",
+                "lets_encrypt_key": cert_file.name
+            })
+            sys.stdout.truncate(0)
+
+            zappa_cli.certify()
+
+            get_cert_mock.assert_called_once()
+            zappa_cli.zappa.update_route53_records.assert_called_once()
+            zappa_cli.zappa.update_domain_name.assert_not_called()
+            log_output = sys.stdout.getvalue()
+            self.assertIn("Created a new domain name", log_output)
+
+            zappa_cli.zappa.reset_mock()
+
+            # With all certificate settings, make sure Zappa's domain calls
+            # are executed with own certificate.
             cert_file = tempfile.NamedTemporaryFile()
             cert_file.write(b"Hello world")
             cert_file.flush()
