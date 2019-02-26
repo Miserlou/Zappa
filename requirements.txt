@@ -12,7 +12,7 @@ lambda-packages==0.20.0
 pip>=9.0.1
 python-dateutil>=2.6.1, <2.7.0
 python-slugify==1.2.4
-PyYAML==3.13
+PyYAML>=3.13
 # previous version don't work with urllib3 1.24
 requests>=2.20.0
 six>=1.11.0
