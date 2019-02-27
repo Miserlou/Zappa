@@ -295,6 +295,7 @@ class Zappa(object):
             # Initialize clients
             self.s3_client = self.boto_client('s3')
             self.lambda_client = self.boto_client('lambda', config=long_config)
+            self.elbv2_client = self.boto_client('elbv2')
             self.events_client = self.boto_client('events')
             self.apigateway_client = self.boto_client('apigateway')
             # AWS ACM certificates need to be created from us-east-1 to be used by API gateway
@@ -1263,6 +1264,240 @@ class Zappa(object):
         return self.lambda_client.delete_function(
             FunctionName=function_name,
         )
+
+    ##
+    # Application load balancer
+    ##
+
+    def deploy_lambda_alb(  self,
+                            lambda_arn,
+                            lambda_name,
+                            vpc_config,
+                            certificate_arn,
+                            alb_loadbalancer_name,
+                            alb_targetgroup_name,
+                            alb_invokepermissions_name
+                         ):
+        """
+        The `zappa deploy` functionality for ALB infrastructure.
+        """
+        if not vpc_config:
+            vpc_config = {}
+        if not vpc_config["SubnetIds"]:
+            vpc_config["SubnetIds"] = []
+        if not vpc_config["SecurityGroupIds"]:
+            vpc_config["SecurityGroupIds"] = []
+        if not certificate_arn:
+            raise EnvironmentError("certificate_arn must be properly defined in zappa settings to bind an https listener to a load balancer")
+        print("Deploying ALB infrastructure...")
+
+        # Create load balancer
+        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/elbv2.html#ElasticLoadBalancingv2.Client.create_load_balancer
+        kwargs = dict(
+            Name=alb_loadbalancer_name,
+            Subnets=vpc_config["SubnetIds"],
+            SecurityGroups=vpc_config["SecurityGroupIds"],
+            # TODO: Scheme can also be "internal" we need to add a new option for this.
+            Scheme="internet-facing",
+            # TODO: Tags might be a useful means of stock-keeping zappa-generated assets.
+            #Tags=[],
+            Type="application",
+            # TODO: can be ipv4 or dualstack (for ipv4 and ipv6) ipv4 is required for internal Scheme.
+            IpAddressType="ipv4"
+        )
+        response = self.elbv2_client.create_load_balancer(**kwargs)
+        if not(response["LoadBalancers"]) or len(response["LoadBalancers"]) != 1:
+            raise EnvironmentError("Failure to create application load balancer. Response was in unexpected format. Response was: {}".format(repr(response)))
+        if response["LoadBalancers"][0]['State']['Code'] == 'failed':
+            raise EnvironmentError("Failure to create application load balancer. Response reported a failed state: {}".format(response["LoadBalancers"][0]['State']['Reason']))
+        load_balancer_arn = response["LoadBalancers"][0]["LoadBalancerArn"]
+        load_balancer_dns = response["LoadBalancers"][0]["DNSName"]
+        load_balancer_vpc = response["LoadBalancers"][0]["VpcId"]
+        waiter = self.elbv2_client.get_waiter('load_balancer_available')
+
+        # Create/associate target group.
+        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/elbv2.html#ElasticLoadBalancingv2.Client.create_target_group
+        kwargs = dict(
+            Name=alb_targetgroup_name,
+            TargetType="lambda",
+            # TODO: Add options for health checks
+        )
+        response = self.elbv2_client.create_target_group(**kwargs)
+        if not(response["TargetGroups"]) or len(response["TargetGroups"]) != 1:
+            raise EnvironmentError("Failure to create application load balancer target group. Response was in unexpected format. Response was: {}".format(repr(response)))
+        target_group_arn = response["TargetGroups"][0]["TargetGroupArn"]
+
+        # Allow execute permissions from target group to lambda.
+        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/lambda.html#Lambda.Client.add_permission
+        kwargs = dict(
+            Action="lambda:InvokeFunction",
+            FunctionName=lambda_arn,
+            Principal="elasticloadbalancing.amazonaws.com",
+            SourceArn=target_group_arn,
+            StatementId=alb_invokepermissions_name
+        )
+        response = self.lambda_client.add_permission(**kwargs)
+
+        # Register target group to lambda association.
+        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/elbv2.html#ElasticLoadBalancingv2.Client.register_targets
+        kwargs = dict(
+            TargetGroupArn=target_group_arn,
+            Targets=[{"Id": lambda_arn}]
+        )
+        response = self.elbv2_client.register_targets(**kwargs)
+
+        # Bind listener to load balancer with default rule to target group.
+        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/elbv2.html#ElasticLoadBalancingv2.Client.create_listener
+        kwargs = dict(
+            # TODO: Listeners support custom ssl certificates (Certificates). For now we leave this default.
+            Certificates=[{"CertificateArn": certificate_arn}],
+            DefaultActions=[{
+                "Type": "forward",
+                "TargetGroupArn": target_group_arn,
+            }],
+            LoadBalancerArn=load_balancer_arn,
+            Protocol="HTTPS",
+            # TODO: Add option for custom ports
+            Port=443,
+            # TODO: Listeners support custom ssl security policy (SslPolicy). For now we leave this default.
+        )
+        response = self.elbv2_client.create_listener(**kwargs)
+        print("ALB created with DNS: {}".format(load_balancer_dns))
+        print("Note it may take several minutes for load balancer to become available.")
+
+    def update_lambda_alb(  self,
+                            lambda_arn,
+                            lambda_name,
+                            vpc_config,
+                            certificate_arn,
+                            alb_loadbalancer_name,
+                            alb_targetgroup_name,
+                            alb_invokepermissions_name
+                         ):
+        """
+        The `zappa update` functionality for ALB infrastructure.
+        """
+        print("Updating ALB infrastructure...")
+        # Locate and delete alb/lambda permissions
+        try:
+            # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/lambda.html#Lambda.Client.remove_permission
+            self.lambda_client.remove_permission(
+                FunctionName=lambda_arn,
+                StatementId=alb_invokepermissions_name
+            )
+        except botocore.exceptions.ClientError as e: # pragma: no cover
+            if "ResourceNotFoundException" in e.response["Error"]["Code"]:
+                pass
+            else:
+                raise e
+
+        # Locate the target group arn
+        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/elbv2.html#ElasticLoadBalancingv2.Client.describe_target_groups
+        response = self.elbv2_client.describe_target_groups(Names=[alb_targetgroup_name])
+        if not(response["TargetGroups"]) or len(response["TargetGroups"]) > 1:
+            raise EnvironmentError("Failure to update ALB target group named [{}]. Response was: {}".format(alb_targetgroup_name, repr(response)))
+
+        target_group_arn = response["TargetGroups"][0]["TargetGroupArn"]
+
+        # Allow execute permissions from target group to lambda.
+        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/lambda.html#Lambda.Client.add_permission
+        kwargs = dict(
+            Action="lambda:InvokeFunction",
+            FunctionName=lambda_arn,
+            Principal="elasticloadbalancing.amazonaws.com",
+            SourceArn=target_group_arn,
+            StatementId=alb_invokepermissions_name
+        )
+        response = self.lambda_client.add_permission(**kwargs)
+
+    def undeploy_lambda_alb(  self,
+                            lambda_name,
+                            alb_loadbalancer_name,
+                            alb_targetgroup_name,
+                            alb_invokepermissions_name
+                          ):
+        """
+        The `zappa undeploy` functionality for ALB infrastructure.
+        """
+        print("Undeploying ALB infrastructure...")
+
+        # Locate and delete alb/lambda permissions
+        try:
+            # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/lambda.html#Lambda.Client.remove_permission
+            self.lambda_client.remove_permission(
+                FunctionName=lambda_name,
+                StatementId=alb_invokepermissions_name
+            )
+        except botocore.exceptions.ClientError as e: # pragma: no cover
+            if "ResourceNotFoundException" in e.response["Error"]["Code"]:
+                pass
+            else:
+                raise e
+
+        # Locate and delete load balancer
+        try:
+            # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/elbv2.html#ElasticLoadBalancingv2.Client.describe_load_balancers
+            response = self.elbv2_client.describe_load_balancers(
+                Names=[alb_loadbalancer_name]
+            )
+            if not(response["LoadBalancers"]) or len(response["LoadBalancers"]) > 1:
+                raise EnvironmentError("Failure to locate/delete ALB named [{}]. Response was: {}".format(alb_loadbalancer_name, repr(response)))
+            load_balancer_arn = response["LoadBalancers"][0]["LoadBalancerArn"]
+            # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/elbv2.html#ElasticLoadBalancingv2.Client.describe_listeners
+            response = self.elbv2_client.describe_listeners(LoadBalancerArn=load_balancer_arn)
+            if not(response["Listeners"]) or len(response["Listeners"]) > 1:
+                raise EnvironmentError("Failure to locate/delete listener for ALB named [{}]. Response was: {}".format(alb_loadbalancer_name, repr(response)))
+            listener_arn = response["Listeners"][0]["ListenerArn"]
+            # Remove the listener. This explicit deletion of the listener seems necessary to avoid ResourceInUseExceptions when deleting target groups.
+            # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/elbv2.html#ElasticLoadBalancingv2.Client.delete_listener
+            response = self.elbv2_client.delete_listener(ListenerArn=listener_arn)
+            # Remove the load balancer and wait for completion
+            # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/elbv2.html#ElasticLoadBalancingv2.Client.delete_load_balancer
+            response = self.elbv2_client.delete_load_balancer(LoadBalancerArn=load_balancer_arn)
+            waiter = self.elbv2_client.get_waiter('load_balancers_deleted')
+            print('Waiting for load balancer [{}] to be deleted..'.format(alb_loadbalancer_name))
+            waiter.wait(LoadBalancerArns=[load_balancer_arn], WaiterConfig={"Delay": 3})
+        except botocore.exceptions.ClientError as e: # pragma: no cover
+            print(e.response["Error"]["Code"])
+            if "LoadBalancerNotFound" in e.response["Error"]["Code"]:
+                pass
+            else:
+                raise e
+
+        # Locate and delete target group
+        try:
+            # Locate the lambda ARN
+            # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/lambda.html#Lambda.Client.get_function
+            response = self.lambda_client.get_function(FunctionName=lambda_name)
+            lambda_arn = response["Configuration"]["FunctionArn"]
+            # Locate the target group ARN
+            # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/elbv2.html#ElasticLoadBalancingv2.Client.describe_target_groups
+            response = self.elbv2_client.describe_target_groups(Names=[alb_targetgroup_name])
+            if not(response["TargetGroups"]) or len(response["TargetGroups"]) > 1:
+                raise EnvironmentError("Failure to locate/delete ALB target group named [{}]. Response was: {}".format(alb_targetgroup_name, repr(response)))
+            target_group_arn = response["TargetGroups"][0]["TargetGroupArn"]
+            # Deregister targets and wait for completion
+            self.elbv2_client.deregister_targets(
+                TargetGroupArn=target_group_arn,
+                Targets=[{"Id": lambda_arn}]
+            )
+            waiter = self.elbv2_client.get_waiter('target_deregistered')
+            print('Waiting for target [{}] to be deregistered...'.format(alb_targetgroup_name))
+            waiter.wait(
+                TargetGroupArn=target_group_arn,
+                Targets=[{"Id": lambda_arn}],
+                WaiterConfig={"Delay": 3}
+            )
+            # Remove the target group
+            # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/elbv2.html#ElasticLoadBalancingv2.Client.delete_target_group
+            self.elbv2_client.delete_target_group(TargetGroupArn=target_group_arn)
+        except botocore.exceptions.ClientError as e: # pragma: no cover
+            print(e.response["Error"]["Code"])
+            if "TargetGroupNotFound" in e.response["Error"]["Code"]:
+                pass
+            else:
+                raise e
+
 
     ##
     # API Gateway
