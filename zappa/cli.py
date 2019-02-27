@@ -774,6 +774,9 @@ class ZappaCLI(object):
                 kwargs['bucket'] = self.s3_bucket_name
                 kwargs['s3_key'] = handler_file
 
+            if self.use_alb:
+                kwargs['alias_name'] = self.alb_lambda_alias
+
             self.lambda_arn = self.zappa.create_lambda_function(**kwargs)
 
         # Schedule events for this deployment
@@ -786,14 +789,11 @@ class ZappaCLI(object):
             kwargs = dict(
                 lambda_arn=self.lambda_arn,
                 lambda_name=self.lambda_name,
-                vpc_config=self.vpc_config,
-                certificate_arn=self.alb_certificate_arn,
-                alb_loadbalancer_name=self.alb_loadbalancer_name,
-                alb_targetgroup_name=self.alb_targetgroup_name,
-                alb_invokepermissions_name=self.alb_invokepermissions_name
+                lambda_alias=self.alb_lambda_alias,
+                alb_vpc_config=self.alb_vpc_config,
+                timeout=self.timeout_seconds
             )
             self.zappa.deploy_lambda_alb(**kwargs)
-
 
         if self.use_apigateway:
 
@@ -931,31 +931,29 @@ class ZappaCLI(object):
 
         # Register the Lambda function with that zip as the source
         # You'll also need to define the path to your lambda_handler code.
+        kwargs = dict(
+            bucket=self.s3_bucket_name,
+            function_name=self.lambda_name,
+            num_revisions=self.num_retained_versions
+        )
+        if self.use_alb:
+            kwargs['alias_name'] = self.alb_lambda_alias
         if source_zip and source_zip.startswith('s3://'):
             bucket, key_name = parse_s3_url(source_zip)
-            self.lambda_arn = self.zappa.update_lambda_function(
-                                            bucket,
-                                            self.lambda_name,
-                                            key_name,
-                                            num_revisions=self.num_retained_versions
-                                        )
+            kwargs = kwargs.update(dict(
+                bucket=bucket,
+                s3_key=key_name
+            ))
+            self.lambda_arn = self.zappa.update_lambda_function(**kwargs)
         elif source_zip and not source_zip.startswith('s3://'):
             with open(source_zip, mode='rb') as fh:
                 byte_stream = fh.read()
-            self.lambda_arn = self.zappa.update_lambda_function(
-                                            self.s3_bucket_name,
-                                            self.lambda_name,
-                                            local_zip=byte_stream,
-                                            num_revisions=self.num_retained_versions
-                                        )
+            kwargs['local_zip'] = byte_stream
+            self.lambda_arn = self.zappa.update_lambda_function(**kwargs)
         else:
             if not no_upload:
-                self.lambda_arn = self.zappa.update_lambda_function(
-                                                self.s3_bucket_name,
-                                                self.lambda_name,
-                                                handler_file,
-                                                num_revisions=self.num_retained_versions
-                                            )
+                kwargs['s3_key'] = handler_file
+                self.lambda_arn = self.zappa.update_lambda_function(**kwargs)
 
         # Remove the uploaded zip from S3, because it is now registered..
         if not source_zip and not no_upload:
@@ -1023,17 +1021,6 @@ class ZappaCLI(object):
         else:
             endpoint_url = None
 
-        if self.use_alb:
-            kwargs = dict(
-                lambda_arn=self.lambda_arn,
-                lambda_name=self.lambda_name,
-                vpc_config=self.vpc_config,
-                certificate_arn=self.alb_certificate_arn,
-                alb_loadbalancer_name=self.alb_loadbalancer_name,
-                alb_targetgroup_name=self.alb_targetgroup_name,
-                alb_invokepermissions_name=self.alb_invokepermissions_name
-            )
-            self.zappa.update_lambda_alb(**kwargs)
         self.schedule()
 
         # Update any cognito pool with the lambda arn
@@ -1125,10 +1112,7 @@ class ZappaCLI(object):
                 return
 
         if self.use_alb:
-            self.zappa.undeploy_lambda_alb(self.lambda_name,
-                                         self.alb_loadbalancer_name,
-                                         self.alb_targetgroup_name,
-                                         self.alb_invokepermissions_name)
+            self.zappa.undeploy_lambda_alb(self.lambda_name)
 
         if self.use_apigateway:
             if remove_logs:
@@ -1653,10 +1637,10 @@ class ZappaCLI(object):
         default_bucket = "zappa-" + ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(9))
         while True:
             bucket = input("What do you want to call your bucket? (default '%s'): " % default_bucket) or default_bucket
-          
+
             if is_valid_bucket_name(bucket):
                 break
-            
+
             click.echo(click.style("Invalid bucket name!", bold=True))
             click.echo("S3 buckets must be named according to the following rules:")
             click.echo("""* Bucket names must be unique across all existing bucket names in Amazon S3.
@@ -1664,13 +1648,13 @@ class ZappaCLI(object):
 * Bucket names must be at least 3 and no more than 63 characters long.
 * Bucket names must not contain uppercase characters or underscores.
 * Bucket names must start with a lowercase letter or number.
-* Bucket names must be a series of one or more labels. Adjacent labels are separated 
+* Bucket names must be a series of one or more labels. Adjacent labels are separated
   by a single period (.). Bucket names can contain lowercase letters, numbers, and
   hyphens. Each label must start and end with a lowercase letter or a number.
 * Bucket names must not be formatted as an IP address (for example, 192.168.5.4).
-* When you use virtual hosted–style buckets with Secure Sockets Layer (SSL), the SSL 
-  wildcard certificate only matches buckets that don't contain periods. To work around 
-  this, use HTTP or write your own certificate verification logic. We recommend that 
+* When you use virtual hosted–style buckets with Secure Sockets Layer (SSL), the SSL
+  wildcard certificate only matches buckets that don't contain periods. To work around
+  this, use HTTP or write your own certificate verification logic. We recommend that
   you do not use periods (".") in bucket names when using virtual hosted–style buckets.
 """)
 
@@ -2113,10 +2097,8 @@ class ZappaCLI(object):
 
         # Load ALB-related settings
         self.use_alb = self.stage_config.get('alb_enabled', False)
-        self.alb_loadbalancer_name = '{}-loadbalancer'.format(self.lambda_name)
-        self.alb_targetgroup_name = '{}-targetgroup'.format(self.lambda_name)
-        self.alb_invokepermissions_name = '{}-albstatement'.format(self.lambda_name)
-        self.alb_certificate_arn = self.stage_config.get('certificate_arn', None)
+        self.alb_vpc_config = self.stage_config.get('alb_vpc_config', {})
+        self.alb_lambda_alias = 'current-alb-version' if self.use_alb else None
 
         # Additional tags
         self.tags = self.stage_config.get('tags', {})
@@ -2725,8 +2707,8 @@ class ZappaCLI(object):
         req = requests.get(endpoint_url + touch_path)
 
         # Sometimes on really large packages, it can take 60-90 secs to be
-        # ready and requests will return 504 status_code until ready. 
-        # So, if we get a 504 status code, rerun the request up to 4 times or 
+        # ready and requests will return 504 status_code until ready.
+        # So, if we get a 504 status code, rerun the request up to 4 times or
         # until we don't get a 504 error
         if req.status_code == 504:
             i = 0
