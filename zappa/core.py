@@ -920,12 +920,38 @@ class Zappa(object):
             if self.aws_region == 'us-east-1':
                 self.s3_client.create_bucket(
                     Bucket=bucket_name,
-                )
+                    )
+
+                self.s3_client.put_bucket_encryption(
+                    Bucket=bucket_name,
+                    ServerSideEncryptionConfiguration={
+                        'Rules': [
+                            {
+                                'ApplyServerSideEncryptionByDefault': {
+                                    'SSEAlgorithm': 'AES256',
+                                    }
+                                },
+                            ]
+                        }
+                    )
             else:
                 self.s3_client.create_bucket(
                     Bucket=bucket_name,
                     CreateBucketConfiguration={'LocationConstraint': self.aws_region},
-                )
+                    )
+
+                self.s3_client.put_bucket_encryption(
+                    Bucket=bucket_name,
+                    ServerSideEncryptionConfiguration={
+                        'Rules': [
+                            {
+                                'ApplyServerSideEncryptionByDefault': {
+                                    'SSEAlgorithm': 'AES256',
+                                    }
+                                },
+                            ]
+                        }
+                    )
 
             if self.tags:
                 tags = {
