@@ -2178,7 +2178,7 @@ class Zappa(object):
             return
         base_path_mappings = self.apigateway_client.get_base_path_mappings(domainName=domain_name)
         found = False
-        for base_path_mapping in base_path_mappings['items']:
+        for base_path_mapping in base_path_mappingss.get('items', []):
             if base_path_mapping['restApiId'] == api_id and base_path_mapping['stage'] == stage:
                 found = True
                 if base_path_mapping['basePath'] != base_path:
