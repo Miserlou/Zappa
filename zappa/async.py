@@ -129,7 +129,8 @@ class LambdaAsyncResponse(object):
     Base Response Dispatcher class
     Can be used directly or subclassed if the method to send the message is changed.
     """
-    def __init__(self, lambda_function_name=None, aws_region=None, capture_response=False, **kwargs):
+    def __init__(self, lambda_function_name=None, aws_region=None, capture_response=False,
+                 deserialize=True, **kwargs):
         """ """
         if kwargs.get('boto_session'):
             self.client = kwargs.get('boto_session').client('lambda')
@@ -154,6 +155,7 @@ class LambdaAsyncResponse(object):
             self.response_id = None
 
         self.capture_response = capture_response
+        self.deserialize = deserialize
 
 
     def send(self, task_path, args, kwargs):
@@ -163,6 +165,7 @@ class LambdaAsyncResponse(object):
         message = {
                 'task_path': task_path,
                 'capture_response': self.capture_response,
+                'deserialize': self.deserialize,
                 'response_id': self.response_id,
                 'args': args,
                 'kwargs': kwargs
@@ -190,7 +193,8 @@ class SnsAsyncResponse(LambdaAsyncResponse):
     Send a SNS message to a specified SNS topic
     Serialise the func path and arguments
     """
-    def __init__(self, lambda_function_name=None, aws_region=None, capture_response=False, **kwargs):
+    def __init__(self, lambda_function_name=None, aws_region=None, capture_response=False,
+                 deserialize=True, **kwargs):
 
         self.lambda_function_name = lambda_function_name
         self.aws_region = aws_region
@@ -234,6 +238,7 @@ class SnsAsyncResponse(LambdaAsyncResponse):
             self.response_id = None
 
         self.capture_response = capture_response
+        self.deserialize = deserialize
 
 
     def _send(self, message):
@@ -266,7 +271,7 @@ def route_lambda_task(event, context):
     imports the function, calls the function with args
     """
     message = event
-    return run_message(message)
+    return run_message(message, context)
 
 
 def route_sns_task(event, context):
@@ -278,10 +283,10 @@ def route_sns_task(event, context):
     message = json.loads(
             record['Sns']['Message']
         )
-    return run_message(message)
+    return run_message(message, context)
 
 
-def run_message(message):
+def run_message(message, context):
     """
     Runs a function defined by a message object with keys:
     'task_path', 'args', and 'kwargs' used by lambda routing
@@ -299,16 +304,17 @@ def run_message(message):
         )
 
     func = import_and_get_task(message['task_path'])
+
+    args = message, context
+    kwargs = {}
+    if message.get('deserialize', True):
+        args = message['args']
+        kwargs = message['kwargs']
+
     if hasattr(func, 'sync'):
-        response = func.sync(
-            *message['args'],
-            **message['kwargs']
-        )
+        response = func.sync(*args, **kwargs)
     else:
-        response = func(
-            *message['args'],
-            **message['kwargs']
-        )
+        response = func(*args, **kwargs)
 
     if message.get('capture_response', False):
         DYNAMODB_CLIENT.update_item(
@@ -369,6 +375,9 @@ def task(*args, **kwargs):
         service (str): either 'lambda' or 'sns'
         remote_aws_lambda_function_name (str): the name of a remote lambda function to call with this task
         remote_aws_region (str): the name of a remote region to make lambda/sns calls against
+        deserialize (bool): extract the args and kwargs from the AWS Lambda arguments
+            otherwise the event and context will be passed to the function
+            defaults to True
 
     Returns:
         A replacement function that dispatches func() to
@@ -390,6 +399,7 @@ def task(*args, **kwargs):
         aws_region_arg = kwargs.get('remote_aws_region')
 
     capture_response = kwargs.get('capture_response', False)
+    deserialize = kwargs.get('deserialize', True)
 
     def func_wrapper(func):
 
@@ -421,7 +431,8 @@ def task(*args, **kwargs):
             if (service in ASYNC_CLASSES) and (lambda_function_name):
                 send_result = ASYNC_CLASSES[service](lambda_function_name=lambda_function_name,
                                                      aws_region=aws_region,
-                                                     capture_response=capture_response).send(task_path, args, kwargs)
+                                                     capture_response=capture_response,
+                                                     deserialize=deserialize).send(task_path, args, kwargs)
                 return send_result
             else:
                 return func(*args, **kwargs)
