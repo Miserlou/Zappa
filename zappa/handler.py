@@ -515,37 +515,36 @@ class LambdaHandler(object):
                 environ['lambda.event'] = event
 
                 # Execute the application
-                response = Response.from_app(self.wsgi_app, environ)
+                with Response.from_app(self.wsgi_app, environ) as response:
+                    # This is the object we're going to return.
+                    # Pack the WSGI response into our special dictionary.
+                    zappa_returndict = dict()
 
-                # This is the object we're going to return.
-                # Pack the WSGI response into our special dictionary.
-                zappa_returndict = dict()
-
-                if response.data:
-                    if settings.BINARY_SUPPORT:
-                        if not response.mimetype.startswith("text/") \
-                            or response.mimetype != "application/json":
-                                zappa_returndict['body'] = base64.b64encode(response.data).decode('utf-8')
-                                zappa_returndict["isBase64Encoded"] = True
+                    if response.data:
+                        if settings.BINARY_SUPPORT:
+                            if not response.mimetype.startswith("text/") \
+                                or response.mimetype != "application/json":
+                                    zappa_returndict['body'] = base64.b64encode(response.data).decode('utf-8')
+                                    zappa_returndict["isBase64Encoded"] = True
+                            else:
+                                zappa_returndict['body'] = response.data
                         else:
-                            zappa_returndict['body'] = response.data
-                    else:
-                        zappa_returndict['body'] = response.get_data(as_text=True)
+                            zappa_returndict['body'] = response.get_data(as_text=True)
 
-                zappa_returndict['statusCode'] = response.status_code
-                zappa_returndict['headers'] = {}
-                for key, value in response.headers:
-                    zappa_returndict['headers'][key] = value
+                    zappa_returndict['statusCode'] = response.status_code
+                    zappa_returndict['headers'] = {}
+                    for key, value in response.headers:
+                        zappa_returndict['headers'][key] = value
 
-                # Calculate the total response time,
-                # and log it in the Common Log format.
-                time_end = datetime.datetime.now()
-                delta = time_end - time_start
-                response_time_ms = delta.total_seconds() * 1000
-                response.content = response.data
-                common_log(environ, response, response_time=response_time_ms)
+                    # Calculate the total response time,
+                    # and log it in the Common Log format.
+                    time_end = datetime.datetime.now()
+                    delta = time_end - time_start
+                    response_time_ms = delta.total_seconds() * 1000
+                    response.content = response.data
+                    common_log(environ, response, response_time=response_time_ms)
 
-                return zappa_returndict
+                    return zappa_returndict
         except Exception as e:  # pragma: no cover
 
             # Print statements are visible in the logs either way
