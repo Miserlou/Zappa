@@ -87,3 +87,7 @@ zappa_settings.json
 *.sublime-workspace
 
 README.test.md
+
+# VirtualEnv
+venv/
+venv3/
