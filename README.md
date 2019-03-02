@@ -328,12 +328,12 @@ In addition, Zappa will also automatically set the correct execution permissions
 
 To further reduce the final package file size, you can:
 
-* Set `slim_handler` to `True` to upload a small handler to Lambdas and the rest of the package to S3. For more details, see the [merged pull request](https://github.com/Miserlou/Zappa/pull/548) and the [discussion in the original issue](https://github.com/Miserlou/Zappa/issues/510). See also: [Large Projects](#large-projects).
+* Set `slim_handler` to `True` to upload a small handler to Lambda and the rest of the package to S3. For more details, see the [merged pull request](https://github.com/Miserlou/Zappa/pull/548) and the [discussion in the original issue](https://github.com/Miserlou/Zappa/issues/510). See also: [Large Projects](#large-projects).
 * Use the `exclude` setting and provide a list of regex patterns to exclude from the archive. By default, Zappa will exclude Boto, because [it's already available in the Lambda execution environment](http://docs.aws.amazon.com/lambda/latest/dg/current-supported-versions.html).
 
 ### Template
 
-Similarly to `package`, if you only want the API Gateway CloudFormation template, for use the `template` command:
+Similarly to `package`, if you only want the API Gateway CloudFormation template, use the `template` command:
 
     $ zappa template production --l your-lambda-arn -r your-role-arn
 
@@ -377,7 +377,7 @@ You can filter out the contents of the logs with `--filter`, like so:
 
 Note that this uses the [CloudWatch Logs filter syntax](http://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/FilterAndPatternSyntax.html).
 
-To tail logs without following (to exit immediately after displaying the end of the requested logs, pass `--disable-keep-open`:
+To tail logs without following (to exit immediately after displaying the end of the requested logs), pass `--disable-keep-open`:
 
     $ zappa tail production --since 1h --disable-keep-open
 
@@ -848,7 +848,7 @@ to change Zappa's behavior. Use these at your own risk!
         "certificate_key": "my_key.key", // SSL key file location. Used to manually certify a custom domain
         "certificate_chain": "my_cert_chain.pem", // SSL certificate chain file location. Used to manually certify a custom domain
         "certificate_arn": "arn:aws:acm:us-east-1:1234512345:certificate/aaaa-bbb-cccc-dddd", // ACM certificate ARN (needs to be in us-east-1 region).
-        "cloudwatch_log_level": "OFF", // Enables/configures a level of logging for the given staging. Available options: "OFF", "INFO", "ERROR", default "OFF". C
+        "cloudwatch_log_level": "OFF", // Enables/configures a level of logging for the given staging. Available options: "OFF", "INFO", "ERROR", default "OFF".
         "cloudwatch_data_trace": false, // Logs all data about received events. Default false.
         "cloudwatch_metrics_enabled": false, // Additional metrics for the API Gateway. Default false.
         "cognito": { // for Cognito event triggers
@@ -891,7 +891,7 @@ to change Zappa's behavior. Use these at your own risk!
             "Action": ["rekognition:*"], // AWS Service ARN
             "Resource": "*"
         }],
-        "iam_authorization": true, // optional, use IAM to require request signing. Default false. Note that enabling this will override the authorizer configuration.
+        "iam_authorization": false, // optional, use IAM to require request signing. Default false. Note that enabling this will override the authorizer configuration.
         "include": ["your_special_library_to_load_at_handler_init"], // load special libraries into PYTHONPATH at handler init that certain modules cannot find on path
         "authorizer": {
             "function": "your_module.your_auth_function", // Local function to run for token validation. For more information about the function see below.
@@ -1400,7 +1400,6 @@ For monitoring of different deployments, a unique UUID for each package is avail
 * [Mailchimp Signup Utility](https://github.com/sasha42/Mailchimp-utility) - A microservice for adding people to a mailing list via API.
 * [Zappa Slack Inviter](https://github.com/Miserlou/zappa-slack-inviter) - A tiny, server-less service for inviting new users to your Slack channel.
 * [Serverless Image Host](https://github.com/Miserlou/serverless-imagehost) - A thumbnailing service with Flask, Zappa and Pillow.
-* [Gigger](https://www.gigger.rocks/) - The live music industry's search engine
 * [Zappa BitTorrent Tracker](https://github.com/Miserlou/zappa-bittorrent-tracker) - An experimental server-less BitTorrent tracker. Work in progress.
 * [JankyGlance](https://github.com/Miserlou/JankyGlance) - A server-less Yahoo! Pipes replacement.
 * [LambdaMailer](https://github.com/tryolabs/lambda-mailer) - A server-less endpoint for processing a contact form.
@@ -1442,11 +1441,11 @@ Are you using Zappa? Let us know and we'll list your site here!
 
 Zappa goes quite far beyond what Lambda and API Gateway were ever intended to handle. As a result, there are quite a few hacks in here that allow it to work. Some of those include, but aren't limited to..
 
-* ~~~Using VTL to map body, headers, method, params and query strings into JSON, and then turning that into valid WSGI.~~~
-* ~~~Attaching response codes to response bodies, Base64 encoding the whole thing, using that as a regex to route the response code, decoding the body in VTL, and mapping the response body to that.~~~
-* ~~~Packing and _Base58_ encoding multiple cookies into a single cookie because we can only map one kind.~~~
+* Using VTL to map body, headers, method, params and query strings into JSON, and then turning that into valid WSGI.
+* Attaching response codes to response bodies, Base64 encoding the whole thing, using that as a regex to route the response code, decoding the body in VTL, and mapping the response body to that.
+* Packing and _Base58_ encoding multiple cookies into a single cookie because we can only map one kind.
 * Forcing the case permutations of "Set-Cookie" in order to return multiple headers at the same time.
-* ~~~Turning cookie-setting 301/302 responses into 200 responses with HTML redirects, because we have no way to set headers on redirects.~~~
+* Turning cookie-setting 301/302 responses into 200 responses with HTML redirects, because we have no way to set headers on redirects.
 
 ## Contributing
 
