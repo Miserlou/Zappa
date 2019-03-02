@@ -97,6 +97,15 @@ import time
 
 from .utilities import get_topic_name
 
+# https://github.com/Miserlou/Zappa/issues/1332
+import sys
+PY2 = (sys.version_info[0] == 2)
+if PY2:
+    unicode = unicode
+else:
+    unicode = str
+    
+
 try:
     from zappa_settings import ASYNC_RESPONSE_TABLE
 except ImportError:
@@ -460,8 +469,13 @@ def import_and_get_task(task_path):
 
 def get_func_task_path(func):
     """
-    Format the modular task path for a function via inspection.
+    Format the modular task path for a function via inspection if param is
+    a function. If the param is of type string, it will simply return it. 
     """
+    #https://github.com/Miserlou/Zappa/issues/1332
+    if isinstance(func , (str, unicode)):
+        return func
+    
     module_path = inspect.getmodule(func).__name__
     task_path = '{module_path}.{func_name}'.format(
                                         module_path=module_path,
