@@ -4,10 +4,10 @@ from setuptools import setup
 from io import open
 from zappa import __version__
 
-with open('README.md') as readme_file:
+with open('README.md', encoding='utf-8') as readme_file:
     long_description = readme_file.read()
 
-with open(os.path.join(os.path.dirname(__file__), 'requirements.txt')) as f:
+with open(os.path.join(os.path.dirname(__file__), 'requirements.txt'), encoding='utf-8') as f:
     if sys.version_info[0] == 2:
         required = f.read().splitlines()
     else:
@@ -20,7 +20,7 @@ with open(os.path.join(os.path.dirname(__file__), 'requirements.txt')) as f:
             if 'futures' not in package:
                 required.append(package)
 
-with open(os.path.join(os.path.dirname(__file__), 'test_requirements.txt')) as f:
+with open(os.path.join(os.path.dirname(__file__), 'test_requirements.txt'), encoding='utf-8') as f:
     test_required = f.read().splitlines()
 
 setup(

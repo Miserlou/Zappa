@@ -441,7 +441,7 @@ class Zappa(object):
             except OSError:
                 print("This directory seems to have pyenv's local venv, "
                       "but pyenv executable was not found.")
-            with open('.python-version', 'r') as f:
+            with open('.python-version', 'r', encoding='utf-8') as f:
                 # minor fix in how .python-version is read
                 # Related: https://github.com/Miserlou/Zappa/issues/921
                 env_name = f.readline().strip()
@@ -577,11 +577,11 @@ class Zappa(object):
         #         'build_user': _get_user(),
         #         'build_time': datetime.datetime.utcnow().isoformat(),
         #     }
-        #     with open(path.join(DIR, 'id_info.json'), 'w') as f:
+        #     with open(path.join(DIR, 'id_info.json'), 'w', encoding='utf-8') as f:
         #         json.dump(build_info, f)
         #     return True
 
-        package_id_file = open(os.path.join(temp_project_path, 'package_info.json'), 'w')
+        package_id_file = open(os.path.join(temp_project_path, 'package_info.json'), 'w', encoding='utf-8')
         dumped = json.dumps(package_info, indent=4)
         try:
             package_id_file.write(dumped)
@@ -668,7 +668,7 @@ class Zappa(object):
 
         elif archive_format == 'tarball':
             print("Packaging project as gzipped tarball.")
-            archivef = tarfile.open(archive_path, 'w|gz')
+            archivef = tarfile.open(archive_path, 'w|gz', encoding='utf-8')
 
         for root, dirs, files in os.walk(temp_project_path):
 
@@ -707,7 +707,7 @@ class Zappa(object):
                     zipi = zipfile.ZipInfo(os.path.join(root.replace(temp_project_path, '').lstrip(os.sep), filename))
                     zipi.create_system = 3
                     zipi.external_attr = 0o755 << int(16) # Is this P2/P3 functional?
-                    with open(os.path.join(root, filename), 'rb') as f:
+                    with open(os.path.join(root, filename), 'rb', encoding='utf-8') as f:
                         archivef.writestr(zipi, f.read(), compression_method)
                 elif archive_format == 'tarball':
                     tarinfo = tarfile.TarInfo(os.path.join(root.replace(temp_project_path, '').lstrip(os.sep), filename))
@@ -728,7 +728,7 @@ class Zappa(object):
             else:
                 if '__init__.py' not in files and not conflicts_with_a_neighbouring_module(root):
                     tmp_init = os.path.join(temp_project_path, '__init__.py')
-                    open(tmp_init, 'a').close()
+                    open(tmp_init, 'a', encoding='utf-8').close()
                     os.chmod(tmp_init,  0o755)
 
                     arcname = os.path.join(root.replace(temp_project_path, ''),
@@ -759,7 +759,7 @@ class Zappa(object):
         # Trash the local version to help with package space saving
         shutil.rmtree(os.path.join(path, package_name), ignore_errors=True)
 
-        tar = tarfile.open(lambda_package['path'], mode="r:gz")
+        tar = tarfile.open(lambda_package['path'], mode="r:gz", encoding='utf-8')
         for member in tar.getmembers():
             tar.extract(member, path)
 
