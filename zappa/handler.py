@@ -21,11 +21,11 @@ from werkzeug.wrappers import Response
 try:
     from zappa.middleware import ZappaWSGIMiddleware
     from zappa.wsgi import create_wsgi_request, common_log
-    from zappa.utilities import parse_s3_url
+    from zappa.utilities import merge_headers, parse_s3_url
 except ImportError as e:  # pragma: no cover
     from .middleware import ZappaWSGIMiddleware
     from .wsgi import create_wsgi_request, common_log
-    from .utilities import parse_s3_url
+    from .utilities import merge_headers, parse_s3_url
 
 
 # Set up logging
@@ -340,21 +340,6 @@ class LambdaHandler(object):
         print("get_function_for_cognito_trigger", self.settings.COGNITO_TRIGGER_MAPPING, trigger, self.settings.COGNITO_TRIGGER_MAPPING.get(trigger))
         return self.settings.COGNITO_TRIGGER_MAPPING.get(trigger)
 
-    def _merge_headers(self, event):
-        """
-        Merge the values of headers and multiValueHeaders into a single dict.
-        """
-        headers = event.get('headers') or {}
-        multi_headers = (event.get('multiValueHeaders') or {}).copy()
-        for h in (set(multi_headers.keys()) | set(headers.keys())):
-            if h not in multi_headers:
-                multi_headers[h] = [headers[h]]
-            elif h in headers:
-                multi_headers[h].append(headers[h])
-            multi_headers[h] = ', '.join(multi_headers[h])
-        return multi_headers
-        
-
     def handler(self, event, context):
         """
         An AWS Lambda function which parses specific API Gateway input into a
@@ -487,8 +472,7 @@ class LambdaHandler(object):
             if event.get('httpMethod', None):
 
                 script_name = ''
-                headers = self._merge_headers(event)
-                event['headers'] = headers
+                headers = merge_headers(event)
                 if headers:
                     host = headers.get('Host')
                 else:
@@ -531,37 +515,41 @@ class LambdaHandler(object):
                 environ['lambda.event'] = event
 
                 # Execute the application
-                response = Response.from_app(self.wsgi_app, environ)
+                with Response.from_app(self.wsgi_app, environ) as response:
+                    # This is the object we're going to return.
+                    # Pack the WSGI response into our special dictionary.
+                    zappa_returndict = dict()
 
-                # This is the object we're going to return.
-                # Pack the WSGI response into our special dictionary.
-                zappa_returndict = dict()
-
-                if response.data:
-                    if settings.BINARY_SUPPORT:
-                        if not response.mimetype.startswith("text/") \
-                            or response.mimetype != "application/json":
-                                zappa_returndict['body'] = base64.b64encode(response.data).decode('utf-8')
-                                zappa_returndict["isBase64Encoded"] = True
+                    if response.data:
+                        if settings.BINARY_SUPPORT:
+                            if not response.mimetype.startswith("text/") \
+                                or response.mimetype != "application/json":
+                                    zappa_returndict['body'] = base64.b64encode(response.data).decode('utf-8')
+                                    zappa_returndict["isBase64Encoded"] = True
+                            else:
+                                zappa_returndict['body'] = response.data
                         else:
-                            zappa_returndict['body'] = response.data
-                    else:
-                        zappa_returndict['body'] = response.get_data(as_text=True)
+                            zappa_returndict['body'] = response.get_data(as_text=True)
 
-                zappa_returndict['statusCode'] = response.status_code
-                zappa_returndict['headers'] = {}
-                for key, value in response.headers:
-                    zappa_returndict['headers'][key] = value
+                    zappa_returndict['statusCode'] = response.status_code
+                    if 'headers' in event:
+                        zappa_returndict['headers'] = {}
+                        for key, value in response.headers:
+                            zappa_returndict['headers'][key] = value
+                    if 'multiValueHeaders' in event:
+                        zappa_returndict['multiValueHeaders'] = {}
+                        for key, value in response.headers:
+                            zappa_returndict['multiValueHeaders'][key] = response.headers.getlist(key)
 
-                # Calculate the total response time,
-                # and log it in the Common Log format.
-                time_end = datetime.datetime.now()
-                delta = time_end - time_start
-                response_time_ms = delta.total_seconds() * 1000
-                response.content = response.data
-                common_log(environ, response, response_time=response_time_ms)
+                    # Calculate the total response time,
+                    # and log it in the Common Log format.
+                    time_end = datetime.datetime.now()
+                    delta = time_end - time_start
+                    response_time_ms = delta.total_seconds() * 1000
+                    response.content = response.data
+                    common_log(environ, response, response_time=response_time_ms)
 
-                return zappa_returndict
+                    return zappa_returndict
         except Exception as e:  # pragma: no cover
 
             # Print statements are visible in the logs either way

@@ -328,12 +328,12 @@ In addition, Zappa will also automatically set the correct execution permissions
 
 To further reduce the final package file size, you can:
 
-* Set `slim_handler` to `True` to upload a small handler to Lambdas and the rest of the package to S3. For more details, see the [merged pull request](https://github.com/Miserlou/Zappa/pull/548) and the [discussion in the original issue](https://github.com/Miserlou/Zappa/issues/510). See also: [Large Projects](#large-projects).
+* Set `slim_handler` to `True` to upload a small handler to Lambda and the rest of the package to S3. For more details, see the [merged pull request](https://github.com/Miserlou/Zappa/pull/548) and the [discussion in the original issue](https://github.com/Miserlou/Zappa/issues/510). See also: [Large Projects](#large-projects).
 * Use the `exclude` setting and provide a list of regex patterns to exclude from the archive. By default, Zappa will exclude Boto, because [it's already available in the Lambda execution environment](http://docs.aws.amazon.com/lambda/latest/dg/current-supported-versions.html).
 
 ### Template
 
-Similarly to `package`, if you only want the API Gateway CloudFormation template, for use the `template` command:
+Similarly to `package`, if you only want the API Gateway CloudFormation template, use the `template` command:
 
     $ zappa template production --l your-lambda-arn -r your-role-arn
 
@@ -377,7 +377,7 @@ You can filter out the contents of the logs with `--filter`, like so:
 
 Note that this uses the [CloudWatch Logs filter syntax](http://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/FilterAndPatternSyntax.html).
 
-To tail logs without following (to exit immediately after displaying the end of the requested logs, pass `--disable-keep-open`:
+To tail logs without following (to exit immediately after displaying the end of the requested logs), pass `--disable-keep-open`:
 
     $ zappa tail production --since 1h --disable-keep-open
 
@@ -395,6 +395,9 @@ Any remote print statements made and the value the function returned will then b
 You can also invoke interpretable Python 2.7 or Python 3.6 strings directly by using `--raw`, like so:
 
     $ zappa invoke production "print 1 + 2 + 3" --raw
+    
+For instance, it can come in handy if you want to create your first `superuser` on a RDS database running in a VPC (like Serverless Aurora):
+    $ zappa invoke staging "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('username', 'email', 'password')" --raw
 
 ### Django Management Commands
 
@@ -845,7 +848,7 @@ to change Zappa's behavior. Use these at your own risk!
         "certificate_key": "my_key.key", // SSL key file location. Used to manually certify a custom domain
         "certificate_chain": "my_cert_chain.pem", // SSL certificate chain file location. Used to manually certify a custom domain
         "certificate_arn": "arn:aws:acm:us-east-1:1234512345:certificate/aaaa-bbb-cccc-dddd", // ACM certificate ARN (needs to be in us-east-1 region).
-        "cloudwatch_log_level": "OFF", // Enables/configures a level of logging for the given staging. Available options: "OFF", "INFO", "ERROR", default "OFF". C
+        "cloudwatch_log_level": "OFF", // Enables/configures a level of logging for the given staging. Available options: "OFF", "INFO", "ERROR", default "OFF".
         "cloudwatch_data_trace": false, // Logs all data about received events. Default false.
         "cloudwatch_metrics_enabled": false, // Additional metrics for the API Gateway. Default false.
         "cognito": { // for Cognito event triggers
@@ -888,7 +891,7 @@ to change Zappa's behavior. Use these at your own risk!
             "Action": ["rekognition:*"], // AWS Service ARN
             "Resource": "*"
         }],
-        "iam_authorization": true, // optional, use IAM to require request signing. Default false. Note that enabling this will override the authorizer configuration.
+        "iam_authorization": false, // optional, use IAM to require request signing. Default false. Note that enabling this will override the authorizer configuration.
         "include": ["your_special_library_to_load_at_handler_init"], // load special libraries into PYTHONPATH at handler init that certain modules cannot find on path
         "authorizer": {
             "function": "your_module.your_auth_function", // Local function to run for token validation. For more information about the function see below.
@@ -985,13 +988,13 @@ Similarly, you may want to design your application so that static binary uploads
 
 ### Enabling CORS
 
-The simplest way to enable CORS (Cross-Origin Resource Sharing) for your Zappa application is to set `cors` to `true` in your Zappa settings file and update, which is the equivalent of pushing the "Enable CORS" button in the AWS API Gateway console. This is disabled by default, but you may wish to enable it for APIs which are accessed from other domains, etc. It may also conflict with `binary_support`, so you should set that to `false` in your settings.
+The simplest way to enable CORS (Cross-Origin Resource Sharing) for your Zappa application is to set `cors` to `true` in your Zappa settings file and update, which is the equivalent of pushing the "Enable CORS" button in the AWS API Gateway console. This is disabled by default, but you may wish to enable it for APIs which are accessed from other domains, etc.
 
 You can also simply handle CORS directly in your application. Your web framework will probably have an extension to do this, such as [django-cors-headers](https://github.com/ottoyiu/django-cors-headers) or [Flask-CORS](https://github.com/corydolphin/flask-cors). Using these will make your code more portable.
 
 ### Large Projects
 
-AWS currently limits Lambda zip sizes to 50 megabytes. If your project is larger than that, set `slim_handler: true` in your `zappa_settings.json`. In this case, your fat application package will be replaced with a small handler-only package. The handler file then pulls the rest of the large project down from S3 at run time! The initial load of the large project may add to startup overhead, but the difference should be minimal on a warm lambda function. Note that this will also eat into the _memory_ space of your application function.
+AWS currently limits Lambda zip sizes to 50 megabytes. If your project is larger than that, set `slim_handler: true` in your `zappa_settings.json`. In this case, your fat application package will be replaced with a small handler-only package. The handler file then pulls the rest of the large project down from S3 at run time! The initial load of the large project may add to startup overhead, but the difference should be minimal on a warm lambda function. Note that this will also eat into the storage space of your application function. Note that AWS currently [limits](https://docs.aws.amazon.com/lambda/latest/dg/limits.html) the `/tmp` directory storage to 512 MB, so your project must still be smaller than that.
 
 ### Enabling Bash Completion
 
@@ -1147,7 +1150,7 @@ _Note: if you rely on these as well as `environment_variables`, and you have the
 _S3 remote environment variables were added to Zappa before AWS introduced native environment variables for Lambda (via the console and cli). Before going down this route check if above make more sense for your usecase._
 
 
-If you want to use remote environment variables to configure your application (which is especially useful for things like sensitive credentials), you can create a file and place it in an S3 bucket to which your Zappa application has access to. To do this, add the `remote_env` key to zappa_settings pointing to a file containing a flat JSON object, so that each key-value pair on the object will be set as an environment variable and value whenever a new lambda instance spins up.
+If you want to use remote environment variables to configure your application (which is especially useful for things like sensitive credentials), you can create a file and place it in an S3 bucket to which your Zappa application has access. To do this, add the `remote_env` key to zappa_settings pointing to a file containing a flat JSON object, so that each key-value pair on the object will be set as an environment variable and value whenever a new lambda instance spins up.
 
 For example, to ensure your application has access to the database credentials without storing them in your version control, you can add a file to S3 with the connection string and load it into the lambda environment using the `remote_env` configuration setting.
 
@@ -1304,16 +1307,20 @@ For example, with Flask:
 
 ```python
 from aws_xray_sdk.core import xray_recorder
-from aws_xray_sdk.ext.flask.middleware import XRayMiddleware
 
 app = Flask(__name__)
 
 xray_recorder.configure(service='my_app_name')
-XRayMiddleware(app, xray_recorder)
+
+@route('/hello')
+@xray_recorder.capture('hello')
+def hello_world:
+    return 'Hello'
 ```
 
-The official [X-Ray documentation for Python](http://docs.aws.amazon.com/xray-sdk-for-python/latest/reference/) has more information on how to use this with your code.
+You may use the capture decorator to create subsegments around functions, or `xray_recorder.begin_subsegment('subsegment_name')` and `xray_recorder.end_subsegment()` within a function. The official [X-Ray documentation for Python](http://docs.aws.amazon.com/xray-sdk-for-python/latest/reference/) has more information on how to use this with your code.
 
+Note that you may create subsegments in your code but an exception will be raised if you try to create a segment, as it is [created by the lambda worker](https://github.com/aws/aws-xray-sdk-python/issues/2). This also means that if you use Flask you must not use the [XRayMiddleware the documentation suggests](https://docs.aws.amazon.com/xray/latest/devguide/xray-sdk-python-middleware.html).
 
 ### Globally Available Server-less Architectures
 
@@ -1393,7 +1400,6 @@ For monitoring of different deployments, a unique UUID for each package is avail
 * [Mailchimp Signup Utility](https://github.com/sasha42/Mailchimp-utility) - A microservice for adding people to a mailing list via API.
 * [Zappa Slack Inviter](https://github.com/Miserlou/zappa-slack-inviter) - A tiny, server-less service for inviting new users to your Slack channel.
 * [Serverless Image Host](https://github.com/Miserlou/serverless-imagehost) - A thumbnailing service with Flask, Zappa and Pillow.
-* [Gigger](https://www.gigger.rocks/) - The live music industry's search engine
 * [Zappa BitTorrent Tracker](https://github.com/Miserlou/zappa-bittorrent-tracker) - An experimental server-less BitTorrent tracker. Work in progress.
 * [JankyGlance](https://github.com/Miserlou/JankyGlance) - A server-less Yahoo! Pipes replacement.
 * [LambdaMailer](https://github.com/tryolabs/lambda-mailer) - A server-less endpoint for processing a contact form.
@@ -1435,11 +1441,11 @@ Are you using Zappa? Let us know and we'll list your site here!
 
 Zappa goes quite far beyond what Lambda and API Gateway were ever intended to handle. As a result, there are quite a few hacks in here that allow it to work. Some of those include, but aren't limited to..
 
-* ~~~Using VTL to map body, headers, method, params and query strings into JSON, and then turning that into valid WSGI.~~~
-* ~~~Attaching response codes to response bodies, Base64 encoding the whole thing, using that as a regex to route the response code, decoding the body in VTL, and mapping the response body to that.~~~
-* ~~~Packing and _Base58_ encoding multiple cookies into a single cookie because we can only map one kind.~~~
+* Using VTL to map body, headers, method, params and query strings into JSON, and then turning that into valid WSGI.
+* Attaching response codes to response bodies, Base64 encoding the whole thing, using that as a regex to route the response code, decoding the body in VTL, and mapping the response body to that.
+* Packing and _Base58_ encoding multiple cookies into a single cookie because we can only map one kind.
 * Forcing the case permutations of "Set-Cookie" in order to return multiple headers at the same time.
-* ~~~Turning cookie-setting 301/302 responses into 200 responses with HTML redirects, because we have no way to set headers on redirects.~~~
+* Turning cookie-setting 301/302 responses into 200 responses with HTML redirects, because we have no way to set headers on redirects.
 
 ## Contributing
 

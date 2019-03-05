@@ -71,47 +71,6 @@ class TestZappa(unittest.TestCase):
             f_with_type_hint = scope['f_with_type_hint']
             self.assertIsNone(LambdaHandler.run_function(f_with_type_hint, 'e', 'c'))
 
-    def test_merge_headers_no_multi_value(self):
-        lh = LambdaHandler('tests.test_wsgi_script_name_settings')
-        event = {
-            'headers': {
-                'a': 'b'
-            }
-        }
-
-        merged = lh._merge_headers(event)
-        self.assertEqual(merged['a'], 'b')
-
-    def test_merge_headers_combine_values(self):
-        lh = LambdaHandler('tests.test_wsgi_script_name_settings')
-        event = {
-            'headers': {
-                'a': 'b',
-                'z': 'q'
-            },
-            'multiValueHeaders': {
-                'a': ['c'],
-                'x': ['y']
-            }
-        }
-
-        merged = lh._merge_headers(event)
-        self.assertEqual(merged['a'], 'c, b')
-        self.assertEqual(merged['x'], 'y')
-        self.assertEqual(merged['z'], 'q')
-
-    def test_merge_headers_no_single_value(self):
-        lh = LambdaHandler('tests.test_wsgi_script_name_settings')
-        event = {
-            'multiValueHeaders': {
-                'a': ['c', 'd'],
-                'x': ['y', 'z', 'f']
-            }
-        }
-        merged = lh._merge_headers(event)
-        self.assertEqual(merged['a'], 'c, d')
-        self.assertEqual(merged['x'], 'y, z, f')
-
     def test_wsgi_script_name_on_aws_url(self):
         """
         Ensure that requests to the amazonaws.com host for an API with a
@@ -202,6 +161,34 @@ class TestZappa(unittest.TestCase):
             response['body'],
             'https://example.com/return/request/url'
         )
+
+    def test_wsgi_script_name_with_multi_value_querystring(self):
+        """
+        Ensure that requests generated with multivalue querystrings succeed.
+        """
+        lh = LambdaHandler('tests.test_wsgi_script_name_settings')
+
+        event = {
+            'body': '',
+            'resource': '/{proxy+}',
+            'requestContext': {},
+            'multiValueQueryStringParameters': {
+                'multi': ['value', 'qs']
+            },
+            'multiValueHeaders': {
+                'Host': ['example.com'],
+            },
+            'pathParameters': {
+                'proxy': 'return/request/url'
+            },
+            'httpMethod': 'GET',
+            'stageVariables': {},
+            'path': '/return/request/url'
+        }
+        response = lh.handler(event, None)
+
+        self.assertEqual(response['statusCode'], 200)
+        self.assertIn('multiValueQueryStringParameters', response)
 
     def test_wsgi_script_name_on_test_request(self):
         """

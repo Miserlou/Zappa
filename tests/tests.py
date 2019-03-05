@@ -1929,7 +1929,7 @@ USE_TZ = True
         self.assertFalse(is_valid_bucket_name("abbaba."))
         self.assertFalse(is_valid_bucket_name("-abbaba"))
         self.assertFalse(is_valid_bucket_name("ababab-"))
-        # Bucket names must be a series of one or more labels. Adjacent labels are separated by a single period (.). 
+        # Bucket names must be a series of one or more labels. Adjacent labels are separated by a single period (.).
         # Each label must start and end with a lowercase letter or a number.
         self.assertFalse(is_valid_bucket_name("aaa..bbbb"))
         self.assertFalse(is_valid_bucket_name("aaa.-bbb.ccc"))
