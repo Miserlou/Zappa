@@ -33,6 +33,8 @@ from zappa.core import Zappa, ASSUME_POLICY, ATTACH_POLICY
 
 if sys.version_info[0] < 3:
     from cStringIO import StringIO as OldStringIO
+else:
+    from io import StringIO
 
 def random_string(length):
     return ''.join(random.choice(string.printable) for _ in range(length))
@@ -1308,9 +1310,11 @@ class TestZappa(unittest.TestCase):
         * Writes errors when certificate settings haven't been specified.
         * Calls Zappa correctly for creates vs. updates.
         """
-        old_stdout = sys.stderr
+        old_stdout = sys.stdout
         if sys.version_info[0] < 3:
             sys.stdout = OldStringIO() # print() barfs on io.* types.
+        else:
+            sys.stdout = StringIO()
 
         try:
             zappa_cli = ZappaCLI()
@@ -1397,46 +1401,49 @@ class TestZappa(unittest.TestCase):
 
             # With all certificate settings, make sure Zappa's domain calls
             # are executed.
-            cert_file = tempfile.NamedTemporaryFile()
-            cert_file.write(b"Hello world")
-            cert_file.flush()
+            cert_file = tempfile.NamedTemporaryFile(delete=False)
+            try:
+                cert_file.write(b"Hello world")
+                cert_file.close()
 
-            zappa_cli.zappa_settings["stage"].update({
-                "certificate": cert_file.name,
-                "certificate_key": cert_file.name,
-                "certificate_chain": cert_file.name
-            })
-            sys.stdout.truncate(0)
-            zappa_cli.certify()
-            zappa_cli.zappa.create_domain_name.assert_called_once()
-            zappa_cli.zappa.update_route53_records.assert_called_once()
-            zappa_cli.zappa.update_domain_name.assert_not_called()
-            log_output = sys.stdout.getvalue()
-            self.assertIn("Created a new domain name", log_output)
+                zappa_cli.zappa_settings["stage"].update({
+                    "certificate": cert_file.name,
+                    "certificate_key": cert_file.name,
+                    "certificate_chain": cert_file.name
+                })
+                sys.stdout.truncate(0)
+                zappa_cli.certify()
+                zappa_cli.zappa.create_domain_name.assert_called_once()
+                zappa_cli.zappa.update_route53_records.assert_called_once()
+                zappa_cli.zappa.update_domain_name.assert_not_called()
+                log_output = sys.stdout.getvalue()
+                self.assertIn("Created a new domain name", log_output)
 
-            zappa_cli.zappa.reset_mock()
-            zappa_cli.zappa.domain_names["test.example.com"] = "*.example.com"
-            sys.stdout.truncate(0)
-            zappa_cli.certify()
-            zappa_cli.zappa.update_domain_name.assert_called_once()
-            zappa_cli.zappa.update_route53_records.assert_not_called()
-            zappa_cli.zappa.create_domain_name.assert_not_called()
-            log_output = sys.stdout.getvalue()
-            self.assertNotIn("Created a new domain name", log_output)
+                zappa_cli.zappa.reset_mock()
+                zappa_cli.zappa.domain_names["test.example.com"] = "*.example.com"
+                sys.stdout.truncate(0)
+                zappa_cli.certify()
+                zappa_cli.zappa.update_domain_name.assert_called_once()
+                zappa_cli.zappa.update_route53_records.assert_not_called()
+                zappa_cli.zappa.create_domain_name.assert_not_called()
+                log_output = sys.stdout.getvalue()
+                self.assertNotIn("Created a new domain name", log_output)
 
-            # Test creating domain without Route53
-            zappa_cli.zappa_settings["stage"].update({
-                "route53_enabled": False,
-            })
-            zappa_cli.zappa.reset_mock()
-            zappa_cli.zappa.domain_names["test.example.com"] = ""
-            sys.stdout.truncate(0)
-            zappa_cli.certify()
-            zappa_cli.zappa.create_domain_name.assert_called_once()
-            zappa_cli.zappa.update_route53_records.assert_not_called()
-            zappa_cli.zappa.update_domain_name.assert_not_called()
-            log_output = sys.stdout.getvalue()
-            self.assertIn("Created a new domain name", log_output)
+                # Test creating domain without Route53
+                zappa_cli.zappa_settings["stage"].update({
+                    "route53_enabled": False,
+                })
+                zappa_cli.zappa.reset_mock()
+                zappa_cli.zappa.domain_names["test.example.com"] = ""
+                sys.stdout.truncate(0)
+                zappa_cli.certify()
+                zappa_cli.zappa.create_domain_name.assert_called_once()
+                zappa_cli.zappa.update_route53_records.assert_not_called()
+                zappa_cli.zappa.update_domain_name.assert_not_called()
+                log_output = sys.stdout.getvalue()
+                self.assertIn("Created a new domain name", log_output)
+            finally:
+                os.remove(cert_file.name)
         finally:
             sys.stdout = old_stdout
 
