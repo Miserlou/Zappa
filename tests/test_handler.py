@@ -245,7 +245,6 @@ class TestZappa(unittest.TestCase):
         self.assertEqual(response['statusCode'], 500)
         mocked_exception_handler.assert_called()
 
-
     def test_wsgi_script_on_cognito_event_request(self):
         """
         Ensure that requests sent by cognito behave sensibly
