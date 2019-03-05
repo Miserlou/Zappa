@@ -707,7 +707,7 @@ class Zappa(object):
                     zipi = zipfile.ZipInfo(os.path.join(root.replace(temp_project_path, '').lstrip(os.sep), filename))
                     zipi.create_system = 3
                     zipi.external_attr = 0o755 << int(16) # Is this P2/P3 functional?
-                    with open(os.path.join(root, filename), 'rb', encoding='utf-8') as f:
+                    with open(os.path.join(root, filename), 'rb') as f:
                         archivef.writestr(zipi, f.read(), compression_method)
                 elif archive_format == 'tarball':
                     tarinfo = tarfile.TarInfo(os.path.join(root.replace(temp_project_path, '').lstrip(os.sep), filename))
