@@ -2,6 +2,7 @@ from mock import Mock
 import sys
 import unittest
 from zappa.handler import LambdaHandler
+from zappa.utilities import merge_headers
 
 
 def no_args():
@@ -154,13 +155,8 @@ class TestZappa(unittest.TestCase):
             'path': '/return/request/url'
         }
         response = lh.handler(event, None)
-
         self.assertEqual(response['statusCode'], 200)
-        print(response['body'])
-        self.assertEqual(
-            response['body'],
-            'https://example.com/return/request/url'
-        )
+        self.assertIn('multiValueHeaders', response)
 
     def test_wsgi_script_name_with_multi_value_querystring(self):
         """
@@ -188,7 +184,10 @@ class TestZappa(unittest.TestCase):
         response = lh.handler(event, None)
 
         self.assertEqual(response['statusCode'], 200)
-        self.assertIn('multiValueQueryStringParameters', response)
+        self.assertEqual(
+            response['body'],
+            'https://example.com/return/request/url?multi=value&multi=qs'
+        )
 
     def test_wsgi_script_name_on_test_request(self):
         """
@@ -338,3 +337,44 @@ class TestZappa(unittest.TestCase):
 
         response = lh.lambda_handler(event, None)
         mocked_exception_handler.assert_called
+
+        #
+    # Header merging - see https://github.com/Miserlou/Zappa/pull/1802.
+    #
+    def test_merge_headers_no_multi_value(self):
+        event = {
+            'headers': {
+                'a': 'b'
+            }
+        }
+
+        merged = merge_headers(event)
+        self.assertEqual(merged['a'], 'b')
+
+    def test_merge_headers_combine_values(self):
+        event = {
+            'headers': {
+                'a': 'b',
+                'z': 'q'
+            },
+            'multiValueHeaders': {
+                'a': ['c'],
+                'x': ['y']
+            }
+        }
+
+        merged = merge_headers(event)
+        self.assertEqual(merged['a'], 'c, b')
+        self.assertEqual(merged['x'], 'y')
+        self.assertEqual(merged['z'], 'q')
+
+    def test_merge_headers_no_single_value(self):
+        event = {
+            'multiValueHeaders': {
+                'a': ['c', 'd'],
+                'x': ['y', 'z', 'f']
+            }
+        }
+        merged = merge_headers(event)
+        self.assertEqual(merged['a'], 'c, d')
+        self.assertEqual(merged['x'], 'y, z, f')

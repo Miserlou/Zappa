@@ -55,10 +55,10 @@ def create_wsgi_request(event_info,
         """
         if 'multiValueQueryStringParameters' in event_info:
             query = event_info['multiValueQueryStringParameters']
-            query_string = urlencode(query, doseq=True)
+            query_string = urlencode(query, doseq=True) if query else ''
         else:
             query = event_info.get('queryStringParameters', {})
-            query_string = urlencode(query)
+            query_string = urlencode(query) if query else ''
 
         if context_header_mappings:
             for key, value in context_header_mappings.items():
