@@ -30,7 +30,7 @@ class TestDocs(unittest.TestCase):
 
         state = "prologue"
 
-        with open(path.join(path.dirname(DIR), "README.md")) as f:
+        with open(path.join(path.dirname(DIR), "README.md"), encoding='utf-8') as f:
             contents = f.readlines()
             old_readme = copy(contents)
             state = "prologue"
