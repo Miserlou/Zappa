@@ -1696,7 +1696,7 @@ USE_TZ = True
 
     def test_warnings_are_ignored(self):
         zappa = Zappa()
-        zappa.aws_region = 'us-west-1'
+        zappa.aws_region = 'us-west-11' 
         self.assertRaises(Warning, zappa.load_credentials)
 
         zappa.ignore_warnings = True
