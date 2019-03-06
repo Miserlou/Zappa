@@ -43,6 +43,12 @@ from .utilities import (add_event_source, conflicts_with_a_neighbouring_module,
                         get_topic_name, get_venv_from_python_version,
                         human_size, remove_event_source)
 
+try:  # Pathlib for https://github.com/Miserlou/Zappa/issues/1358
+    from pathlib import Path, PosixPath   # Python 3
+    Path().expanduser()
+except (ImportError,AttributeError):
+    from pathlib2 import Path, PosixPath  # Python 2
+
 try:
     unicode        # Python 2
 except NameError:
@@ -354,11 +360,11 @@ class Zappa(object):
                 egg_path = df.read().decode('utf-8').splitlines()[0].strip()
                 pkgs = set([x.split(".")[0] for x in find_packages(egg_path, exclude=['test', 'tests'])])
                 for pkg in pkgs:
-                    copytree(os.path.join(egg_path, pkg), os.path.join(temp_package_path, pkg), metadata=False, symlinks=False)
+                    copytree(Path(egg_path) / pkg, Path(temp_package_path) / pkg, metadata=False, symlinks=False)
 
         if temp_package_path:
             # now remove any egg-links as they will cause issues if they still exist
-            for link in glob.glob(os.path.join(temp_package_path, "*.egg-link")):
+            for link in glob.glob(Path(temp_package_path) / "*.egg-link"):
                 os.remove(link)
 
     def get_deps_list(self, pkg_name, installed_distros=None):
@@ -389,14 +395,14 @@ class Zappa(object):
         current_venv = self.get_current_venv()
 
         # Make a new folder for the handler packages
-        ve_path = os.path.join(os.getcwd(), 'handler_venv')
+        ve_path = Path(os.getcwd()) / 'handler_venv'
 
         if os.sys.platform == 'win32':
-            current_site_packages_dir = os.path.join(current_venv, 'Lib', 'site-packages')
-            venv_site_packages_dir = os.path.join(ve_path, 'Lib', 'site-packages')
+            current_site_packages_dir = Path(current_venv) / 'Lib' / 'site-packages'
+            venv_site_packages_dir = Path(ve_path) / 'Lib' / 'site-packages'
         else:
-            current_site_packages_dir = os.path.join(current_venv, 'lib', get_venv_from_python_version(), 'site-packages')
-            venv_site_packages_dir = os.path.join(ve_path, 'lib', get_venv_from_python_version(), 'site-packages')
+            current_site_packages_dir = Path(current_venv) 'lib' / get_venv_from_python_version() / 'site-packages'
+            venv_site_packages_dir = Path(ve_path) / 'lib' / get_venv_from_python_version() / 'site-packages'
 
         if not os.path.isdir(venv_site_packages_dir):
             os.makedirs(venv_site_packages_dir)
@@ -404,7 +410,7 @@ class Zappa(object):
         # Copy zappa* to the new virtualenv
         zappa_things = [z for z in os.listdir(current_site_packages_dir) if z.lower()[:5] == 'zappa']
         for z in zappa_things:
-            copytree(os.path.join(current_site_packages_dir, z), os.path.join(venv_site_packages_dir, z))
+            copytree(Path(current_site_packages_dir) / z, Path(venv_site_packages_dir) / z)
 
         # Use pip to download zappa's dependencies. Copying from current venv causes issues with things like PyYAML that installs as yaml
         zappa_deps = self.get_deps_list('zappa')
@@ -490,7 +496,7 @@ class Zappa(object):
                 archive_fname = prefix + '-' + build_time + '.tar.gz'
         else:
             archive_fname = output
-        archive_path = os.path.join(cwd, archive_fname)
+        archive_path = Path(cwd) / archive_fname
 
         # Files that should be excluded from the zip
         if exclude is None:
@@ -510,7 +516,7 @@ class Zappa(object):
             while path and tail:
                 parts.append(tail)
                 (path, tail) = os.path.split(path)
-            parts.append(os.path.join(path, tail))
+            parts.append(Path(path) / tail)
             return list(map(os.path.normpath, parts))[::-1]
         split_venv = splitpath(venv)
         split_cwd = splitpath(cwd)
@@ -540,7 +546,7 @@ class Zappa(object):
         # because that's where AWS Lambda looks for it. It can't be inside a package.
         if handler_file:
             filename = handler_file.split(os.sep)[-1]
-            shutil.copy(handler_file, os.path.join(temp_project_path, filename))
+            shutil.copy(handler_file, Path(temp_project_path) / filename)
 
         # Create and populate package ID file and write to temp project path
         package_info = {}
@@ -581,7 +587,7 @@ class Zappa(object):
         #         json.dump(build_info, f)
         #     return True
 
-        package_id_file = open(os.path.join(temp_project_path, 'package_info.json'), 'w', encoding='utf-8')
+        package_id_file = open(Path(temp_project_path) / 'package_info.json', 'w', encoding='utf-8')
         dumped = json.dumps(package_info, indent=4)
         try:
             package_id_file.write(dumped)
@@ -593,10 +599,10 @@ class Zappa(object):
         egg_links = []
         temp_package_path = tempfile.mkdtemp(prefix='zappa-packages')
         if os.sys.platform == 'win32':
-            site_packages = os.path.join(venv, 'Lib', 'site-packages')
+            site_packages = Path(venv) / 'Lib' / 'site-packages'
         else:
-            site_packages = os.path.join(venv, 'lib', get_venv_from_python_version(), 'site-packages')
-        egg_links.extend(glob.glob(os.path.join(site_packages, '*.egg-link')))
+            site_packages = Path(venv) / 'lib' / get_venv_from_python_version() / 'site-packages'
+        egg_links.extend(glob.glob(Path(site_packages) / '*.egg-link'))
 
         if minify:
             excludes = ZIP_EXCLUDES + exclude
@@ -605,9 +611,9 @@ class Zappa(object):
             copytree(site_packages, temp_package_path, metadata=False, symlinks=False)
 
         # We may have 64-bin specific packages too.
-        site_packages_64 = os.path.join(venv, 'lib64', get_venv_from_python_version(), 'site-packages')
+        site_packages_64 = Path(venv) / 'lib64' / get_venv_from_python_version() / 'site-packages'
         if os.path.exists(site_packages_64):
-            egg_links.extend(glob.glob(os.path.join(site_packages_64, '*.egg-link')))
+            egg_links.extend(glob.glob(Path(site_packages_64) / '*.egg-link'))
             if minify:
                 excludes = ZIP_EXCLUDES + exclude
                 copytree(site_packages_64, temp_package_path, metadata = False, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
@@ -634,7 +640,7 @@ class Zappa(object):
                         if cached_wheel_path:
                             # Otherwise try to use manylinux packages from PyPi..
                             # Related: https://github.com/Miserlou/Zappa/issues/398
-                            shutil.rmtree(os.path.join(temp_project_path, installed_package_name), ignore_errors=True)
+                            shutil.rmtree(Path(temp_project_path) / installed_package_name, ignore_errors=True)
                             with zipfile.ZipFile(cached_wheel_path) as zfile:
                                 zfile.extractall(temp_project_path)
 
@@ -684,7 +690,7 @@ class Zappa(object):
                 # we can skip the python source code as we'll just
                 # use the compiled bytecode anyway..
                 if filename[-3:] == '.py' and root[-10:] != 'migrations':
-                    abs_filname = os.path.join(root, filename)
+                    abs_filname = Path(root) / filename
                     abs_pyc_filename = abs_filname + 'c'
                     if os.path.isfile(abs_pyc_filename):
 
@@ -699,29 +705,29 @@ class Zappa(object):
                 # Make sure that the files are all correctly chmodded
                 # Related: https://github.com/Miserlou/Zappa/issues/484
                 # Related: https://github.com/Miserlou/Zappa/issues/682
-                os.chmod(os.path.join(root, filename),  0o755)
+                os.chmod(Path(root) / filename,  0o755)
 
                 if archive_format == 'zip':
                     # Actually put the file into the proper place in the zip
                     # Related: https://github.com/Miserlou/Zappa/pull/716
-                    zipi = zipfile.ZipInfo(os.path.join(root.replace(temp_project_path, '').lstrip(os.sep), filename))
+                    zipi = zipfile.ZipInfo(PosixPath(root).relative_to(temp_project_path) / filename)
                     zipi.create_system = 3
                     zipi.external_attr = 0o755 << int(16) # Is this P2/P3 functional?
-                    with open(os.path.join(root, filename), 'rb') as f:
+                    with open(Path(root) / filename, 'rb') as f:
                         archivef.writestr(zipi, f.read(), compression_method)
                 elif archive_format == 'tarball':
                     tarinfo = tarfile.TarInfo(
                         # Replace Windows path separators \ with posix separators /
                         # Related: https://github.com/Miserlou/Zappa/issues/1358
                         # Related: https://github.com/Miserlou/Zappa/pull/1570
-                        os.path.join(root.replace(temp_project_path, '').lstrip(os.sep).replace('\\', '/'), filename)
+                        PosixPath(root).relative_to(temp_project_path) / filename
                     )
                     tarinfo.mode = 0o755
 
-                    stat = os.stat(os.path.join(root, filename))
+                    stat = os.stat(Path(root) / filename)
                     tarinfo.mtime = stat.st_mtime
                     tarinfo.size = stat.st_size
-                    with open(os.path.join(root, filename), 'rb') as f:
+                    with open(Path(root) / filename, 'rb') as f:
                         archivef.addfile(tarinfo, f)
 
             # Create python init file if it does not exist
@@ -732,12 +738,12 @@ class Zappa(object):
                 dirs[:] = [d for d in dirs if d != root]
             else:
                 if '__init__.py' not in files and not conflicts_with_a_neighbouring_module(root):
-                    tmp_init = os.path.join(temp_project_path, '__init__.py')
+                    tmp_init = Path(temp_project_path) / '__init__.py'
                     open(tmp_init, 'a', encoding='utf-8').close()
                     os.chmod(tmp_init,  0o755)
 
-                    arcname = os.path.join(root.replace(temp_project_path, ''),
-                                           os.path.join(root.replace(temp_project_path, ''), '__init__.py'))
+                    # TODO not tutally sure about this
+                    arcname = PosixPath(root).relative_to(temp_project_path) / '__init__.py'
                     if archive_format == 'zip':
                         archivef.write(tmp_init, arcname)
                     elif archive_format == 'tarball':
@@ -762,7 +768,7 @@ class Zappa(object):
         lambda_package = lambda_packages[package_name][self.runtime]
 
         # Trash the local version to help with package space saving
-        shutil.rmtree(os.path.join(path, package_name), ignore_errors=True)
+        shutil.rmtree(Path(path) / package_name, ignore_errors=True)
 
         tar = tarfile.open(lambda_package['path'], mode="r:gz", encoding='utf-8')
         for member in tar.getmembers():
@@ -835,12 +841,12 @@ class Zappa(object):
         """
         Gets the locally stored version of a manylinux wheel. If one does not exist, the function downloads it.
         """
-        cached_wheels_dir = os.path.join(tempfile.gettempdir(), 'cached_wheels')
+        cached_wheels_dir = Path(tempfile.gettempdir()) / 'cached_wheels'
         if not os.path.isdir(cached_wheels_dir):
             os.makedirs(cached_wheels_dir)
 
         wheel_file = '{0!s}-{1!s}-{2!s}'.format(package_name, package_version, self.manylinux_wheel_file_suffix)
-        wheel_path = os.path.join(cached_wheels_dir, wheel_file)
+        wheel_path = Path(cached_wheels_dir) / wheel_file
 
         if not os.path.exists(wheel_path) or not zipfile.is_zipfile(wheel_path):
             # The file is not cached, download it.
@@ -872,7 +878,7 @@ class Zappa(object):
         also caches the JSON file so that we don't have to poll Pypi
         every time.
         """
-        cached_pypi_info_dir = os.path.join(tempfile.gettempdir(), 'cached_pypi_info')
+        cached_pypi_info_dir = Path(tempfile.gettempdir()) / 'cached_pypi_info'
         if not os.path.isdir(cached_pypi_info_dir):
             os.makedirs(cached_pypi_info_dir)
         # Even though the metadata is for the package, we save it in a
@@ -884,7 +890,7 @@ class Zappa(object):
         # Replace Windows path separators \ with posix separators /
         # Related: https://github.com/Miserlou/Zappa/issues/1358
         # Related: https://github.com/Miserlou/Zappa/pull/1570
-        json_file_path = os.path.join(cached_pypi_info_dir, json_file).replace('\\', '/')
+        json_file_path = PosixPath(cached_pypi_info_dir) / json_file
         if os.path.exists(json_file_path):
             with open(json_file_path, 'rb') as metafile:
                 data = json.load(metafile)
