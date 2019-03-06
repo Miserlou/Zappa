@@ -18,7 +18,7 @@ class TestDocs(unittest.TestCase):
 
         start_marker = "<!-- START doctoc generated TOC please keep comment here to allow auto update -->\n"
         end_marker = "<!-- END doctoc generated TOC please keep comment here to allow auto update -->\n"
-        template = '''{prologue}{start_marker}<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+        template = u'''{prologue}{start_marker}<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 
 {toc}
