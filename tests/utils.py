@@ -5,6 +5,11 @@ import functools
 from contextlib import contextmanager
 from mock import patch, MagicMock
 
+try:
+    file
+except NameError:  # builtin 'file' was removed in Python 3
+    from io import IOBase as file
+
 PLACEBO_DIR = os.path.join(os.path.dirname(__file__), 'placebo')
 
 

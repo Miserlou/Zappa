@@ -193,7 +193,7 @@ class SnsAsyncResponse(LambdaAsyncResponse):
     def __init__(self, lambda_function_name=None, aws_region=None, capture_response=False, **kwargs):
 
         self.lambda_function_name = lambda_function_name
-        self.aws_region=aws_region
+        self.aws_region = aws_region
 
         if kwargs.get('boto_session'):
             self.client = kwargs.get('boto_session').client('sns')
