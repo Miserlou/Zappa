@@ -38,6 +38,13 @@ if sys.version_info[0] < 3:
 else:
     from io import StringIO
 
+try:  # Pathlib for https://github.com/Miserlou/Zappa/issues/1358
+    from pathlib import Path, PurePosixPath   # Python 3
+    Path().expanduser()
+except (ImportError,AttributeError):
+    from pathlib2 import Path, PurePosixPath  # Python 2
+
+
 def random_string(length):
     return ''.join(random.choice(string.printable) for _ in range(length))
 
@@ -122,8 +129,8 @@ class TestZappa(unittest.TestCase):
 
                 # make sure we copied the right directories
                 mock_copytree.assert_called_with(
-                    os.path.join(egg_path, 'package'),
-                    os.path.join(temp_package_dir, 'package'),
+                    Path(egg_path) / 'package',
+                    Path(temp_package_dir) / 'package',
                     metadata=False, symlinks=False
                 )
                 self.assertEqual(mock_copytree.call_count, 1)

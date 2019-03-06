@@ -44,10 +44,10 @@ from .utilities import (add_event_source, conflicts_with_a_neighbouring_module,
                         human_size, remove_event_source)
 
 try:  # Pathlib for https://github.com/Miserlou/Zappa/issues/1358
-    from pathlib import Path, PosixPath   # Python 3
+    from pathlib import Path, PurePosixPath   # Python 3
     Path().expanduser()
 except (ImportError,AttributeError):
-    from pathlib2 import Path, PosixPath  # Python 2
+    from pathlib2 import Path, PurePosixPath  # Python 2
 
 try:
     unicode        # Python 2
@@ -410,7 +410,7 @@ class Zappa(object):
         # Copy zappa* to the new virtualenv
         zappa_things = [z for z in os.listdir(current_site_packages_dir) if z.lower()[:5] == 'zappa']
         for z in zappa_things:
-            copytree(Path(current_site_packages_dir) / z, Path(venv_site_packages_dir) / z)
+            copytree(current_site_packages_dir / z, venv_site_packages_dir / z)
 
         # Use pip to download zappa's dependencies. Copying from current venv causes issues with things like PyYAML that installs as yaml
         zappa_deps = self.get_deps_list('zappa')
@@ -418,7 +418,7 @@ class Zappa(object):
 
         # Need to manually add setuptools
         pkg_list.append('setuptools')
-        command = ["pip", "install", "--quiet", "--target", venv_site_packages_dir] + pkg_list
+        command = ["pip", "install", "--quiet", "--target", str(venv_site_packages_dir)] + pkg_list
 
         # This is the recommended method for installing packages if you don't
         # to depend on `setuptools`
@@ -602,7 +602,7 @@ class Zappa(object):
             site_packages = Path(venv) / 'Lib' / 'site-packages'
         else:
             site_packages = Path(venv) / 'lib' / get_venv_from_python_version() / 'site-packages'
-        egg_links.extend(glob.glob(Path(site_packages) / '*.egg-link'))
+        egg_links.extend(Path(site_packages).glob('*.egg-link'))
 
         if minify:
             excludes = ZIP_EXCLUDES + exclude
@@ -613,7 +613,7 @@ class Zappa(object):
         # We may have 64-bin specific packages too.
         site_packages_64 = Path(venv) / 'lib64' / get_venv_from_python_version() / 'site-packages'
         if os.path.exists(site_packages_64):
-            egg_links.extend(glob.glob(Path(site_packages_64) / '*.egg-link'))
+            egg_links.extend(Path(site_packages_64).glob('*.egg-link'))
             if minify:
                 excludes = ZIP_EXCLUDES + exclude
                 copytree(site_packages_64, temp_package_path, metadata = False, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
@@ -674,7 +674,7 @@ class Zappa(object):
 
         elif archive_format == 'tarball':
             print("Packaging project as gzipped tarball.")
-            archivef = tarfile.open(archive_path, 'w|gz', encoding='utf-8')
+            archivef = tarfile.open(str(archive_path), 'w|gz', encoding='utf-8')
 
         for root, dirs, files in os.walk(temp_project_path):
 
@@ -691,7 +691,7 @@ class Zappa(object):
                 # use the compiled bytecode anyway..
                 if filename[-3:] == '.py' and root[-10:] != 'migrations':
                     abs_filname = Path(root) / filename
-                    abs_pyc_filename = abs_filname + 'c'
+                    abs_pyc_filename = abs_filname / 'c'
                     if os.path.isfile(abs_pyc_filename):
 
                         # but only if the pyc is older than the py,
@@ -710,7 +710,7 @@ class Zappa(object):
                 if archive_format == 'zip':
                     # Actually put the file into the proper place in the zip
                     # Related: https://github.com/Miserlou/Zappa/pull/716
-                    zipi = zipfile.ZipInfo(PosixPath(root).relative_to(temp_project_path) / filename)
+                    zipi = zipfile.ZipInfo(str(PurePosixPath(Path(root).relative_to(temp_project_path)) / filename))
                     zipi.create_system = 3
                     zipi.external_attr = 0o755 << int(16) # Is this P2/P3 functional?
                     with open(Path(root) / filename, 'rb') as f:
@@ -720,7 +720,7 @@ class Zappa(object):
                         # Replace Windows path separators \ with posix separators /
                         # Related: https://github.com/Miserlou/Zappa/issues/1358
                         # Related: https://github.com/Miserlou/Zappa/pull/1570
-                        PosixPath(root).relative_to(temp_project_path) / filename
+                        str(PurePosixPath(Path(root).relative_to(temp_project_path)) / filename)
                     )
                     tarinfo.mode = 0o755
 
@@ -743,7 +743,7 @@ class Zappa(object):
                     os.chmod(tmp_init,  0o755)
 
                     # TODO not tutally sure about this
-                    arcname = PosixPath(root).relative_to(temp_project_path) / '__init__.py'
+                    arcname = PurePosixPath(Path(root).relative_to(temp_project_path)) / '__init__.py'
                     if archive_format == 'zip':
                         archivef.write(tmp_init, arcname)
                     elif archive_format == 'tarball':
@@ -789,10 +789,12 @@ class Zappa(object):
 
         package_to_keep = [x.lower() for x in package_to_keep]
 
-        installed_packages = {package.project_name.lower(): package.version for package in
+        # Convert Path to strs https://github.com/Miserlou/Zappa/issues/1358
+        installed_packages = {str(package.project_name).lower(): package.version for package in
                               pkg_resources.WorkingSet()
-                              if package.project_name.lower() in package_to_keep
-                              or package.location.lower() in [site_packages.lower(), site_packages_64.lower()]}
+                              if str(package.project_name).lower() in package_to_keep
+                              or str(package.location).lower() in [str(site_packages).lower(),
+                                                                   str(site_packages_64).lower()]}
 
         return installed_packages
 
@@ -887,10 +889,7 @@ class Zappa(object):
         # version of the package.
         # Related: https://github.com/Miserlou/Zappa/issues/899
         json_file = '{0!s}-{1!s}.json'.format(package_name, package_version)
-        # Replace Windows path separators \ with posix separators /
-        # Related: https://github.com/Miserlou/Zappa/issues/1358
-        # Related: https://github.com/Miserlou/Zappa/pull/1570
-        json_file_path = PosixPath(cached_pypi_info_dir) / json_file
+        json_file_path = Path(cached_pypi_info_dir) / json_file
         if os.path.exists(json_file_path):
             with open(json_file_path, 'rb') as metafile:
                 data = json.load(metafile)
