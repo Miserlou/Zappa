@@ -1697,18 +1697,11 @@ USE_TZ = True
     def test_warnings_are_ignored(self):
         zappa = Zappa()
         zappa.aws_region = 'us-west-11' 
-        self.assertRaises(Warning, zappa.load_credentials)
+        with self.assertRaises(Warning):
+            zappa.load_credentials()
 
         zappa.ignore_warnings = True
         zappa.load_credentials()
-
-        zappa_cli = ZappaCLI()
-        zappa_cli.api_stage = 'ttt888'
-        with self.assertRaises(SystemExit):
-            zappa_cli.load_settings('tests/test_bad_project_name.json')
-
-        zappa_cli.ignore_warnings = True
-        zappa_cli.load_settings('tests/test_bad_project_name.json')
 
     def test_shameless(self):
         shamelessly_promote()
