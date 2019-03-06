@@ -1,3 +1,4 @@
+from io import open
 import unittest
 import re
 from os import path, environ
