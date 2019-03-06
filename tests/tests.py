@@ -7,7 +7,9 @@ import flask
 import mock
 import os
 import random
+import re
 import string
+import tarfile
 import zipfile
 import unittest
 import shutil
@@ -38,6 +40,18 @@ else:
 
 def random_string(length):
     return ''.join(random.choice(string.printable) for _ in range(length))
+
+
+def no_windows_path_seperators(filename):
+    """Check that there are no Windows file seperators in the slim-handler tar.gz file"""
+    found = True
+    tar = tarfile.open(filename, "r:gz")
+    for archive_fname in tar.getnames():
+        if re.search(r"\\",archive_fname, re.DOTALL):
+            found = False
+            break
+    tar.close()
+    return found
 
 
 class TestZappa(unittest.TestCase):
@@ -1845,6 +1859,8 @@ USE_TZ = True
 
         self.assertTrue(os.path.isfile(zappa_cli.handler_path))
         self.assertTrue(os.path.isfile(zappa_cli.zip_path))
+        # https://github.com/Miserlou/Zappa/issues/1358
+        self.assertTrue(no_windows_path_seperators(zappa_cli.zip_path))
 
         zappa_cli.remove_local_zip()
 
