@@ -401,7 +401,7 @@ class Zappa(object):
             current_site_packages_dir = Path(current_venv) / 'Lib' / 'site-packages'
             venv_site_packages_dir = Path(ve_path) / 'Lib' / 'site-packages'
         else:
-            current_site_packages_dir = Path(current_venv) 'lib' / get_venv_from_python_version() / 'site-packages'
+            current_site_packages_dir = Path(current_venv) / 'lib' / get_venv_from_python_version() / 'site-packages'
             venv_site_packages_dir = Path(ve_path) / 'lib' / get_venv_from_python_version() / 'site-packages'
 
         if not os.path.isdir(venv_site_packages_dir):
