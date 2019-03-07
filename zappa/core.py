@@ -270,9 +270,11 @@ class Zappa(object):
 
         if self.runtime == 'python2.7':
             self.manylinux_wheel_file_suffix = 'cp27mu-manylinux1_x86_64.whl'
-        else:
+        elif self.runtime == 'python3.6':
             self.manylinux_wheel_file_suffix = 'cp36m-manylinux1_x86_64.whl'
-
+        else:
+            self.manylinux_wheel_file_suffix = 'cp37m-manylinux1_x86_64.whl'
+            
         self.endpoint_urls = endpoint_urls
         self.xray_tracing = xray_tracing
 
