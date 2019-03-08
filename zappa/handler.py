@@ -21,11 +21,11 @@ from werkzeug.wrappers import Response
 try:
     from zappa.middleware import ZappaWSGIMiddleware
     from zappa.wsgi import create_wsgi_request, common_log
-    from zappa.utilities import parse_s3_url
+    from zappa.utilities import merge_headers, parse_s3_url
 except ImportError as e:  # pragma: no cover
     from .middleware import ZappaWSGIMiddleware
     from .wsgi import create_wsgi_request, common_log
-    from .utilities import parse_s3_url
+    from .utilities import merge_headers, parse_s3_url
 
 
 # Set up logging
@@ -472,7 +472,7 @@ class LambdaHandler(object):
             if event.get('httpMethod', None):
 
                 script_name = ''
-                headers = event.get('headers')
+                headers = merge_headers(event)
                 if headers:
                     host = headers.get('Host')
                 else:
@@ -532,9 +532,14 @@ class LambdaHandler(object):
                             zappa_returndict['body'] = response.get_data(as_text=True)
 
                     zappa_returndict['statusCode'] = response.status_code
-                    zappa_returndict['headers'] = {}
-                    for key, value in response.headers:
-                        zappa_returndict['headers'][key] = value
+                    if 'headers' in event:
+                        zappa_returndict['headers'] = {}
+                        for key, value in response.headers:
+                            zappa_returndict['headers'][key] = value
+                    if 'multiValueHeaders' in event:
+                        zappa_returndict['multiValueHeaders'] = {}
+                        for key, value in response.headers:
+                            zappa_returndict['multiValueHeaders'][key] = response.headers.getlist(key)
 
                     # Calculate the total response time,
                     # and log it in the Common Log format.

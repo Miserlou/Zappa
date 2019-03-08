@@ -2,6 +2,7 @@ from mock import Mock
 import sys
 import unittest
 from zappa.handler import LambdaHandler
+from zappa.utilities import merge_headers
 
 
 def no_args():
@@ -131,6 +132,63 @@ class TestZappa(unittest.TestCase):
             'https://example.com/return/request/url'
         )
 
+    def test_wsgi_script_name_with_multi_value_header(self):
+        """
+        Ensure that requests generated with multivalued headers (such as
+        from an ALB with Multi Valued Headers enabled) succeed.
+        """
+        lh = LambdaHandler('tests.test_wsgi_script_name_settings')
+
+        event = {
+            'body': '',
+            'resource': '/{proxy+}',
+            'requestContext': {},
+            'queryStringParameters': {},
+            'multiValueHeaders': {
+                'Host': ['example.com'],
+            },
+            'pathParameters': {
+                'proxy': 'return/request/url'
+            },
+            'httpMethod': 'GET',
+            'stageVariables': {},
+            'path': '/return/request/url'
+        }
+        response = lh.handler(event, None)
+        self.assertEqual(response['statusCode'], 200)
+        self.assertIn('multiValueHeaders', response)
+
+    def test_wsgi_script_name_with_multi_value_querystring(self):
+        """
+        Ensure that requests generated with multivalue querystrings succeed.
+        """
+        lh = LambdaHandler('tests.test_wsgi_script_name_settings')
+
+        event = {
+            'body': '',
+            'resource': '/{proxy+}',
+            'requestContext': {},
+            'multiValueQueryStringParameters': {
+                'multi': ['value', 'qs']
+            },
+            'multiValueHeaders': {
+                'Host': ['example.com'],
+            },
+            'pathParameters': {
+                'proxy': 'return/request/url'
+            },
+            'httpMethod': 'GET',
+            'stageVariables': {},
+            'path': '/return/request/url'
+        }
+        response = lh.handler(event, None)
+
+        self.assertEqual(response['statusCode'], 200)
+        self.assertEqual(
+            response['body'],
+            'https://example.com/return/request/url?multi=value&multi=qs'
+        )
+
     def test_wsgi_script_name_on_test_request(self):
         """
         Ensure that requests sent by the "Send test request" button behaves
@@ -186,7 +244,6 @@ class TestZappa(unittest.TestCase):
 
         self.assertEqual(response['statusCode'], 500)
         mocked_exception_handler.assert_called()
-
 
     def test_wsgi_script_on_cognito_event_request(self):
         """
@@ -279,3 +336,44 @@ class TestZappa(unittest.TestCase):
 
         response = lh.lambda_handler(event, None)
         mocked_exception_handler.assert_called
+
+        #
+    # Header merging - see https://github.com/Miserlou/Zappa/pull/1802.
+    #
+    def test_merge_headers_no_multi_value(self):
+        event = {
+            'headers': {
+                'a': 'b'
+            }
+        }
+
+        merged = merge_headers(event)
+        self.assertEqual(merged['a'], 'b')
+
+    def test_merge_headers_combine_values(self):
+        event = {
+            'headers': {
+                'a': 'b',
+                'z': 'q'
+            },
+            'multiValueHeaders': {
+                'a': ['c'],
+                'x': ['y']
+            }
+        }
+
+        merged = merge_headers(event)
+        self.assertEqual(merged['a'], 'c, b')
+        self.assertEqual(merged['x'], 'y')
+        self.assertEqual(merged['z'], 'q')
+
+    def test_merge_headers_no_single_value(self):
+        event = {
+            'multiValueHeaders': {
+                'a': ['c', 'd'],
+                'x': ['y', 'z', 'f']
+            }
+        }
+        merged = merge_headers(event)
+        self.assertEqual(merged['a'], 'c, d')
+        self.assertEqual(merged['x'], 'y, z, f')

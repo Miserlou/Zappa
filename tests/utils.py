@@ -73,4 +73,3 @@ def patch_open():
 
     with patch('__builtin__.open', stub_open):
         yield mock_open, mock_file
-

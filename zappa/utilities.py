@@ -537,7 +537,7 @@ def is_valid_bucket_name(name):
     # Bucket names must start with a lowercase letter or number.
     if not (name[0].islower() or name[0].isdigit()):
         return False
-    # Bucket names must be a series of one or more labels. Adjacent labels are separated by a single period (.). 
+    # Bucket names must be a series of one or more labels. Adjacent labels are separated by a single period (.).
     for label in name.split("."):
         # Each label must start and end with a lowercase letter or a number.
         if len(label) < 1:
@@ -556,3 +556,20 @@ def is_valid_bucket_name(name):
         return False
 
     return True
+
+
+def merge_headers(event):
+    """
+    Merge the values of headers and multiValueHeaders into a single dict.
+    Opens up support for multivalue headers via API Gateway and ALB.
+    See: https://github.com/Miserlou/Zappa/pull/1756
+    """
+    headers = event.get('headers') or {}
+    multi_headers = (event.get('multiValueHeaders') or {}).copy()
+    for h in (set(multi_headers.keys()) | set(headers.keys())):
+        if h not in multi_headers:
+            multi_headers[h] = [headers[h]]
+        elif h in headers:
+            multi_headers[h].append(headers[h])
+        multi_headers[h] = ', '.join(multi_headers[h])
+    return multi_headers
