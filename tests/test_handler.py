@@ -337,7 +337,7 @@ class TestZappa(unittest.TestCase):
         response = lh.lambda_handler(event, None)
         mocked_exception_handler.assert_called
 
- def test_wsgi_script_name_on_alb_event(self):
+    def test_wsgi_script_name_on_alb_event(self):
         """
         Ensure ALB-triggered events are properly handled by LambdaHandler
         ALB-forwarded events have a slightly different request structure than API-Gateway

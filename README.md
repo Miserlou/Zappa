@@ -76,7 +76,7 @@
   - [Using Zappa With Docker](#using-zappa-with-docker)
   - [Dead Letter Queues](#dead-letter-queues)
   - [Unique Package ID](#unique-package-id)
-  - [ALB Event Source](#alb-event-source)
+  - [Application Load Balancer Event Source](#application-load-balancer-event-source)
 - [Zappa Guides](#zappa-guides)
 - [Zappa in the Press](#zappa-in-the-press)
 - [Sites Using Zappa](#sites-using-zappa)
@@ -396,7 +396,7 @@ Any remote print statements made and the value the function returned will then b
 You can also invoke interpretable Python 2.7 or Python 3.6 strings directly by using `--raw`, like so:
 
     $ zappa invoke production "print 1 + 2 + 3" --raw
-    
+
 For instance, it can come in handy if you want to create your first `superuser` on a RDS database running in a VPC (like Serverless Aurora):
     $ zappa invoke staging "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('username', 'email', 'password')" --raw
 
@@ -426,10 +426,10 @@ Currently, the easiest of these to use are the AWS Certificate Manager certifica
 
 Once configured as described below, all of these methods use the same command:
 
-    $ zappa certify 
+    $ zappa certify
 
 When deploying from a CI/CD system, you can use:
-    
+
     $ zappa certify --yes
 
 to skip the confirmation prompt.
@@ -563,7 +563,7 @@ Optionally you can add [SNS message filters](http://docs.aws.amazon.com/sns/late
        ]
 ```
 
-[SQS](https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html) is also pulling messages from a stream.  At this time, [only "Standard" queues can trigger lambda events, not "FIFO" queues](https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html).  Read the AWS Documentation carefully since Lambda calls the SQS DeleteMessage API on your behalf once your function completes successfully.  
+[SQS](https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html) is also pulling messages from a stream.  At this time, [only "Standard" queues can trigger lambda events, not "FIFO" queues](https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html).  Read the AWS Documentation carefully since Lambda calls the SQS DeleteMessage API on your behalf once your function completes successfully.
 
 ```javascript
        "events": [
@@ -590,7 +590,7 @@ For configuring Lex Bot's intent triggered events:
             }
         }
 	]
- 
+
 ```
 
 Events can also take keyword arguments:
@@ -657,7 +657,7 @@ def make_pie():
 	ingredients = get_ingredients()
 	pie = bake(ingredients)
 	deliver(pie)
-	
+
     except Fault as error:
     	"""send an email"""
 	...
@@ -671,7 +671,7 @@ will cause an email to be sent twice for the same error. See [asynchronous retri
 def make_pie():
     try:
 	"""code block"""
-	
+
     except Fault as error:
     	"""send an email"""
 	...
@@ -1366,16 +1366,21 @@ For monitoring of different deployments, a unique UUID for each package is avail
 }
 ```
 
-### ALB Event Source
+### Application Load Balancer Event Source
 
-Zappa can be used to handle events triggered by Application Load Balancer (ALB). This can be useful when you have functions which may require execution wait times exceeding the hard-limit timeout of 30 seconds imposed by API Gateway/CloudFront, or, you want a straightforward means of housing all components in your VPC.
-[More information](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html)
-To accomplish this:
-1. You probably want to set `use_apigateway` to False in your settings to disable API gateway stack setup/deployment (but both can be supported)
-2. Use `zappa deploy` to deploy the lambda function if it is not already deployed
-3. Manually provision/configure ALB. Manually configure targeting to route to the lambda function. Take care to ensure the security group access is correct. Also ensure the AZs for the load balancer aligns with the lambda function.
+Zappa can be used to handle events triggered by Application Load Balancers (ALB). This can be useful in a few circumstances:
+- Since API Gateway has a hard limit of 30 seconds before timing out, you can use an ALB for longer running requests.
+- API Gateway is billed per-request; therefore, costs can become excessive with high throughput services. ALBs pricing model makes much more sense financially if you're expecting a lot of traffic to your Lambda.
+- ALBs can be placed within a VPC, which may make more sense for private endpoints than using API Gateway's private model (using AWS PrivateLink).
 
-The zappa request handler logic supports both API Gateway and ELB forwarded event formats.
+Zappa can't automatically provision an ALB for you, but you can set your Lambda to be an ALB target by doing the following:
+
+1. If you don't plan on using the Zappa-provisioned API Gateway, you can set `apigateway_enabled` in your Zappa settings to `false`. (A note: you _can_ run both API Gateway and ALB simultaneously as event sources for your Lambda.)
+2. Follow the normal steps for deploying / updating a Zappa service to your AWS account.
+3. Manually provision an Application Load Balancer. More information can be found on AWS' support site under [Getting Started with Application Load Balancers](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/application-load-balancer-getting-started.html). When you get to the step where you're creating your TargetGroup, you'll want to make sure you're registering your Lambda function as the target. *IMPORTANT*: `zappa update` will remove permissions if you set the version target to `$LATEST`. You'll either need to re-create permissions upon calling update, or create a [Lambda alias](https://docs.aws.amazon.com/lambda/latest/dg/versioning-aliases.html) and register that to your TargetGroup.
+
+
+More information on using ALB as an event source for Lambda can be found [here](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html).
 
 ## Zappa Guides
 
