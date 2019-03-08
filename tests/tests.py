@@ -40,9 +40,10 @@ else:
 
 try:  # Pathlib for https://github.com/Miserlou/Zappa/issues/1358
     from pathlib import Path, PurePosixPath   # Python 3
-    Path().expanduser()
+    _PATHLIB = 'pathlib'  # For mocking module
 except (ImportError,AttributeError):
     from pathlib2 import Path, PurePosixPath  # Python 2
+    _PATHLIB = 'pathlib2'  # For mocking module
 
 
 def random_string(length):
@@ -119,7 +120,7 @@ class TestZappa(unittest.TestCase):
             z = Zappa()
             mock_open = mock.mock_open(read_data=egg_path.encode("utf-8"))
             with mock.patch("zappa.core.open", mock_open), \
-                    mock.patch("glob.glob") as mock_glob, \
+                    mock.patch(_PATHLIB + ".Path.glob") as mock_glob, \
                     mock.patch("zappa.core.copytree") as mock_copytree:
                 # we use glob.glob to get the egg-links in the temp packages
                 # directory
@@ -200,11 +201,11 @@ class TestZappa(unittest.TestCase):
         mock_package = collections.namedtuple('mock_package', ['project_name', 'version', 'location'])
         mock_pip_installed_packages = [mock_package('super_package', '0.1', '/venv/site-packages')]
 
-        with mock.patch('os.path.isdir', return_value=True):
+        with mock.patch(_PATHLIB + '.Path.is_dir', return_value=True):
             with mock.patch('os.listdir', return_value=['super_package']):
                 import pkg_resources  # this gets called in non-test Zappa mode
                 with mock.patch('pkg_resources.WorkingSet', return_value=mock_pip_installed_packages):
-                    self.assertDictEqual(z.get_installed_packages('',''), {'super_package' : '0.1'})
+                    self.assertDictEqual(z.get_installed_packages(Path(''),Path('')), {'super_package' : '0.1'})
 
     def test_getting_installed_packages_mixed_case_location(self, *args):
         z = Zappa(runtime='python2.7')
@@ -212,18 +213,19 @@ class TestZappa(unittest.TestCase):
         # mock pip packages call to be same as what our mocked site packages dir has
         mock_package = collections.namedtuple('mock_package', ['project_name', 'version', 'location'])
         mock_pip_installed_packages = [
-            mock_package('SuperPackage', '0.1', '/Venv/site-packages'),
-            mock_package('SuperPackage64', '0.1', '/Venv/site-packages64'),
+            mock_package('SuperPackage', '0.1', str(Path('/Venv/site-packages'))),
+            mock_package('SuperPackage64', '0.1', str(Path('/Venv/site-packages64'))),
         ]
 
-        with mock.patch('os.path.isdir', return_value=True):
+        with mock.patch(_PATHLIB + '.Path.is_dir', return_value=True):
             with mock.patch('os.listdir', return_value=[]):
                 import pkg_resources  # this gets called in non-test Zappa mode
                 with mock.patch('pkg_resources.WorkingSet', return_value=mock_pip_installed_packages):
-                    self.assertDictEqual(z.get_installed_packages('/venv/Site-packages','/venv/site-packages64'), {
-                       'superpackage': '0.1',
-                       'superpackage64': '0.1',
-                })
+                    self.assertDictEqual(z.get_installed_packages(Path('/venv/Site-packages'),
+                                                                  Path('/venv/site-packages64'))
+                                         , {'superpackage': '0.1',
+                                            'superpackage64': '0.1',
+                                            })
 
     def test_getting_installed_packages_mixed_case(self, *args):
         z = Zappa(runtime='python2.7')
@@ -236,7 +238,7 @@ class TestZappa(unittest.TestCase):
             with mock.patch('os.listdir', return_value=['superpackage']):
                 import pkg_resources  # this gets called in non-test Zappa mode
                 with mock.patch('pkg_resources.WorkingSet', return_value=mock_pip_installed_packages):
-                    self.assertDictEqual(z.get_installed_packages('',''), {'superpackage' : '0.1'})
+                    self.assertDictEqual(z.get_installed_packages(Path(''),Path('')), {'superpackage' : '0.1'})
 
 
     def test_load_credentials(self):

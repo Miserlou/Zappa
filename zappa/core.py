@@ -45,7 +45,6 @@ from .utilities import (add_event_source, conflicts_with_a_neighbouring_module,
 
 try:  # Pathlib for https://github.com/Miserlou/Zappa/issues/1358
     from pathlib import Path, PurePosixPath   # Python 3
-    Path().expanduser()
 except (ImportError,AttributeError):
     from pathlib2 import Path, PurePosixPath  # Python 2
 
@@ -404,11 +403,11 @@ class Zappa(object):
             current_site_packages_dir = Path(current_venv) / 'lib' / get_venv_from_python_version() / 'site-packages'
             venv_site_packages_dir = Path(ve_path) / 'lib' / get_venv_from_python_version() / 'site-packages'
 
-        if not os.path.isdir(venv_site_packages_dir):
-            os.makedirs(venv_site_packages_dir)
+        if not venv_site_packages_dir.is_dir():
+            os.makedirs(str(venv_site_packages_dir))  # Python 2 req to have str https://github.com/Miserlou/Zappa/issues/1358
 
         # Copy zappa* to the new virtualenv
-        zappa_things = [z for z in os.listdir(current_site_packages_dir) if z.lower()[:5] == 'zappa']
+        zappa_things = [z for z in os.listdir(str(current_site_packages_dir)) if z.lower()[:5] == 'zappa']
         for z in zappa_things:
             copytree(current_site_packages_dir / z, venv_site_packages_dir / z)
 
@@ -503,23 +502,15 @@ class Zappa(object):
             exclude = list()
 
         # Exclude the zip itself
-        exclude.append(archive_path)
+        exclude.append(str(archive_path))
 
         # Make sure that 'concurrent' is always forbidden.
         # https://github.com/Miserlou/Zappa/issues/827
         if not 'concurrent' in exclude:
             exclude.append('concurrent')
 
-        def splitpath(path):
-            parts = []
-            (path, tail) = os.path.split(path)
-            while path and tail:
-                parts.append(tail)
-                (path, tail) = os.path.split(path)
-            parts.append(Path(path) / tail)
-            return list(map(os.path.normpath, parts))[::-1]
-        split_venv = splitpath(venv)
-        split_cwd = splitpath(cwd)
+        split_venv = Path(venv).parts
+        split_cwd = Path(cwd).parts
 
         # Ideally this should be avoided automatically,
         # but this serves as an okay stop-gap measure.
@@ -546,7 +537,7 @@ class Zappa(object):
         # because that's where AWS Lambda looks for it. It can't be inside a package.
         if handler_file:
             filename = handler_file.split(os.sep)[-1]
-            shutil.copy(handler_file, Path(temp_project_path) / filename)
+            shutil.copy(handler_file, str(Path(temp_project_path) / filename))
 
         # Create and populate package ID file and write to temp project path
         package_info = {}
@@ -587,7 +578,7 @@ class Zappa(object):
         #         json.dump(build_info, f)
         #     return True
 
-        package_id_file = open(Path(temp_project_path) / 'package_info.json', 'w', encoding='utf-8')
+        package_id_file = open(str(Path(temp_project_path) / 'package_info.json'), 'w', encoding='utf-8')
         dumped = json.dumps(package_info, indent=4)
         try:
             package_id_file.write(dumped)
@@ -606,19 +597,19 @@ class Zappa(object):
 
         if minify:
             excludes = ZIP_EXCLUDES + exclude
-            copytree(site_packages, temp_package_path, metadata=False, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
+            copytree(str(site_packages), temp_package_path, metadata=False, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
         else:
-            copytree(site_packages, temp_package_path, metadata=False, symlinks=False)
+            copytree(str(site_packages), temp_package_path, metadata=False, symlinks=False)
 
         # We may have 64-bin specific packages too.
         site_packages_64 = Path(venv) / 'lib64' / get_venv_from_python_version() / 'site-packages'
-        if os.path.exists(site_packages_64):
+        if site_packages_64.exists():
             egg_links.extend(Path(site_packages_64).glob('*.egg-link'))
             if minify:
                 excludes = ZIP_EXCLUDES + exclude
-                copytree(site_packages_64, temp_package_path, metadata = False, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
+                copytree(str(site_packages_64), temp_package_path, metadata = False, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
             else:
-                copytree(site_packages_64, temp_package_path, metadata = False, symlinks=False)
+                copytree(str(site_packages_64), temp_package_path, metadata = False, symlinks=False)
 
         if egg_links:
             self.copy_editable_packages(egg_links, temp_package_path)
@@ -641,7 +632,7 @@ class Zappa(object):
                             # Otherwise try to use manylinux packages from PyPi..
                             # Related: https://github.com/Miserlou/Zappa/issues/398
                             shutil.rmtree(Path(temp_project_path) / installed_package_name, ignore_errors=True)
-                            with zipfile.ZipFile(cached_wheel_path) as zfile:
+                            with zipfile.ZipFile(str(cached_wheel_path)) as zfile:
                                 zfile.extractall(temp_project_path)
 
                         elif self.have_any_lambda_package_version(installed_package_name):
@@ -670,7 +661,7 @@ class Zappa(object):
                 compression_method = zipfile.ZIP_DEFLATED
             except ImportError:  # pragma: no cover
                 compression_method = zipfile.ZIP_STORED
-            archivef = zipfile.ZipFile(archive_path, 'w', compression_method)
+            archivef = zipfile.ZipFile(str(archive_path), 'w', compression_method)
 
         elif archive_format == 'tarball':
             print("Packaging project as gzipped tarball.")
@@ -692,7 +683,7 @@ class Zappa(object):
                 if filename[-3:] == '.py' and root[-10:] != 'migrations':
                     abs_filname = Path(root) / filename
                     abs_pyc_filename = abs_filname / 'c'
-                    if os.path.isfile(abs_pyc_filename):
+                    if abs_pyc_filename.is_file():
 
                         # but only if the pyc is older than the py,
                         # otherwise we'll deploy outdated code!
@@ -705,7 +696,7 @@ class Zappa(object):
                 # Make sure that the files are all correctly chmodded
                 # Related: https://github.com/Miserlou/Zappa/issues/484
                 # Related: https://github.com/Miserlou/Zappa/issues/682
-                os.chmod(Path(root) / filename,  0o755)
+                os.chmod(str(Path(root) / filename),  0o755)
 
                 if archive_format == 'zip':
                     # Actually put the file into the proper place in the zip
@@ -713,7 +704,7 @@ class Zappa(object):
                     zipi = zipfile.ZipInfo(str(PurePosixPath(Path(root).relative_to(temp_project_path)) / filename))
                     zipi.create_system = 3
                     zipi.external_attr = 0o755 << int(16) # Is this P2/P3 functional?
-                    with open(Path(root) / filename, 'rb') as f:
+                    with open(str(Path(root) / filename), 'rb') as f:
                         archivef.writestr(zipi, f.read(), compression_method)
                 elif archive_format == 'tarball':
                     tarinfo = tarfile.TarInfo(
@@ -724,10 +715,10 @@ class Zappa(object):
                     )
                     tarinfo.mode = 0o755
 
-                    stat = os.stat(Path(root) / filename)
+                    stat = os.stat(str(Path(root) / filename))
                     tarinfo.mtime = stat.st_mtime
                     tarinfo.size = stat.st_size
-                    with open(Path(root) / filename, 'rb') as f:
+                    with open(str(Path(root) / filename), 'rb') as f:
                         archivef.addfile(tarinfo, f)
 
             # Create python init file if it does not exist
@@ -738,12 +729,12 @@ class Zappa(object):
                 dirs[:] = [d for d in dirs if d != root]
             else:
                 if '__init__.py' not in files and not conflicts_with_a_neighbouring_module(root):
-                    tmp_init = Path(temp_project_path) / '__init__.py'
+                    tmp_init = str(Path(temp_project_path) / '__init__.py')
                     open(tmp_init, 'a', encoding='utf-8').close()
                     os.chmod(tmp_init,  0o755)
 
                     # TODO not tutally sure about this
-                    arcname = PurePosixPath(Path(root).relative_to(temp_project_path)) / '__init__.py'
+                    arcname = str(PurePosixPath(Path(root).relative_to(temp_project_path)) / '__init__.py')
                     if archive_format == 'zip':
                         archivef.write(tmp_init, arcname)
                     elif archive_format == 'tarball':
@@ -755,9 +746,9 @@ class Zappa(object):
         # Trash the temp directory
         shutil.rmtree(temp_project_path)
         shutil.rmtree(temp_package_path)
-        if os.path.isdir(venv) and slim_handler:
+        if os.path.isdir(str(venv)) and slim_handler:  # Python 2 req to have str https://github.com/Miserlou/Zappa/issues/1358
             # Remove the temporary handler venv folder
-            shutil.rmtree(venv)
+            shutil.rmtree(str(venv))   # Python 2 req to have str https://github.com/Miserlou/Zappa/issues/1358
 
         return archive_fname
 
@@ -782,16 +773,17 @@ class Zappa(object):
         import pkg_resources
 
         package_to_keep = []
-        if os.path.isdir(site_packages):
-            package_to_keep += os.listdir(site_packages)
-        if os.path.isdir(site_packages_64):
-            package_to_keep += os.listdir(site_packages_64)
+        if site_packages.is_dir():
+            package_to_keep += os.listdir(str(site_packages))
+        if site_packages_64.is_dir():
+            package_to_keep += os.listdir(str(site_packages_64))
 
         package_to_keep = [x.lower() for x in package_to_keep]
 
         # Convert Path to strs https://github.com/Miserlou/Zappa/issues/1358
+        x = pkg_resources.WorkingSet()
         installed_packages = {str(package.project_name).lower(): package.version for package in
-                              pkg_resources.WorkingSet()
+                              x
                               if str(package.project_name).lower() in package_to_keep
                               or str(package.location).lower() in [str(site_packages).lower(),
                                                                    str(site_packages_64).lower()]}
@@ -844,23 +836,23 @@ class Zappa(object):
         Gets the locally stored version of a manylinux wheel. If one does not exist, the function downloads it.
         """
         cached_wheels_dir = Path(tempfile.gettempdir()) / 'cached_wheels'
-        if not os.path.isdir(cached_wheels_dir):
+        if not cached_wheels_dir.is_dir():
             os.makedirs(cached_wheels_dir)
 
         wheel_file = '{0!s}-{1!s}-{2!s}'.format(package_name, package_version, self.manylinux_wheel_file_suffix)
         wheel_path = Path(cached_wheels_dir) / wheel_file
 
-        if not os.path.exists(wheel_path) or not zipfile.is_zipfile(wheel_path):
+        if not wheel_path.exists() or not zipfile.is_zipfile(str(wheel_path)):
             # The file is not cached, download it.
             wheel_url = self.get_manylinux_wheel_url(package_name, package_version)
             if not wheel_url:
                 return None
 
             print(" - {}=={}: Downloading".format(package_name, package_version))
-            with open(wheel_path, 'wb') as f:
+            with open(str(wheel_path), 'wb') as f:
                 self.download_url_with_progress(wheel_url, f, disable_progress)
 
-            if not zipfile.is_zipfile(wheel_path):
+            if not zipfile.is_zipfile(str(wheel_path)):
                 return None
         else:
             print(" - {}=={}: Using locally cached manylinux wheel".format(package_name, package_version))
@@ -881,7 +873,7 @@ class Zappa(object):
         every time.
         """
         cached_pypi_info_dir = Path(tempfile.gettempdir()) / 'cached_pypi_info'
-        if not os.path.isdir(cached_pypi_info_dir):
+        if not cached_pypi_info_dir.is_dir():
             os.makedirs(cached_pypi_info_dir)
         # Even though the metadata is for the package, we save it in a
         # filename that includes the package's version. This helps in
@@ -890,8 +882,8 @@ class Zappa(object):
         # Related: https://github.com/Miserlou/Zappa/issues/899
         json_file = '{0!s}-{1!s}.json'.format(package_name, package_version)
         json_file_path = Path(cached_pypi_info_dir) / json_file
-        if os.path.exists(json_file_path):
-            with open(json_file_path, 'rb') as metafile:
+        if json_file_path.exists():
+            with open(str(json_file_path), 'rb') as metafile:
                 data = json.load(metafile)
         else:
             url = 'https://pypi.python.org/pypi/{}/json'.format(package_name)
@@ -900,7 +892,7 @@ class Zappa(object):
                 data = res.json()
             except Exception as e: # pragma: no cover
                 return None
-            with open(json_file_path, 'wb') as metafile:
+            with open(str(json_file_path), 'wb') as metafile:
                 jsondata = json.dumps(data)
                 metafile.write(bytes(jsondata, "utf-8"))
 
