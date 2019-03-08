@@ -355,7 +355,7 @@ class Zappa(object):
     def copy_editable_packages(self, egg_links, temp_package_path):
         """ """
         for egg_link in egg_links:
-            with open(egg_link, 'rb') as df:
+            with open(str(egg_link), 'rb') as df:    # Python 2 req to have str https://github.com/Miserlou/Zappa/issues/1358
                 egg_path = df.read().decode('utf-8').splitlines()[0].strip()
                 pkgs = set([x.split(".")[0] for x in find_packages(egg_path, exclude=['test', 'tests'])])
                 for pkg in pkgs:
