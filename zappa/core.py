@@ -1987,7 +1987,6 @@ class Zappa(object):
         except botocore.client.ClientError:
             return {}
 
-
     def get_api_url(self, lambda_name, stage_name):
         """
         Given a lambda_name and stage_name, return a valid API URL.

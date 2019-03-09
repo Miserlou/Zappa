@@ -2690,12 +2690,13 @@ class ZappaCLI(object):
         # ready and requests will return 504 status_code until ready. 
         # So, if we get a 504 status code, rerun the request up to 4 times or 
         # until we don't get a 504 error
-        if req.status_code == 504:
+        check_status_code = 504
+        if req.status_code == check_status_code:
             i = 0
-            status_code = 504
-            while status_code == 504 and i <= 4:
+            touch_try_count = self.stage_config.get('touch_try_count', 4)
+
+            while req.status_code == check_status_code and i <= touch_try_count:
                 req = requests.get(endpoint_url + touch_path)
-                status_code = req.status_code
                 i += 1
 
         if req.status_code >= 500:
