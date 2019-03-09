@@ -837,10 +837,10 @@ class Zappa(object):
         """
         cached_wheels_dir = Path(tempfile.gettempdir()) / 'cached_wheels'
         if not cached_wheels_dir.is_dir():
-            os.makedirs(cached_wheels_dir)
+            os.makedirs(str(cached_wheels_dir)) # Pathlib for https://github.com/Miserlou/Zappa/issues/1358
 
         wheel_file = '{0!s}-{1!s}-{2!s}'.format(package_name, package_version, self.manylinux_wheel_file_suffix)
-        wheel_path = Path(cached_wheels_dir) / wheel_file
+        wheel_path = cached_wheels_dir / wheel_file
 
         if not wheel_path.exists() or not zipfile.is_zipfile(str(wheel_path)):
             # The file is not cached, download it.
@@ -874,14 +874,14 @@ class Zappa(object):
         """
         cached_pypi_info_dir = Path(tempfile.gettempdir()) / 'cached_pypi_info'
         if not cached_pypi_info_dir.is_dir():
-            os.makedirs(cached_pypi_info_dir)
+            os.makedirs(str(cached_pypi_info_dir)) # Pathlib for https://github.com/Miserlou/Zappa/issues/1358
         # Even though the metadata is for the package, we save it in a
         # filename that includes the package's version. This helps in
         # invalidating the cached file if the user moves to a different
         # version of the package.
         # Related: https://github.com/Miserlou/Zappa/issues/899
         json_file = '{0!s}-{1!s}.json'.format(package_name, package_version)
-        json_file_path = Path(cached_pypi_info_dir) / json_file
+        json_file_path = cached_pypi_info_dir / json_file
         if json_file_path.exists():
             with open(str(json_file_path), 'rb') as metafile:
                 data = json.load(metafile)
