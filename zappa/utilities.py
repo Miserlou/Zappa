@@ -32,37 +32,39 @@ def copytree(src, dst, metadata=True, symlinks=False, ignore=None):
 
     When `metadata` is False, file metadata such as permissions and modification
     times are not copied.
-    """
+    src, dst are Path
+    """  # Making workon on Path for https://github.com/Miserlou/Zappa/issues/1358
+    # str conversions for python 2.7
 
-    if not os.path.exists(dst):
-        os.makedirs(dst)
+    if not dst.exists():
+        os.makedirs(str(dst))  # str for python 2.7
         if metadata:
-            shutil.copystat(src, dst)
-    lst = os.listdir(src)
+            shutil.copystat(str(src), str(dst))  # str for python 2.7
+    lst = os.listdir(str(src))
 
     if ignore:
-        excl = ignore(src, lst)
+        excl = ignore(str(src), str(lst))
         lst = [x for x in lst if x not in excl]
 
     for item in lst:
-        s = os.path.join(src, item)
-        d = os.path.join(dst, item)
+        s = src / item
+        d = dst / item
 
-        if symlinks and os.path.islink(s): # pragma: no cover
-            if os.path.lexists(d):
-                os.remove(d)
-            os.symlink(os.readlink(s), d)
+        if symlinks and s.is_symlink(): # pragma: no cover
+            if os.path.lexists(str(d)):
+                os.remove(str(d))
+            os.symlink(os.readlink(str(s)), str(d))
             if metadata:
                 try:
-                    st = os.lstat(s)
+                    st = os.lstat(str(s))
                     mode = stat.S_IMODE(st.st_mode)
-                    os.lchmod(d, mode)
+                    os.lchmod(str(d), mode)
                 except:
                     pass  # lchmod not available
-        elif os.path.isdir(s):
+        elif s.is_dir():
             copytree(s, d, metadata, symlinks, ignore)
         else:
-            shutil.copy2(s, d) if metadata else shutil.copy(s, d)
+            shutil.copy2(str(s), str(d)) if metadata else shutil.copy(str(s), str(d))
 
 def parse_s3_url(url):
     """

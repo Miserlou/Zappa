@@ -106,7 +106,7 @@ class TestZappa(unittest.TestCase):
             return self.skipTest(
                 "test_copy_editable_packages must be run in a virtualenv")
 
-        temp_package_dir = tempfile.mkdtemp()
+        temp_package_dir = Path(tempfile.mkdtemp())  # Making work on on Path for https://github.com/Miserlou/Zappa/issues/1358
         try:
             egg_links = [os.path.join(
                 virtual_env, "lib", get_venv_from_python_version(),
@@ -114,8 +114,7 @@ class TestZappa(unittest.TestCase):
             egg_path = "/some/other/directory/package"
             mock_find_packages.return_value = [
                 "package", "package.subpackage", "package.another"]
-            temp_egg_link = os.path.join(
-                temp_package_dir, 'package-python.egg-link')
+            temp_egg_link = str(temp_package_dir / 'package-python.egg-link')  # Making work on on Path for https://github.com/Miserlou/Zappa/issues/1358
 
             z = Zappa()
             mock_open = mock.mock_open(read_data=egg_path.encode("utf-8"))
@@ -141,8 +140,7 @@ class TestZappa(unittest.TestCase):
                 mock_remove.assert_called_with(temp_egg_link)
                 self.assertEqual(mock_remove.call_count, 1)
         finally:
-            shutil.rmtree(temp_package_dir)
-
+            shutil.rmtree(str(temp_package_dir))
         return
 
     def test_create_lambda_package(self):

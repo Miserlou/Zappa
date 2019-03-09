@@ -359,11 +359,11 @@ class Zappa(object):
                 egg_path = df.read().decode('utf-8').splitlines()[0].strip()
                 pkgs = set([x.split(".")[0] for x in find_packages(egg_path, exclude=['test', 'tests'])])
                 for pkg in pkgs:
-                    copytree(Path(egg_path) / pkg, Path(temp_package_path) / pkg, metadata=False, symlinks=False)
+                    copytree(Path(egg_path) / pkg, temp_package_path / pkg, metadata=False, symlinks=False)
 
         if temp_package_path:
             # now remove any egg-links as they will cause issues if they still exist
-            for link in Path(temp_package_path).glob("*.egg-link"):
+            for link in temp_package_path.glob("*.egg-link"):
                 os.remove(link)
 
     def get_deps_list(self, pkg_name, installed_distros=None):
@@ -487,7 +487,7 @@ class Zappa(object):
             venv = self.get_current_venv()
 
         build_time = str(int(time.time()))
-        cwd = os.getcwd()
+        cwd = Path(os.getcwd())  # Making work on on Path for https://github.com/Miserlou/Zappa/issues/1358
         if not output:
             if archive_format == 'zip':
                 archive_fname = prefix + '-' + build_time + '.zip'
@@ -495,7 +495,7 @@ class Zappa(object):
                 archive_fname = prefix + '-' + build_time + '.tar.gz'
         else:
             archive_fname = output
-        archive_path = Path(cwd) / archive_fname
+        archive_path = cwd / archive_fname
 
         # Files that should be excluded from the zip
         if exclude is None:
@@ -510,7 +510,7 @@ class Zappa(object):
             exclude.append('concurrent')
 
         split_venv = Path(venv).parts
-        split_cwd = Path(cwd).parts
+        split_cwd = cwd.parts
 
         # Ideally this should be avoided automatically,
         # but this serves as an okay stop-gap measure.
@@ -522,7 +522,7 @@ class Zappa(object):
             )
 
         # First, do the project..
-        temp_project_path = tempfile.mkdtemp(prefix='zappa-project')
+        temp_project_path = Path(tempfile.mkdtemp(prefix='zappa-project'))  # Making work on on Path for https://github.com/Miserlou/Zappa/issues/1358
 
         if not slim_handler:
             # Slim handler does not take the project files.
@@ -537,7 +537,7 @@ class Zappa(object):
         # because that's where AWS Lambda looks for it. It can't be inside a package.
         if handler_file:
             filename = handler_file.split(os.sep)[-1]
-            shutil.copy(handler_file, str(Path(temp_project_path) / filename))
+            shutil.copy(handler_file, str(temp_project_path / filename))
 
         # Create and populate package ID file and write to temp project path
         package_info = {}
@@ -578,7 +578,7 @@ class Zappa(object):
         #         json.dump(build_info, f)
         #     return True
 
-        package_id_file = open(str(Path(temp_project_path) / 'package_info.json'), 'w', encoding='utf-8')
+        package_id_file = open(str(temp_project_path / 'package_info.json'), 'w', encoding='utf-8')
         dumped = json.dumps(package_info, indent=4)
         try:
             package_id_file.write(dumped)
@@ -588,7 +588,7 @@ class Zappa(object):
 
         # Then, do site site-packages..
         egg_links = []
-        temp_package_path = tempfile.mkdtemp(prefix='zappa-packages')
+        temp_package_path = Path(tempfile.mkdtemp(prefix='zappa-packages'))
         if os.sys.platform == 'win32':
             site_packages = Path(venv) / 'Lib' / 'site-packages'
         else:
@@ -597,9 +597,9 @@ class Zappa(object):
 
         if minify:
             excludes = ZIP_EXCLUDES + exclude
-            copytree(str(site_packages), temp_package_path, metadata=False, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
+            copytree(site_packages, temp_package_path, metadata=False, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
         else:
-            copytree(str(site_packages), temp_package_path, metadata=False, symlinks=False)
+            copytree(site_packages, temp_package_path, metadata=False, symlinks=False)
 
         # We may have 64-bin specific packages too.
         site_packages_64 = Path(venv) / 'lib64' / get_venv_from_python_version() / 'site-packages'
@@ -607,14 +607,14 @@ class Zappa(object):
             egg_links.extend(Path(site_packages_64).glob('*.egg-link'))
             if minify:
                 excludes = ZIP_EXCLUDES + exclude
-                copytree(str(site_packages_64), temp_package_path, metadata = False, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
+                copytree(site_packages_64, temp_package_path, metadata = False, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
             else:
-                copytree(str(site_packages_64), temp_package_path, metadata = False, symlinks=False)
+                copytree(site_packages_64, temp_package_path, metadata = False, symlinks=False)
 
         if egg_links:
             self.copy_editable_packages(egg_links, temp_package_path)
 
-        copy_tree(temp_package_path, temp_project_path, update=True)
+        copy_tree(str(temp_package_path), str(temp_project_path), update=True)  # For Python 2.7 https://github.com/Miserlou/Zappa/issues/1358
 
         # Then the pre-compiled packages..
         if use_precompiled_packages:
@@ -667,7 +667,7 @@ class Zappa(object):
             print("Packaging project as gzipped tarball.")
             archivef = tarfile.open(str(archive_path), 'w|gz', encoding='utf-8')
 
-        for root, dirs, files in os.walk(temp_project_path):
+        for root, dirs, files in os.walk(str(temp_project_path)):  # For python 2.7 https://github.com/Miserlou/Zappa/issues/1358
 
             for filename in files:
 
@@ -729,7 +729,7 @@ class Zappa(object):
                 dirs[:] = [d for d in dirs if d != root]
             else:
                 if '__init__.py' not in files and not conflicts_with_a_neighbouring_module(root):
-                    tmp_init = str(Path(temp_project_path) / '__init__.py')
+                    tmp_init = str(temp_project_path / '__init__.py')
                     open(tmp_init, 'a', encoding='utf-8').close()
                     os.chmod(tmp_init,  0o755)
 
@@ -744,8 +744,8 @@ class Zappa(object):
         archivef.close()
 
         # Trash the temp directory
-        shutil.rmtree(temp_project_path)
-        shutil.rmtree(temp_package_path)
+        shutil.rmtree(str(temp_project_path))
+        shutil.rmtree(str(temp_package_path))
         if os.path.isdir(str(venv)) and slim_handler:  # Python 2 req to have str https://github.com/Miserlou/Zappa/issues/1358
             # Remove the temporary handler venv folder
             shutil.rmtree(str(venv))   # Python 2 req to have str https://github.com/Miserlou/Zappa/issues/1358
@@ -759,11 +759,11 @@ class Zappa(object):
         lambda_package = lambda_packages[package_name][self.runtime]
 
         # Trash the local version to help with package space saving
-        shutil.rmtree(Path(path) / package_name, ignore_errors=True)
+        shutil.rmtree(str(path / package_name), ignore_errors=True)   # for Python 2.7 https://github.com/Miserlou/Zappa/issues/1358
 
         tar = tarfile.open(lambda_package['path'], mode="r:gz", encoding='utf-8')
         for member in tar.getmembers():
-            tar.extract(member, path)
+            tar.extract(member, str(path))  # Making work on on Path for https://github.com/Miserlou/Zappa/issues/1358
 
     @staticmethod
     def get_installed_packages(site_packages, site_packages_64):
