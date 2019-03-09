@@ -3,6 +3,8 @@ import collections
 import json
 
 from io import BytesIO
+import botocore
+import botocore.stub
 import flask
 import mock
 import os
@@ -13,6 +15,7 @@ import unittest
 import shutil
 import sys
 import tempfile
+import uuid
 
 from click.globals import resolve_color_default
 from click.exceptions import ClickException
@@ -1941,6 +1944,224 @@ USE_TZ = True
 
         self.assertTrue(is_valid_bucket_name("valid-formed-s3-bucket-name"))
         self.assertTrue(is_valid_bucket_name("worst.bucket.ever"))
+
+    # TODO: encountered error when vpc_config["SubnetIds"] or vpc_config["SecurityGroupIds"] is missing
+    # We need to make the code more robust in this case and avoid the KeyError
+    def test_zappa_core_deploy_lambda_alb_missing_cert_arn(self):
+	kwargs = {
+            "lambda_arn": "adatok",
+            "lambda_name": "test",
+            "vpc_config": {
+                "SubnetIds": [],
+                "SecurityGroupIds": []
+            },
+            "certificate_arn": None,
+            "alb_loadbalancer_name": "test",
+            "alb_targetgroup_name": "test",
+            "alb_invokepermissions_name": "test"
+	}
+
+        zappa_core = Zappa(
+            boto_session=mock.Mock(),
+            profile_name="test",
+            aws_region="test",
+            load_credentials=False
+        )
+        with self.assertRaises(EnvironmentError) as context:
+            zappa_core.deploy_lambda_alb(**kwargs)
+        self.assertIn('certificate_arn must be properly defined', context.exception.message)
+
+    def test_zappa_core_deploy_lambda_alb(self):
+	kwargs = {
+            "lambda_arn": str(uuid.uuid4()),
+            "lambda_name": str(uuid.uuid4()),
+            "vpc_config": {
+                "SubnetIds": [],
+                "SecurityGroupIds": []
+            },
+            "certificate_arn": str(uuid.uuid4()),
+            "alb_loadbalancer_name": str(uuid.uuid4()),
+            "alb_targetgroup_name": str(uuid.uuid4()),
+            "alb_invokepermissions_name": str(uuid.uuid4()),
+	}
+
+        zappa_core = Zappa(
+            boto_session=mock.Mock(),
+            profile_name="test",
+            aws_region="test",
+            load_credentials=False
+        )
+        zappa_core.elbv2_client = botocore.session.get_session().create_client("elbv2")
+        zappa_core.lambda_client = botocore.session.get_session().create_client("lambda")
+        elbv2_stubber = botocore.stub.Stubber(zappa_core.elbv2_client)
+        lambda_stubber = botocore.stub.Stubber(zappa_core.lambda_client)
+        
+        loadbalancer_arn = str(uuid.uuid4())
+        targetgroup_arn = str(uuid.uuid4())
+
+	elbv2_stubber.add_response("create_load_balancer",
+            expected_params={
+                "Name": kwargs["alb_loadbalancer_name"],
+                "Subnets": kwargs["vpc_config"]["SubnetIds"],
+                "SecurityGroups": kwargs["vpc_config"]["SecurityGroupIds"],
+                "Scheme": "internet-facing",
+                "Type": "application",
+                "IpAddressType": "ipv4",
+            },
+            service_response={
+                "LoadBalancers": [{
+                    "LoadBalancerArn": loadbalancer_arn,
+                    "DNSName": "test",
+                    "VpcId": "test",
+                    "State": {
+                        "Code": "OK"
+                    }
+                }]
+            },
+        )
+	elbv2_stubber.add_response("create_target_group",
+            expected_params={
+                "Name": kwargs["alb_targetgroup_name"],
+                "TargetType": "lambda",
+            },
+            service_response={
+                "TargetGroups": [{
+                    "TargetGroupArn": targetgroup_arn,
+                }]
+            },
+        )
+	lambda_stubber.add_response("add_permission",
+            expected_params={
+                "Action": "lambda:InvokeFunction",
+                "FunctionName": kwargs["lambda_arn"],
+                "Principal": "elasticloadbalancing.amazonaws.com",
+                "SourceArn": targetgroup_arn,
+                "StatementId": kwargs["alb_invokepermissions_name"],
+            },
+            service_response={},
+        )
+	elbv2_stubber.add_response("register_targets",
+            expected_params={
+                "TargetGroupArn": targetgroup_arn,
+                "Targets": [{"Id": kwargs["lambda_arn"]}],
+            },
+            service_response={},
+        )
+	elbv2_stubber.add_response("create_listener",
+            expected_params={
+                "Certificates": [{"CertificateArn": kwargs["certificate_arn"]}],
+                "DefaultActions": [{
+                    "Type": "forward",
+                    "TargetGroupArn": targetgroup_arn,
+                }],
+                "LoadBalancerArn": loadbalancer_arn,
+                "Protocol": "HTTPS",
+                "Port": 443,
+            },
+            service_response={},
+        )
+	lambda_stubber.activate()
+	elbv2_stubber.activate()
+        zappa_core.deploy_lambda_alb(**kwargs)
+
+    def test_zappa_core_undeploy_lambda_alb(self):
+	kwargs = {
+            "lambda_name": str(uuid.uuid4()),
+            "alb_loadbalancer_name": str(uuid.uuid4()),
+            "alb_targetgroup_name": str(uuid.uuid4()),
+            "alb_invokepermissions_name": str(uuid.uuid4()),
+	}
+
+        zappa_core = Zappa(
+            boto_session=mock.Mock(),
+            profile_name="test",
+            aws_region="test",
+            load_credentials=False
+        )
+        zappa_core.elbv2_client = botocore.session.get_session().create_client("elbv2")
+        zappa_core.lambda_client = botocore.session.get_session().create_client("lambda")
+        elbv2_stubber = botocore.stub.Stubber(zappa_core.elbv2_client)
+        lambda_stubber = botocore.stub.Stubber(zappa_core.lambda_client)
+
+        loadbalancer_arn = str(uuid.uuid4())
+        listener_arn = str(uuid.uuid4())
+        function_arn = str(uuid.uuid4())
+        targetgroup_arn = str(uuid.uuid4())
+
+	lambda_stubber.add_response("remove_permission",
+            expected_params={
+                "FunctionName": kwargs["lambda_name"],
+                "StatementId": kwargs["alb_invokepermissions_name"],
+            },
+            service_response={},
+        )
+	elbv2_stubber.add_response("describe_load_balancers",
+            expected_params={
+                "Names": [kwargs["alb_loadbalancer_name"]],
+            },
+            service_response={
+                "LoadBalancers": [{
+                    "LoadBalancerArn": loadbalancer_arn,
+                }]
+            },
+        )
+	elbv2_stubber.add_response("describe_listeners",
+            expected_params={
+                "LoadBalancerArn": loadbalancer_arn,
+            },
+            service_response={
+                "Listeners": [{
+                    "ListenerArn": listener_arn,
+                }]
+            },
+        )
+	elbv2_stubber.add_response("delete_listener",
+            expected_params={
+                "ListenerArn": listener_arn,
+            },
+            service_response={},
+        )
+	elbv2_stubber.add_response("delete_load_balancer",
+            expected_params={
+                "LoadBalancerArn": loadbalancer_arn,
+            },
+            service_response={},
+        )
+	elbv2_stubber.add_client_error("describe_load_balancers",
+            service_error_code="LoadBalancerNotFound",
+        )
+        lambda_stubber.add_response("get_function",
+            expected_params={
+                "FunctionName": kwargs["lambda_name"],
+            },
+            service_response={
+                "Configuration": {"FunctionArn": function_arn}
+            },
+        )
+	elbv2_stubber.add_response("describe_target_groups",
+            expected_params={
+                "Names": [kwargs["alb_targetgroup_name"]],
+            },
+            service_response={
+                "TargetGroups": [{"TargetGroupArn": targetgroup_arn}],
+            },
+        )
+	elbv2_stubber.add_response("deregister_targets",
+            service_response={},
+        )
+	elbv2_stubber.add_client_error("describe_target_health",
+            service_error_code="InvalidTarget",
+        )
+	elbv2_stubber.add_response("delete_target_group",
+            expected_params={
+                "TargetGroupArn": targetgroup_arn,
+            },
+            service_response={},
+        )
+	lambda_stubber.activate()
+	elbv2_stubber.activate()
+        zappa_core.undeploy_lambda_alb(**kwargs)
+
 
 if __name__ == '__main__':
     unittest.main()
