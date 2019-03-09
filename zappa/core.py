@@ -364,7 +364,7 @@ class Zappa(object):
         if temp_package_path:
             # now remove any egg-links as they will cause issues if they still exist
             for link in temp_package_path.glob("*.egg-link"):
-                os.remove(link)
+                os.remove(str(link))
 
     def get_deps_list(self, pkg_name, installed_distros=None):
         """
