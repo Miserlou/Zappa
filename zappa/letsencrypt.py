@@ -287,7 +287,7 @@ def get_cert(zappa_instance, log=LOGGER, CA=DEFAULT_CA):
 
     # Sign
     result = sign_certificate()
-    # Encode to PEM formate
+    # Encode to PEM format
     encode_certificate(result)
 
     return True

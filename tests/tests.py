@@ -22,9 +22,12 @@ from zappa.ext.django_zappa import get_django_wsgi
 from zappa.letsencrypt import get_cert_and_update_domain, create_domain_key, create_domain_csr, \
     create_chained_certificate, cleanup, parse_account_key, parse_csr, sign_certificate, encode_certificate,\
     register_account, verify_challenge, gettempdir
-from zappa.utilities import (detect_django_settings, detect_flask_apps,  parse_s3_url, human_size, string_to_timestamp,
-                             validate_name, InvalidAwsLambdaName, contains_python_files_or_subdirs,
-                             conflicts_with_a_neighbouring_module, titlecase_keys)
+from zappa.utilities import (
+    conflicts_with_a_neighbouring_module, contains_python_files_or_subdirs,
+    detect_django_settings, detect_flask_apps, get_venv_from_python_version,
+    human_size, InvalidAwsLambdaName, parse_s3_url, string_to_timestamp,
+    titlecase_keys, is_valid_bucket_name, validate_name
+)
 from zappa.wsgi import create_wsgi_request, common_log
 from zappa.core import Zappa, ASSUME_POLICY, ATTACH_POLICY
 
@@ -71,41 +74,52 @@ class TestZappa(unittest.TestCase):
         disable_click_colors()
         assert resolve_color_default() is False
 
-    # @mock.patch('zappa.zappa.find_packages')
-    # @mock.patch('os.remove')
-    # def test_copy_editable_packages(self, mock_remove, mock_find_packages):
-    #     temp_package_dir = '/var/folders/rn/9tj3_p0n1ln4q4jn1lgqy4br0000gn/T/1480455339'
-    #     egg_links = [
-    #         '/user/test/.virtualenvs/test/lib/' + get_venv_from_python_version() + '/site-packages/package-python.egg-link'
-    #     ]
-    #     egg_path = "/some/other/directory/package"
-    #     mock_find_packages.return_value = ["package", "package.subpackage", "package.another"]
-    #     temp_egg_link = os.path.join(temp_package_dir, 'package-python.egg-link')
+    @mock.patch('zappa.core.find_packages')
+    @mock.patch('os.remove')
+    def test_copy_editable_packages(self, mock_remove, mock_find_packages):
+        virtual_env = os.environ.get("VIRTUAL_ENV")
+        if not virtual_env:
+            return self.skipTest(
+                "test_copy_editable_packages must be run in a virtualenv")
 
-    #     if sys.version_info[0] < 3:
-    #         z = Zappa()
-    #         with nested(
-    #                 patch_open(), mock.patch('glob.glob'), mock.patch('zappa.zappa.copytree')
-    #         ) as ((mock_open, mock_file), mock_glob, mock_copytree):
-    #             # We read in the contents of the egg-link file
-    #             mock_file.read.return_value = "{}\n.".format(egg_path)
+        temp_package_dir = tempfile.mkdtemp()
+        try:
+            egg_links = [os.path.join(
+                virtual_env, "lib", get_venv_from_python_version(),
+                "site-packages", "test-copy-editable-packages.egg-link")]
+            egg_path = "/some/other/directory/package"
+            mock_find_packages.return_value = [
+                "package", "package.subpackage", "package.another"]
+            temp_egg_link = os.path.join(
+                temp_package_dir, 'package-python.egg-link')
 
-    #             # we use glob.glob to get the egg-links in the temp packages directory
-    #             mock_glob.return_value = [temp_egg_link]
+            z = Zappa()
+            mock_open = mock.mock_open(read_data=egg_path.encode("utf-8"))
+            with mock.patch("zappa.core.open", mock_open), \
+                    mock.patch("glob.glob") as mock_glob, \
+                    mock.patch("zappa.core.copytree") as mock_copytree:
+                # we use glob.glob to get the egg-links in the temp packages
+                # directory
+                mock_glob.return_value = [temp_egg_link]
 
-    #             z.copy_editable_packages(egg_links, temp_package_dir)
+                z.copy_editable_packages(egg_links, temp_package_dir)
 
-    #             # make sure we copied the right directories
-    #             mock_copytree.assert_called_with(
-    #                 os.path.join(egg_path, 'package'),
-    #                 os.path.join(temp_package_dir, 'package'),
-    #                 symlinks=False
-    #             )
-    #             self.assertEqual(mock_copytree.call_count, 1)
+                # make sure we copied the right directories
+                mock_copytree.assert_called_with(
+                    os.path.join(egg_path, 'package'),
+                    os.path.join(temp_package_dir, 'package'),
+                    metadata=False, symlinks=False
+                )
+                self.assertEqual(mock_copytree.call_count, 1)
 
-    #             # make sure it removes the egg-link from the temp packages directory
-    #             mock_remove.assert_called_with(temp_egg_link)
-    #             self.assertEqual(mock_remove.call_count, 1)
+                # make sure it removes the egg-link from the temp packages
+                # directory
+                mock_remove.assert_called_with(temp_egg_link)
+                self.assertEqual(mock_remove.call_count, 1)
+        finally:
+            shutil.rmtree(temp_package_dir)
+
+        return
 
     def test_create_lambda_package(self):
         # mock the pkg_resources.WorkingSet() to include a known package in lambda_packages so that the code
@@ -1304,7 +1318,7 @@ class TestZappa(unittest.TestCase):
             try:
                 zappa_cli.certify()
             except AttributeError:
-                # Since zappa_cli.zappa isn't initalized, the certify() call
+                # Since zappa_cli.zappa isn't initialized, the certify() call
                 # fails when it tries to inspect what Zappa has deployed.
                 pass
 
@@ -1449,6 +1463,7 @@ class TestZappa(unittest.TestCase):
 
         # And that the route53 path still works
         zappa_core.route53.list_hosted_zones.return_value = {
+            'IsTruncated': False,
             'HostedZones': [
                 {
                     'Id': 'somezone'
@@ -1468,6 +1483,70 @@ class TestZappa(unittest.TestCase):
         zappa_core.route53.list_hosted_zones.assert_called_once()
         zappa_core.route53.list_resource_record_sets.assert_called_once_with(
             HostedZoneId='somezone')
+
+    @mock.patch('botocore.client')
+    def test_get_all_zones_normal_case(self, client):
+        zappa_core = Zappa(
+            boto_session=mock.Mock(),
+            profile_name="test",
+            aws_region="test",
+            load_credentials=False
+        )
+        zappa_core.route53 = mock.Mock()
+
+        # Check that it handle the normal case
+        zappa_core.route53.list_hosted_zones.return_value = {
+            'IsTruncated': False,
+            'HostedZones': [
+                {
+                    'Id': 'somezone'
+                }
+            ]
+        }
+
+        zones = zappa_core.get_all_zones()
+        zappa_core.route53.list_hosted_zones.assert_called_with(MaxItems='100')
+        self.assertListEqual(zones['HostedZones'], [{'Id': 'somezone'}])
+
+    @mock.patch('botocore.client')
+    def test_get_all_zones_two_pages(self, client):
+        zappa_core = Zappa(
+            boto_session=mock.Mock(),
+            profile_name="test",
+            aws_region="test",
+            load_credentials=False
+        )
+        zappa_core.route53 = mock.Mock()
+
+        # Check that it handle the normal case
+        zappa_core.route53.list_hosted_zones.side_effect = [
+            {
+                'IsTruncated': True,
+                'HostedZones': [
+                    {
+                        'Id': 'zone1'
+                    }
+                ],
+                'NextMarker': "101"
+            },
+            {
+                'IsTruncated': False,
+                'HostedZones': [
+                    {
+                        'Id': 'zone2'
+                    }
+                ]
+            }
+        ]
+
+        zones = zappa_core.get_all_zones()
+        zappa_core.route53.list_hosted_zones.assert_has_calls(
+            [
+                mock.call(MaxItems='100'),
+                mock.call(MaxItems='100', Marker='101'),
+            ]
+        )
+        self.assertListEqual(zones['HostedZones'], [{'Id': 'zone1'}, {'Id': 'zone2'}])
 
     ##
     # Django
@@ -1838,6 +1917,30 @@ USE_TZ = True
         }
         self.assertEqual(expected, transformed)
 
+    def test_is_valid_bucket_name(self):
+        # Bucket names must be at least 3 and no more than 63 characters long.
+        self.assertFalse(is_valid_bucket_name("ab"))
+        self.assertFalse(is_valid_bucket_name("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefhijlmn"))
+        # Bucket names must not contain uppercase characters or underscores.
+        self.assertFalse(is_valid_bucket_name("aaaBaaa"))
+        self.assertFalse(is_valid_bucket_name("aaa_aaa"))
+        # Bucket names must start with a lowercase letter or number.
+        self.assertFalse(is_valid_bucket_name(".abbbaba"))
+        self.assertFalse(is_valid_bucket_name("abbaba."))
+        self.assertFalse(is_valid_bucket_name("-abbaba"))
+        self.assertFalse(is_valid_bucket_name("ababab-"))
+        # Bucket names must be a series of one or more labels. Adjacent labels are separated by a single period (.).
+        # Each label must start and end with a lowercase letter or a number.
+        self.assertFalse(is_valid_bucket_name("aaa..bbbb"))
+        self.assertFalse(is_valid_bucket_name("aaa.-bbb.ccc"))
+        self.assertFalse(is_valid_bucket_name("aaa-.bbb.ccc"))
+        # Bucket names must not be formatted as an IP address (for example, 192.168.5.4).
+        self.assertFalse(is_valid_bucket_name("192.168.5.4"))
+        self.assertFalse(is_valid_bucket_name("127.0.0.1"))
+        self.assertFalse(is_valid_bucket_name("255.255.255.255"))
+
+        self.assertTrue(is_valid_bucket_name("valid-formed-s3-bucket-name"))
+        self.assertTrue(is_valid_bucket_name("worst.bucket.ever"))
 
 if __name__ == '__main__':
     unittest.main()
