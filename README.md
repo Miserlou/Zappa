@@ -819,6 +819,12 @@ to change Zappa's behavior. Use these at your own risk!
 ```javascript
  {
     "dev": {
+        "alb_enabled": false // enable provisioning of application load balancing resources
+        "alb_vpc_config": {
+            "CertificateArn": // ACM certificate ARN for ALB
+            "SubnetIds": [] // list of subnets for ALB
+            "SecurityGroupIds": [] // list of security groups for ALB
+        }
         "api_key_required": false, // enable securing API Gateway endpoints with x-api-key header (default False)
         "api_key": "your_api_key_id", // optional, use an existing API key. The option "api_key_required" must be true to apply
         "apigateway_enabled": true, // Set to false if you don't want to create an API Gateway resource. Default true.
@@ -1373,12 +1379,19 @@ Zappa can be used to handle events triggered by Application Load Balancers (ALB)
 - API Gateway is billed per-request; therefore, costs can become excessive with high throughput services. ALBs pricing model makes much more sense financially if you're expecting a lot of traffic to your Lambda.
 - ALBs can be placed within a VPC, which may make more sense for private endpoints than using API Gateway's private model (using AWS PrivateLink).
 
-Zappa can't automatically provision an ALB for you, but you can set your Lambda to be an ALB target by doing the following:
-
-1. If you don't plan on using the Zappa-provisioned API Gateway, you can set `apigateway_enabled` in your Zappa settings to `false`. (A note: you _can_ run both API Gateway and ALB simultaneously as event sources for your Lambda.)
-2. Follow the normal steps for deploying / updating a Zappa service to your AWS account.
-3. Manually provision an Application Load Balancer. More information can be found on AWS' support site under [Getting Started with Application Load Balancers](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/application-load-balancer-getting-started.html). When you get to the step where you're creating your TargetGroup, you'll want to make sure you're registering your Lambda function as the target. *IMPORTANT*: `zappa update` will remove permissions if you set the version target to `$LATEST`. You'll either need to re-create permissions upon calling update, or create a [Lambda alias](https://docs.aws.amazon.com/lambda/latest/dg/versioning-aliases.html) and register that to your TargetGroup.
-
+Like API Gateway, Zappa can automatically provision ALB resources for you.  You'll need to add the following to your `zappa_settings`:
+```
+"alb_enabled": true,
+"alb_vpc_config": {
+    "CertificateArn": "arn:aws:acm:us-east-1:[your-account-id]:certificate/[certificate-id]",
+    "SubnetIds": [
+        // Here, you'll want to provide a list of subnets for your ALB, eg. 'subnet-02a58266'
+    ],
+    "SecurityGroupIds": [
+        // And here, a list of security group IDs, eg. 'sg-fbacb791'
+    ]
+}
+```
 
 More information on using ALB as an event source for Lambda can be found [here](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html).
 
