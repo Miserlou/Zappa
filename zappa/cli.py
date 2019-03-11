@@ -57,6 +57,7 @@ CUSTOM_SETTINGS = [
     'attach_policy',
     'aws_region',
     'delete_local_zip',
+    'delete_s3_bucket',
     'delete_s3_zip',
     'exclude',
     'extra_permissions',
@@ -849,6 +850,10 @@ class ZappaCLI(object):
         if not source_zip:
             self.remove_uploaded_zip()
 
+        # Remove the S3 bucket.
+        if not source_zip:
+            self.remove_s3_bucket()
+
         self.callback('post')
 
         click.echo(deployment_string)
@@ -1020,6 +1025,10 @@ class ZappaCLI(object):
             endpoint_url = None
 
         self.schedule()
+
+        # Clean up the S3 bucket, because it is no longer needed.
+        if not source_zip and not no_upload:
+            self.remove_s3_bucket()
 
         # Update any cognito pool with the lambda arn
         # do this after schedule as schedule clears the lambda policy and we need to add one
@@ -2454,6 +2463,13 @@ class ZappaCLI(object):
             except Exception as e: # pragma: no cover
                 sys.exit(-1)
 
+    def remove_s3_bucket(self):
+        """
+        Remove the s3 upload bucket after uploading and updating.
+        """
+        if self.stage_config.get('delete_s3_bucket', True):
+            self.zappa.remove_s3_bucket(self.s3_bucket_name)
+
     def remove_uploaded_zip(self):
         """
         Remove the local and S3 zip file after uploading and updating.
@@ -2475,6 +2491,7 @@ class ZappaCLI(object):
             # Only try to remove uploaded zip if we're running a command that has loaded credentials
             if self.load_credentials:
                 self.remove_uploaded_zip()
+                self.remove_s3_bucket()
 
             self.remove_local_zip()
 

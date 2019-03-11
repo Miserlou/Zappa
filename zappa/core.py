@@ -1023,6 +1023,27 @@ class Zappa(object):
         except (botocore.exceptions.ParamValidationError, botocore.exceptions.ClientError):  # pragma: no cover
             return False
 
+    def remove_s3_bucket(self, bucket_name):
+        """
+        Given a bucket, delete it from S3.
+
+        There's no reason to keep the s3 bucket once a Lambda function has been created, so we can delete it from S3.
+
+        Returns True on success, False on failure.
+        """
+        try:
+            self.s3_client.head_bucket(Bucket=bucket_name)
+        except botocore.exceptions.ClientError as e:  # pragma: no cover
+            error_code = int(e.response['Error']['Code'])
+            if error_code == 404:
+                return False
+
+        try:
+            self.s3_client.delete_bucket(Bucket=bucket_name)
+            return True
+        except (botocore.exceptions.ParamValidationError, botocore.exceptions.ClientError):  # pragma: no cover
+            return False
+
     ##
     # Lambda
     ##

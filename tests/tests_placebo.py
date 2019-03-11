@@ -5,6 +5,8 @@ import random
 import string
 import unittest
 
+from botocore.exceptions import ClientError
+
 from .utils import placebo_session
 
 from zappa.cli import ZappaCLI
@@ -62,6 +64,10 @@ class TestZappa(unittest.TestCase):
         z.aws_region = 'us-east-1'
         res = z.upload_to_s3(zip_path, bucket_name)
         os.remove(zip_path)
+        self.assertTrue(res)
+
+        # will clean up s3 bucket
+        res = z.remove_s3_bucket(bucket_name)
         self.assertTrue(res)
 
     @placebo_session
