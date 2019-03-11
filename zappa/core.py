@@ -204,6 +204,12 @@ ZIP_EXCLUDES = [
     '*.hg', 'pip', 'docutils*', 'setuputils*', '__pycache__/*'
 ]
 
+# When using ALB as an event source for Lambdas, we need to create an alias
+# to ensure that, on zappa update, the ALB doesn't lose permissions to access
+# the Lambda.
+# See: https://github.com/Miserlou/Zappa/pull/1730
+ALB_LAMBDA_ALIAS = 'current-alb-version'
+
 ##
 # Classes
 ##
@@ -1099,7 +1105,7 @@ class Zappa(object):
 
         return resource_arn
 
-    def update_lambda_function(self, bucket, function_name, s3_key=None, publish=True, local_zip=None, num_revisions=None, alias_name=None):
+    def update_lambda_function(self, bucket, function_name, s3_key=None, publish=True, local_zip=None, num_revisions=None):
         """
         Given a bucket and key (or a local path) of a valid Lambda-zip, a function name and a handler, update that Lambda function's code.
         Optionally, delete previous versions if they exceed the optional limit.
@@ -1123,12 +1129,11 @@ class Zappa(object):
         # Given an alias name, let's update that alias to map to this newly
         # updated version.
         # Related: https://github.com/Miserlou/Zappa/pull/1730
-        if alias_name:
-            self.lambda_client.update_alias(
-                FunctionName=function_name,
-                FunctionVersion=version,
-                Name=alias_name,
-            )
+        self.lambda_client.update_alias(
+            FunctionName=function_name,
+            FunctionVersion=version,
+            Name=ALB_LAMBDA_ALIAS,
+        )
 
         if num_revisions:
             # Find the existing revision IDs for the given function
@@ -1297,7 +1302,6 @@ class Zappa(object):
     def deploy_lambda_alb(  self,
                             lambda_arn,
                             lambda_name,
-                            lambda_alias,
                             alb_vpc_config,
                             timeout
                          ):
@@ -1310,6 +1314,8 @@ class Zappa(object):
             raise EnvironmentError('When creating an ALB, you must supply two subnets in different availability zones.')
         if 'SecurityGroupIds' not in alb_vpc_config:
             alb_vpc_config["SecurityGroupIds"] = []
+        if not alb_vpc_config.get('CertificateArn'):
+            raise EnvironmentError('When creating an ALB, you must supply a CertificateArn for the HTTPS listener.')
         print("Deploying ALB infrastructure...")
 
         # Create load balancer
@@ -1352,16 +1358,28 @@ class Zappa(object):
             TargetType="lambda",
             # TODO: Add options for health checks
         )
+
         response = self.elbv2_client.create_target_group(**kwargs)
         if not(response["TargetGroups"]) or len(response["TargetGroups"]) != 1:
             raise EnvironmentError("Failure to create application load balancer target group. Response was in unexpected format. Response was: {}".format(repr(response)))
         target_group_arn = response["TargetGroups"][0]["TargetGroupArn"]
 
+        # Enable multi-value headers by default.
+        response = self.elbv2_client.modify_target_group_attributes(
+            TargetGroupArn=target_group_arn,
+            Attributes=[
+                {
+                    'Key': 'lambda.multi_value_headers.enabled',
+                    'Value': 'true'
+                },
+            ]
+        )
+
         # Allow execute permissions from target group to lambda.
         # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/lambda.html#Lambda.Client.add_permission
         kwargs = dict(
             Action="lambda:InvokeFunction",
-            FunctionName="{}:{}".format(lambda_arn, lambda_alias),
+            FunctionName="{}:{}".format(lambda_arn, ALB_LAMBDA_ALIAS),
             Principal="elasticloadbalancing.amazonaws.com",
             SourceArn=target_group_arn,
             StatementId=lambda_name
@@ -1372,7 +1390,7 @@ class Zappa(object):
         # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/elbv2.html#ElasticLoadBalancingv2.Client.register_targets
         kwargs = dict(
             TargetGroupArn=target_group_arn,
-            Targets=[{"Id": "{}:{}".format(lambda_arn, lambda_alias)}]
+            Targets=[{"Id": "{}:{}".format(lambda_arn, ALB_LAMBDA_ALIAS)}]
         )
         response = self.elbv2_client.register_targets(**kwargs)
 

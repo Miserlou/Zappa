@@ -774,9 +774,6 @@ class ZappaCLI(object):
                 kwargs['bucket'] = self.s3_bucket_name
                 kwargs['s3_key'] = handler_file
 
-            if self.use_alb:
-                kwargs['alias_name'] = self.alb_lambda_alias
-
             self.lambda_arn = self.zappa.create_lambda_function(**kwargs)
 
         # Schedule events for this deployment
@@ -789,7 +786,6 @@ class ZappaCLI(object):
             kwargs = dict(
                 lambda_arn=self.lambda_arn,
                 lambda_name=self.lambda_name,
-                lambda_alias=self.alb_lambda_alias,
                 alb_vpc_config=self.alb_vpc_config,
                 timeout=self.timeout_seconds
             )
@@ -936,8 +932,6 @@ class ZappaCLI(object):
             function_name=self.lambda_name,
             num_revisions=self.num_retained_versions
         )
-        if self.use_alb:
-            kwargs['alias_name'] = self.alb_lambda_alias
         if source_zip and source_zip.startswith('s3://'):
             bucket, key_name = parse_s3_url(source_zip)
             kwargs = kwargs.update(dict(
@@ -2098,7 +2092,6 @@ class ZappaCLI(object):
         # Load ALB-related settings
         self.use_alb = self.stage_config.get('alb_enabled', False)
         self.alb_vpc_config = self.stage_config.get('alb_vpc_config', {})
-        self.alb_lambda_alias = 'current-alb-version' if self.use_alb else None
 
         # Additional tags
         self.tags = self.stage_config.get('tags', {})

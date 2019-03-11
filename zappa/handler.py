@@ -532,9 +532,6 @@ class LambdaHandler(object):
                     # This is the object we're going to return.
                     # Pack the WSGI response into our special dictionary.
                     zappa_returndict = dict()
-                    # This is the object we're going to return.
-                    # Pack the WSGI response into our special dictionary.
-                    zappa_returndict = dict()
 
                     # Issue #1715: ALB support. ALB responses must always include
                     # base64 encoding and status description
@@ -550,6 +547,8 @@ class LambdaHandler(object):
                                     zappa_returndict["isBase64Encoded"] = True
                             else:
                                 zappa_returndict['body'] = response.data
+                        else:
+                            zappa_returndict['body'] = response.get_data(as_text=True)
 
                     zappa_returndict['statusCode'] = response.status_code
                     if 'headers' in event:

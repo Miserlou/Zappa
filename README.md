@@ -580,16 +580,16 @@ Optionally you can add [SNS message filters](http://docs.aws.amazon.com/sns/late
 
 For configuring Lex Bot's intent triggered events:
 ```javascript
-	"bot_events": [
+    "bot_events": [
         {
             "function": "lexbot.handlers.book_appointment.handler",
             "event_source": {
                 "arn": "arn:aws:lex:us-east-1:01234123123:intent:TestLexEventNames:$LATEST", // optional. In future it will be used to configure the intent
-            	"intent":"intentName", // name of the bot event configured
-            	"invocation_source":"DialogCodeHook", // either FulfillmentCodeHook or DialogCodeHook
+                "intent":"intentName", // name of the bot event configured
+                "invocation_source":"DialogCodeHook", // either FulfillmentCodeHook or DialogCodeHook
             }
         }
-	]
+    ]
 
 ```
 
@@ -654,14 +654,14 @@ Putting a try..except block on an asynchronous task like this:
 @task
 def make_pie():
     try:
-	ingredients = get_ingredients()
-	pie = bake(ingredients)
-	deliver(pie)
+    ingredients = get_ingredients()
+    pie = bake(ingredients)
+    deliver(pie)
 
     except Fault as error:
-    	"""send an email"""
-	...
-	return Response('Web services down', status=503)
+        """send an email"""
+    ...
+    return Response('Web services down', status=503)
 ```
 
 will cause an email to be sent twice for the same error. See [asynchronous retries at AWS](https://docs.aws.amazon.com/lambda/latest/dg/retries-on-errors.html). To work around this side-effect, and have the fault handler execute only once, change the return value to:
@@ -670,12 +670,12 @@ will cause an email to be sent twice for the same error. See [asynchronous retri
 @task
 def make_pie():
     try:
-	"""code block"""
+    """code block"""
 
     except Fault as error:
-    	"""send an email"""
-	...
-	return {} #or return True
+        """send an email"""
+    ...
+    return {} #or return True
 ```
 
 ### Task Sources
