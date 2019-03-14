@@ -118,6 +118,7 @@ def create_wsgi_request(event_info,
             try:
                 # Respect the configured number of proxies. The zeroth index could be a value
                 # set by the client and is untrustworthy.
+                # Related: https://github.com/Miserlou/Zappa/issues/1604
                 remote_addr = forwarded_ips[-(num_proxies + 1)].strip()
             except IndexError:
                 pass
