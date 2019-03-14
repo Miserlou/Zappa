@@ -201,4 +201,5 @@ def get_wsgi_string(string, encoding='utf-8'):
     """
     Returns wsgi-compatible string
     """
-    return string.encode(encoding).decode('iso-8859-1')
+    return string if sys.version_info[0] < 3 else \
+        string.encode(encoding).decode('iso-8859-1')

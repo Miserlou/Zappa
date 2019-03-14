@@ -563,21 +563,30 @@ class TestZappa(unittest.TestCase):
         request = create_wsgi_request(event, trailing_slash=True)
         self.assertEqual("/path:1", request['PATH_INFO'])
 
-    def test_wsgi_latin1(self):
+    def test_wsgi_unicode_path(self):
+        # '\xe6\xb8\xac\xe8\xa9\xa6' == u'\u6e2c\u8a66'.encode('utf-8')
+        # Which is "test" in Chinese
         event = {
             "body": {},
             "headers": {},
             "pathParameters": {},
-            "path": '/path/%E4%BB%8A%E6%97%A5%E3%81%AF',
+            "path": '/path/%E6%B8%AC%E8%A9%A6',
             "httpMethod": "GET",
-            "queryStringParameters": {"a": "%E4%BB%8A%E6%97%A5%E3%81%AF"},
+            "queryStringParameters": {
+                "a": '\xe6\xb8\xac\xe8\xa9\xa6'
+            },
             "requestContext": {}
         }
         request = create_wsgi_request(event, script_name="%E4%BB%8A%E6%97%A5%E3%81%AF")
-        # verify that the path, query params and script name can be encoded in iso-8859-1
-        request['PATH_INFO'].encode('iso-8859-1')
-        request['QUERY_STRING'].encode('iso-8859-1')
-        request['SCRIPT_NAME'].encode('iso-8859-1')
+        if sys.version_info[0] < 3:
+            self.assertEqual(request['PATH_INFO'], u'/path/\u6e2c\u8a66')
+            self.assertEqual(request['QUERY_STRING'], 'a=%E6%B8%AC%E8%A9%A6')
+            self.assertEqual(request['SCRIPT_NAME'], u'%E4%BB%8A%E6%97%A5%E3%81%AF')
+        else:
+            # If we are under Python 3, all should be encoded to iso-8859-1
+            self.assertEqual(request['PATH_INFO'].encode('iso-8859-1'), b'/path/\xe6\xb8\xac\xe8\xa9\xa6')
+            self.assertEqual(request['QUERY_STRING'].encode('iso-8859-1'), b'a=%E6%B8%AC%E8%A9%A6')
+            self.assertEqual(request['SCRIPT_NAME'].encode('iso-8859-1'), b'%E4%BB%8A%E6%97%A5%E3%81%AF')
 
     def test_wsgi_logging(self):
         # event = {
