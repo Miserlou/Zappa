@@ -291,8 +291,6 @@ class TestZappa(unittest.TestCase):
             "currentIntent": {
                 "name": "intent-name",
                 "slots": {
-                    "slot-name": "value",
-                    "slot-name": "value",
                     "slot-name": "value"
                 },
                 "confirmationStatus": "None, Confirmed, or Denied (intent confirmation, if configured)"
@@ -326,18 +324,16 @@ class TestZappa(unittest.TestCase):
             "currentIntent": {
                 "name": "intent-name",
                 "slots": {
-                    "slot-name": "value",
-                    "slot-name": "value",
                     "slot-name": "value"
                 },
                 "confirmationStatus": "None, Confirmed, or Denied (intent confirmation, if configured)"
             }
         }
 
-        response = lh.lambda_handler(event, None)
-        mocked_exception_handler.assert_called
+        lh.lambda_handler(event, None)
+        mocked_exception_handler.assert_called()
 
-        #
+    #
     # Header merging - see https://github.com/Miserlou/Zappa/pull/1802.
     #
     def test_merge_headers_no_multi_value(self):

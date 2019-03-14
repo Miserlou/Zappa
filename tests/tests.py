@@ -563,6 +563,88 @@ class TestZappa(unittest.TestCase):
         request = create_wsgi_request(event, trailing_slash=True)
         self.assertEqual("/path:1", request['PATH_INFO'])
 
+    def test_remote_addr_defaults_to_localhost(self):
+        event = {
+            "body": {},
+            "headers": {},
+            "pathParameters": {},
+            "path": '/path%3A1',
+            "httpMethod": "GET",
+            "queryStringParameters": {},
+            "requestContext": {}
+        }
+        request = create_wsgi_request(event)
+        self.assertEquals("127.0.0.1", request['REMOTE_ADDR'])
+
+    def test_remote_addr_defaults_to_localhost_when_num_proxies_incorrect(self):
+        """If the number of proxies specified exceeds that represented in the X-Forwarded-For header, use localhost"""
+        for x_forwarded_for in (
+            '192.168.0.1',
+            '192.168.0.1, 192.168.0.2',
+            '192.168.0.1, 192.168.0.2, 192.168.0.3',
+        ):
+            event = {
+                "body": {},
+                "headers": {
+                    'X-Forwarded-For': x_forwarded_for
+                },
+                "pathParameters": {},
+                "path": '/path%3A1',
+                "httpMethod": "GET",
+                "queryStringParameters": {},
+                "requestContext": {}
+            }
+            request = create_wsgi_request(event, num_proxies=3)
+            self.assertEquals("127.0.0.1", request['REMOTE_ADDR'])
+
+    def test_remote_addr_defaults_assume_one_proxy(self):
+        """It is assumed that the number of proxies is 1, and the -2th IP in the X-Forwarded-For header is used"""
+        event = {
+            "body": {},
+            "headers": {
+                'X-Forwarded-For': '192.168.0.1, 192.168.0.2, 192.168.0.3'
+            },
+            "pathParameters": {},
+            "path": '/path%3A1',
+            "httpMethod": "GET",
+            "queryStringParameters": {},
+            "requestContext": {}
+        }
+        request = create_wsgi_request(event)
+        self.assertEquals("192.168.0.2", request['REMOTE_ADDR'])
+
+    def test_remote_addr_num_proxies(self):
+        """The number of proxies can be specified, returning the appropriate IP from the X-Forwarded-For header"""
+        event = {
+            "body": {},
+            "headers": {
+                'X-Forwarded-For': '192.168.0.1, 192.168.0.2, 192.168.0.3, 192.168.0.4'
+            },
+            "pathParameters": {},
+            "path": '/path%3A1',
+            "httpMethod": "GET",
+            "queryStringParameters": {},
+            "requestContext": {}
+        }
+        request = create_wsgi_request(event, num_proxies=3)
+        self.assertEquals("192.168.0.1", request['REMOTE_ADDR'])
+
+    def test_remote_addr_stripped(self):
+        """Excess whitespace is removed from the remote ip address"""
+        event = {
+            "body": {},
+            "headers": {
+                'X-Forwarded-For': '     192.168.0.1     '
+            },
+            "pathParameters": {},
+            "path": '/path%3A1',
+            "httpMethod": "GET",
+            "queryStringParameters": {},
+            "requestContext": {}
+        }
+        request = create_wsgi_request(event, num_proxies=0)
+        self.assertEquals("192.168.0.1", request['REMOTE_ADDR'])
+
     def test_wsgi_latin1(self):
         event = {
             "body": {},

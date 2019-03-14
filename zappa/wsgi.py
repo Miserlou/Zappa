@@ -34,6 +34,7 @@ def create_wsgi_request(event_info,
                         binary_support=False,
                         base_path=None,
                         context_header_mappings={},
+                        num_proxies=1
                         ):
         """
         Given some event_info via API Gateway,
@@ -110,13 +111,17 @@ def create_wsgi_request(event_info,
             if path.startswith(script_name):
                 path = path[len(script_name):]
 
+        remote_addr = '127.0.0.1'
         x_forwarded_for = headers.get('X-Forwarded-For', '')
-        if ',' in x_forwarded_for:
-            # The last one is the cloudfront proxy ip. The second to last is the real client ip.
-            # Everything else is user supplied and untrustworthy.
-            remote_addr = x_forwarded_for.split(', ')[-2]
-        else:
-            remote_addr = '127.0.0.1'
+        if x_forwarded_for:
+            forwarded_ips = [ip.strip() for ip in x_forwarded_for.split(',')]
+            try:
+                # Respect the configured number of proxies. The zeroth index could be a value
+                # set by the client and is untrustworthy.
+                # Related: https://github.com/Miserlou/Zappa/issues/1604
+                remote_addr = forwarded_ips[-(num_proxies + 1)].strip()
+            except IndexError:
+                pass
 
         environ = {
             'PATH_INFO': get_wsgi_string(path),

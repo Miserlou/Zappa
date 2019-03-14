@@ -116,6 +116,7 @@ class ZappaCLI(object):
     xray_tracing = False
     aws_kms_key_arn = ''
     context_header_mappings = None
+    num_proxies = 1
     tags = []
 
     stage_name_env_pattern = re.compile('^[a-zA-Z0-9_]+$')
@@ -2413,6 +2414,10 @@ class ZappaCLI(object):
             # async response
             async_response_table = self.stage_config.get('async_response_table', '')
             settings_s += "ASYNC_RESPONSE_TABLE='{0!s}'\n".format(async_response_table)
+
+            # num proxies
+            num_proxies = self.stage_config.get('num_proxies', 1)
+            settings_s += "NUM_PROXIES={:d}\n".format(num_proxies)
 
             # Lambda requires a specific chmod
             temp_settings = tempfile.NamedTemporaryFile(delete=False)
