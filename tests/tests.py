@@ -573,7 +573,7 @@ class TestZappa(unittest.TestCase):
             "path": '/path/%E6%B8%AC%E8%A9%A6',
             "httpMethod": "GET",
             "queryStringParameters": {
-                "a": '\xe6\xb8\xac\xe8\xa9\xa6'
+                "a": u'\u6e2c\u8a66'.encode('utf-8')
             },
             "requestContext": {}
         }
