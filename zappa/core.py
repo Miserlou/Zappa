@@ -1040,8 +1040,7 @@ class Zappa(object):
                                 aws_environment_variables=None,
                                 aws_kms_key_arn=None,
                                 xray_tracing=False,
-                                local_zip=None,
-                                alias_name=None
+                                local_zip=None
                             ):
         """
         Given a bucket and key (or a local path) of a valid Lambda-zip, a function name and a handler, register that Lambda function.
@@ -1089,16 +1088,15 @@ class Zappa(object):
         resource_arn = response['FunctionArn']
         version = response['Version']
 
-        # If an alias name is passed in, let's create an alias mapped to the
-        # newly created function. This allows clean, no downtime association
-        # when using application load balancers as an event source.
+        # Let's create an alias mapped to the newly created function.
+        # This allows clean, no downtime association when using application
+        # load balancers as an event source.
         # See: https://github.com/Miserlou/Zappa/pull/1730
-        if alias_name:
-            self.lambda_client.create_alias(
-                FunctionName=resource_arn,
-                FunctionVersion=version,
-                Name=alias_name,
-            )
+        self.lambda_client.create_alias(
+            FunctionName=resource_arn,
+            FunctionVersion=version,
+            Name=ALB_LAMBDA_ALIAS,
+        )
 
         if self.tags:
             self.lambda_client.tag_resource(Resource=resource_arn, Tags=self.tags)
