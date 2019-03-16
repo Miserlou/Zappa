@@ -119,6 +119,9 @@ except botocore.exceptions.NoRegionError as e: # pragma: no cover
 # Response and Exception classes
 ##
 
+LAMBDA_ASYNC_PAYLOAD_LIMIT = 256000
+SNS_ASYNC_PAYLOAD_LIMIT = 256000
+
 class AsyncException(Exception): # pragma: no cover
     """ Simple exception class for async tasks. """
     pass
@@ -176,7 +179,7 @@ class LambdaAsyncResponse(object):
         """
         message['command'] = 'zappa.async.route_lambda_task'
         payload = json.dumps(message).encode('utf-8')
-        if len(payload) > 128000: # pragma: no cover
+        if len(payload) > LAMBDA_ASYNC_PAYLOAD_LIMIT: # pragma: no cover
             raise AsyncException("Payload too large for async Lambda call")
         self.response = self.client.invoke(
                                     FunctionName=self.lambda_function_name,
@@ -242,7 +245,7 @@ class SnsAsyncResponse(LambdaAsyncResponse):
         """
         message['command'] = 'zappa.async.route_sns_task'
         payload = json.dumps(message).encode('utf-8')
-        if len(payload) > 256000: # pragma: no cover
+        if len(payload) > SNS_ASYNC_PAYLOAD_LIMIT: # pragma: no cover
             raise AsyncException("Payload too large for SNS")
         self.response = self.client.publish(
                                 TargetArn=self.arn,
