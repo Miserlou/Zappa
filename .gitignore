@@ -87,3 +87,4 @@ zappa_settings.json
 *.sublime-workspace
 
 README.test.md
+.vscode

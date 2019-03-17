@@ -76,6 +76,7 @@
   - [Using Zappa With Docker](#using-zappa-with-docker)
   - [Dead Letter Queues](#dead-letter-queues)
   - [Unique Package ID](#unique-package-id)
+  - [Application Load Balancer Event Source](#application-load-balancer-event-source)
 - [Zappa Guides](#zappa-guides)
 - [Zappa in the Press](#zappa-in-the-press)
 - [Sites Using Zappa](#sites-using-zappa)
@@ -395,7 +396,7 @@ Any remote print statements made and the value the function returned will then b
 You can also invoke interpretable Python 2.7 or Python 3.6 strings directly by using `--raw`, like so:
 
     $ zappa invoke production "print 1 + 2 + 3" --raw
-    
+
 For instance, it can come in handy if you want to create your first `superuser` on a RDS database running in a VPC (like Serverless Aurora):
     $ zappa invoke staging "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('username', 'email', 'password')" --raw
 
@@ -425,10 +426,10 @@ Currently, the easiest of these to use are the AWS Certificate Manager certifica
 
 Once configured as described below, all of these methods use the same command:
 
-    $ zappa certify 
+    $ zappa certify
 
 When deploying from a CI/CD system, you can use:
-    
+
     $ zappa certify --yes
 
 to skip the confirmation prompt.
@@ -562,7 +563,7 @@ Optionally you can add [SNS message filters](http://docs.aws.amazon.com/sns/late
        ]
 ```
 
-[SQS](https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html) is also pulling messages from a stream.  At this time, [only "Standard" queues can trigger lambda events, not "FIFO" queues](https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html).  Read the AWS Documentation carefully since Lambda calls the SQS DeleteMessage API on your behalf once your function completes successfully.  
+[SQS](https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html) is also pulling messages from a stream.  At this time, [only "Standard" queues can trigger lambda events, not "FIFO" queues](https://docs.aws.amazon.com/lambda/latest/dg/with-sqs.html).  Read the AWS Documentation carefully since Lambda calls the SQS DeleteMessage API on your behalf once your function completes successfully.
 
 ```javascript
        "events": [
@@ -579,17 +580,17 @@ Optionally you can add [SNS message filters](http://docs.aws.amazon.com/sns/late
 
 For configuring Lex Bot's intent triggered events:
 ```javascript
-	"bot_events": [
+    "bot_events": [
         {
             "function": "lexbot.handlers.book_appointment.handler",
             "event_source": {
                 "arn": "arn:aws:lex:us-east-1:01234123123:intent:TestLexEventNames:$LATEST", // optional. In future it will be used to configure the intent
-            	"intent":"intentName", // name of the bot event configured
-            	"invocation_source":"DialogCodeHook", // either FulfillmentCodeHook or DialogCodeHook
+                "intent":"intentName", // name of the bot event configured
+                "invocation_source":"DialogCodeHook", // either FulfillmentCodeHook or DialogCodeHook
             }
         }
-	]
- 
+    ]
+
 ```
 
 Events can also take keyword arguments:
@@ -653,14 +654,13 @@ Putting a try..except block on an asynchronous task like this:
 @task
 def make_pie():
     try:
-	ingredients = get_ingredients()
-	pie = bake(ingredients)
-	deliver(pie)
-	
+        ingredients = get_ingredients()
+        pie = bake(ingredients)
+        deliver(pie)
     except Fault as error:
-    	"""send an email"""
-	...
-	return Response('Web services down', status=503)
+        """send an email"""
+    ...
+    return Response('Web services down', status=503)
 ```
 
 will cause an email to be sent twice for the same error. See [asynchronous retries at AWS](https://docs.aws.amazon.com/lambda/latest/dg/retries-on-errors.html). To work around this side-effect, and have the fault handler execute only once, change the return value to:
@@ -669,12 +669,11 @@ will cause an email to be sent twice for the same error. See [asynchronous retri
 @task
 def make_pie():
     try:
-	"""code block"""
-	
+        """code block"""
     except Fault as error:
-    	"""send an email"""
-	...
-	return {} #or return True
+        """send an email"""
+    ...
+    return {} #or return True
 ```
 
 ### Task Sources
@@ -818,6 +817,12 @@ to change Zappa's behavior. Use these at your own risk!
 ```javascript
  {
     "dev": {
+        "alb_enabled": false, // enable provisioning of application load balancing resources. If set to true, you _must_ fill out the alb_vpc_config option as well.
+        "alb_vpc_config": {
+            "CertificateArn": "your_acm_certificate_arn", // ACM certificate ARN for ALB
+            "SubnetIds": [], // list of subnets for ALB
+            "SecurityGroupIds": [] // list of security groups for ALB
+        },
         "api_key_required": false, // enable securing API Gateway endpoints with x-api-key header (default False)
         "api_key": "your_api_key_id", // optional, use an existing API key. The option "api_key_required" must be true to apply
         "apigateway_enabled": true, // Set to false if you don't want to create an API Gateway resource. Default true.
@@ -866,7 +871,7 @@ to change Zappa's behavior. Use these at your own risk!
         "delete_s3_zip": true, // Delete the s3 zip archive. Default true.
         "django_settings": "your_project.production_settings", // The modular path to your Django project's settings. For Django projects only.
         "domain": "yourapp.yourdomain.com", // Required if you're using a domain
-        "base_path": "your-base-path", // Optional base path for API gateway custom domain base path mapping. Default None.
+        "base_path": "your-base-path", // Optional base path for API gateway custom domain base path mapping. Default None. Not supported for use with Application Load Balancer event sources.
         "environment_variables": {"your_key": "your_value"}, // A dictionary of environment variables that will be available to your deployed app. See also "remote_env" and "aws_environment_variables". Default {}.
         "events": [
             {   // Recurring events
@@ -1364,6 +1369,31 @@ For monitoring of different deployments, a unique UUID for each package is avail
   "uuid": "9c2df9e6-30f4-4c0a-ac4d-4ecb51831a74"
 }
 ```
+
+### Application Load Balancer Event Source
+
+Zappa can be used to handle events triggered by Application Load Balancers (ALB). This can be useful in a few circumstances:
+- Since API Gateway has a hard limit of 30 seconds before timing out, you can use an ALB for longer running requests.
+- API Gateway is billed per-request; therefore, costs can become excessive with high throughput services. ALBs pricing model makes much more sense financially if you're expecting a lot of traffic to your Lambda.
+- ALBs can be placed within a VPC, which may make more sense for private endpoints than using API Gateway's private model (using AWS PrivateLink).
+
+Like API Gateway, Zappa can automatically provision ALB resources for you.  You'll need to add the following to your `zappa_settings`:
+```
+"alb_enabled": true,
+"alb_vpc_config": {
+    "CertificateArn": "arn:aws:acm:us-east-1:[your-account-id]:certificate/[certificate-id]",
+    "SubnetIds": [
+        // Here, you'll want to provide a list of subnets for your ALB, eg. 'subnet-02a58266'
+    ],
+    "SecurityGroupIds": [
+        // And here, a list of security group IDs, eg. 'sg-fbacb791'
+    ]
+}
+```
+
+More information on using ALB as an event source for Lambda can be found [here](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html).
+
+*An important note*: right now, Zappa will provision ONE lambda to ONE load balancer, which means using `base_path` along with ALB configuration is currently unsupported.
 
 ## Zappa Guides
 
