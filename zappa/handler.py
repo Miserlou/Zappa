@@ -294,7 +294,7 @@ class LambdaHandler(object):
         """
         Get the associated function to execute for a triggered AWS event
 
-        Support S3, SNS, DynamoDB, kinesis and SQS events
+        Support S3, SNS, DynamoDB, kinesis, SQS, and SES events
         """
         if 's3' in record:
             if ':' in record['s3']['configurationId']:
@@ -309,6 +309,8 @@ class LambdaHandler(object):
             except ValueError:
                 pass
             arn = record['Sns'].get('TopicArn')
+        elif record.get('eventSource') == 'aws:ses':
+            arn = record['ses']['receipt']['action'].get('functionArn')
         elif 'dynamodb' in record or 'kinesis' in record:
             arn = record.get('eventSourceARN')
         elif 'eventSource' in record and record.get('eventSource') == 'aws:sqs':
@@ -318,7 +320,6 @@ class LambdaHandler(object):
 
         if arn:
             return self.settings.AWS_EVENT_MAPPING.get(arn)
-
         return None
 
     def get_function_from_bot_intent_trigger(self, event):
@@ -415,7 +416,6 @@ class LambdaHandler(object):
 
         # This is an AWS-event triggered invocation.
         elif event.get('Records', None):
-
             records = event.get('Records')
             result = None
             whole_function = self.get_function_for_aws_event(records[0])
