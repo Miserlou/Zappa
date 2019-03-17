@@ -14,10 +14,10 @@ import sys
 
 from past.builtins import basestring
 
-if sys.version_info[0] < 3:
-    from urlparse import urlparse
-else:
+try:
     from urllib.parse import urlparse
+except ImportError:
+    from urlparse import urlparse
 
 LOG = logging.getLogger(__name__)
 
@@ -82,7 +82,7 @@ def human_size(num, suffix='B'):
     """
     Convert bytes length to a human-readable version
     """
-    for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
+    for unit in ('', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi'):
         if abs(num) < 1024.0:
             return "{0:3.1f}{1!s}{2!s}".format(num, unit, suffix)
         num /= 1024.0
@@ -171,7 +171,7 @@ def detect_flask_apps():
     return matches
 
 def get_venv_from_python_version():
-    return 'python' + str(sys.version_info[0]) + '.' + str(sys.version_info[1])
+    return 'python{}.{}'.format(*sys.version_info)
 
 def get_runtime_from_python_version():
     """
@@ -406,10 +406,7 @@ def add_event_source(event_source, lambda_arn, target_function, boto_session, dr
     if not dry:
         if not event_source_obj.status(funk):
             event_source_obj.add(funk)
-            if event_source_obj.status(funk):
-                return 'successful'
-            else:
-                return 'failed'
+            return 'successful' if event_source_obj.status(funk) else 'failed'
         else:
             return 'exists'
 
@@ -455,10 +452,7 @@ def check_new_version_available(this_version):
     resp = requests.get(pypi_url, timeout=1.5)
     top_version = resp.json()['info']['version']
 
-    if this_version != top_version:
-        return True
-    else:
-        return False
+    return this_version != top_version
 
 
 class InvalidAwsLambdaName(Exception):
@@ -546,7 +540,7 @@ def is_valid_bucket_name(name):
     # Bucket names must start with a lowercase letter or number.
     if not (name[0].islower() or name[0].isdigit()):
         return False
-    # Bucket names must be a series of one or more labels. Adjacent labels are separated by a single period (.). 
+    # Bucket names must be a series of one or more labels. Adjacent labels are separated by a single period (.).
     for label in name.split("."):
         # Each label must start and end with a lowercase letter or a number.
         if len(label) < 1:
@@ -565,3 +559,20 @@ def is_valid_bucket_name(name):
         return False
 
     return True
+
+
+def merge_headers(event):
+    """
+    Merge the values of headers and multiValueHeaders into a single dict.
+    Opens up support for multivalue headers via API Gateway and ALB.
+    See: https://github.com/Miserlou/Zappa/pull/1756
+    """
+    headers = event.get('headers') or {}
+    multi_headers = (event.get('multiValueHeaders') or {}).copy()
+    for h in (set(multi_headers.keys()) | set(headers.keys())):
+        if h not in multi_headers:
+            multi_headers[h] = [headers[h]]
+        elif h in headers:
+            multi_headers[h].append(headers[h])
+        multi_headers[h] = ', '.join(multi_headers[h])
+    return multi_headers
