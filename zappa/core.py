@@ -276,9 +276,11 @@ class Zappa(object):
 
         if self.runtime == 'python2.7':
             self.manylinux_wheel_file_suffix = 'cp27mu-manylinux1_x86_64.whl'
-        else:
+        elif self.runtime == 'python3.6':
             self.manylinux_wheel_file_suffix = 'cp36m-manylinux1_x86_64.whl'
-
+        else:
+            self.manylinux_wheel_file_suffix = 'cp37m-manylinux1_x86_64.whl'
+            
         self.endpoint_urls = endpoint_urls
         self.xray_tracing = xray_tracing
 
@@ -655,8 +657,8 @@ class Zappa(object):
                 # This is a special case!
                 # SQLite3 is part of the _system_ Python, not a package. Still, it lives in `lambda-packages`.
                 # Everybody on Python3 gets it!
-                if self.runtime == "python3.6":
-                    print(" - sqlite==python36: Using precompiled lambda package")
+                if self.runtime in ("python3.6", "python3.7"):
+                    print(" - sqlite==python3: Using precompiled lambda package")
                     self.extract_lambda_package('sqlite3', temp_project_path)
 
             except Exception as e:
@@ -2899,7 +2901,7 @@ class Zappa(object):
                 "events": ["sns:Publish"]
             },
             lambda_arn=lambda_arn,
-            target_function="zappa.async.route_task",
+            target_function="zappa.asynchronous.route_task",
             boto_session=self.boto_session
         )
         return topic_arn
