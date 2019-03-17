@@ -654,10 +654,9 @@ Putting a try..except block on an asynchronous task like this:
 @task
 def make_pie():
     try:
-    ingredients = get_ingredients()
-    pie = bake(ingredients)
-    deliver(pie)
-
+        ingredients = get_ingredients()
+        pie = bake(ingredients)
+        deliver(pie)
     except Fault as error:
         """send an email"""
     ...
@@ -670,8 +669,7 @@ will cause an email to be sent twice for the same error. See [asynchronous retri
 @task
 def make_pie():
     try:
-    """code block"""
-
+        """code block"""
     except Fault as error:
         """send an email"""
     ...
@@ -819,12 +817,12 @@ to change Zappa's behavior. Use these at your own risk!
 ```javascript
  {
     "dev": {
-        "alb_enabled": false // enable provisioning of application load balancing resources
+        "alb_enabled": false, // enable provisioning of application load balancing resources. If set to true, you _must_ fill out the alb_vpc_config option as well.
         "alb_vpc_config": {
-            "CertificateArn": // ACM certificate ARN for ALB
-            "SubnetIds": [] // list of subnets for ALB
+            "CertificateArn": "your_acm_certificate_arn", // ACM certificate ARN for ALB
+            "SubnetIds": [], // list of subnets for ALB
             "SecurityGroupIds": [] // list of security groups for ALB
-        }
+        },
         "api_key_required": false, // enable securing API Gateway endpoints with x-api-key header (default False)
         "api_key": "your_api_key_id", // optional, use an existing API key. The option "api_key_required" must be true to apply
         "apigateway_enabled": true, // Set to false if you don't want to create an API Gateway resource. Default true.
@@ -873,7 +871,7 @@ to change Zappa's behavior. Use these at your own risk!
         "delete_s3_zip": true, // Delete the s3 zip archive. Default true.
         "django_settings": "your_project.production_settings", // The modular path to your Django project's settings. For Django projects only.
         "domain": "yourapp.yourdomain.com", // Required if you're using a domain
-        "base_path": "your-base-path", // Optional base path for API gateway custom domain base path mapping. Default None.
+        "base_path": "your-base-path", // Optional base path for API gateway custom domain base path mapping. Default None. Not supported for use with Application Load Balancer event sources.
         "environment_variables": {"your_key": "your_value"}, // A dictionary of environment variables that will be available to your deployed app. See also "remote_env" and "aws_environment_variables". Default {}.
         "events": [
             {   // Recurring events
@@ -1394,6 +1392,8 @@ Like API Gateway, Zappa can automatically provision ALB resources for you.  You'
 ```
 
 More information on using ALB as an event source for Lambda can be found [here](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html).
+
+*An important note*: right now, Zappa will provision ONE lambda to ONE load balancer, which means using `base_path` along with ALB configuration is currently unsupported.
 
 ## Zappa Guides
 
