@@ -2697,8 +2697,23 @@ class ZappaCLI(object):
 
     def touch_endpoint(self, endpoint_url):
         """
-        Test the deployed endpoint with a GET request
+        Test the deployed endpoint with a GET request.
         """
+
+        # Private APIGW endpoints most likely can't be reached by a deployer
+        # unless they're connected to the VPC by VPN. Instead of trying
+        # connect to the service, print a warning and let the user know
+        # to check it manually.
+        # See: https://github.com/Miserlou/Zappa/pull/1719#issuecomment-471341565
+        if 'PRIVATE' in self.stage_config.get('endpoint_configuration', []):
+            print(
+                click.style("Warning!", fg="yellow", bold=True) +
+                " Since you're deploying a private API Gateway endpoint,"
+                " Zappa cannot determine if your function is returning "
+                " a correct status code. You should check your API's response"
+                " manually before considering this deployment complete."
+            )
+            return
 
         touch_path = self.stage_config.get('touch_path', '/')
         req = requests.get(endpoint_url + touch_path)
