@@ -117,6 +117,7 @@ class ZappaCLI(object):
     aws_kms_key_arn = ''
     context_header_mappings = None
     tags = []
+    layers = None
 
     stage_name_env_pattern = re.compile('^[a-zA-Z0-9_]+$')
 
@@ -758,7 +759,8 @@ class ZappaCLI(object):
                 memory_size=self.memory_size,
                 runtime=self.runtime,
                 aws_environment_variables=self.aws_environment_variables,
-                aws_kms_key_arn=self.aws_kms_key_arn
+                aws_kms_key_arn=self.aws_kms_key_arn,
+                layers=self.layers
             )
             if source_zip and source_zip.startswith('s3://'):
                 bucket, key_name = parse_s3_url(source_zip)
@@ -2092,6 +2094,7 @@ class ZappaCLI(object):
         self.context_header_mappings = self.stage_config.get('context_header_mappings', {})
         self.xray_tracing = self.stage_config.get('xray_tracing', False)
         self.desired_role_arn = self.stage_config.get('role_arn')
+        self.layers = self.stage_config.get('layers', None)
 
         # Load ALB-related settings
         self.use_alb = self.stage_config.get('alb_enabled', False)
