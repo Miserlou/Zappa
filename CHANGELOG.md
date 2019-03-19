@@ -1,5 +1,9 @@
 # Zappa Changelog
 
+## 0.48.1
+* Fix for an issue where you couldn't update a function if it had been deployed with a version prior to 0.48.0
+* Support for private (VPC-only) API Gateway endpoints
+
 ## 0.48.0
 * Deprecation of zappa.async because async is a reserved word in 3.7, please use zappa.asynchronous
 * Support for Application Load Balancer as an alternative to API Gateway
