@@ -402,7 +402,7 @@ class TestZappa(unittest.TestCase):
         }
 
         merged = merge_headers(event)
-        self.assertEqual(merged['a'], 'c, b')
+        self.assertEqual(merged['a'], 'c')
         self.assertEqual(merged['x'], 'y')
         self.assertEqual(merged['z'], 'q')
 

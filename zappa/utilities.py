@@ -572,5 +572,6 @@ def merge_headers(event):
     for h in set(headers.keys()):
         if h not in multi_headers:
             multi_headers[h] = [headers[h]]
+    for h in multi_headers.keys():
         multi_headers[h] = ', '.join(multi_headers[h])
     return multi_headers
