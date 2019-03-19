@@ -77,6 +77,8 @@
   - [Dead Letter Queues](#dead-letter-queues)
   - [Unique Package ID](#unique-package-id)
   - [Application Load Balancer Event Source](#application-load-balancer-event-source)
+  - [Endpoint Configuration](#endpoint-configuration)
+    - [Example Private API Gateway configuration](#example-private-api-gateway-configuration)
 - [Zappa Guides](#zappa-guides)
 - [Zappa in the Press](#zappa-in-the-press)
 - [Sites Using Zappa](#sites-using-zappa)
@@ -888,6 +890,7 @@ to change Zappa's behavior. Use these at your own risk!
                 }
             }
         ],
+        "endpoint_configuration": ["EDGE", "REGIONAL", "PRIVATE"],  // Specify APIGateway endpoint None (default) or list `EDGE`, `REGION`, `PRIVATE`
         "exception_handler": "your_module.report_exception", // function that will be invoked in case Zappa sees an unhandled exception raised from your code
         "exclude": ["*.gz", "*.rar"], // A list of regex patterns to exclude from the archive. To exclude boto3 and botocore (available in an older version on Lambda), add "boto3*" and "botocore*".
         "extends": "stage_name", // Duplicate and extend another stage's settings. For example, `dev-asia` could extend from `dev-common` with a different `s3_bucket` value.
@@ -1389,11 +1392,57 @@ Like API Gateway, Zappa can automatically provision ALB resources for you.  You'
         // And here, a list of security group IDs, eg. 'sg-fbacb791'
     ]
 }
-```
 
 More information on using ALB as an event source for Lambda can be found [here](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html).
 
 *An important note*: right now, Zappa will provision ONE lambda to ONE load balancer, which means using `base_path` along with ALB configuration is currently unsupported.
+
+### Endpoint Configuration
+
+API Gateway can be configured to be only accessible in a VPC. To enable this; [configure your VPC to support](https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-private-apis.html) then set the `endpoint_configuration` to `PRIVATE` and set up Resource Policy on the API Gateway. A note about this; if you're using a private endpoint, Zappa won't be able to tell if the API is returning a successful status code upon deploy or update, so you'll have to check it manually to ensure your setup is working properly.
+
+For full list of options for endpoint configuration refer to [API Gateway EndpointConfiguration documentation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-apigateway-restapi-endpointconfiguration.html)
+
+#### Example Private API Gateway configuration
+
+zappa_settings.json:
+```json
+{
+    "dev": {
+        ...
+        "endpoint_configuration": ["PRIVATE"],
+        "apigateway_policy": "apigateway_resource_policy.json",
+        ...
+    },
+    ...
+}
+```
+
+apigateway_resource_policy.json:
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Deny",
+            "Principal": "*",
+            "Action": "execute-api:Invoke",
+            "Resource": "execute-api:/*",
+            "Condition": {
+                "StringNotEquals": {
+                    "aws:sourceVpc": "{{vpcID}}" // UPDATE ME
+                }
+            }
+        },
+        {
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "execute-api:Invoke",
+            "Resource": "execute-api:/*"
+        }
+    ]
+}
+```
 
 ## Zappa Guides
 
