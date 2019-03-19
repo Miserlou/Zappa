@@ -1,5 +1,21 @@
 # Zappa Changelog
 
+## 0.48.0
+* Deprecation of zappa.async because async is a reserved word in 3.7, please use zappa.asynchronous
+* Support for Application Load Balancer as an alternative to API Gateway
+* Improvements in manylinux wheel downloads
+* Support for multi-value query strings
+* Python 3.7 support
+* Support for multi-value headers
+* Support for the new 256kB async limit
+* Bunch of small typos, fixes and documentation improvements
+* Use Django 2 on tests with python 3
+* Stop applying tags on buckets not created by zappa
+* Be more forgiving on 504 errors during deployment
+* Fix cleanup of DynamoDB table for async tasks
+* Detection of invalid bucket names
+* Flake8 checks added to tests
+
 ## 0.47.1
 * Handle accounts with more than 100 domains in route 53
 * Force requests upgrade to 2.20.0 for compatibility with urllib3 1.24
