@@ -280,7 +280,7 @@ class Zappa(object):
             self.manylinux_wheel_file_suffix = 'cp36m-manylinux1_x86_64.whl'
         else:
             self.manylinux_wheel_file_suffix = 'cp37m-manylinux1_x86_64.whl'
-            
+
         self.endpoint_urls = endpoint_urls
         self.xray_tracing = xray_tracing
 
@@ -1042,7 +1042,8 @@ class Zappa(object):
                                 aws_environment_variables=None,
                                 aws_kms_key_arn=None,
                                 xray_tracing=False,
-                                local_zip=None
+                                local_zip=None,
+                                use_alb=False,
                             ):
         """
         Given a bucket and key (or a local path) of a valid Lambda-zip, a function name and a handler, register that Lambda function.
@@ -1090,15 +1091,17 @@ class Zappa(object):
         resource_arn = response['FunctionArn']
         version = response['Version']
 
-        # Let's create an alias mapped to the newly created function.
-        # This allows clean, no downtime association when using application
-        # load balancers as an event source.
+        # If we're using an ALB, let's create an alias mapped to the newly
+        # created function. This allows clean, no downtime association when
+        # using application load balancers as an event source.
         # See: https://github.com/Miserlou/Zappa/pull/1730
-        self.lambda_client.create_alias(
-            FunctionName=resource_arn,
-            FunctionVersion=version,
-            Name=ALB_LAMBDA_ALIAS,
-        )
+        #      https://github.com/Miserlou/Zappa/issues/1823
+        if use_alb:
+            self.lambda_client.create_alias(
+                FunctionName=resource_arn,
+                FunctionVersion=version,
+                Name=ALB_LAMBDA_ALIAS,
+            )
 
         if self.tags:
             self.lambda_client.tag_resource(Resource=resource_arn, Tags=self.tags)
@@ -1126,14 +1129,29 @@ class Zappa(object):
         resource_arn = response['FunctionArn']
         version = response['Version']
 
-        # Given an alias name, let's update that alias to map to this newly
-        # updated version.
+        # If the lambda has an ALB alias, let's update the alias
+        # to point to the newest version of the function. We have to use a GET
+        # here, as there's no HEAD-esque call to retrieve metadata about a
+        # function alias.
         # Related: https://github.com/Miserlou/Zappa/pull/1730
-        self.lambda_client.update_alias(
-            FunctionName=function_name,
-            FunctionVersion=version,
-            Name=ALB_LAMBDA_ALIAS,
-        )
+        #          https://github.com/Miserlou/Zappa/issues/1823
+        try:
+            response = self.lambda_client.get_alias(
+                FunctionName=function_name,
+                Name=ALB_LAMBDA_ALIAS,
+            )
+            alias_exists = True
+        except botocore.exceptions.ClientError as e:  # pragma: no cover
+            if "ResourceNotFoundException" not in e.response["Error"]["Code"]:
+                raise e
+            alias_exists = False
+
+        if alias_exists:
+            self.lambda_client.update_alias(
+                FunctionName=function_name,
+                FunctionVersion=version,
+                Name=ALB_LAMBDA_ALIAS,
+            )
 
         if num_revisions:
             # Find the existing revision IDs for the given function
