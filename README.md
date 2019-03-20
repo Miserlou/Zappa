@@ -821,9 +821,17 @@ to change Zappa's behavior. Use these at your own risk!
     "dev": {
         "alb_enabled": false, // enable provisioning of application load balancing resources. If set to true, you _must_ fill out the alb_vpc_config option as well.
         "alb_vpc_config": {
-            "CertificateArn": "your_acm_certificate_arn", // ACM certificate ARN for ALB
+            // To create an ALB set CertificateArn, SubnetIds, and SecurityGroupIds
+            "CertificateArn": "your_acm_certificate_arn", // ACM certificate ARN for ALB  - not required if LoadBalancerArn is specified
             "SubnetIds": [], // list of subnets for ALB
             "SecurityGroupIds": [] // list of security groups for ALB
+            // To use an existing ALB set LoadBalancerArn, alb_listener_rule_conditions, alb_listener_rule_priority
+            "LoadBalancerArn": "your_alb_arn"
+            "alb_listener_rule_conditions": {
+                "Field": "path-pattern",  //  one of host-header or path-pattern
+                "Values": ["*"]  // host: "api.example.com" OR path route: "api/*",  "v1"
+            },
+            "alb_listener_rule_priority": 1 // Priority for Listener rule. A listener can't have multiple rules with the same priority.
         },
         "api_key_required": false, // enable securing API Gateway endpoints with x-api-key header (default False)
         "api_key": "your_api_key_id", // optional, use an existing API key. The option "api_key_required" must be true to apply
@@ -1392,6 +1400,20 @@ Like API Gateway, Zappa can automatically provision ALB resources for you.  You'
         // And here, a list of security group IDs, eg. 'sg-fbacb791'
     ]
 }
+
+Or if you have an ALB already provisioned you can specify it like this:
+```
+"alb_enabled": true,
+"alb_vpc_config": {
+    "LoadBalancerArn": "arn:aws:acm:us-east-1:[your-account-id]:loadbalancer/app/[alb-name]/[f851177b4d4eb840]",
+    "alb_listener_rule_conditions": {
+        "Field": "path-pattern|host-header",
+        "Values": ["api/*"|"api.example.com"]
+    },
+    "alb_listener_rule_priority": 1
+}
+
+More information about using Listener Rules can be found [here](https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/elbv2.html#ElasticLoadBalancingv2.Client.create_rule)
 
 More information on using ALB as an event source for Lambda can be found [here](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html).
 

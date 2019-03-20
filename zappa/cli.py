@@ -1110,7 +1110,7 @@ class ZappaCLI(object):
                 return
 
         if self.use_alb:
-            self.zappa.undeploy_lambda_alb(self.lambda_name)
+            self.zappa.undeploy_lambda_alb(self.lambda_name, self.alb_vpc_config)
 
         if self.use_apigateway:
             if remove_logs:
