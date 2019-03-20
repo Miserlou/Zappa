@@ -1,5 +1,8 @@
 # Zappa Changelog
 
+## 0.48.2
+* Fix for invalid values of HTTP_HOST and others (introduced in 0.48.0)
+
 ## 0.48.1
 * Fix for an issue where you couldn't update a function if it had been deployed with a version prior to 0.48.0
 * Support for private (VPC-only) API Gateway endpoints
