@@ -569,10 +569,9 @@ def merge_headers(event):
     """
     headers = event.get('headers') or {}
     multi_headers = (event.get('multiValueHeaders') or {}).copy()
-    for h in (set(multi_headers.keys()) | set(headers.keys())):
+    for h in set(headers.keys()):
         if h not in multi_headers:
             multi_headers[h] = [headers[h]]
-        elif h in headers:
-            multi_headers[h].append(headers[h])
+    for h in multi_headers.keys():
         multi_headers[h] = ', '.join(multi_headers[h])
     return multi_headers
