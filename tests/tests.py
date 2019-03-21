@@ -2276,7 +2276,7 @@ USE_TZ = True
                  "ListenerArn": listener_arn
              },
              service_response={
-                 "Rules": [{"Actions": [{"Type": "forward", "TargetGroupArn": targetgroup_arn}]}]
+                 "Rules": [{"RuleArn": rule_arn, "Actions": [{"Type": "forward", "TargetGroupArn": targetgroup_arn}]}]
              }
         )
         elbv2_stubber.add_response("delete_rule",
