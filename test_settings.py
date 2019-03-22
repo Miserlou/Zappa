@@ -1,6 +1,6 @@
 APP_MODULE = 'tests.test_app'
 APP_FUNCTION = 'hello_world'
-DJANGO_SETTINGS = None 
+DJANGO_SETTINGS = None
 DEBUG = 'True'
 LOG_LEVEL = 'DEBUG'
 SCRIPT_NAME = 'hello_world'
@@ -11,7 +11,7 @@ PROJECT_NAME = 'ttt888'
 REMOTE_ENV='s3://lmbda/test_env.json'
 ## test_env.json
 #{
-#	"hello": "world"
+#    "hello": "world"
 #}
 #
 
@@ -65,4 +65,3 @@ def authorizer_event(event, content):
 
 def command():
     print("command")
-

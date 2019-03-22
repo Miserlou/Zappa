@@ -1,5 +1,5 @@
 from cgi import parse_qs, escape
-from zappa.async import task
+from zappa.asynchronous import task
 
 
 def hello_world(environ, start_response):
