@@ -1982,7 +1982,7 @@ USE_TZ = True
         targetgroup_arn = str(uuid.uuid4())
         listener_arn  = str(uuid.uuid4())
 
-	elbv2_stubber.add_response("describe_load_balancers",
+        elbv2_stubber.add_response("describe_load_balancers",
             expected_params={
                "LoadBalancerArns": [ kwargs["alb_vpc_config"]["LoadBalancerArn"] ]
             },

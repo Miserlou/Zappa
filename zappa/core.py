@@ -1391,7 +1391,7 @@ class Zappa(object):
             if not "Attributes" in response:
                 raise EnvironmentError("Failed to check LoadBalancer Attributes")
             alb_timeout = next( attrib for attrib in response["Attributes"] if attrib["Key"] == "idle_timeout.timeout_seconds")
-	    if alb_timeout["Value"] <> str(timeout):
+            if alb_timeout["Value"] <> str(timeout):
                 print('Warning: The Lambda and ALB timeout values do not match, you might want to check this: lambda: {} secs, ALB: {} secs'.format(timeout, alb_timeout["Value"])
 )
 
