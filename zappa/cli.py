@@ -937,7 +937,7 @@ class ZappaCLI(object):
         )
         if source_zip and source_zip.startswith('s3://'):
             bucket, key_name = parse_s3_url(source_zip)
-            kwargs = kwargs.update(dict(
+            kwargs.update(dict(
                 bucket=bucket,
                 s3_key=key_name
             ))
