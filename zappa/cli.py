@@ -760,7 +760,7 @@ class ZappaCLI(object):
                 runtime=self.runtime,
                 aws_environment_variables=self.aws_environment_variables,
                 aws_kms_key_arn=self.aws_kms_key_arn,
-                use_alb=self.use_alb
+                use_alb=self.use_alb,
                 layers=self.layers
             )
             if source_zip and source_zip.startswith('s3://'):
