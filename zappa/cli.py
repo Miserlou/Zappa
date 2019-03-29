@@ -969,7 +969,8 @@ class ZappaCLI(object):
                                                         memory_size=self.memory_size,
                                                         runtime=self.runtime,
                                                         aws_environment_variables=self.aws_environment_variables,
-                                                        aws_kms_key_arn=self.aws_kms_key_arn
+                                                        aws_kms_key_arn=self.aws_kms_key_arn,
+                                                        layers=self.layers
                                                     )
 
         # Finally, delete the local copy our zip package
