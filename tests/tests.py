@@ -1978,10 +1978,10 @@ USE_TZ = True
             "lambda_name": "test",
             "alb_vpc_config": {
                 "LoadBalancerArn": str(uuid.uuid4()),
-                "alb_listener_rule_conditions": {
+                "alb_listener_rule_conditions": [{
                     "Field": "path-pattern",
                     "Values": ["api/*"]
-                }
+                }]
             },
             'timeout': '30',
         }
@@ -2002,10 +2002,10 @@ USE_TZ = True
             "lambda_name": str(uuid.uuid4()),
             "alb_vpc_config": {
                 "LoadBalancerArn": str(uuid.uuid4()),
-                "alb_listener_rule_conditions": {
+                "alb_listener_rule_conditions": [{
                     "Field": "path-pattern",
                     "Values": ["api/*"]
-                 },
+                 }],
                  "alb_listener_rule_priority": 1
             },
             "timeout": '30',
@@ -2113,7 +2113,7 @@ USE_TZ = True
                    "TargetGroupArn": targetgroup_arn
                }],
                "ListenerArn": listener_arn,
-               "Conditions": [ kwargs["alb_vpc_config"]["alb_listener_rule_conditions"] ],
+               "Conditions": kwargs["alb_vpc_config"]["alb_listener_rule_conditions"],
                "Priority" :  kwargs["alb_vpc_config"]["alb_listener_rule_priority"]
             },
             service_response={}
@@ -2444,8 +2444,6 @@ USE_TZ = True
         )
         lambda_stubber.activate()
         elbv2_stubber.activate()
-        #zappa_core.undeploy_lambda_alb(kwargs['lambda_name'])
-        #zappa_core.undeploy_lambda_alb(kwargs['lambda_name'], kwargs['alb_vpc_config'])
         zappa_core.undeploy_lambda_alb(**kwargs)
 
 

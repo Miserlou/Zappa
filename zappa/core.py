@@ -1454,9 +1454,7 @@ class Zappa(object):
                     "TargetGroupArn": target_group_arn,
                 }],
                 ListenerArn=response["Listeners"][0]["ListenerArn"],
-                Conditions=[
-                   alb_vpc_config['alb_listener_rule_conditions']
-                ],
+                Conditions=alb_vpc_config['alb_listener_rule_conditions'],
                 Priority=alb_vpc_config['alb_listener_rule_priority']
             )
             response = self.elbv2_client.create_rule(**kwargs)
