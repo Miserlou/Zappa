@@ -1406,10 +1406,12 @@ Or if you have an ALB already provisioned you can specify it like this:
 "alb_enabled": true,
 "alb_vpc_config": {
     "LoadBalancerArn": "arn:aws:acm:us-east-1:[your-account-id]:loadbalancer/app/[alb-name]/[f851177b4d4eb840]",
-    "alb_listener_rule_conditions": {
-        "Field": "path-pattern|host-header",
-        "Values": ["api/*"|"api.example.com"]
-    },
+    "alb_listener_rule_conditions": [
+        {
+            "Field": "path-pattern|host-header",
+            "Values": ["api/*"|"api.example.com"]
+        }
+    ],
     "alb_listener_rule_priority": 1
 }
 
