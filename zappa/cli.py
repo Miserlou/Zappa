@@ -664,7 +664,6 @@ class ZappaCLI(object):
                                             authorizer=self.authorizer,
                                             cors_options=self.cors,
                                             description=self.apigateway_description,
-                                            policy=self.apigateway_policy,
                                             endpoint_configuration=self.endpoint_configuration
                                         )
 

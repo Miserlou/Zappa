@@ -1,5 +1,8 @@
 # Zappa Changelog
 
+## 0.49.1
+* Migrate to PEP-518/Poetry build system from setup.py.
+
 ## 0.49.0
 * Added support for Python 3.8
 * Fixed boto3 reporting of long names

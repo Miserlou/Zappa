@@ -1,0 +1,94 @@
+[tool.poetry]
+name = "zappa"
+version = "0.49.1"
+description = "Server-less Python Web Services for AWS Lambda and API Gateway"
+authors = ["Rich Jones <rich@openwatch.net>"]
+license = "MIT License"
+readme = 'README.md'
+repository = "https://github.com/Miserlou/Zappa"
+homepage = "https://github.com/Miserlou/Zappa"
+keywords = [
+    "amazon",
+    "apigateway",
+    "aws",
+    "django",
+    "flask",
+    "lambda",
+    "miserlou",
+    "serverless",
+    "wsgi",
+    "zappa",
+]
+classifiers = [
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Environment :: Console",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3 :: Only",
+    "Framework :: Django",
+    "Framework :: Django :: 1.11",
+    "Framework :: Django :: 2.0",
+    "Framework :: Flask",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+    "Topic :: Internet :: WWW/HTTP :: WSGI",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Utilities",
+]
+include = ["LICENSE", "README.md"]
+packages = [
+    { include = "zappa" },
+    { include = "*.py" },
+]
+
+[tool.poetry.dependencies]
+python = "^3.6"
+argcomplete = "*"
+boto3 = "*"
+durationpy = "*"
+future = "*"
+hjson = "*"
+jmespath = "*"
+kappa = "0.6.0"
+lambda-packages = "*"
+python-dateutil = "*"
+python-slugify = "*"
+PyYAML = "*"
+with = "^0.0.7"
+urllib3 = "^1.25.8"
+requests = "*"
+six = "*"
+toml = "*"
+tqdm = "*"
+troposphere = "*"
+Werkzeug = "*"
+wheel = "*"
+wsgi-request-logger = "*"
+
+[tool.poetry.dev-dependencies]
+Django = "^2"
+flake8 = "*"
+Flask = "*"
+mock = "*"
+nose = "*"
+nose-timer = "*"
+placebo = "*"
+<<<<<<< HEAD
+coveralls = "*"
+=======
+coveralls = {version = "*", allow-prereleases = true}
+>>>>>>> e23e44b... Remove api_gateway policy from tempalte creation
+
+[tool.poetry.scripts]
+zappa = "zappa.cli:handle"
+z = "zappa.cli:handle"
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"

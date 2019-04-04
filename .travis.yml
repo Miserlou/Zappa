@@ -8,7 +8,7 @@ dist: xenial
 cache:
   - pip
 install:
-  - "pip install --upgrade pip; pip install --upgrade setuptools; pip install -r test_requirements.txt; pip install -e git+https://github.com/django/django-contrib-comments.git#egg=django-contrib-comments; python setup.py install"
+  - "pip install --upgrade pip setuptools poetry;poetry install -v"
 # command to run tests
 env:
   - TESTCASE=tests/tests_docs.py
