@@ -541,8 +541,10 @@ class LambdaHandler(object):
 
                     if response.data:
                         if settings.BINARY_SUPPORT:
-                            if not response.mimetype.startswith("text/") \
-                                or response.mimetype != "application/json":
+                            if (
+                                not response.mimetype.startswith("text/") and
+                                response.mimetype != "application/json"
+                            ):
                                     zappa_returndict['body'] = base64.b64encode(response.data).decode('utf-8')
                                     zappa_returndict["isBase64Encoded"] = True
                             else:

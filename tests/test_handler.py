@@ -1,6 +1,7 @@
 from mock import Mock
 import sys
 import unittest
+import json
 from zappa.handler import LambdaHandler
 from zappa.utilities import merge_headers
 
@@ -215,6 +216,34 @@ class TestZappa(unittest.TestCase):
         self.assertEqual(
             response['body'],
             'https://zappa:80/return/request/url'
+        )
+
+    def test_wsgi_script_name_on_test_json_request(self):
+        """
+        Ensure that requests with text responses are not base64 encoded
+        """
+        lh = LambdaHandler('tests.test_wsgi_script_json')
+
+        event = {
+            'body': '',
+            'resource': '/{proxy+}',
+            'requestContext': {},
+            'queryStringParameters': {},
+            'headers': {},
+            'pathParameters': {
+                'proxy': 'json'
+            },
+            'httpMethod': 'GET',
+            'stageVariables': {},
+            'path': '/json'
+        }
+        response = lh.handler(event, None)
+
+        self.assertEqual(response['statusCode'], 200)
+        self.assertEqual(response.get('isBase64Encoded', False), False)
+        self.assertEqual(
+            json.loads(response['body']).get('data', ''),
+            'json_data'
         )
 
     def test_exception_handler_on_web_request(self):
