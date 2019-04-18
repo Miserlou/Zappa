@@ -1453,7 +1453,6 @@ apigateway_resource_policy.json:
 * [Zappa で Hello World するまで (Japanese)](http://qiita.com/satoshi_iwashita/items/505492193317819772c7)
 * [How to Deploy Zappa with CloudFront, RDS and VPC](https://jinwright.net/how-deploy-serverless-wsgi-app-using-zappa/)
 * [Secure 'Serverless' File Uploads with AWS Lambda, S3, and Zappa](http://blog.stratospark.com/secure-serverless-file-uploads-with-aws-lambda-s3-zappa.html)
-* [First Steps with AWS Lambda, Zappa and Python](https://andrich.blog/2017/02/12/first-steps-with-aws-lambda-zappa-flask-and-python/)
 * [Deploy a Serverless WSGI App using Zappa, CloudFront, RDS, and VPC](https://docs.google.com/presentation/d/1aYeOMgQl4V_fFgT5VNoycdXtob1v6xVUWlyxoTEiTw0/edit#slide=id.p)
 * [AWS: Deploy Alexa Ask Skills with Flask-Ask and Zappa](https://developer.amazon.com/blogs/post/8e8ad73a-99e9-4c0f-a7b3-60f92287b0bf/New-Alexa-Tutorial-Deploy-Flask-Ask-Skills-to-AWS-Lambda-with-Zappa)
 * [Guide to using Django with Zappa](https://edgarroman.github.io/zappa-django-guide/)
