@@ -724,7 +724,6 @@ from sentry_sdk import capture_exception, configure_scope
 def exception_handler(exception, event, context):
     with configure_scope() as scope:
         scope.set_extra("event", event)
-        scope.set_extra("context", context)
         capture_exception(exception)
     return {} # {} or True to ignore the exception  
 ```
