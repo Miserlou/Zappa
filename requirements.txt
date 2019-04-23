@@ -8,7 +8,7 @@ futures==3.2.0; python_version < '3'
 hjson==3.0.1
 jmespath==0.9.3
 kappa==0.6.0
-lambda-packages==0.20.0
+lambda-packages==0.21.0
 pip>=9.0.1
 python-dateutil>=2.6.1, <2.7.0
 python-slugify==1.2.4
