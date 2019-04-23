@@ -370,7 +370,7 @@ class LambdaHandler(object):
                     app_function = self.import_module_and_get_function(whole_function)
 
                     # Execute the function!
-                    return self.run_function(app_function, event, context)
+                    return self.run_function(app_function, event, None)
             except Exception as e:  # pragma: no cover
                 # Print statements are visible in the logs either way
                 print(e)
