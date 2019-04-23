@@ -1,5 +1,4 @@
 argcomplete==1.9.3
-base58==1.0.0
 botocore>=1.7.19
 boto3>=1.4.7
 docutils>=0.12
@@ -10,11 +9,12 @@ hjson==3.0.1
 jmespath==0.9.3
 kappa==0.6.0
 lambda-packages==0.20.0
-pip>=9.0.1, <=10.1.0
+pip>=9.0.1
 python-dateutil>=2.6.1, <2.7.0
 python-slugify==1.2.4
-PyYAML==3.12
-requests>=2.10.0
+PyYAML>=3.13
+# previous version don't work with urllib3 1.24
+requests>=2.20.0
 six>=1.11.0
 toml>=0.9.4
 tqdm==4.19.1

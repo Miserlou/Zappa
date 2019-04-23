@@ -1,5 +1,49 @@
 # Zappa Changelog
 
+## 0.48.2
+* Fix for invalid values of HTTP_HOST and others (introduced in 0.48.0)
+
+## 0.48.1
+* Fix for an issue where you couldn't update a function if it had been deployed with a version prior to 0.48.0
+* Support for private (VPC-only) API Gateway endpoints
+
+## 0.48.0
+* Deprecation of zappa.async because async is a reserved word in 3.7, please use zappa.asynchronous
+* Support for Application Load Balancer as an alternative to API Gateway
+* Improvements in manylinux wheel downloads
+* Support for multi-value query strings
+* Python 3.7 support
+* Support for multi-value headers
+* Support for the new 256kB async limit
+* Bunch of small typos, fixes and documentation improvements
+* Use Django 2 on tests with python 3
+* Stop applying tags on buckets not created by zappa
+* Be more forgiving on 504 errors during deployment
+* Fix cleanup of DynamoDB table for async tasks
+* Detection of invalid bucket names
+* Flake8 checks added to tests
+
+## 0.47.1
+* Handle accounts with more than 100 domains in route 53
+* Force requests upgrade to 2.20.0 for compatibility with urllib3 1.24
+* Allow defining API Gateway policies (including restricting access to one IP address)
+
+## 0.47.0
+* Support for SQS events
+* Added test to enforce running of doctoc
+* Add support for running django as a WSGI app (for NewRelic and others)
+* Updates AWS regions for lambda and API Gateway
+* Fix support for gcloud and other packages with slim_handler
+* Add --disable-keep-open to zappa tail
+* Dependency updates
+* Fix pyenv invocation
+* Add custom base_path stripping support
+* Multiple documentation fixes and improvements
+* first iteration of a documented deploy policy
+
+## 0.46.2
+* hotfix for creating virtual environments
+
 ## 0.46.1
 * Hotfix for pipenv support (pip >10.0.1)
 * Adds AWS GovCloud support!
@@ -8,7 +52,7 @@
 ## 0.46.0
 _Okay, I dropped the ball for a long time. Bad BDFL!_
 _New releases will come much faster once again_
-* Pip10 compatability
+* Pip10 compatibility
 * Add support for base path configuration in API gateway custom domain.
 * Fix path case sensitivity in get_installed_packages
 * Move task decorator async decision from import time to call time.

@@ -1,9 +1,11 @@
+import botocore
 import calendar
 import datetime
 import durationpy
 import fnmatch
 import io
 import json
+import logging
 import os
 import re
 import shutil
@@ -12,10 +14,12 @@ import sys
 
 from past.builtins import basestring
 
-if sys.version_info[0] < 3:
-    from urlparse import urlparse
-else:
+try:
     from urllib.parse import urlparse
+except ImportError:
+    from urlparse import urlparse
+
+LOG = logging.getLogger(__name__)
 
 ##
 # Settings / Packaging
@@ -78,7 +82,7 @@ def human_size(num, suffix='B'):
     """
     Convert bytes length to a human-readable version
     """
-    for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
+    for unit in ('', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi'):
         if abs(num) < 1024.0:
             return "{0:3.1f}{1!s}{2!s}".format(num, unit, suffix)
         num /= 1024.0
@@ -167,7 +171,7 @@ def detect_flask_apps():
     return matches
 
 def get_venv_from_python_version():
-    return 'python' + str(sys.version_info[0]) + '.' + str(sys.version_info[1])
+    return 'python{}.{}'.format(*sys.version_info)
 
 def get_runtime_from_python_version():
     """
@@ -175,7 +179,10 @@ def get_runtime_from_python_version():
     if sys.version_info[0] < 3:
         return 'python2.7'
     else:
-        return 'python3.6'
+        if sys.version_info[1] <= 6:
+            return 'python3.6'
+        else:
+            return 'python3.7'
 
 ##
 # Async Tasks
@@ -199,6 +206,7 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
     """
     import kappa.function
     import kappa.restapi
+    import kappa.event_source.base
     import kappa.event_source.dynamodb_stream
     import kappa.event_source.kinesis
     import kappa.event_source.s3
@@ -215,6 +223,103 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
     class PseudoFunction(object):
         def __init__(self):
             return
+
+    # Mostly adapted from kappa - will probably be replaced by kappa support
+    class SqsEventSource(kappa.event_source.base.EventSource):
+
+        def __init__(self, context, config):
+            super(SqsEventSource, self).__init__(context, config)
+            self._lambda = kappa.awsclient.create_client(
+                'lambda', context.session)
+
+        def _get_uuid(self, function):
+            uuid = None
+            response = self._lambda.call(
+                'list_event_source_mappings',
+                FunctionName=function.name,
+                EventSourceArn=self.arn)
+            LOG.debug(response)
+            if len(response['EventSourceMappings']) > 0:
+                uuid = response['EventSourceMappings'][0]['UUID']
+            return uuid
+
+        def add(self, function):
+            try:
+                response = self._lambda.call(
+                    'create_event_source_mapping',
+                    FunctionName=function.name,
+                    EventSourceArn=self.arn,
+                    BatchSize=self.batch_size,
+                    Enabled=self.enabled
+                    )
+                LOG.debug(response)
+            except Exception:
+                LOG.exception('Unable to add event source')
+
+        def enable(self, function):
+            self._config['enabled'] = True
+            try:
+                response = self._lambda.call(
+                    'update_event_source_mapping',
+                    UUID=self._get_uuid(function),
+                    Enabled=self.enabled
+                    )
+                LOG.debug(response)
+            except Exception:
+                LOG.exception('Unable to enable event source')
+
+        def disable(self, function):
+            self._config['enabled'] = False
+            try:
+                response = self._lambda.call(
+                    'update_event_source_mapping',
+                    FunctionName=function.name,
+                    Enabled=self.enabled
+                    )
+                LOG.debug(response)
+            except Exception:
+                LOG.exception('Unable to disable event source')
+
+        def update(self, function):
+            response = None
+            uuid = self._get_uuid(function)
+            if uuid:
+                try:
+                    response = self._lambda.call(
+                        'update_event_source_mapping',
+                        BatchSize=self.batch_size,
+                        Enabled=self.enabled,
+                        FunctionName=function.arn)
+                    LOG.debug(response)
+                except Exception:
+                    LOG.exception('Unable to update event source')
+
+        def remove(self, function):
+            response = None
+            uuid = self._get_uuid(function)
+            if uuid:
+                response = self._lambda.call(
+                    'delete_event_source_mapping',
+                    UUID=uuid)
+                LOG.debug(response)
+            return response
+
+        def status(self, function):
+            response = None
+            LOG.debug('getting status for event source %s', self.arn)
+            uuid = self._get_uuid(function)
+            if uuid:
+                try:
+                    response = self._lambda.call(
+                        'get_event_source_mapping',
+                        UUID=self._get_uuid(function))
+                    LOG.debug(response)
+                except botocore.exceptions.ClientError:
+                    LOG.debug('event source %s does not exist', self.arn)
+                    response = None
+            else:
+                LOG.debug('No UUID for event source %s', self.arn)
+            return response
 
     class ExtendedSnsEventSource(kappa.event_source.sns.SNSEventSource):
         @property
@@ -245,6 +350,7 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
         'kinesis': kappa.event_source.kinesis.KinesisEventSource,
         's3': kappa.event_source.s3.S3EventSource,
         'sns': ExtendedSnsEventSource,
+        'sqs': SqsEventSource,
         'events': kappa.event_source.cloudwatch.CloudWatchEventSource
     }
 
@@ -300,10 +406,7 @@ def add_event_source(event_source, lambda_arn, target_function, boto_session, dr
     if not dry:
         if not event_source_obj.status(funk):
             event_source_obj.add(funk)
-            if event_source_obj.status(funk):
-                return 'successful'
-            else:
-                return 'failed'
+            return 'successful' if event_source_obj.status(funk) else 'failed'
         else:
             return 'exists'
 
@@ -349,10 +452,7 @@ def check_new_version_available(this_version):
     resp = requests.get(pypi_url, timeout=1.5)
     top_version = resp.json()['info']['version']
 
-    if this_version != top_version:
-        return True
-    else:
-        return False
+    return this_version != top_version
 
 
 class InvalidAwsLambdaName(Exception):
@@ -422,3 +522,56 @@ def titlecase_keys(d):
     Takes a dict with keys of type str and returns a new dict with all keys titlecased.
     """
     return {k.title(): v for k, v in d.items()}
+
+
+# https://github.com/Miserlou/Zappa/issues/1688
+def is_valid_bucket_name(name):
+    """
+    Checks if an S3 bucket name is valid according to https://docs.aws.amazon.com/AmazonS3/latest/dev/BucketRestrictions.html#bucketnamingrules
+    """
+    # Bucket names must be at least 3 and no more than 63 characters long.
+    if (len(name) < 3 or len(name) > 63):
+        return False
+    # Bucket names must not contain uppercase characters or underscores.
+    if (any(x.isupper() for x in name)):
+        return False
+    if "_" in name:
+        return False
+    # Bucket names must start with a lowercase letter or number.
+    if not (name[0].islower() or name[0].isdigit()):
+        return False
+    # Bucket names must be a series of one or more labels. Adjacent labels are separated by a single period (.).
+    for label in name.split("."):
+        # Each label must start and end with a lowercase letter or a number.
+        if len(label) < 1:
+            return False
+        if not (label[0].islower() or label[0].isdigit()):
+            return False
+        if not (label[-1].islower() or label[-1].isdigit()):
+            return False
+    # Bucket names must not be formatted as an IP address (for example, 192.168.5.4).
+    looks_like_IP = True
+    for label in name.split("."):
+        if not label.isdigit():
+            looks_like_IP = False
+            break
+    if looks_like_IP:
+        return False
+
+    return True
+
+
+def merge_headers(event):
+    """
+    Merge the values of headers and multiValueHeaders into a single dict.
+    Opens up support for multivalue headers via API Gateway and ALB.
+    See: https://github.com/Miserlou/Zappa/pull/1756
+    """
+    headers = event.get('headers') or {}
+    multi_headers = (event.get('multiValueHeaders') or {}).copy()
+    for h in set(headers.keys()):
+        if h not in multi_headers:
+            multi_headers[h] = [headers[h]]
+    for h in multi_headers.keys():
+        multi_headers[h] = ', '.join(multi_headers[h])
+    return multi_headers

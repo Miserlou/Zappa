@@ -1,6 +1,6 @@
 APP_MODULE = 'tests.test_app'
 APP_FUNCTION = 'hello_world'
-DJANGO_SETTINGS = None 
+DJANGO_SETTINGS = None
 DEBUG = 'True'
 LOG_LEVEL = 'DEBUG'
 SCRIPT_NAME = 'hello_world'
@@ -11,7 +11,7 @@ PROJECT_NAME = 'ttt888'
 REMOTE_ENV='s3://lmbda/test_env.json'
 ## test_env.json
 #{
-#	"hello": "world"
+#    "hello": "world"
 #}
 #
 
@@ -19,7 +19,8 @@ AWS_EVENT_MAPPING = {
     'arn:aws:s3:1': 'test_settings.aws_s3_event',
     'arn:aws:sns:1': 'test_settings.aws_sns_event',
     'arn:aws:dynamodb:1': 'test_settings.aws_dynamodb_event',
-    'arn:aws:kinesis:1': 'test_settings.aws_kinesis_event'
+    'arn:aws:kinesis:1': 'test_settings.aws_kinesis_event',
+    'arn:aws:sqs:1': 'test_settings.aws_sqs_event'
 }
 
 ENVIRONMENT_VARIABLES={'testenv': 'envtest'}
@@ -52,6 +53,10 @@ def aws_dynamodb_event(event, content):
 
 def aws_kinesis_event(event, content):
     return "AWS KINESIS EVENT"
+
+
+def aws_sqs_event(event, content):
+    return "AWS SQS EVENT"
 
 
 def authorizer_event(event, content):
