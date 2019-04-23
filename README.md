@@ -686,7 +686,7 @@ the functions will execute immediately and locally. The zappa asynchronous funct
 when in the Lambda environment or when specifying [Remote Invocations](https://github.com/Miserlou/zappa#remote-invocations).
 
 ### Catching Exceptions
-Putting a try..except block on an asynchronous task like this:
+To manually handle exceptions on a per task basis put a try..except block on an asynchronous task like this:
 
 ```python
 @task
@@ -713,6 +713,23 @@ def make_pie():
     ...
     return {} #or return True
 ```
+
+If you define `exception_handler` asynchronous exceptions will passed to the same function as for the web calls
+
+The exception_handler is of the form:
+
+```python
+from sentry_sdk import capture_exception, configure_scope
+
+def exception_handler(exception, event, context):
+    with configure_scope() as scope:
+        scope.set_extra("event", event)
+        scope.set_extra("context", context)
+        capture_exception(exception)
+    return {} # {} or True to ignore the exception  
+```
+
+An example if you use sentry.io for your exception handling
 
 ### Task Sources
 

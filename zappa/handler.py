@@ -362,17 +362,24 @@ class LambdaHandler(object):
         # This is the result of a keep alive, recertify
         # or scheduled event.
         if event.get('detail-type') == u'Scheduled Event':
+            try:
+                whole_function = event['resources'][0].split('/')[-1].split('-')[-1]
 
-            whole_function = event['resources'][0].split('/')[-1].split('-')[-1]
+                # This is a scheduled function.
+                if '.' in whole_function:
+                    app_function = self.import_module_and_get_function(whole_function)
 
-            # This is a scheduled function.
-            if '.' in whole_function:
-                app_function = self.import_module_and_get_function(whole_function)
+                    # Execute the function!
+                    return self.run_function(app_function, event, context)
+            except Exception as e:  # pragma: no cover
+                # Print statements are visible in the logs either way
+                print(e)
+                # Call exception handler for unhandled exceptions
+                exception_handler = self.settings.EXCEPTION_HANDLER
+                self._process_exception(exception_handler=exception_handler,
+                                        event=event, context=context, exception=e)
 
-                # Execute the function!
-                return self.run_function(app_function, event, context)
-
-            # Else, let this execute as it were.
+                # Else, let this execute as it were.
 
         # This is a direct command invocation.
         elif event.get('command', None):
@@ -415,53 +422,85 @@ class LambdaHandler(object):
 
         # This is an AWS-event triggered invocation.
         elif event.get('Records', None):
+            try:
+                records = event.get('Records')
+                result = None
+                whole_function = self.get_function_for_aws_event(records[0])
+                if whole_function:
+                    app_function = self.import_module_and_get_function(whole_function)
+                    result = self.run_function(app_function, event, context)
+                    logger.debug(result)
+                else:
+                    logger.error("Cannot find a function to process the triggered event.")
+                return result
+            except Exception as e:  # pragma: no cover
+                # Print statements are visible in the logs either way
+                print(e)
+                # Call exception handler for unhandled exceptions
+                exception_handler = self.settings.EXCEPTION_HANDLER
+                self._process_exception(exception_handler=exception_handler,
+                                        event=event, context=context, exception=e)
 
-            records = event.get('Records')
-            result = None
-            whole_function = self.get_function_for_aws_event(records[0])
-            if whole_function:
-                app_function = self.import_module_and_get_function(whole_function)
-                result = self.run_function(app_function, event, context)
-                logger.debug(result)
-            else:
-                logger.error("Cannot find a function to process the triggered event.")
-            return result
 
         # this is an AWS-event triggered from Lex bot's intent
         elif event.get('bot'):
-            result = None
-            whole_function = self.get_function_from_bot_intent_trigger(event)
-            if whole_function:
-                app_function = self.import_module_and_get_function(whole_function)
-                result = self.run_function(app_function, event, context)
-                logger.debug(result)
-            else:
-                logger.error("Cannot find a function to process the triggered event.")
-            return result
+            try:
+                result = None
+                whole_function = self.get_function_from_bot_intent_trigger(event)
+                if whole_function:
+                    app_function = self.import_module_and_get_function(whole_function)
+                    result = self.run_function(app_function, event, context)
+                    logger.debug(result)
+                else:
+                    logger.error("Cannot find a function to process the triggered event.")
+                return result
+            except Exception as e:  # pragma: no cover
+                # Print statements are visible in the logs either way
+                print(e)
+                # Call exception handler for unhandled exceptions
+                exception_handler = self.settings.EXCEPTION_HANDLER
+                self._process_exception(exception_handler=exception_handler,
+                                        event=event, context=context, exception=e)
 
         # This is an API Gateway authorizer event
         elif event.get('type') == u'TOKEN':
-            whole_function = self.settings.AUTHORIZER_FUNCTION
-            if whole_function:
-                app_function = self.import_module_and_get_function(whole_function)
-                policy = self.run_function(app_function, event, context)
-                return policy
-            else:
-                logger.error("Cannot find a function to process the authorization request.")
-                raise Exception('Unauthorized')
+            try:
+                whole_function = self.settings.AUTHORIZER_FUNCTION
+                if whole_function:
+                    app_function = self.import_module_and_get_function(whole_function)
+                    policy = self.run_function(app_function, event, context)
+                    return policy
+                else:
+                    logger.error("Cannot find a function to process the authorization request.")
+                    raise Exception('Unauthorized')
+            except Exception as e:  # pragma: no cover
+                # Print statements are visible in the logs either way
+                print(e)
+                # Call exception handler for unhandled exceptions
+                exception_handler = self.settings.EXCEPTION_HANDLER
+                self._process_exception(exception_handler=exception_handler,
+                                        event=event, context=context, exception=e)
 
         # This is an AWS Cognito Trigger Event
         elif event.get('triggerSource', None):
-            triggerSource = event.get('triggerSource')
-            whole_function = self.get_function_for_cognito_trigger(triggerSource)
-            result = event
-            if whole_function:
-                app_function = self.import_module_and_get_function(whole_function)
-                result = self.run_function(app_function, event, context)
-                logger.debug(result)
-            else:
-                logger.error("Cannot find a function to handle cognito trigger {}".format(triggerSource))
-            return result
+            try:
+                triggerSource = event.get('triggerSource')
+                whole_function = self.get_function_for_cognito_trigger(triggerSource)
+                result = event
+                if whole_function:
+                    app_function = self.import_module_and_get_function(whole_function)
+                    result = self.run_function(app_function, event, context)
+                    logger.debug(result)
+                else:
+                    logger.error("Cannot find a function to handle cognito trigger {}".format(triggerSource))
+                return result
+            except Exception as e:  # pragma: no cover
+                # Print statements are visible in the logs either way
+                print(e)
+                # Call exception handler for unhandled exceptions
+                exception_handler = self.settings.EXCEPTION_HANDLER
+                self._process_exception(exception_handler=exception_handler,
+                                        event=event, context=context, exception=e)
 
         # Normal web app flow
         try:

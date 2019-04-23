@@ -18,7 +18,8 @@ class TestZappa(unittest.TestCase):
         self.sleep_patch = mock.patch('time.sleep', return_value=None)
         # Tests expect us-east-1.
         # If the user has set a different region in env variables, we set it aside for now and use us-east-1
-        self.users_current_region_name = os.environ.get('AWS_DEFAULT_REGION', None)
+        self.users_current_region_name = os.environ.get(
+            'AWS_DEFAULT_REGION', None)
         os.environ['AWS_DEFAULT_REGION'] = 'us-east-1'
         if not os.environ.get('PLACEBO_MODE') == 'record':
             self.sleep_patch.start()
@@ -41,7 +42,8 @@ class TestZappa(unittest.TestCase):
 
     def test_nofails_classes(self):
 
-        boto_session = boto3.Session(region_name=os.environ['AWS_DEFAULT_REGION'])
+        boto_session = boto3.Session(
+            region_name=os.environ['AWS_DEFAULT_REGION'])
 
         a = AsyncException()
         l = LambdaAsyncResponse(boto_session=boto_session)
@@ -53,12 +55,19 @@ class TestZappa(unittest.TestCase):
         get_func_task_path(funk)
         self.assertEqual(funk.__name__, 'async_me')
 
+    def test_raise_funcs(self):
+        funk = import_and_get_task('tests.test_app.async_fail_me')
+
     ##
     # Functional tests
     ##
     def test_sync_call(self):
         funk = import_and_get_task("tests.test_app.async_me")
         self.assertEqual(funk.sync('123'), "run async when on lambda 123")
+
+    def test_raise_funcs(self):
+        funk = import_and_get_task('tests.test_app.async_fail_me')
+        self.assertRaises(Exception, lambda: funk.sync())
 
     def test_async_call_with_defaults(self):
         """Change a task's asynchronousity at runtime."""

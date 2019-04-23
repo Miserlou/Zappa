@@ -18,9 +18,15 @@ def hello_world(environ, start_response):
 def schedule_me():
     return "Hello!"
 
+
 @task
 def async_me(arg1, **kwargs):
     return "run async when on lambda %s%s" % (arg1, kwargs.get('foo', ''))
+
+
+@task
+def async_fail_me(**kwargs):
+    raise Exception("Oh, noes")
 
 
 @task(remote_aws_lambda_function_name='test-app-dev', remote_aws_region='us-east-1')
@@ -34,4 +40,3 @@ def callback(self):
 
 def prebuild_me():
     print("this is a prebuild script")
-
