@@ -1334,6 +1334,10 @@ class Zappa(object):
             alb_vpc_config["SecurityGroupIds"] = []
         if not alb_vpc_config.get('CertificateArn'):
             raise EnvironmentError('When creating an ALB, you must supply a CertificateArn for the HTTPS listener.')
+
+        # Related: https://github.com/Miserlou/Zappa/issues/1856
+        if 'Scheme' not in alb_vpc_config:
+            alb_vpc_config["Scheme"] = "internet-facing"
         print("Deploying ALB infrastructure...")
 
         # Create load balancer
@@ -1342,8 +1346,7 @@ class Zappa(object):
             Name=lambda_name,
             Subnets=alb_vpc_config["SubnetIds"],
             SecurityGroups=alb_vpc_config["SecurityGroupIds"],
-            # TODO: Scheme can also be "internal" we need to add a new option for this.
-            Scheme="internet-facing",
+            Scheme=alb_vpc_config["Scheme"],
             # TODO: Tags might be a useful means of stock-keeping zappa-generated assets.
             #Tags=[],
             Type="application",
