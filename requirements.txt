@@ -17,7 +17,7 @@ PyYAML>=3.13
 requests>=2.20.0
 six>=1.11.0
 toml>=0.9.4
-tqdm==4.31.1
+tqdm==4.32.0
 troposphere>=1.9.0
 Werkzeug>=0.14
 wheel>=0.30.0
