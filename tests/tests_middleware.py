@@ -250,3 +250,75 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
         self.assertEqual(environ['HTTP_APISTAGE'], u'prod')
         self.assertNotIn('HTTP_INVALIDVALUE', environ)
         self.assertNotIn('HTTP_OTHERINVALID', environ)
+
+    def test_should_allow_empty_query_params(self):
+        event = {
+            u'httpMethod': u'GET',
+            u'queryStringParameters': {},
+            u'multiValueQueryStringParameters': {},
+            u'path': u'/v1/runs',
+            u'params': {},
+            u'body': {},
+            u'headers': {
+                u'Content-Type': u'application/json'
+            },
+            u'pathParameters': {
+                u'proxy': 'v1/runs'
+            },
+            u'requestContext': {
+                u"resourceId": u"123456",
+                u"apiId": u"1234567890",
+                u"resourcePath": u"/{proxy+}",
+                u"httpMethod": u"POST",
+                u"requestId": u"c6af9ac6-7b61-11e6-9a41-93e8deadbeef",
+                u"accountId": u"123456789012",
+                u"identity": {
+                    u"userAgent": u"Custom User Agent String",
+                    u"cognitoIdentityPoolId": u"userpoolID",
+                    u"cognitoIdentityId": u"myCognitoID",
+                    u"sourceIp": u"127.0.0.1",
+                },
+                "stage": "prod"
+            },
+            u'query': {}
+        }
+        environ = create_wsgi_request(event, script_name='http://zappa.com/',
+                                      trailing_slash=False)
+        self.assertEqual(environ['QUERY_STRING'], u'')
+
+    def test_should_handle_multi_value_query_string_params(self):
+        event = {
+            u'httpMethod': u'GET',
+            u'queryStringParameters': {},
+            u'multiValueQueryStringParameters': {
+                'foo': [1, 2]
+            },
+            u'path': u'/v1/runs',
+            u'params': {},
+            u'body': {},
+            u'headers': {
+                u'Content-Type': u'application/json'
+            },
+            u'pathParameters': {
+                u'proxy': 'v1/runs'
+            },
+            u'requestContext': {
+                u"resourceId": u"123456",
+                u"apiId": u"1234567890",
+                u"resourcePath": u"/{proxy+}",
+                u"httpMethod": u"POST",
+                u"requestId": u"c6af9ac6-7b61-11e6-9a41-93e8deadbeef",
+                u"accountId": u"123456789012",
+                u"identity": {
+                    u"userAgent": u"Custom User Agent String",
+                    u"cognitoIdentityPoolId": u"userpoolID",
+                    u"cognitoIdentityId": u"myCognitoID",
+                    u"sourceIp": u"127.0.0.1",
+                },
+                "stage": "prod"
+            },
+            u'query': {}
+        }
+        environ = create_wsgi_request(event, script_name='http://zappa.com/',
+                                      trailing_slash=False)
+        self.assertEqual(environ['QUERY_STRING'], u'foo=1&foo=2')

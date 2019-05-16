@@ -47,7 +47,7 @@ from datetime import datetime, timedelta
 from .core import Zappa, logger, API_GATEWAY_REGIONS
 from .utilities import (check_new_version_available, detect_django_settings,
                   detect_flask_apps, parse_s3_url, human_size,
-                  validate_name, InvalidAwsLambdaName,
+                  validate_name, InvalidAwsLambdaName, get_venv_from_python_version,
                   get_runtime_from_python_version, string_to_timestamp, is_valid_bucket_name)
 
 
@@ -663,7 +663,8 @@ class ZappaCLI(object):
                                             authorizer=self.authorizer,
                                             cors_options=self.cors,
                                             description=self.apigateway_description,
-                                            policy=self.apigateway_policy
+                                            policy=self.apigateway_policy,
+                                            endpoint_configuration=self.endpoint_configuration
                                         )
 
         if not output:
@@ -757,7 +758,8 @@ class ZappaCLI(object):
                 memory_size=self.memory_size,
                 runtime=self.runtime,
                 aws_environment_variables=self.aws_environment_variables,
-                aws_kms_key_arn=self.aws_kms_key_arn
+                aws_kms_key_arn=self.aws_kms_key_arn,
+                use_alb=self.use_alb
             )
             if source_zip and source_zip.startswith('s3://'):
                 bucket, key_name = parse_s3_url(source_zip)
@@ -781,6 +783,16 @@ class ZappaCLI(object):
 
         endpoint_url = ''
         deployment_string = click.style("Deployment complete", fg="green", bold=True) + "!"
+
+        if self.use_alb:
+            kwargs = dict(
+                lambda_arn=self.lambda_arn,
+                lambda_name=self.lambda_name,
+                alb_vpc_config=self.alb_vpc_config,
+                timeout=self.timeout_seconds
+            )
+            self.zappa.deploy_lambda_alb(**kwargs)
+
         if self.use_apigateway:
 
             # Create and configure the API Gateway
@@ -791,7 +803,8 @@ class ZappaCLI(object):
                                                         iam_authorization=self.iam_authorization,
                                                         authorizer=self.authorizer,
                                                         cors_options=self.cors,
-                                                        description=self.apigateway_description
+                                                        description=self.apigateway_description,
+                                                        endpoint_configuration=self.endpoint_configuration
                                                     )
 
             self.zappa.update_stack(
@@ -917,31 +930,27 @@ class ZappaCLI(object):
 
         # Register the Lambda function with that zip as the source
         # You'll also need to define the path to your lambda_handler code.
+        kwargs = dict(
+            bucket=self.s3_bucket_name,
+            function_name=self.lambda_name,
+            num_revisions=self.num_retained_versions
+        )
         if source_zip and source_zip.startswith('s3://'):
             bucket, key_name = parse_s3_url(source_zip)
-            self.lambda_arn = self.zappa.update_lambda_function(
-                                            bucket,
-                                            self.lambda_name,
-                                            key_name,
-                                            num_revisions=self.num_retained_versions
-                                        )
+            kwargs.update(dict(
+                bucket=bucket,
+                s3_key=key_name
+            ))
+            self.lambda_arn = self.zappa.update_lambda_function(**kwargs)
         elif source_zip and not source_zip.startswith('s3://'):
             with open(source_zip, mode='rb') as fh:
                 byte_stream = fh.read()
-            self.lambda_arn = self.zappa.update_lambda_function(
-                                            self.s3_bucket_name,
-                                            self.lambda_name,
-                                            local_zip=byte_stream,
-                                            num_revisions=self.num_retained_versions
-                                        )
+            kwargs['local_zip'] = byte_stream
+            self.lambda_arn = self.zappa.update_lambda_function(**kwargs)
         else:
             if not no_upload:
-                self.lambda_arn = self.zappa.update_lambda_function(
-                                                self.s3_bucket_name,
-                                                self.lambda_name,
-                                                handler_file,
-                                                num_revisions=self.num_retained_versions
-                                            )
+                kwargs['s3_key'] = handler_file
+                self.lambda_arn = self.zappa.update_lambda_function(**kwargs)
 
         # Remove the uploaded zip from S3, because it is now registered..
         if not source_zip and not no_upload:
@@ -975,7 +984,8 @@ class ZappaCLI(object):
                                             iam_authorization=self.iam_authorization,
                                             authorizer=self.authorizer,
                                             cors_options=self.cors,
-                                            description=self.apigateway_description
+                                            description=self.apigateway_description,
+                                            endpoint_configuration=self.endpoint_configuration
                                         )
             self.zappa.update_stack(
                                     self.lambda_name,
@@ -1098,6 +1108,9 @@ class ZappaCLI(object):
             confirm = input("Are you sure you want to undeploy? [y/n] ")
             if confirm != 'y':
                 return
+
+        if self.use_alb:
+            self.zappa.undeploy_lambda_alb(self.lambda_name)
 
         if self.use_apigateway:
             if remove_logs:
@@ -1622,10 +1635,10 @@ class ZappaCLI(object):
         default_bucket = "zappa-" + ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(9))
         while True:
             bucket = input("What do you want to call your bucket? (default '%s'): " % default_bucket) or default_bucket
-          
+
             if is_valid_bucket_name(bucket):
                 break
-            
+
             click.echo(click.style("Invalid bucket name!", bold=True))
             click.echo("S3 buckets must be named according to the following rules:")
             click.echo("""* Bucket names must be unique across all existing bucket names in Amazon S3.
@@ -1633,13 +1646,13 @@ class ZappaCLI(object):
 * Bucket names must be at least 3 and no more than 63 characters long.
 * Bucket names must not contain uppercase characters or underscores.
 * Bucket names must start with a lowercase letter or number.
-* Bucket names must be a series of one or more labels. Adjacent labels are separated 
+* Bucket names must be a series of one or more labels. Adjacent labels are separated
   by a single period (.). Bucket names can contain lowercase letters, numbers, and
   hyphens. Each label must start and end with a lowercase letter or a number.
 * Bucket names must not be formatted as an IP address (for example, 192.168.5.4).
-* When you use virtual hosted–style buckets with Secure Sockets Layer (SSL), the SSL 
-  wildcard certificate only matches buckets that don't contain periods. To work around 
-  this, use HTTP or write your own certificate verification logic. We recommend that 
+* When you use virtual hosted–style buckets with Secure Sockets Layer (SSL), the SSL
+  wildcard certificate only matches buckets that don't contain periods. To work around
+  this, use HTTP or write your own certificate verification logic. We recommend that
   you do not use periods (".") in bucket names when using virtual hosted–style buckets.
 """)
 
@@ -1716,7 +1729,7 @@ class ZappaCLI(object):
             env: {
                 'profile_name': profile_name,
                 's3_bucket': bucket,
-                'runtime': 'python3.6' if sys.version_info[0] == 3 else 'python2.7',
+                'runtime': get_venv_from_python_version(),
                 'project_name': self.get_project_name()
             }
         }
@@ -2068,6 +2081,7 @@ class ZappaCLI(object):
         self.binary_support = self.stage_config.get('binary_support', True)
         self.api_key_required = self.stage_config.get('api_key_required', False)
         self.api_key = self.stage_config.get('api_key')
+        self.endpoint_configuration = self.stage_config.get('endpoint_configuration', None)
         self.iam_authorization = self.stage_config.get('iam_authorization', False)
         self.cors = self.stage_config.get("cors", False)
         self.lambda_description = self.stage_config.get('lambda_description', "Zappa Deployment")
@@ -2080,6 +2094,10 @@ class ZappaCLI(object):
         self.context_header_mappings = self.stage_config.get('context_header_mappings', {})
         self.xray_tracing = self.stage_config.get('xray_tracing', False)
         self.desired_role_arn = self.stage_config.get('role_arn')
+
+        # Load ALB-related settings
+        self.use_alb = self.stage_config.get('alb_enabled', False)
+        self.alb_vpc_config = self.stage_config.get('alb_vpc_config', {})
 
         # Additional tags
         self.tags = self.stage_config.get('tags', {})
@@ -2681,15 +2699,30 @@ class ZappaCLI(object):
 
     def touch_endpoint(self, endpoint_url):
         """
-        Test the deployed endpoint with a GET request
+        Test the deployed endpoint with a GET request.
         """
+
+        # Private APIGW endpoints most likely can't be reached by a deployer
+        # unless they're connected to the VPC by VPN. Instead of trying
+        # connect to the service, print a warning and let the user know
+        # to check it manually.
+        # See: https://github.com/Miserlou/Zappa/pull/1719#issuecomment-471341565
+        if 'PRIVATE' in self.stage_config.get('endpoint_configuration', []):
+            print(
+                click.style("Warning!", fg="yellow", bold=True) +
+                " Since you're deploying a private API Gateway endpoint,"
+                " Zappa cannot determine if your function is returning "
+                " a correct status code. You should check your API's response"
+                " manually before considering this deployment complete."
+            )
+            return
 
         touch_path = self.stage_config.get('touch_path', '/')
         req = requests.get(endpoint_url + touch_path)
 
         # Sometimes on really large packages, it can take 60-90 secs to be
-        # ready and requests will return 504 status_code until ready. 
-        # So, if we get a 504 status code, rerun the request up to 4 times or 
+        # ready and requests will return 504 status_code until ready.
+        # So, if we get a 504 status code, rerun the request up to 4 times or
         # until we don't get a 504 error
         if req.status_code == 504:
             i = 0
