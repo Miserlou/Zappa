@@ -2063,6 +2063,7 @@ class Zappa(object):
         # If you set a value for TemporaryPasswordValidityDays in PasswordPolicy , 
         # that value will be used and UnusedAccountValidityDays will be deprecated for that user pool.
         # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/cognito-idp.html#CognitoIdentityProvider.Client.update_user_pool
+        # Related: https://github.com/Miserlou/Zappa/issues/1879
         if 'TemporaryPasswordValidityDays' in description_kwargs['Policies']['PasswordPolicy']:
             description_kwargs['AdminCreateUserConfig'].pop('UnusedAccountValidityDays', None)            
             
