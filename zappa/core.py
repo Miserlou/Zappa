@@ -1794,6 +1794,16 @@ class Zappa(object):
             ]
         )
 
+        if self.tags:
+            self.apigateway_client.tag_resource(
+                resourceArn="arn:aws:apigateway:{region}::/restapis/{rest_api_id}/stages/{stage_name}".format(
+                    region=self.aws_region,
+                    rest_api_id=api_id,
+                    stage_name=stage_name
+                ),
+                tags=self.tags
+            )
+
         return "https://{}.execute-api.{}.amazonaws.com/{}".format(api_id, self.boto_session.region_name, stage_name)
 
     def add_binary_support(self, api_id, cors=False):
