@@ -347,6 +347,43 @@ def get_event_source(
             return response
 
     class ExtendedSnsEventSource(kappa.event_source.sns.SNSEventSource):
+
+        def exists(self, function):
+            """
+            A patched version of the original exists method. This version uses
+            the list_subscriptions boto3 method, replacing the
+            list_subscriptions_by_topic boto3 method. The later assumes that
+            the user has permission to list all subscriptions on the target
+            topic. The list_subscriptions method is user centric, so it will
+            list all subscription of the user, for which presumable he should
+            always have the necessary permissions. Or at last he should be able
+            to control them.
+
+            See https://github.com/Miserlou/Zappa/issues/1898
+            """
+            try:
+                # List the subscriptions of this user.
+                response = self._sns.call('list_subscriptions')
+                LOG.debug(response)
+                # Check if current function is in the subscriptions list already.
+                for subscription in response['Subscriptions']:
+                    if subscription['Endpoint'] == function.arn:
+                        return subscription
+                # Loop through the paginated subscriptions list if more pages
+                # exist.
+                while 'NextToken' in response:
+                    response = self._sns.call(
+                        'list_subscriptions',
+                        NextToken=response['NextToken'],
+                    )
+                    LOG.debug(response)
+                    for subscription in response['Subscriptions']:
+                        if subscription['Endpoint'] == function.arn:
+                            return subscription
+                return None
+            except Exception:
+                LOG.exception('Unable to find event source %s', self.arn)
+
         @property
         def filters(self):
             return self._config.get("filters")
