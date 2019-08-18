@@ -13,7 +13,7 @@ lambda-packages==0.20.0
 pip>=9.0.1, <=10.1.0
 python-dateutil>=2.6.1, <2.8.0
 python-slugify==1.2.4
-PyYAML==3.13
+PyYAML>=3.13
 requests>=2.20.0
 six>=1.11.0
 toml>=0.9.4
