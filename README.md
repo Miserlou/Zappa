@@ -1392,6 +1392,7 @@ Like API Gateway, Zappa can automatically provision ALB resources for you.  You'
         // And here, a list of security group IDs, eg. 'sg-fbacb791'
     ]
 }
+```
 
 More information on using ALB as an event source for Lambda can be found [here](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html).
 
