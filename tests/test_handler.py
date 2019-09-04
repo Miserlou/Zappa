@@ -425,7 +425,7 @@ class TestZappa(unittest.TestCase):
         { "awslogs": {"data": "BASE64ENCODED_GZIP_COMPRESSED_DATA"} }
         https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/SubscriptionFilters.html
         """
-        lh = LambdaHandler('tests.test_wsgi_script_name_settings')
+        lh = LambdaHandler('tests.test_event_script_settings')
 
         event = {
             'awslogs': {
@@ -434,5 +434,4 @@ class TestZappa(unittest.TestCase):
         }
         response = lh.handler(event, None)
 
-        self.assertEqual(response['statusCode'], 200)
-        self.assertEqual(response['statusDescription'], '200 OK')
+        self.assertEqual(response, True)
