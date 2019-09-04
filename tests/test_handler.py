@@ -417,6 +417,22 @@ class TestZappa(unittest.TestCase):
         self.assertEqual(merged['a'], 'c, d')
         self.assertEqual(merged['x'], 'y, z, f')
 
+    def test_cloudwatch_subscription_event(self):
+        """
+        Test that events sent in the format used by CloudWatch logs via
+        subscription filters are handled properly.
+        The actual payload that Lambda receives is in the following format
+        { "awslogs": {"data": "BASE64ENCODED_GZIP_COMPRESSED_DATA"} }
+        https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/SubscriptionFilters.html
+        """
+        lh = LambdaHandler('tests.test_wsgi_script_name_settings')
 
-    def test_foo(self):
-        pass
+        event = {
+            'awslogs': {
+                'data': "some-data-not-important-for-test"
+            }
+        }
+        response = lh.handler(event, None)
+
+        self.assertEqual(response['statusCode'], 200)
+        self.assertEqual(response['statusDescription'], '200 OK')
