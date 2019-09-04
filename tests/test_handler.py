@@ -416,3 +416,7 @@ class TestZappa(unittest.TestCase):
         merged = merge_headers(event)
         self.assertEqual(merged['a'], 'c, d')
         self.assertEqual(merged['x'], 'y, z, f')
+
+
+    def test_foo(self):
+        pass
