@@ -464,7 +464,7 @@ class LambdaHandler(object):
             return result
 
         # This is a CloudWatch event
-        # Related: https://github.com/Miserlou/Zappa/issues/205
+        # Related: https://github.com/Miserlou/Zappa/issues/1924
         elif event.get('awslogs', None):
             result = None
             whole_function = '{}.{}'.format(settings.APP_MODULE, settings.APP_FUNCTION)
