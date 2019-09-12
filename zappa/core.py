@@ -652,6 +652,10 @@ class Zappa(object):
                             # Otherwise try to use manylinux packages from PyPi..
                             # Related: https://github.com/Miserlou/Zappa/issues/398
                             shutil.rmtree(os.path.join(temp_project_path, installed_package_name), ignore_errors=True)
+                            # For Pillow, need to also delete 'PIL'
+                            # https://github.com/Miserlou/Zappa/issues/1286#issuecomment-350545457
+                            if installed_package_name == 'pillow':
+                                shutil.rmtree(os.path.join(temp_project_path, 'PIL'), ignore_errors=True)
                             with zipfile.ZipFile(cached_wheel_path) as zfile:
                                 zfile.extractall(temp_project_path)
 
