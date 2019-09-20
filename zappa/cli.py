@@ -2207,6 +2207,11 @@ class ZappaCLI(object):
             inspect.getfile(inspect.currentframe())))
         handler_file = os.sep.join(current_file.split(os.sep)[0:]) + os.sep + 'handler.py'
 
+        # Include packages from sys.path
+        include = list()
+        for module_name in self.stage_config.get('package_custom_modules', []):
+            include.append(os.path.dirname(importlib.import_module(module_name).__file__))
+
         # Create the zip file(s)
         if self.stage_config.get('slim_handler', False):
             # Create two zips. One with the application and the other with just the handler.
@@ -2214,6 +2219,7 @@ class ZappaCLI(object):
             self.zip_path = self.zappa.create_lambda_zip(
                 prefix=self.lambda_name,
                 use_precompiled_packages=self.stage_config.get('use_precompiled_packages', True),
+                include=include,
                 exclude=self.stage_config.get('exclude', []),
                 disable_progress=self.disable_progress,
                 archive_format='tarball'
@@ -2265,6 +2271,7 @@ class ZappaCLI(object):
                 prefix=self.lambda_name,
                 handler_file=handler_file,
                 use_precompiled_packages=self.stage_config.get('use_precompiled_packages', True),
+                include=include,
                 exclude=exclude,
                 output=output,
                 disable_progress=self.disable_progress

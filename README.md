@@ -920,6 +920,7 @@ to change Zappa's behavior. Use these at your own risk!
         "payload_compression": true, // Whether or not to enable API gateway payload compression (default: true)
         "payload_minimum_compression_size": 0, // The threshold size (in bytes) below which payload compression will not be applied (default: 0)
         "prebuild_script": "your_module.your_function", // Function to execute before uploading code
+        "package_custom_modules": ["your_module1, your_module2"], // zappa finds your module path (if it is importable, so if it is in sys.path or PYTHONPATH) and pack the whole module directory into zip
         "profile_name": "your-profile-name", // AWS profile credentials to use. Default 'default'. Removing this setting will use the AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables instead.
         "project_name": "MyProject", // The name of the project as it appears on AWS. Defaults to a slugified `pwd`.
         "remote_env": "s3://my-project-config-files/filename.json", // optional file in s3 bucket containing a flat json object which will be used to set custom environment variables.

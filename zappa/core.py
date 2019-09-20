@@ -513,6 +513,10 @@ class Zappa(object):
         if exclude is None:
             exclude = list()
 
+        # Directories that should be included into zip
+        if include is None:
+            include = list()
+
         # Exclude the zip itself
         exclude.append(archive_path)
 
@@ -672,6 +676,13 @@ class Zappa(object):
             except Exception as e:
                 print(e)
                 # XXX - What should we do here?
+
+        # Then explicitly included directories
+        for directory in include:
+            copytree(   directory,
+                        os.path.join(temp_project_path, os.path.basename(directory)),
+                        symlinks=False
+                    )
 
         # Then archive it all up..
         if archive_format == 'zip':
