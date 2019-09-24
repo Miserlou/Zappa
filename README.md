@@ -1077,6 +1077,23 @@ You can also use AWS Cognito User Pool Authorizer by adding:
 }
 ```
 
+You can also define a list of authorization scopes, which will be applied globally across all endpoints and methods in the API Gateway:
+
+```javascript
+{
+    "authorizer": {
+        "type": "COGNITO_USER_POOLS",
+        "provider_arns": [
+            "arn:aws:cognito-idp:{region}:{account_id}:userpool/{user_pool_id}"
+        ],
+        "scopes": [
+            "com.example/view-products",
+            "com.example/view-users"
+        ]
+    }
+}
+```
+
 #### API Gateway Resource Policy
 
 You can also use API Gateway Resource Policies. Example of IP Whitelisting:

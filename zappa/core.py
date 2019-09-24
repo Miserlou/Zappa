@@ -1535,6 +1535,7 @@ class Zappa(object):
                                     api_name=None,
                                     api_key_required=False,
                                     authorization_type='NONE',
+                                    authorization_scopes=None,
                                     authorizer=None,
                                     cors_options=None,
                                     description=None,
@@ -1586,6 +1587,7 @@ class Zappa(object):
                                         api_key_required,
                                         invocations_uri,
                                         authorization_type,
+                                        authorization_scopes,
                                         authorizer_resource,
                                         0
                                         )
@@ -1610,6 +1612,7 @@ class Zappa(object):
                                         api_key_required,
                                         invocations_uri,
                                         authorization_type,
+                                        authorization_scopes,
                                         authorizer_resource,
                                         1
                                     )  # pragma: no cover
@@ -1659,6 +1662,7 @@ class Zappa(object):
                                     api_key_required,
                                     uri,
                                     authorization_type,
+                                    authorization_scopes,
                                     authorizer_resource,
                                     depth
                                 ):
@@ -1674,6 +1678,8 @@ class Zappa(object):
                 method.ResourceId = resource
             method.HttpMethod = method_name.upper()
             method.AuthorizationType = authorization_type
+            if authorization_scopes:
+                method.AuthorizationScopes = authorization_scopes
             if authorizer_resource:
                 method.AuthorizerId = troposphere.Ref(authorizer_resource)
             method.ApiKeyRequired = api_key_required
@@ -2119,6 +2125,7 @@ class Zappa(object):
         """
 
         auth_type = "NONE"
+        auth_scopes = None
         if iam_authorization and authorizer:
             logger.warn("Both IAM Authorization and Authorizer are specified, this is not possible. "
                         "Setting Auth method to IAM Authorization")
@@ -2128,6 +2135,7 @@ class Zappa(object):
             auth_type = "AWS_IAM"
         elif authorizer:
             auth_type = authorizer.get("type", "CUSTOM")
+            auth_scopes = authorizer.get("scopes", [])
 
         # build a fresh template
         self.cf_template = troposphere.Template()
@@ -2140,6 +2148,7 @@ class Zappa(object):
                                             api_name=lambda_name,
                                             api_key_required=api_key_required,
                                             authorization_type=auth_type,
+                                            authorization_scopes=auth_scopes,
                                             authorizer=authorizer,
                                             cors_options=cors_options,
                                             description=description,
