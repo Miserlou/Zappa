@@ -1264,16 +1264,22 @@ class Zappa(object):
 
         Returns the Function ARN.
         """
-        response = self.lambda_client.list_versions_by_function(FunctionName=function_name)
+        versions_in_lambda = []
+        versions = self.lambda_client.list_versions_by_function(FunctionName=function_name)
+        for version in versions['Versions']:
+            versions_in_lambda.append(version['Version'])
+        while 'NextMarker' in versions:
+            versions = self.lambda_client.list_versions_by_function(
+                FunctionName=function_name, Marker=versions['NextMarker'])
+            for version in versions['Versions']:
+                versions_in_lambda.append(version['Version'])
 
-        # Take into account $LATEST
-        if len(response['Versions']) < versions_back + 1:
+        revisions = [revision for revision in versions_in_lambda if revision != '$LATEST']
+        if len(revisions) < versions_back:
             print("We do not have {} revisions. Aborting".format(str(versions_back)))
             return False
 
-        revisions = [int(revision['Version']) for revision in response['Versions'] if revision['Version'] != '$LATEST']
         revisions.sort(reverse=True)
-
         response = self.lambda_client.get_function(FunctionName='function:{}:{}'.format(function_name, revisions[versions_back]))
         response = requests.get(response['Code']['Location'])
 
