@@ -426,7 +426,8 @@ class Zappa(object):
         # Use pip to download zappa's dependencies. Copying from current venv causes issues with things like PyYAML that installs as yaml
         zappa_deps = self.get_deps_list('zappa')
         pkg_list = ['{0!s}=={1!s}'.format(dep, version) for dep, version in zappa_deps]
-
+        # Strip out lambda-packages from the handler
+        zappa_deps = [dep for dep in zappa_deps if dep[0] not in ['lambda-packages']]
         # Need to manually add setuptools
         pkg_list.append('setuptools')
         command = ["pip", "install", "--quiet", "--target", venv_site_packages_dir] + pkg_list
@@ -2066,6 +2067,14 @@ class Zappa(object):
                 description_kwargs[key] = value
         if 'LambdaConfig' not in description_kwargs:
             description_kwargs['LambdaConfig'] = LambdaConfig
+        # Note
+        # If you set a value for TemporaryPasswordValidityDays in PasswordPolicy ,
+        # that value will be used and UnusedAccountValidityDays will be deprecated for that user pool.
+        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/cognito-idp.html#CognitoIdentityProvider.Client.update_user_pool
+        # Related: https://github.com/Miserlou/Zappa/issues/1879
+        if 'TemporaryPasswordValidityDays' in description_kwargs['Policies']['PasswordPolicy']:
+            description_kwargs['AdminCreateUserConfig'].pop(
+                'UnusedAccountValidityDays', None)
         result = self.cognito_client.update_user_pool(UserPoolId=user_pool, **description_kwargs)
         if result['ResponseMetadata']['HTTPStatusCode'] != 200:
             print("Cognito:  Failed to update user pool", result)

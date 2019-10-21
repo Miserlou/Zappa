@@ -617,6 +617,42 @@ def your_recurring_function(event, context):
 
 You can find more [example event sources here](http://docs.aws.amazon.com/lambda/latest/dg/eventsources.html).
 
+### Cognito triggers
+
+AWS Cognito can handle all user management (authentication, password reset, 2 factor authentication,
+login with Facebook/Twitter/Google) for you - saving you from having to manage a user database yourself
+in your serverless application.
+
+Once you have configured a Cognito User Pool you can set up triggers to customise behaviour.   A common
+example is to automatically authenticate any sign up requests from a known domain.
+
+To configure this add the following section to your zappa_settings file - shown here in YML format
+
+```
+  cognito:
+    user_pool:           user-pool-id-from-aws
+    triggers:
+      - source:          PreSignUp_SignUp
+        function:        myapp.tasks.pre_signup
+```
+
+This will configure the user_pool with the specified ID to use the zappa lambda function for the PreSignUp trigger
+Zappa will route any trigger for the PreSignUp_SignUp source to go to the function `myapp.tasks.pre_signup`
+
+A typical trivial implementation of this would be:
+
+```python
+def pre_signup(event, context):
+    # basic validation - allow any signups from @alloweddomain.com to be immediately confirmed
+    if event['request']['userAttributes']['email'].split('@')[1] == 'alloweddomain.com':
+        event['response']['autoConfirmUser'] = True
+        event['response']['autoVerifyEmail'] = True
+    return event
+```
+
+You can find out what triggers you can configure here [Cognito triggers documentation](http://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-identity-pools-working-with-aws-lambda-triggers.html)
+
+
 ## Asynchronous Task Execution
 
 Zappa also now offers the ability to seamlessly execute functions asynchronously in a completely separate AWS Lambda instance!
