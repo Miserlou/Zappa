@@ -705,13 +705,16 @@ class ZappaCLI(object):
             if self.manage_roles:
                 try:
                     self.zappa.create_iam_roles()
-                except botocore.client.ClientError:
+                except botocore.client.ClientError as ce:
                     raise ClickException(
                         click.style("Failed", fg="red") + " to " + click.style("manage IAM roles", bold=True) + "!\n" +
                         "You may " + click.style("lack the necessary AWS permissions", bold=True) +
                         " to automatically manage a Zappa execution role.\n" +
+                        click.style("Exception reported by AWS:", bold=True) + format(ce) + '\n' +
                         "To fix this, see here: " +
-                        click.style("https://github.com/Miserlou/Zappa#custom-aws-iam-roles-and-policies-for-deployment", bold=True)
+                        click.style(
+                            "https://github.com/Miserlou/Zappa#custom-aws-iam-roles-and-policies-for-deployment",
+                            bold=True)
                         + '\n')
 
             # Create the Lambda Zip

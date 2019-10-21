@@ -448,7 +448,7 @@ def check_new_version_available(this_version):
     """
     import requests
 
-    pypi_url = 'https://pypi.python.org/pypi/Zappa/json'
+    pypi_url = 'https://pypi.org/pypi/Zappa/json'
     resp = requests.get(pypi_url, timeout=1.5)
     top_version = resp.json()['info']['version']
 
