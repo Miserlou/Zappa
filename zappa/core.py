@@ -1765,6 +1765,7 @@ class Zappa(object):
                             cache_cluster_size='0.5',
                             variables=None,
                             cloudwatch_log_level='OFF',
+                            cloudwatch_log_role_arn=None,
                             cloudwatch_data_trace=False,
                             cloudwatch_metrics_enabled=False,
                             cache_cluster_ttl=300,
@@ -1789,6 +1790,13 @@ class Zappa(object):
 
         if cloudwatch_log_level not in self.cloudwatch_log_levels:
             cloudwatch_log_level = 'OFF'
+
+        if cloudwatch_log_role_arn:
+            self.apigateway_client.update_account(
+                patchOperations=[
+                    {'op': 'replace', 'path': '/cloudwatchRoleArn', 'value': cloudwatch_log_role_arn}
+                ]
+            )
 
         self.apigateway_client.update_stage(
             restApiId=api_id,
