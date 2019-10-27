@@ -41,7 +41,7 @@ from tqdm import tqdm
 from .utilities import (add_event_source, conflicts_with_a_neighbouring_module,
                         contains_python_files_or_subdirs, copytree,
                         get_topic_name, get_venv_from_python_version,
-                        human_size, remove_event_source)
+                        human_size, remove_event_source, first_line)
 
 try:
     unicode        # Python 2
@@ -421,6 +421,10 @@ class Zappa(object):
         # Copy zappa* to the new virtualenv
         zappa_things = [z for z in os.listdir(current_site_packages_dir) if z.lower()[:5] == 'zappa']
         for z in zappa_things:
+            print('found: %s' % z)
+            if z.endswith('.egg-link'):
+                z = first_line(z)
+            print('read first line of .egg-link as: %s' % z)
             copytree(os.path.join(current_site_packages_dir, z), os.path.join(venv_site_packages_dir, z))
 
         # Use pip to download zappa's dependencies. Copying from current venv causes issues with things like PyYAML that installs as yaml
