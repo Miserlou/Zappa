@@ -25,6 +25,15 @@ LOG = logging.getLogger(__name__)
 # Settings / Packaging
 ##
 
+def first_line(file):
+    """
+    Given a filename, return the first line of the file.
+    """
+
+    with open(file) as f:
+        return f.readline()
+
+
 def copytree(src, dst, metadata=True, symlinks=False, ignore=None):
     """
     This is a contributed re-implementation of 'copytree' that
