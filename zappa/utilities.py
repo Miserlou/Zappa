@@ -31,7 +31,8 @@ def first_line(file):
     """
 
     with open(file) as f:
-        return f.readline()
+        val = f.readline()
+        return val.strip() if val else val
 
 
 def copytree(src, dst, metadata=True, symlinks=False, ignore=None):

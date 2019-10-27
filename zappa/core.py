@@ -421,11 +421,15 @@ class Zappa(object):
         # Copy zappa* to the new virtualenv
         zappa_things = [z for z in os.listdir(current_site_packages_dir) if z.lower()[:5] == 'zappa']
         for z in zappa_things:
-            print('found: %s' % z)
             if z.endswith('.egg-link'):
-                z = first_line(z)
-            print('read first line of .egg-link as: %s' % z)
-            copytree(os.path.join(current_site_packages_dir, z), os.path.join(venv_site_packages_dir, z))
+                egg_link_file = os.path.join(current_site_packages_dir, z)
+                src = first_line(egg_link_file)
+                z = os.path.splitext(z)[0]
+            else:
+                src = os.path.join(current_site_packages_dir, z)
+
+            des = os.path.join(venv_site_packages_dir, z)
+            copytree(src, des)
 
         # Use pip to download zappa's dependencies. Copying from current venv causes issues with things like PyYAML that installs as yaml
         zappa_deps = self.get_deps_list('zappa')
