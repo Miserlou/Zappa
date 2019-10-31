@@ -3,7 +3,7 @@ botocore>=1.7.19
 boto3>=1.4.7
 docutils>=0.12
 durationpy==0.5
-future==0.18.1
+future==0.18.2
 futures==3.2.0; python_version < '3'
 hjson==3.0.1
 jmespath==0.9.3
