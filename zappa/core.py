@@ -466,6 +466,7 @@ class Zappa(object):
                             slim_handler=False,
                             minify=True,
                             exclude=None,
+                            exclude_glob=None,
                             use_precompiled_packages=True,
                             include=None,
                             venv=None,
@@ -504,6 +505,9 @@ class Zappa(object):
         # Files that should be excluded from the zip
         if exclude is None:
             exclude = list()
+
+        if exclude_glob is None:
+            exclude_glob = list()
 
         # Exclude the zip itself
         exclude.append(archive_path)
@@ -544,6 +548,12 @@ class Zappa(object):
                 copytree(cwd, temp_project_path, metadata=False, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
             else:
                 copytree(cwd, temp_project_path, metadata=False, symlinks=False)
+            for glob_path in exclude_glob:
+                for path in glob.glob(os.path.join(temp_project_path, glob_path)):
+                    try:
+                        os.remove(path)
+                    except OSError:  # is a directory
+                        shutil.rmtree(path)
 
         # If a handler_file is supplied, copy that to the root of the package,
         # because that's where AWS Lambda looks for it. It can't be inside a package.
@@ -664,6 +674,14 @@ class Zappa(object):
             except Exception as e:
                 print(e)
                 # XXX - What should we do here?
+
+        # Cleanup
+        for glob_path in exclude_glob:
+            for path in glob.glob(os.path.join(temp_project_path, glob_path)):
+                try:
+                    os.remove(path)
+                except OSError:  # is a directory
+                    shutil.rmtree(path)
 
         # Then archive it all up..
         if archive_format == 'zip':
