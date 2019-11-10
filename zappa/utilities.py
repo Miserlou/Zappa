@@ -41,7 +41,7 @@ def copytree(src, dst, metadata=True, symlinks=False, ignore=None):
     try:
         lst = os.listdir(src)
     except NotADirectoryError:  # egg-link files
-        pass
+        lst = []
 
     if ignore:
         excl = ignore(src, lst)
