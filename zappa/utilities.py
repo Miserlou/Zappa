@@ -34,14 +34,15 @@ def copytree(src, dst, metadata=True, symlinks=False, ignore=None):
     times are not copied.
     """
 
+    try:
+        lst = os.listdir(src)
+    except NotADirectoryError:  # egg-link files
+        return
+
     if not os.path.exists(dst):
         os.makedirs(dst)
         if metadata:
             shutil.copystat(src, dst)
-    try:
-        lst = os.listdir(src)
-    except NotADirectoryError:  # egg-link files
-        lst = []
 
     if ignore:
         excl = ignore(src, lst)
