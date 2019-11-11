@@ -61,6 +61,7 @@ def copytree(src, dst, metadata=True, symlinks=False, ignore=None):
                 shutil.copystat(src, dst)
     except NotADirectoryError:  # egg-link files
         copy_file(os.path.dirname(src), os.path.dirname(dst), os.path.basename(src))
+        return
 
     if ignore:
         excl = ignore(src, lst)
