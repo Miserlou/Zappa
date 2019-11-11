@@ -159,21 +159,19 @@ class LambdaHandler(object):
         """
         Puts the project files from S3 in /tmp and adds to path
         """
+        if not self.session:
+            boto_session = boto3.Session()
+        else:
+            boto_session = self.session
+
+        # Download zip file from S3
+        remote_bucket, remote_file = parse_s3_url(project_zip_path)
+        s3 = boto_session.resource('s3')
+        archive_on_s3 = s3.Object(remote_bucket, remote_file).get()
+
         project_folder = '/tmp/{0!s}'.format(self.settings.PROJECT_NAME)
-        if not os.path.isdir(project_folder):
-            # The project folder doesn't exist in this cold lambda, get it from S3
-            if not self.session:
-                boto_session = boto3.Session()
-            else:
-                boto_session = self.session
-
-            # Download zip file from S3
-            remote_bucket, remote_file = parse_s3_url(project_zip_path)
-            s3 = boto_session.resource('s3')
-            archive_on_s3 = s3.Object(remote_bucket, remote_file).get()
-
-            with tarfile.open(fileobj=archive_on_s3['Body'], mode="r|gz") as t:
-                t.extractall(project_folder)
+        with tarfile.open(fileobj=archive_on_s3['Body'], mode="r|gz") as t:
+            t.extractall(project_folder)
 
         # Add to project path
         sys.path.insert(0, project_folder)
