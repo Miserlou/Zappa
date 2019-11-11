@@ -34,21 +34,7 @@ def copytree(src, dst, metadata=True, symlinks=False, ignore=None):
     times are not copied.
     """
 
-    try:
-        lst = os.listdir(src)
-    except NotADirectoryError:  # egg-link files
-        return
-
-    if not os.path.exists(dst):
-        os.makedirs(dst)
-        if metadata:
-            shutil.copystat(src, dst)
-
-    if ignore:
-        excl = ignore(src, lst)
-        lst = [x for x in lst if x not in excl]
-
-    for item in lst:
+    def copy_file(src, dst, item):
         s = os.path.join(src, item)
         d = os.path.join(dst, item)
 
@@ -67,6 +53,22 @@ def copytree(src, dst, metadata=True, symlinks=False, ignore=None):
             copytree(s, d, metadata, symlinks, ignore)
         else:
             shutil.copy2(s, d) if metadata else shutil.copy(s, d)
+    try:
+        lst = os.listdir(src)
+        if not os.path.exists(dst):
+            os.makedirs(dst)
+            if metadata:
+                shutil.copystat(src, dst)
+    except NotADirectoryError:  # egg-link files
+        copy_file(os.path.dirname(src), os.path.dirname(dst), os.path.basename(src))
+
+    if ignore:
+        excl = ignore(src, lst)
+        lst = [x for x in lst if x not in excl]
+
+    for item in lst:
+        copy_file(src, dst, item)
+
 
 def parse_s3_url(url):
     """
