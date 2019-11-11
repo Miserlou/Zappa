@@ -53,7 +53,6 @@ def copytree(src, dst, metadata=True, symlinks=False, ignore=None):
             copytree(s, d, metadata, symlinks, ignore)
         else:
             shutil.copy2(s, d) if metadata else shutil.copy(s, d)
-
     try:
         lst = os.listdir(src)
         if not os.path.exists(dst):
