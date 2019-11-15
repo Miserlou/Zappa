@@ -734,13 +734,6 @@ class ZappaCLI(object):
                 if not success:  # pragma: no cover
                     raise ClickException("Unable to upload handler to S3. Quitting.")
 
-                # Copy the project zip to the current project zip
-                current_project_name = '{0!s}_{1!s}_current_project.tar.gz'.format(self.api_stage, self.project_name)
-                success = self.zappa.copy_on_s3(src_file_name=self.zip_path, dst_file_name=current_project_name,
-                                                bucket_name=self.s3_bucket_name)
-                if not success:  # pragma: no cover
-                    raise ClickException("Unable to copy the zip to be the current project. Quitting.")
-
                 handler_file = self.handler_path
             else:
                 handler_file = self.zip_path
@@ -919,13 +912,6 @@ class ZappaCLI(object):
                     success = self.zappa.upload_to_s3(self.handler_path, self.s3_bucket_name, disable_progress=self.disable_progress)
                     if not success:  # pragma: no cover
                         raise ClickException("Unable to upload handler to S3. Quitting.")
-
-                    # Copy the project zip to the current project zip
-                    current_project_name = '{0!s}_{1!s}_current_project.tar.gz'.format(self.api_stage, self.project_name)
-                    success = self.zappa.copy_on_s3(src_file_name=self.zip_path, dst_file_name=current_project_name,
-                                                    bucket_name=self.s3_bucket_name)
-                    if not success:  # pragma: no cover
-                        raise ClickException("Unable to copy the zip to be the current project. Quitting.")
 
                     handler_file = self.handler_path
                 else:
@@ -2373,8 +2359,8 @@ class ZappaCLI(object):
 
             # If slim handler, path to project zip
             if self.stage_config.get('slim_handler', False):
-                settings_s += "ARCHIVE_PATH='s3://{0!s}/{1!s}_{2!s}_current_project.tar.gz'\n".format(
-                    self.s3_bucket_name, self.api_stage, self.project_name)
+                settings_s += "ARCHIVE_PATH='s3://{0!s}/{1!s}'\n".format(
+                    self.s3_bucket_name, self.zip_path)
 
                 # since includes are for slim handler add the setting here by joining arbitrary list from zappa_settings file
                 # and tell the handler we are the slim_handler
