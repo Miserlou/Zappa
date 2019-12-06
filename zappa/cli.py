@@ -2177,7 +2177,7 @@ class ZappaCLI(object):
         if ext == '.yml' or ext == '.yaml':
             with open(settings_file) as yaml_file:
                 try:
-                    self.zappa_settings = yaml.load(yaml_file)
+                    self.zappa_settings = yaml.safe_load(yaml_file)
                 except ValueError: # pragma: no cover
                     raise ValueError("Unable to load the Zappa settings YAML. It may be malformed.")
         elif ext == '.toml':
