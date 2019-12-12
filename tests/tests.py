@@ -174,6 +174,19 @@ class TestZappa(unittest.TestCase):
             self.assertTrue(os.path.isfile(path))
             os.remove(path)
 
+    def test_get_manylinux_python38(self):
+        z = Zappa(runtime='python3.8')
+        self.assertIsNotNone(z.get_cached_manylinux_wheel('psycopg2', '2.7.6'))
+        self.assertIsNone(z.get_cached_manylinux_wheel('derp_no_such_thing', '0.0'))
+
+        # mock with a known manylinux wheel package so that code for downloading them gets invoked
+        mock_installed_packages = {'psycopg2': '2.7.6'}
+        with mock.patch('zappa.core.Zappa.get_installed_packages', return_value=mock_installed_packages):
+            z = Zappa(runtime='python3.8')
+            path = z.create_lambda_zip(handler_file=os.path.realpath(__file__))
+            self.assertTrue(os.path.isfile(path))
+            os.remove(path)
+
     def test_should_use_lambda_packages(self):
         z = Zappa(runtime='python2.7')
 

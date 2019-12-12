@@ -3,6 +3,7 @@ python:
   - "2.7"
   - "3.6"
   - "3.7"
+  - "3.8"
 dist: xenial
 # command to install dependencies
 cache:
