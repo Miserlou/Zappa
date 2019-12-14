@@ -9,3 +9,5 @@ nose>=1.3.7
 nose-timer>=0.6.0
 placebo>=0.8.1
 
+# temporary botocore requires < 0.16
+docutils>=0.12<0.16
