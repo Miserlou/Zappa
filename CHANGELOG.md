@@ -1,7 +1,7 @@
 # Zappa Changelog
 
 ## 0.48.3
-* remove limitations from dependencies
+* remove hard limitations from dependencies
 
 ## 0.48.2
 * Fix for invalid values of HTTP_HOST and others (introduced in 0.48.0)
