@@ -249,7 +249,7 @@ class TestZappa(unittest.TestCase):
         creds = {
             'AWS_ACCESS_KEY_ID': 'AK123',
             'AWS_SECRET_ACCESS_KEY': 'JKL456',
-            'AWS_DEFAULT_REGION': 'us-west-1'
+            'AWS_DEFAULT_REGION': 'us-east-1'
         }
         with mock.patch.dict('os.environ', creds):
             z.aws_region = None
@@ -258,7 +258,7 @@ class TestZappa(unittest.TestCase):
 
         self.assertEqual(loaded_creds.access_key, 'AK123')
         self.assertEqual(loaded_creds.secret_key, 'JKL456')
-        self.assertEqual(z.boto_session.region_name, 'us-west-1')
+        self.assertEqual(z.boto_session.region_name, 'us-east-1')
 
     def test_create_api_gateway_routes_with_different_auth_methods(self):
         z = Zappa()
@@ -1680,9 +1680,17 @@ USE_TZ = True
         # Sanity
         settings_modules = detect_flask_apps()
 
+    def test_warnings_are_ignored(self):
+        zappa = Zappa()
+        zappa.aws_region = 'us-west-11' 
+        with self.assertRaises(Warning):
+            zappa.load_credentials()
+
+        zappa.ignore_warnings = True
+        zappa.load_credentials()
+
     def test_shameless(self):
         shamelessly_promote()
-
 
     def test_s3_url_parser(self):
         remote_bucket, remote_file = parse_s3_url('s3://my-project-config-files/filename.json')

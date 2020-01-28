@@ -82,6 +82,7 @@ class ZappaCLI(object):
     vargs = None
     command = None
     stage_env = None
+    ignore_warnings = False
 
     # Zappa settings
     zappa = None
@@ -160,6 +161,15 @@ class ZappaCLI(object):
 
         return settings
 
+    @staticmethod
+    def exit_with_warning():
+        # https://github.com/Miserlou/Zappa/issues/423
+        click.echo(click.style("Warning! ", fg="red") + "Zappa has exited due to a warning. You can ignore "
+                                                       "warnings by passing the " + click.style(
+            "--ignore-warnings", bold=True) + " argument. "
+                                              "Please read and understand all warnings before ignoring.")
+        sys.exit(-1)
+
     @property
     def stage_config_overrides(self):
         """
@@ -196,6 +206,9 @@ class ZappaCLI(object):
         parser.add_argument(
             '--color', default='auto', choices=['auto','never','always']
         )
+
+        parser.add_argument('--ignore-warnings', action='store_true', help='Does not exit when warnings are raised',
+                            default=False)  # https://github.com/Miserlou/Zappa/issues/423
 
         env_parser = argparse.ArgumentParser(add_help=False)
         me_group = env_parser.add_mutually_exclusive_group()
@@ -459,6 +472,12 @@ class ZappaCLI(object):
             parser.print_help()
             return
 
+        if self.vargs['ignore_warnings']:
+            self.ignore_warnings = True
+
+        # Make sure there isn't a new version available
+        if not self.vargs['json']:
+            self.check_for_update()
         if args.command == 'manage' and not self.vargs.get('all'):
             self.stage_env = self.vargs['command_rest'].pop(0)
         else:
@@ -888,6 +907,8 @@ class ZappaCLI(object):
                 click.echo(click.style("Warning!", fg="red") +
                            " You may have upgraded Zappa since deploying this application. You will need to " +
                            click.style("redeploy", bold=True) + " for this deployment to work properly!")
+                if self.ignore_warnings is False:
+                    self.exit_with_warning()
 
             # Make sure the necessary IAM execution roles are available
             if self.manage_roles:
@@ -2105,6 +2126,7 @@ class ZappaCLI(object):
         self.tags = self.stage_config.get('tags', {})
 
         desired_role_name = self.lambda_name + "-ZappaLambdaExecutionRole"
+
         self.zappa = Zappa( boto_session=session,
                             profile_name=self.profile_name,
                             aws_region=self.aws_region,
@@ -2132,6 +2154,8 @@ class ZappaCLI(object):
                 click.echo(click.style("Warning!", fg="red", bold=True) +
                            " Your app_function is pointing to a " + click.style("file and not a function", bold=True) +
                            "! It should probably be something like 'my_file.app', not 'my_file.py'!")
+                if not self.ignore_warnings:
+                    self.exit_with_warning()
 
         return self.zappa
 
@@ -2211,27 +2235,38 @@ class ZappaCLI(object):
         if self.stage_config.get('slim_handler', False):
             # Create two zips. One with the application and the other with just the handler.
             # https://github.com/Miserlou/Zappa/issues/510
-            self.zip_path = self.zappa.create_lambda_zip(
-                prefix=self.lambda_name,
-                use_precompiled_packages=self.stage_config.get('use_precompiled_packages', True),
-                exclude=self.stage_config.get('exclude', []),
-                disable_progress=self.disable_progress,
-                archive_format='tarball'
-            )
+            try:
+                self.zip_path = self.zappa.create_lambda_zip(
+                    prefix=self.lambda_name,
+                    use_precompiled_packages=self.stage_config.get('use_precompiled_packages', True),
+                    exclude=self.stage_config.get('exclude', []),
+                    disable_progress=self.disable_progress,
+                    archive_format='tarball'
+                )
+            except Warning as warn:
+                click.echo(click.style("Warning!", fg="yellow", bold=True) + warn.message)
+                if self.ignore_warnings is False:
+                    self.exit_with_warning()
 
             # Make sure the normal venv is not included in the handler's zip
             exclude = self.stage_config.get('exclude', [])
             cur_venv = self.zappa.get_current_venv()
             exclude.append(cur_venv.split('/')[-1])
-            self.handler_path = self.zappa.create_lambda_zip(
-                prefix='handler_{0!s}'.format(self.lambda_name),
-                venv=self.zappa.create_handler_venv(),
-                handler_file=handler_file,
-                slim_handler=True,
-                exclude=exclude,
-                output=output,
-                disable_progress=self.disable_progress
-            )
+
+            try:
+                self.handler_path = self.zappa.create_lambda_zip(
+                    prefix='handler_{0!s}'.format(self.lambda_name),
+                    venv=self.zappa.create_handler_venv(),
+                    handler_file=handler_file,
+                    slim_handler=True,
+                    exclude=exclude,
+                    output=output,
+                    disable_progress=self.disable_progress
+                )
+            except Warning as warn:
+                click.echo(click.style("Warning!", fg="yellow", bold=True) + warn.message)
+                if self.ignore_warnings is False:
+                    self.exit_with_warning()
         else:
 
             # Custom excludes for different versions.
@@ -2662,6 +2697,8 @@ class ZappaCLI(object):
                            " and " +
                            click.style(namespace_collision, bold=True) +
                            "! You may want to rename that file.")
+                if self.ignore_warnings is False:
+                    self.exit_with_warning()
 
     def deploy_api_gateway(self, api_id):
         cache_cluster_enabled = self.stage_config.get('cache_cluster_enabled', False)

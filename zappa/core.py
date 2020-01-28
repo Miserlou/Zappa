@@ -260,7 +260,8 @@ class Zappa(object):
             runtime='python2.7', # Detected at runtime in CLI
             tags=(),
             endpoint_urls={},
-            xray_tracing=False
+            xray_tracing=False,
+            ignore_warnings=False
         ):
         """
         Instantiate this new Zappa instance, loading any custom credentials if necessary.
@@ -291,6 +292,8 @@ class Zappa(object):
 
         self.endpoint_urls = endpoint_urls
         self.xray_tracing = xray_tracing
+        self.ignore_warnings = ignore_warnings
+
 
         # Some common invocations, such as DB migrations,
         # can take longer than the default.
@@ -332,6 +335,13 @@ class Zappa(object):
         self.cf_template = troposphere.Template()
         self.cf_api_resources = []
         self.cf_parameters = {}
+
+    def warning(self, msg):
+        # https://github.com/Miserlou/Zappa/issues/423
+        if not self.ignore_warnings:
+            raise Warning(msg)
+        else:
+            print(msg)
 
     def configure_boto_session_method_kwargs(self, service, kw):
         """Allow for custom endpoint urls for non-AWS (testing and bootleg cloud) deployments"""
@@ -535,7 +545,7 @@ class Zappa(object):
         # Ideally this should be avoided automatically,
         # but this serves as an okay stop-gap measure.
         if split_venv[-1] == split_cwd[-1]:  # pragma: no cover
-            print(
+            self.warning(
                 "Warning! Your project and virtualenv have the same name! You may want "
                 "to re-create your venv with a new name, or explicitly define a "
                 "'project_name', as this may cause errors."
@@ -1268,8 +1278,7 @@ class Zappa(object):
 
         # Take into account $LATEST
         if len(response['Versions']) < versions_back + 1:
-            print("We do not have {} revisions. Aborting".format(str(versions_back)))
-            return False
+            self.warning("We do not have {} revisions. Aborting".format(str(versions_back)))
 
         revisions = [int(revision['Version']) for revision in response['Versions'] if revision['Version'] != '$LATEST']
         revisions.sort(reverse=True)
@@ -1278,8 +1287,7 @@ class Zappa(object):
         response = requests.get(response['Code']['Location'])
 
         if response.status_code != 200:
-            print("Failed to get version {} of {} code".format(versions_back, function_name))
-            return False
+            self.warning("Failed to get version {} of {} code".format(versions_back, function_name))
 
         response = self.lambda_client.update_function_code(FunctionName=function_name, ZipFile=response.content, Publish=publish)  # pragma: no cover
 
@@ -2068,7 +2076,7 @@ class Zappa(object):
             description_kwargs['LambdaConfig'] = LambdaConfig
         result = self.cognito_client.update_user_pool(UserPoolId=user_pool, **description_kwargs)
         if result['ResponseMetadata']['HTTPStatusCode'] != 200:
-            print("Cognito:  Failed to update user pool", result)
+            self.warning("Cognito:  Failed to update user pool", result)
 
         # Now we need to add a policy to the IAM that allows cognito access
         result = self.create_event_permission(lambda_name,
@@ -2079,7 +2087,7 @@ class Zappa(object):
                                                      user_pool)
                                               )
         if result['ResponseMetadata']['HTTPStatusCode'] != 201:
-            print("Cognito:  Failed to update lambda permission", result)
+            self.warning("Cognito:  Failed to update lambda permission", result)
 
     def delete_stack(self, name, wait=False):
         """
@@ -2088,8 +2096,7 @@ class Zappa(object):
         try:
             stack = self.cf_client.describe_stacks(StackName=name)['Stacks'][0]
         except: # pragma: no cover
-            print('No Zappa stack named {0}'.format(name))
-            return False
+            self.warning('No Zappa stack named {0}'.format(name))
 
         tags = {x['Key']:x['Value'] for x in stack['Tags']}
         if tags.get('ZappaProject') == name:
@@ -2175,8 +2182,7 @@ class Zappa(object):
             update = False
 
         if update_only and not update:
-            print('CloudFormation stack missing, re-deploy to enable updates')
-            return
+            self.warning('CloudFormation stack missing, re-deploy to enable updates')
 
         if not update:
             self.cf_client.create_stack(StackName=name,
@@ -2195,7 +2201,7 @@ class Zappa(object):
                 if e.response['Error']['Message'] == 'No updates are to be performed.':
                     wait = False
                 else:
-                    raise
+                    raise e
 
         if wait:
             total_resources = len(self.cf_template.resources)
@@ -2442,8 +2448,8 @@ class Zappa(object):
         """
         api_id = self.get_api_id(lambda_name)
         if not api_id:
-            print("Warning! Can't update base path mapping!")
-            return
+            self.warning("Warning! Can't update base path mapping!")
+
         base_path_mappings = self.apigateway_client.get_base_path_mappings(domainName=domain_name)
         found = False
         for base_path_mapping in base_path_mappings.get('items', []):
@@ -2633,8 +2639,7 @@ class Zappa(object):
         )
 
         if permission_response['ResponseMetadata']['HTTPStatusCode'] != 201:
-            print('Problem creating permission to invoke Lambda function')
-            return None  # XXX: Raise?
+            self.warning('Problem creating permission to invoke Lambda function')
 
         return permission_response
 
@@ -2745,7 +2750,7 @@ class Zappa(object):
                     if target_response['ResponseMetadata']['HTTPStatusCode'] == 200:
                         print("Scheduled {} with expression {}!".format(rule_name, expression))
                     else:
-                        print("Problem scheduling {} with expression {}.".format(rule_name, expression))
+                        self.warning("Problem scheduling {} with expression {}.".format(rule_name, expression))
 
             elif event_source:
                 service = self.service_from_arn(event_source['arn'])
@@ -2770,13 +2775,13 @@ class Zappa(object):
                 if rule_response == 'successful':
                     print("Created {} event schedule for {}!".format(svc, function))
                 elif rule_response == 'failed':
-                    print("Problem creating {} event schedule for {}!".format(svc, function))
+                    self.warning("Problem creating {} event schedule for {}!".format(svc, function))
                 elif rule_response == 'exists':
                     print("{} event schedule for {} already exists - Nothing to do here.".format(svc, function))
                 elif rule_response == 'dryrun':
                     print("Dryrun for creating {} event schedule for {}!!".format(svc, function))
             else:
-                print("Could not create event {} - Please define either an expression or an event source".format(name))
+                self.warning("Could not create event {} - Please define either an expression or an event source".format(name))
 
 
     @staticmethod
@@ -3206,10 +3211,10 @@ class Zappa(object):
         self.aws_region = self.boto_session.region_name
 
         if self.boto_session.region_name not in LAMBDA_REGIONS:
-            print("Warning! AWS Lambda may not be available in this AWS Region!")
+            self.warning("Warning! AWS Lambda may not be available in this AWS Region!")
 
         if self.boto_session.region_name not in API_GATEWAY_REGIONS:
-            print("Warning! AWS API Gateway may not be available in this AWS Region!")
+            self.warning("Warning! AWS API Gateway may not be available in this AWS Region!")
 
     @staticmethod
     def service_from_arn(arn):

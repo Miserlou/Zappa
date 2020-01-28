@@ -138,8 +138,8 @@ class TestZappa(unittest.TestCase):
         z.credentials_arn = 'arn:aws:iam::724336686645:role/ZappaLambdaExecution'
 
         function_name = 'django-helloworld-unicode'
-        too_many_versions = z.rollback_lambda_function_version(function_name, 99999)
-        self.assertFalse(too_many_versions)
+        with self.assertRaises(Warning):
+            z.rollback_lambda_function_version(function_name, 99999)
 
         function_arn = z.rollback_lambda_function_version(function_name, 1)
 
