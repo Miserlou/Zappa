@@ -1,5 +1,13 @@
-from cgi import parse_qs, escape
 from zappa.asynchronous import task
+try:
+    from urllib.parse import parse_qs
+except ImportError:
+    from cgi import parse_qs
+
+try:
+    from html import escape
+except ImportError:
+    from cgi import escape
 
 
 def hello_world(environ, start_response):

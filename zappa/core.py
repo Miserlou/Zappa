@@ -665,7 +665,7 @@ class Zappa(object):
                 # This is a special case!
                 # SQLite3 is part of the _system_ Python, not a package. Still, it lives in `lambda-packages`.
                 # Everybody on Python3 gets it!
-                if self.runtime in ("python3.6", "python3.7"):
+                if self.runtime in ("python3.6", "python3.7", "python3.8"):
                     print(" - sqlite==python3: Using precompiled lambda package")
                     self.extract_lambda_package('sqlite3', temp_project_path)
 
