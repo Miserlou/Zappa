@@ -1,5 +1,11 @@
 # Zappa Changelog
 
+## 0.49.0
+* Added support for Python 3.8
+* Fixed boto3 reporting of long names
+* Added support for new AWS Regions
+* Minor bug and README fixes
+
 ## 0.48.2
 * Fix for invalid values of HTTP_HOST and others (introduced in 0.48.0)
 
