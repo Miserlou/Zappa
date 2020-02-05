@@ -286,8 +286,12 @@ class Zappa(object):
             self.manylinux_wheel_file_suffix = 'cp27mu-manylinux1_x86_64.whl'
         elif self.runtime == 'python3.6':
             self.manylinux_wheel_file_suffix = 'cp36m-manylinux1_x86_64.whl'
-        else:
+        elif self.runtime == 'python3.7':
             self.manylinux_wheel_file_suffix = 'cp37m-manylinux1_x86_64.whl'
+        else:
+            # The 'm' has been dropped in python 3.8+ since builds with and without pymalloc are ABI compatible
+            # See https://github.com/pypa/manylinux for a more detailed explanation
+            self.manylinux_wheel_file_suffix = 'cp38-manylinux1_x86_64.whl'
 
         self.endpoint_urls = endpoint_urls
         self.xray_tracing = xray_tracing
