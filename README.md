@@ -1463,6 +1463,7 @@ apigateway_resource_policy.json:
 * [Bringing Tokusatsu to AWS using Python, Flask, Zappa and Contentful](https://www.contentful.com/blog/2018/03/07/bringing-tokusatsu-to-aws-using-python-flask-zappa-and-contentful/)
 * [AWS Summit 2018 Seoul - Zappa와 함께하는 Serverless Microservice](https://www.slideshare.net/YunSeopSong/zappa-serverless-microservice-94410308/)
 * [Book - Building Serverless Python Web Services with Zappa](https://github.com/PacktPublishing/Building-Serverless-Python-Web-Services-with-Zappa)
+* [Vider sa flask dans une lambda](http://free_zed.gitlab.io/articles/2019/11/vider-sa-flask-dans-une-lambda/)[French]
 * _Your guide here?_
 
 ## Zappa in the Press
