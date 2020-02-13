@@ -15,6 +15,7 @@ import json
 import logging
 import os
 import random
+import re
 import shutil
 import string
 import subprocess
@@ -282,9 +283,7 @@ class Zappa(object):
 
         self.runtime = runtime
 
-        if self.runtime == 'python2.7':
-            self.manylinux_wheel_file_suffix = 'cp27mu-manylinux1_x86_64.whl'
-        elif self.runtime == 'python3.6':
+        if self.runtime == 'python3.6':
             self.manylinux_wheel_file_suffix = 'cp36m-manylinux1_x86_64.whl'
         elif self.runtime == 'python3.7':
             self.manylinux_wheel_file_suffix = 'cp37m-manylinux1_x86_64.whl'
@@ -292,6 +291,8 @@ class Zappa(object):
             # The 'm' has been dropped in python 3.8+ since builds with and without pymalloc are ABI compatible
             # See https://github.com/pypa/manylinux for a more detailed explanation
             self.manylinux_wheel_file_suffix = 'cp38-manylinux1_x86_64.whl'
+
+        self.manylinux_wheel_abi3_file_match = re.compile('^.*cp3.-abi3-manylinux{1,2010}_x86_64.whl$')
 
         self.endpoint_urls = endpoint_urls
         self.xray_tracing = xray_tracing
@@ -917,6 +918,8 @@ class Zappa(object):
 
         for f in data['releases'][package_version]:
             if f['filename'].endswith(self.manylinux_wheel_file_suffix):
+                return f['url']
+            elif re.match(self.manylinux_wheel_abi3_file_match, f['filename']):
                 return f['url']
         return None
 
