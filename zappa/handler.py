@@ -50,10 +50,11 @@ class LambdaHandler(object):
     app_module = None
     wsgi_app = None
     trailing_slash = False
+    initialized = False
 
     def __new__(cls, settings_name="zappa_settings", session=None):
         """Singleton instance to avoid repeat setup"""
-        if LambdaHandler.__instance is None:
+        if LambdaHandler.__instance is None or not LambdaHandler.__instance.initialized:
             if sys.version_info[0] < 3:
                 LambdaHandler.__instance = object.__new__(cls, settings_name, session)
             else:
@@ -64,7 +65,7 @@ class LambdaHandler(object):
     def __init__(self, settings_name="zappa_settings", session=None):
 
         # We haven't cached our settings yet, load the settings and app.
-        if not self.settings:
+        if not self.initialized:
             # Loading settings from a python module
             self.settings = importlib.import_module(settings_name)
             self.settings_name = settings_name
@@ -152,26 +153,25 @@ class LambdaHandler(object):
                 self.trailing_slash = True
 
             self.wsgi_app = ZappaWSGIMiddleware(wsgi_app_function)
+            self.initialized = True
 
     def load_remote_project_archive(self, project_zip_path):
         """
         Puts the project files from S3 in /tmp and adds to path
         """
+        if not self.session:
+            boto_session = boto3.Session()
+        else:
+            boto_session = self.session
+
+        # Download zip file from S3
+        remote_bucket, remote_file = parse_s3_url(project_zip_path)
+        s3 = boto_session.resource('s3')
+        archive_on_s3 = s3.Object(remote_bucket, remote_file).get()
+
         project_folder = '/tmp/{0!s}'.format(self.settings.PROJECT_NAME)
-        if not os.path.isdir(project_folder):
-            # The project folder doesn't exist in this cold lambda, get it from S3
-            if not self.session:
-                boto_session = boto3.Session()
-            else:
-                boto_session = self.session
-
-            # Download zip file from S3
-            remote_bucket, remote_file = parse_s3_url(project_zip_path)
-            s3 = boto_session.resource('s3')
-            archive_on_s3 = s3.Object(remote_bucket, remote_file).get()
-
-            with tarfile.open(fileobj=archive_on_s3['Body'], mode="r|gz") as t:
-                t.extractall(project_folder)
+        with tarfile.open(fileobj=archive_on_s3['Body'], mode="r|gz") as t:
+            t.extractall(project_folder)
 
         # Add to project path
         sys.path.insert(0, project_folder)
