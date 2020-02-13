@@ -766,6 +766,12 @@ class TestZappa(unittest.TestCase):
         self.assertTrue(zappa_cli.stage_config['touch'])  # First Extension
         self.assertTrue(zappa_cli.stage_config['delete_local_zip'])  # The base
 
+    def test_load_settings__lambda_concurrency_enabled(self):
+        zappa_cli = ZappaCLI()
+        zappa_cli.api_stage = 'lambda_concurrency_enabled'
+        zappa_cli.load_settings('test_settings.json')
+        self.assertEqual(6, zappa_cli.stage_config['lambda_concurrency'])
+
     def test_load_settings_yml(self):
         zappa_cli = ZappaCLI()
         zappa_cli.api_stage = 'ttt888'
@@ -2183,6 +2189,73 @@ USE_TZ = True
         elbv2_stubber.activate()
         zappa_core.undeploy_lambda_alb(**kwargs)
 
+
+    @mock.patch('botocore.client')
+    def test_set_lambda_concurrency(self, client):
+        boto_mock = mock.MagicMock()
+        zappa_core = Zappa(
+            boto_session=boto_mock,
+            profile_name="test",
+            aws_region="test",
+            load_credentials=True
+        )
+        zappa_core.lambda_client.create_function.return_value = {
+            "FunctionArn": "abc",
+            "Version": 1,
+        }
+        access_logging_patch = zappa_core.create_lambda_function(
+            concurrency=5,
+        )
+        boto_mock.client().put_function_concurrency.assert_called_with(
+            FunctionName="abc",
+            ReservedConcurrentExecutions=5,
+        )
+
+    @mock.patch('botocore.client')
+    def test_update_lambda_concurrency(self, client):
+        boto_mock = mock.MagicMock()
+        zappa_core = Zappa(
+            boto_session=boto_mock,
+            profile_name="test",
+            aws_region="test",
+            load_credentials=True
+        )
+        zappa_core.lambda_client.create_function.return_value = {
+            "FunctionArn": "abc",
+            "Version": 1,
+        }
+        access_logging_patch = zappa_core.update_lambda_function(
+            bucket="test",
+            function_name="abc",
+            concurrency=5,
+        )
+        boto_mock.client().put_function_concurrency.assert_called_with(
+            FunctionName="abc",
+            ReservedConcurrentExecutions=5,
+        )
+        boto_mock.client().delete_function_concurrency.assert_not_called()
+
+    @mock.patch('botocore.client')
+    def test_delete_lambda_concurrency(self, client):
+        boto_mock = mock.MagicMock()
+        zappa_core = Zappa(
+            boto_session=boto_mock,
+            profile_name="test",
+            aws_region="test",
+            load_credentials=True
+        )
+        zappa_core.lambda_client.create_function.return_value = {
+            "FunctionArn": "abc",
+            "Version": 1,
+        }
+        access_logging_patch = zappa_core.update_lambda_function(
+            bucket="test",
+            function_name="abc",
+        )
+        boto_mock.client().put_function_concurrency.assert_not_called()
+        boto_mock.client().delete_function_concurrency.assert_called_with(
+            FunctionName="abc",
+        )
 
 if __name__ == '__main__':
     unittest.main()

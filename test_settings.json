@@ -116,5 +116,9 @@
       "delete_local_zip": true,
       "use_precompiled_packages": false,
       "delete_s3_zip": false
-    }
+    },
+    "lambda_concurrency_enabled": {
+        "extends": "ttt888",
+        "lambda_concurrency": 6
+     }
 }

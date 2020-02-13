@@ -1056,6 +1056,7 @@ class Zappa(object):
                                 xray_tracing=False,
                                 local_zip=None,
                                 use_alb=False,
+                                concurrency=None,
                             ):
         """
         Given a bucket and key (or a local path) of a valid Lambda-zip, a function name and a handler, register that Lambda function.
@@ -1099,7 +1100,6 @@ class Zappa(object):
             }
 
         response = self.lambda_client.create_function(**kwargs)
-
         resource_arn = response['FunctionArn']
         version = response['Version']
 
@@ -1118,9 +1118,15 @@ class Zappa(object):
         if self.tags:
             self.lambda_client.tag_resource(Resource=resource_arn, Tags=self.tags)
 
+        if concurrency is not None:
+            self.lambda_client.put_function_concurrency(
+                FunctionName=resource_arn,
+                ReservedConcurrentExecutions=concurrency,
+            )
+
         return resource_arn
 
-    def update_lambda_function(self, bucket, function_name, s3_key=None, publish=True, local_zip=None, num_revisions=None):
+    def update_lambda_function(self, bucket, function_name, s3_key=None, publish=True, local_zip=None, num_revisions=None, concurrency=None):
         """
         Given a bucket and key (or a local path) of a valid Lambda-zip, a function name and a handler, update that Lambda function's code.
         Optionally, delete previous versions if they exceed the optional limit.
@@ -1163,6 +1169,16 @@ class Zappa(object):
                 FunctionName=function_name,
                 FunctionVersion=version,
                 Name=ALB_LAMBDA_ALIAS,
+            )
+
+        if concurrency is not None:
+            self.lambda_client.put_function_concurrency(
+                FunctionName=function_name,
+                ReservedConcurrentExecutions=concurrency,
+            )
+        else:
+            self.lambda_client.delete_function_concurrency(
+                FunctionName=function_name
             )
 
         if num_revisions:

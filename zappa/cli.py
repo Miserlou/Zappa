@@ -100,6 +100,7 @@ class ZappaCLI(object):
     lambda_arn = None
     lambda_name = None
     lambda_description = None
+    lambda_concurrency = None
     s3_bucket_name = None
     settings_file = None
     zip_path = None
@@ -762,7 +763,8 @@ class ZappaCLI(object):
                 runtime=self.runtime,
                 aws_environment_variables=self.aws_environment_variables,
                 aws_kms_key_arn=self.aws_kms_key_arn,
-                use_alb=self.use_alb
+                use_alb=self.use_alb,
+                concurrency=self.lambda_concurrency,
             )
             if source_zip and source_zip.startswith('s3://'):
                 bucket, key_name = parse_s3_url(source_zip)
@@ -936,7 +938,8 @@ class ZappaCLI(object):
         kwargs = dict(
             bucket=self.s3_bucket_name,
             function_name=self.lambda_name,
-            num_revisions=self.num_retained_versions
+            num_revisions=self.num_retained_versions,
+            concurrency=self.lambda_concurrency,
         )
         if source_zip and source_zip.startswith('s3://'):
             bucket, key_name = parse_s3_url(source_zip)
@@ -970,7 +973,7 @@ class ZappaCLI(object):
                                                         memory_size=self.memory_size,
                                                         runtime=self.runtime,
                                                         aws_environment_variables=self.aws_environment_variables,
-                                                        aws_kms_key_arn=self.aws_kms_key_arn
+                                                        aws_kms_key_arn=self.aws_kms_key_arn,
                                                     )
 
         # Finally, delete the local copy our zip package
@@ -2087,6 +2090,7 @@ class ZappaCLI(object):
         self.iam_authorization = self.stage_config.get('iam_authorization', False)
         self.cors = self.stage_config.get("cors", False)
         self.lambda_description = self.stage_config.get('lambda_description', "Zappa Deployment")
+        self.lambda_concurrency = self.stage_config.get('lambda_concurrency', None)
         self.environment_variables = self.stage_config.get('environment_variables', {})
         self.aws_environment_variables = self.stage_config.get('aws_environment_variables', {})
         self.check_environment(self.environment_variables)
