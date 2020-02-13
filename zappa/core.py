@@ -173,27 +173,35 @@ ATTACH_POLICY = """{
 API_GATEWAY_REGIONS = ['us-east-1', 'us-east-2',
                        'us-west-1', 'us-west-2',
                        'eu-central-1',
+                       'eu-north-1',
                        'eu-west-1', 'eu-west-2', 'eu-west-3',
+                       'eu-north-1',
                        'ap-northeast-1', 'ap-northeast-2', 'ap-northeast-3',
                        'ap-southeast-1', 'ap-southeast-2',
+                       'ap-east-1',
                        'ap-south-1',
                        'ca-central-1',
                        'cn-north-1',
                        'cn-northwest-1',
-                       'sa-east-1']
+                       'sa-east-1',
+                       'us-gov-east-1', 'us-gov-west-1']
 
 # Latest list: https://docs.aws.amazon.com/general/latest/gr/rande.html#lambda_region
 LAMBDA_REGIONS = ['us-east-1', 'us-east-2',
                   'us-west-1', 'us-west-2',
                   'eu-central-1',
+                  'eu-north-1',
                   'eu-west-1', 'eu-west-2', 'eu-west-3',
+                  'eu-north-1',
                   'ap-northeast-1', 'ap-northeast-2', 'ap-northeast-3',
                   'ap-southeast-1', 'ap-southeast-2',
+                  'ap-east-1',
                   'ap-south-1',
                   'ca-central-1',
                   'cn-north-1',
                   'cn-northwest-1',
                   'sa-east-1',
+                  'us-gov-east-1',
                   'us-gov-west-1']
 
 # We never need to include these.
@@ -278,8 +286,12 @@ class Zappa(object):
             self.manylinux_wheel_file_suffix = 'cp27mu-manylinux1_x86_64.whl'
         elif self.runtime == 'python3.6':
             self.manylinux_wheel_file_suffix = 'cp36m-manylinux1_x86_64.whl'
-        else:
+        elif self.runtime == 'python3.7':
             self.manylinux_wheel_file_suffix = 'cp37m-manylinux1_x86_64.whl'
+        else:
+            # The 'm' has been dropped in python 3.8+ since builds with and without pymalloc are ABI compatible
+            # See https://github.com/pypa/manylinux for a more detailed explanation
+            self.manylinux_wheel_file_suffix = 'cp38-manylinux1_x86_64.whl'
 
         self.endpoint_urls = endpoint_urls
         self.xray_tracing = xray_tracing
@@ -667,7 +679,7 @@ class Zappa(object):
                 # This is a special case!
                 # SQLite3 is part of the _system_ Python, not a package. Still, it lives in `lambda-packages`.
                 # Everybody on Python3 gets it!
-                if self.runtime in ("python3.6", "python3.7"):
+                if self.runtime in ("python3.6", "python3.7", "python3.8"):
                     print(" - sqlite==python3: Using precompiled lambda package")
                     self.extract_lambda_package('sqlite3', temp_project_path)
 
@@ -1062,6 +1074,7 @@ class Zappa(object):
                                 xray_tracing=False,
                                 local_zip=None,
                                 use_alb=False,
+                                concurrency=None,
                             ):
         """
         Given a bucket and key (or a local path) of a valid Lambda-zip, a function name and a handler, register that Lambda function.
@@ -1105,7 +1118,6 @@ class Zappa(object):
             }
 
         response = self.lambda_client.create_function(**kwargs)
-
         resource_arn = response['FunctionArn']
         version = response['Version']
 
@@ -1124,9 +1136,15 @@ class Zappa(object):
         if self.tags:
             self.lambda_client.tag_resource(Resource=resource_arn, Tags=self.tags)
 
+        if concurrency is not None:
+            self.lambda_client.put_function_concurrency(
+                FunctionName=resource_arn,
+                ReservedConcurrentExecutions=concurrency,
+            )
+
         return resource_arn
 
-    def update_lambda_function(self, bucket, function_name, s3_key=None, publish=True, local_zip=None, num_revisions=None):
+    def update_lambda_function(self, bucket, function_name, s3_key=None, publish=True, local_zip=None, num_revisions=None, concurrency=None):
         """
         Given a bucket and key (or a local path) of a valid Lambda-zip, a function name and a handler, update that Lambda function's code.
         Optionally, delete previous versions if they exceed the optional limit.
@@ -1169,6 +1187,16 @@ class Zappa(object):
                 FunctionName=function_name,
                 FunctionVersion=version,
                 Name=ALB_LAMBDA_ALIAS,
+            )
+
+        if concurrency is not None:
+            self.lambda_client.put_function_concurrency(
+                FunctionName=function_name,
+                ReservedConcurrentExecutions=concurrency,
+            )
+        else:
+            self.lambda_client.delete_function_concurrency(
+                FunctionName=function_name
             )
 
         if num_revisions:

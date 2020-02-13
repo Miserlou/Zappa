@@ -1,6 +1,6 @@
 import sys
 
-SUPPORTED_VERSIONS = [(2, 7), (3, 6), (3, 7)]
+SUPPORTED_VERSIONS = [(2, 7), (3, 6), (3, 7), (3, 8)]
 
 python_major_version = sys.version_info[0]
 python_minor_version = sys.version_info[1]
@@ -11,4 +11,4 @@ if (python_major_version, python_minor_version) not in SUPPORTED_VERSIONS:
               'Zappa (and AWS Lambda) support the following versions of Python: {}'.format(formatted_supported_versions)
     raise RuntimeError(err_msg)
 
-__version__ = '0.48.2'
+__version__ = '0.49.0'

@@ -188,8 +188,10 @@ def get_runtime_from_python_version():
     else:
         if sys.version_info[1] <= 6:
             return 'python3.6'
-        else:
+        elif sys.version_info[1] <= 7:
             return 'python3.7'
+        else:
+            return 'python3.8'
 
 ##
 # Async Tasks
@@ -455,7 +457,7 @@ def check_new_version_available(this_version):
     """
     import requests
 
-    pypi_url = 'https://pypi.python.org/pypi/Zappa/json'
+    pypi_url = 'https://pypi.org/pypi/Zappa/json'
     resp = requests.get(pypi_url, timeout=1.5)
     top_version = resp.json()['info']['version']
 

@@ -101,6 +101,7 @@ class ZappaCLI(object):
     lambda_arn = None
     lambda_name = None
     lambda_description = None
+    lambda_concurrency = None
     s3_bucket_name = None
     settings_file = None
     zip_path = None
@@ -664,7 +665,6 @@ class ZappaCLI(object):
                                             authorizer=self.authorizer,
                                             cors_options=self.cors,
                                             description=self.apigateway_description,
-                                            policy=self.apigateway_policy,
                                             endpoint_configuration=self.endpoint_configuration
                                         )
 
@@ -706,13 +706,16 @@ class ZappaCLI(object):
             if self.manage_roles:
                 try:
                     self.zappa.create_iam_roles()
-                except botocore.client.ClientError:
+                except botocore.client.ClientError as ce:
                     raise ClickException(
                         click.style("Failed", fg="red") + " to " + click.style("manage IAM roles", bold=True) + "!\n" +
                         "You may " + click.style("lack the necessary AWS permissions", bold=True) +
                         " to automatically manage a Zappa execution role.\n" +
+                        click.style("Exception reported by AWS:", bold=True) + format(ce) + '\n' +
                         "To fix this, see here: " +
-                        click.style("https://github.com/Miserlou/Zappa#custom-aws-iam-roles-and-policies-for-deployment", bold=True)
+                        click.style(
+                            "https://github.com/Miserlou/Zappa#custom-aws-iam-roles-and-policies-for-deployment",
+                            bold=True)
                         + '\n')
 
             # Create the Lambda Zip
@@ -760,7 +763,8 @@ class ZappaCLI(object):
                 runtime=self.runtime,
                 aws_environment_variables=self.aws_environment_variables,
                 aws_kms_key_arn=self.aws_kms_key_arn,
-                use_alb=self.use_alb
+                use_alb=self.use_alb,
+                concurrency=self.lambda_concurrency,
             )
             if source_zip and source_zip.startswith('s3://'):
                 bucket, key_name = parse_s3_url(source_zip)
@@ -934,7 +938,8 @@ class ZappaCLI(object):
         kwargs = dict(
             bucket=self.s3_bucket_name,
             function_name=self.lambda_name,
-            num_revisions=self.num_retained_versions
+            num_revisions=self.num_retained_versions,
+            concurrency=self.lambda_concurrency,
         )
         if source_zip and source_zip.startswith('s3://'):
             bucket, key_name = parse_s3_url(source_zip)
@@ -968,7 +973,7 @@ class ZappaCLI(object):
                                                         memory_size=self.memory_size,
                                                         runtime=self.runtime,
                                                         aws_environment_variables=self.aws_environment_variables,
-                                                        aws_kms_key_arn=self.aws_kms_key_arn
+                                                        aws_kms_key_arn=self.aws_kms_key_arn,
                                                     )
 
         # Finally, delete the local copy our zip package
@@ -2085,6 +2090,7 @@ class ZappaCLI(object):
         self.iam_authorization = self.stage_config.get('iam_authorization', False)
         self.cors = self.stage_config.get("cors", False)
         self.lambda_description = self.stage_config.get('lambda_description', "Zappa Deployment")
+        self.lambda_concurrency = self.stage_config.get('lambda_concurrency', None)
         self.environment_variables = self.stage_config.get('environment_variables', {})
         self.aws_environment_variables = self.stage_config.get('aws_environment_variables', {})
         self.check_environment(self.environment_variables)
@@ -2175,7 +2181,7 @@ class ZappaCLI(object):
         if ext == '.yml' or ext == '.yaml':
             with open(settings_file) as yaml_file:
                 try:
-                    self.zappa_settings = yaml.load(yaml_file)
+                    self.zappa_settings = yaml.safe_load(yaml_file)
                 except ValueError: # pragma: no cover
                     raise ValueError("Unable to load the Zappa settings YAML. It may be malformed.")
         elif ext == '.toml':
