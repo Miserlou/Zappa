@@ -2,7 +2,6 @@ argcomplete>=1.9.3
 boto3>=1.4.7
 durationpy>=0.5
 future>=0.16.0
-futures>=3.2.0; python_version < '3'
 hjson>=3.0.1
 jmespath>=0.9.3
 kappa==0.6.0
