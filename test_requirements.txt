@@ -6,14 +6,14 @@
 #
 argcomplete==1.11.1
 asgiref==3.2.3            # via django
-boto3==1.11.15
-botocore==1.14.15         # via boto3, s3transfer
+boto3==1.12.1
+botocore==1.15.1          # via boto3, s3transfer
 certifi==2019.11.28       # via requests
 cfn-flip==1.2.2           # via troposphere
 chardet==3.0.4            # via requests
 click==7.0                # via cfn-flip, flask, kappa, pip-tools
 coverage==5.0.3           # via coveralls
-coveralls==1.11.0
+coveralls==1.11.1
 django==3.0.3
 docopt==0.6.2             # via coveralls
 docutils==0.15.2          # via botocore
@@ -55,7 +55,7 @@ urllib3==1.25.8           # via botocore, requests
 werkzeug==1.0.0
 wheel==0.34.2
 wsgi-request-logger==0.4.6
-zipp==2.2.0               # via importlib-metadata
+zipp==3.0.0               # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:
 # pip
