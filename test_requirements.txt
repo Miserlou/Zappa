@@ -21,6 +21,7 @@ durationpy==0.5
 entrypoints==0.3          # via flake8
 flake8==3.7.9
 flask==1.1.1
+future==0.18.2
 hjson==3.0.1
 idna==2.8                 # via requests
 importlib-metadata==1.5.0  # via argcomplete
