@@ -13,7 +13,6 @@ chardet==3.0.4            # via requests
 click==7.0                # via cfn-flip, kappa, pip-tools
 docutils==0.15.2          # via botocore
 durationpy==0.5
-future==0.18.2
 hjson==3.0.1
 idna==2.8                 # via requests
 importlib-metadata==1.5.0  # via argcomplete

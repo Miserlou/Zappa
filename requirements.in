@@ -1,7 +1,6 @@
 argcomplete
 boto3
 durationpy
-future
 hjson
 jmespath
 kappa==0.6.0
