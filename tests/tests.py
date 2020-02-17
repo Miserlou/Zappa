@@ -184,7 +184,7 @@ class TestZappa(unittest.TestCase):
         self.assertFalse(z.have_correct_lambda_package_version('mysqlclient', '1.4.12'))
 
     def test_getting_installed_packages(self, *args):
-        z = Zappa(runtime='python3.6')
+        z = Zappa(runtime='python2.6')
 
         # mock pkg_resources call to be same as what our mocked site packages dir has
         mock_package = collections.namedtuple('mock_package', ['project_name', 'version', 'location'])
