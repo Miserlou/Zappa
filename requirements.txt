@@ -19,7 +19,6 @@ idna==2.8                 # via requests
 importlib-metadata==1.5.0  # via argcomplete
 jmespath==0.9.4
 kappa==0.6.0
-lambda-packages==0.20.0
 pip-tools==4.4.1
 placebo==0.9.0            # via kappa
 python-dateutil==2.6.1

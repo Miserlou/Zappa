@@ -36,7 +36,6 @@ import botocore
 import troposphere
 import troposphere.apigateway
 from botocore.exceptions import ClientError
-from lambda_packages import lambda_packages as lambda_packages_orig
 from tqdm import tqdm
 
 from .utilities import (add_event_source, conflicts_with_a_neighbouring_module,
@@ -48,9 +47,6 @@ try:
     unicode        # Python 2
 except NameError:
     unicode = str  # Python 3
-
-# We lower-case lambda package keys to match lower-cased keys in get_installed_packages()
-lambda_packages = {package_name.lower(): val for package_name, val in lambda_packages_orig.items()}
 
 ##
 # Logging Config
@@ -651,31 +647,13 @@ class Zappa(object):
 
             try:
                 for installed_package_name, installed_package_version in installed_packages.items():
-                    if self.have_correct_lambda_package_version(installed_package_name, installed_package_version):
-                        print(" - %s==%s: Using precompiled lambda package " % (installed_package_name, installed_package_version,))
-                        self.extract_lambda_package(installed_package_name, temp_project_path)
-                    else:
-                        cached_wheel_path = self.get_cached_manylinux_wheel(installed_package_name, installed_package_version, disable_progress)
-                        if cached_wheel_path:
-                            # Otherwise try to use manylinux packages from PyPi..
-                            # Related: https://github.com/Miserlou/Zappa/issues/398
-                            shutil.rmtree(os.path.join(temp_project_path, installed_package_name), ignore_errors=True)
-                            with zipfile.ZipFile(cached_wheel_path) as zfile:
-                                zfile.extractall(temp_project_path)
-
-                        elif self.have_any_lambda_package_version(installed_package_name):
-                            # Finally see if we may have at least one version of the package in lambda packages
-                            # Related: https://github.com/Miserlou/Zappa/issues/855
-                            lambda_version = lambda_packages[installed_package_name][self.runtime]['version']
-                            print(" - %s==%s: Warning! Using precompiled lambda package version %s instead!" % (installed_package_name, installed_package_version, lambda_version, ))
-                            self.extract_lambda_package(installed_package_name, temp_project_path)
-
-                # This is a special case!
-                # SQLite3 is part of the _system_ Python, not a package. Still, it lives in `lambda-packages`.
-                # Everybody on Python3 gets it!
-                if self.runtime in ("python3.6", "python3.7", "python3.8"):
-                    print(" - sqlite==python3: Using precompiled lambda package")
-                    self.extract_lambda_package('sqlite3', temp_project_path)
+                    cached_wheel_path = self.get_cached_manylinux_wheel(installed_package_name, installed_package_version, disable_progress)
+                    if cached_wheel_path:
+                        # Otherwise try to use manylinux packages from PyPi..
+                        # Related: https://github.com/Miserlou/Zappa/issues/398
+                        shutil.rmtree(os.path.join(temp_project_path, installed_package_name), ignore_errors=True)
+                        with zipfile.ZipFile(cached_wheel_path) as zfile:
+                            zfile.extractall(temp_project_path)
 
             except Exception as e:
                 print(e)
@@ -775,19 +753,6 @@ class Zappa(object):
 
         return archive_fname
 
-    def extract_lambda_package(self, package_name, path):
-        """
-        Extracts the lambda package into a given path. Assumes the package exists in lambda packages.
-        """
-        lambda_package = lambda_packages[package_name][self.runtime]
-
-        # Trash the local version to help with package space saving
-        shutil.rmtree(os.path.join(path, package_name), ignore_errors=True)
-
-        tar = tarfile.open(lambda_package['path'], mode="r:gz")
-        for member in tar.getmembers():
-            tar.extract(member, path)
-
     @staticmethod
     def get_installed_packages(site_packages, site_packages_64):
         """
@@ -809,30 +774,6 @@ class Zappa(object):
                               or package.location.lower() in [site_packages.lower(), site_packages_64.lower()]}
 
         return installed_packages
-
-    def have_correct_lambda_package_version(self, package_name, package_version):
-        """
-        Checks if a given package version binary should be copied over from lambda packages.
-        package_name should be lower-cased version of package name.
-        """
-        lambda_package_details = lambda_packages.get(package_name, {}).get(self.runtime)
-
-        if lambda_package_details is None:
-            return False
-
-        # Binaries can be compiled for different package versions
-        # Related: https://github.com/Miserlou/Zappa/issues/800
-        if package_version != lambda_package_details['version']:
-            return False
-
-        return True
-
-    def have_any_lambda_package_version(self, package_name):
-        """
-        Checks if a given package has any lambda package version. We can try and use it with a warning.
-        package_name should be lower-cased version of package name.
-        """
-        return lambda_packages.get(package_name, {}).get(self.runtime) is not None
 
     @staticmethod
     def download_url_with_progress(url, stream, disable_progress):

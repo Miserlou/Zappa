@@ -182,15 +182,6 @@ class TestZappa(unittest.TestCase):
             self.assertTrue(os.path.isfile(path))
             os.remove(path)
 
-    def test_should_use_lambda_packages(self):
-        z = Zappa(runtime='python3.6')
-
-        self.assertTrue(z.have_any_lambda_package_version('mysqlclient'))
-        self.assertFalse(z.have_any_lambda_package_version('no_package'))
-
-        self.assertTrue(z.have_correct_lambda_package_version('mysqlclient', '1.3.12'))
-        self.assertFalse(z.have_correct_lambda_package_version('mysqlclient', '1.4.12'))
-
     def test_getting_installed_packages(self, *args):
         z = Zappa(runtime='python3.6')
 
