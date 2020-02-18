@@ -36,7 +36,7 @@ urllib3==1.25.8           # via botocore, requests
 werkzeug==1.0.0
 wheel==0.34.2
 wsgi-request-logger==0.4.6
-zipp==2.2.0               # via importlib-metadata
+zipp==3.0.0               # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:
 # pip
