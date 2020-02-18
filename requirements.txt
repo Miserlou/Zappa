@@ -11,7 +11,7 @@ certifi==2019.11.28       # via requests
 cfn-flip==1.2.2           # via troposphere
 chardet==3.0.4            # via requests
 click==7.0                # via cfn-flip, kappa, pip-tools
-docutils==0.15.2          # via botocore
+docutils==0.16          # via botocore
 durationpy==0.5
 future==0.18.2
 hjson==3.0.1
