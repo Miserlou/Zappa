@@ -254,7 +254,7 @@ class Zappa(object):
             load_credentials=True,
             desired_role_name=None,
             desired_role_arn=None,
-            runtime='python2.7', # Detected at runtime in CLI
+            runtime='python3.6', # Detected at runtime in CLI
             tags=(),
             endpoint_urls={},
             xray_tracing=False
@@ -1002,7 +1002,7 @@ class Zappa(object):
                                 publish=True,
                                 vpc_config=None,
                                 dead_letter_config=None,
-                                runtime='python2.7',
+                                runtime='python3.6',
                                 aws_environment_variables=None,
                                 aws_kms_key_arn=None,
                                 xray_tracing=False,
@@ -1160,7 +1160,7 @@ class Zappa(object):
                                         memory_size=512,
                                         publish=True,
                                         vpc_config=None,
-                                        runtime='python2.7',
+                                        runtime='python3.6',
                                         aws_environment_variables=None,
                                         aws_kms_key_arn=None
                                     ):

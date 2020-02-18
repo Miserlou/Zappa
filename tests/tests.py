@@ -130,7 +130,7 @@ class TestZappa(unittest.TestCase):
         # for zipping pre-compiled packages gets called
         mock_installed_packages = {'psycopg2': '2.6.1'}
         with mock.patch('zappa.core.Zappa.get_installed_packages', return_value=mock_installed_packages):
-            z = Zappa(runtime='python2.7')
+            z = Zappa(runtime='python3.6')
             path = z.create_lambda_zip(handler_file=os.path.realpath(__file__))
             self.assertTrue(os.path.isfile(path))
             os.remove(path)
@@ -183,7 +183,7 @@ class TestZappa(unittest.TestCase):
             os.remove(path)
 
     def test_getting_installed_packages(self, *args):
-        z = Zappa(runtime='python2.7')
+        z = Zappa(runtime='python3.6')
 
         # mock pkg_resources call to be same as what our mocked site packages dir has
         mock_package = collections.namedtuple('mock_package', ['project_name', 'version', 'location'])
@@ -196,7 +196,7 @@ class TestZappa(unittest.TestCase):
                     self.assertDictEqual(z.get_installed_packages('',''), {'super_package' : '0.1'})
 
     def test_getting_installed_packages_mixed_case_location(self, *args):
-        z = Zappa(runtime='python2.7')
+        z = Zappa(runtime='python3.6')
 
         # mock pip packages call to be same as what our mocked site packages dir has
         mock_package = collections.namedtuple('mock_package', ['project_name', 'version', 'location'])
@@ -215,7 +215,7 @@ class TestZappa(unittest.TestCase):
                 })
 
     def test_getting_installed_packages_mixed_case(self, *args):
-        z = Zappa(runtime='python2.7')
+        z = Zappa(runtime='python3.6')
 
         # mock pkg_resources call to be same as what our mocked site packages dir has
         mock_package = collections.namedtuple('mock_package', ['project_name', 'version', 'location'])

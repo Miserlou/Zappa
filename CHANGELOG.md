@@ -7,6 +7,7 @@
 * Minor bug and README fixes
 
 ## 0.48.2
+* Last version with Python 2 support.
 * Fix for invalid values of HTTP_HOST and others (introduced in 0.48.0)
 
 ## 0.48.1

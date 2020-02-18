@@ -5,8 +5,8 @@
 #    pip-compile --output-file=requirements.txt requirements.in
 #
 argcomplete==1.11.1
-boto3==1.11.15
-botocore==1.14.15         # via boto3, s3transfer
+boto3==1.12.1
+botocore==1.15.1          # via boto3, s3transfer
 certifi==2019.11.28       # via requests
 cfn-flip==1.2.2           # via troposphere
 chardet==3.0.4            # via requests
@@ -35,7 +35,7 @@ urllib3==1.25.8           # via botocore, requests
 werkzeug==1.0.0
 wheel==0.34.2
 wsgi-request-logger==0.4.6
-zipp==2.2.0               # via importlib-metadata
+zipp==3.0.0               # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:
 # pip
