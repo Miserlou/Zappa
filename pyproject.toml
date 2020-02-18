@@ -79,11 +79,7 @@ mock = "*"
 nose = "*"
 nose-timer = "*"
 placebo = "*"
-<<<<<<< HEAD
 coveralls = "*"
-=======
-coveralls = {version = "*", allow-prereleases = true}
->>>>>>> e23e44b... Remove api_gateway policy from tempalte creation
 
 [tool.poetry.scripts]
 zappa = "zappa.cli:handle"
