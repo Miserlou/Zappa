@@ -960,7 +960,7 @@ class TestZappa(unittest.TestCase):
 
     # def test_cli_negative_rollback(self):
     #     zappa_cli = ZappaCLI()
-    #     argv = unicode('-s test_settings.json rollback -n -1 dev').split()
+    #     argv = '-s test_settings.json rollback -n -1 dev'.split()
     #     output = StringIO()
     #     old_stderr, sys.stderr = sys.stderr, output
     #     with self.assertRaises(SystemExit) as system_exit:

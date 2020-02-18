@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import base64
 import boto3
 import collections
@@ -34,7 +32,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 
-class LambdaHandler(object):
+class LambdaHandler:
     """
     Singleton for avoiding duplicate setup.
 

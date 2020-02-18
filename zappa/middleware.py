@@ -21,7 +21,7 @@ def all_casings(input_string):
                 yield first.upper() + sub_casing
 
 
-class ZappaWSGIMiddleware(object):
+class ZappaWSGIMiddleware:
     """
     Middleware functions necessary for a Zappa deployment.
 

@@ -7,9 +7,6 @@ Zappa CLI
 Deploy arbitrary Python programs as serverless Zappa applications.
 
 """
-
-from __future__ import unicode_literals
-from __future__ import division
 from past.builtins import basestring
 from builtins import input, bytes
 
@@ -71,7 +68,7 @@ BOTO3_CONFIG_DOCS_URL = 'https://boto3.readthedocs.io/en/latest/guide/quickstart
 # Main Input Processing
 ##
 
-class ZappaCLI(object):
+class ZappaCLI:
     """
     ZappaCLI object is responsible for loading the settings,
     handling the input arguments and executing the calls to the core library.
@@ -154,8 +151,8 @@ class ZappaCLI(object):
         settings = get_stage_setting(stage=self.api_stage)
 
         # Backwards compatible for delete_zip setting that was more explicitly named delete_local_zip
-        if u'delete_zip' in settings:
-            settings[u'delete_local_zip'] = settings.get(u'delete_zip')
+        if 'delete_zip' in settings:
+            settings['delete_local_zip'] = settings.get('delete_zip')
 
         settings.update(self.stage_config_overrides)
 
@@ -354,7 +351,7 @@ class ZappaCLI(object):
         ##
         # Status
         ##
-        status_parser = subparsers.add_parser(
+        subparsers.add_parser(
             'status', parents=[env_parser],
             help='Show deployment status and event schedules.'
         )
