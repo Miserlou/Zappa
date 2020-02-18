@@ -1,5 +1,16 @@
 # Zappa Changelog
 
+## 0.50.0
+* Updated manylinux to support manylinux1/manylinux2010/manylinux2014 packages
+* Fixed issue with duplicated cookie headers in API Gateway
+* Various maintenance updates to the README file
+* Remove old python 2.7 code (not all yet)
+* Use pip-tools to manage dependencies (and remove pinned dependencies from the package)
+* Add option for concurrency limit
+* Use safe_load with YAML
+* Support for ABI3 binary packages (particularly cryptography)
+* Remove dependency on lambda-packages
+
 ## 0.49.0
 * Added support for Python 3.8
 * Fixed boto3 reporting of long names
@@ -7,7 +18,7 @@
 * Minor bug and README fixes
 
 ## 0.48.2
-* Last version with Python 2 support.
+* Last version with Python 2.7 support.
 * Fix for invalid values of HTTP_HOST and others (introduced in 0.48.0)
 
 ## 0.48.1
