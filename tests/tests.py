@@ -187,19 +187,6 @@ class TestZappa(unittest.TestCase):
             self.assertTrue(os.path.isfile(path))
             os.remove(path)
 
-    def test_should_use_lambda_packages(self):
-        z = Zappa(runtime='python2.7')
-
-        self.assertTrue(z.have_correct_lambda_package_version('psycopg2', '2.6.1'))
-        self.assertFalse(z.have_correct_lambda_package_version('psycopg2', '2.7.1'))
-        #testing case-insensitivity with lambda_package MySQL-Python
-        self.assertTrue(z.have_correct_lambda_package_version('mysql-python', '1.2.5'))
-        self.assertFalse(z.have_correct_lambda_package_version('mysql-python', '6.6.6'))
-
-        self.assertTrue(z.have_any_lambda_package_version('psycopg2'))
-        self.assertTrue(z.have_any_lambda_package_version('mysql-python'))
-        self.assertFalse(z.have_any_lambda_package_version('no_package'))
-
     def test_getting_installed_packages(self, *args):
         z = Zappa(runtime='python2.7')
 
