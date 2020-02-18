@@ -174,6 +174,14 @@ class TestZappa(unittest.TestCase):
             self.assertTrue(os.path.isfile(path))
             os.remove(path)
 
+        # same, but with an ABI3 package
+        mock_installed_packages = {'cryptography': '2.8'}
+        with mock.patch('zappa.core.Zappa.get_installed_packages', return_value=mock_installed_packages):
+            z = Zappa(runtime='python3.8')
+            path = z.create_lambda_zip(handler_file=os.path.realpath(__file__))
+            self.assertTrue(os.path.isfile(path))
+            os.remove(path)
+
     def test_should_use_lambda_packages(self):
         z = Zappa(runtime='python3.6')
 

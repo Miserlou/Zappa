@@ -7,7 +7,7 @@ from zappa import __version__
 with open('README.md') as readme_file:
     long_description = readme_file.read()
 
-with open(os.path.join(os.path.dirname(__file__), 'requirements.txt')) as f:
+with open(os.path.join(os.path.dirname(__file__), 'requirements.in')) as f:
     if sys.version_info[0] == 2:
         required = f.read().splitlines()
     else:
@@ -20,7 +20,7 @@ with open(os.path.join(os.path.dirname(__file__), 'requirements.txt')) as f:
             if 'futures' not in package:
                 required.append(package)
 
-with open(os.path.join(os.path.dirname(__file__), 'test_requirements.txt')) as f:
+with open(os.path.join(os.path.dirname(__file__), 'test_requirements.in')) as f:
     test_required = f.read().splitlines()
 
 setup(
@@ -55,6 +55,7 @@ setup(
         'Framework :: Django',
         'Framework :: Django :: 1.11',
         'Framework :: Django :: 2.0',
+        'Framework :: Django :: 3.0',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
     ],
