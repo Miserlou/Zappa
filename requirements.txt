@@ -15,7 +15,7 @@ docutils==0.15.2          # via botocore
 durationpy==0.5
 future==0.18.2
 hjson==3.0.1
-idna==2.8                 # via requests
+idna==2.9                 # via requests
 importlib-metadata==1.5.0  # via argcomplete
 jmespath==0.9.4
 kappa==0.6.0
