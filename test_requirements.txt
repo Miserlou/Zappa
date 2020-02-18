@@ -23,7 +23,7 @@ flake8==3.7.9
 flask==1.1.1
 future==0.18.2
 hjson==3.0.1
-idna==2.8                 # via requests
+idna==2.9                 # via requests
 importlib-metadata==1.5.0  # via argcomplete
 itsdangerous==1.1.0       # via flask
 jinja2==2.11.1            # via flask
