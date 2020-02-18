@@ -16,7 +16,7 @@ coverage==5.0.3           # via coveralls
 coveralls==1.11.0
 django==3.0.3
 docopt==0.6.2             # via coveralls
-docutils==0.15.2          # via botocore
+docutils==0.16          # via botocore
 durationpy==0.5
 entrypoints==0.3          # via flake8
 flake8==3.7.9
