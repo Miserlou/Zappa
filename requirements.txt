@@ -6,7 +6,7 @@
 #
 argcomplete==1.11.1
 boto3==1.11.15
-botocore==1.15.2         # via boto3, s3transfer
+botocore==1.15.3          # via boto3, s3transfer
 certifi==2019.11.28       # via requests
 cfn-flip==1.2.2           # via troposphere
 chardet==3.0.4            # via requests
