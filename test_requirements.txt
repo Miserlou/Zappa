@@ -29,7 +29,6 @@ itsdangerous==1.1.0       # via flask
 jinja2==2.11.1            # via flask
 jmespath==0.9.4
 kappa==0.6.0
-lambda-packages==0.20.0
 markupsafe==1.1.1         # via jinja2
 mccabe==0.6.1             # via flake8
 mock==4.0.1
