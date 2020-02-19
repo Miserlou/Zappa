@@ -2715,7 +2715,7 @@ class ZappaCLI(object):
         if 'PRIVATE' in self.stage_config.get('endpoint_configuration', []):
             print(
                 click.style("Warning!", fg="yellow", bold=True) +
-                " Since yo're deploying a private API Gateway endpoint,"
+                " Since you're deploying a private API Gateway endpoint,"
                 " Zappa cannot determine if your function is returning "
                 " a correct status code. You should check your API's response"
                 " manually before considering this deployment complete."
