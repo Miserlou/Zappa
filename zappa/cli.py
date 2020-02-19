@@ -2233,32 +2233,15 @@ class ZappaCLI:
                 disable_progress=self.disable_progress
             )
         else:
-
-            # Custom excludes for different versions.
-            # Related: https://github.com/kennethreitz/requests/issues/3985
-            if sys.version_info[0] < 3:
-                # Exclude packages already builtin to the python lambda environment
-                # Related: https://github.com/Miserlou/Zappa/issues/556
-                exclude = self.stage_config.get(
-                        'exclude', [
-                                        "boto3",
-                                        "dateutil",
-                                        "botocore",
-                                        "s3transfer",
-                                        "six.py",
-                                        "jmespath",
-                                        "concurrent"
-                                    ])
-            else:
-                # This could be python3.6 optimized.
-                exclude = self.stage_config.get(
-                        'exclude', [
-                                        "boto3",
-                                        "dateutil",
-                                        "botocore",
-                                        "s3transfer",
-                                        "concurrent"
-                                    ])
+            # This could be python3.6 optimized.
+            exclude = self.stage_config.get(
+                    'exclude', [
+                                    "boto3",
+                                    "dateutil",
+                                    "botocore",
+                                    "s3transfer",
+                                    "concurrent"
+                                ])
 
             # Create a single zip that has the handler and application
             self.zip_path = self.zappa.create_lambda_zip(
