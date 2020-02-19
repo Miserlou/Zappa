@@ -507,7 +507,10 @@ class TestZappa(unittest.TestCase):
         zappa_cli.lambda_arn = 'arn:aws:lambda:us-east-1:12345:function:Zappa-Trigger-Test'
         zappa_cli.update_cognito_triggers()
 
-
+    @placebo_session
+    def test_cognito_trigger_existing_UnusedAccountValidityDays(self, session):
+        z = Zappa(session)
+        z.update_cognito('Zappa-Trigger-Test', 'us-east-1_9jUv74DH8', {'PreSignUp': 'test.tasks.pre_signup'}, 'arn:aws:lambda:us-east-1:12345:function:Zappa-Trigger-Test')
 
 
 if __name__ == '__main__':
