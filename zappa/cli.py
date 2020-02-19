@@ -154,8 +154,8 @@ class ZappaCLI(object):
         settings = get_stage_setting(stage=self.api_stage)
 
         # Backwards compatible for delete_zip setting that was more explicitly named delete_local_zip
-        if u'delete_zip' in settings:
-            settings[u'delete_local_zip'] = settings.get(u'delete_zip')
+        if 'delete_zip' in settings:
+            settings['delete_local_zip'] = settings.get('delete_zip')
 
         settings.update(self.stage_config_overrides)
 
@@ -1499,9 +1499,9 @@ class ZappaCLI(object):
             event_dict = {}
             rule_name = rule['Name']
             event_dict["Event Rule Name"] = rule_name
-            event_dict["Event Rule Schedule"] = rule.get(u'ScheduleExpression', None)
-            event_dict["Event Rule State"] = rule.get(u'State', None).title()
-            event_dict["Event Rule ARN"] = rule.get(u'Arn', None)
+            event_dict["Event Rule Schedule"] = rule.get('ScheduleExpression', None)
+            event_dict["Event Rule State"] = rule.get('State', None).title()
+            event_dict["Event Rule ARN"] = rule.get('Arn', None)
             status_dict['Events'].append(event_dict)
 
         if return_json:
@@ -1569,7 +1569,7 @@ class ZappaCLI(object):
             raise ClickException("This project already has a " + click.style("{0!s} file".format(settings_file), fg="red", bold=True) + "!")
 
         # Explain system.
-        click.echo(click.style(u"""\n███████╗ █████╗ ██████╗ ██████╗  █████╗
+        click.echo(click.style("""\n███████╗ █████╗ ██████╗ ██████╗  █████╗
 ╚══███╔╝██╔══██╗██╔══██╗██╔══██╗██╔══██╗
   ███╔╝ ███████║██████╔╝██████╔╝███████║
  ███╔╝  ██╔══██║██╔═══╝ ██╔═══╝ ██╔══██║
@@ -2715,7 +2715,7 @@ class ZappaCLI(object):
         if 'PRIVATE' in self.stage_config.get('endpoint_configuration', []):
             print(
                 click.style("Warning!", fg="yellow", bold=True) +
-                " Since you're deploying a private API Gateway endpoint,"
+                " Since yo're deploying a private API Gateway endpoint,"
                 " Zappa cannot determine if your function is returning "
                 " a correct status code. You should check your API's response"
                 " manually before considering this deployment complete."
