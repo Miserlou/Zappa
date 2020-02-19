@@ -1153,7 +1153,7 @@ class TestZappa(unittest.TestCase):
                 }
             }
         ]},
-            domain='www.example.com.a')
+            domain='www.example.com.au')
         assert zone == 'zone-correct'
 
         # No match test
@@ -1166,7 +1166,7 @@ class TestZappa(unittest.TestCase):
                 }
             }
         ]},
-            domain='something-else.com.a')
+            domain='something-else.com.au')
         assert zone is None
 
         # More involved, better match should win.
@@ -1186,7 +1186,7 @@ class TestZappa(unittest.TestCase):
                 }
             }
         ]},
-            domain='www.subdomain.example.com.a')
+            domain='www.subdomain.example.com.au')
         assert zone == 'zone-correct'
 
         # Check private zone is not matched
@@ -1199,7 +1199,7 @@ class TestZappa(unittest.TestCase):
                 }
             }
         ]},
-            domain='www.example.com.a')
+            domain='www.example.com.au')
         assert zone is None
 
         # More involved, should ignore the private zone and match the public.
@@ -1219,7 +1219,7 @@ class TestZappa(unittest.TestCase):
                 }
             }
         ]},
-            domain='www.subdomain.example.com.a')
+            domain='www.subdomain.example.com.au')
         assert zone == 'zone-public'
 
     ##
