@@ -5,7 +5,7 @@
 #    pip-compile --output-file=requirements.txt requirements.in
 #
 argcomplete==1.11.1
-boto3==1.12.2
+boto3==1.12.3
 botocore==1.14.15         # via boto3, s3transfer
 certifi==2019.11.28       # via requests
 cfn-flip==1.2.2           # via troposphere
