@@ -2049,6 +2049,10 @@ class Zappa(object):
         if 'TemporaryPasswordValidityDays' in description_kwargs['Policies']['PasswordPolicy']:
             description_kwargs['AdminCreateUserConfig'].pop(
                 'UnusedAccountValidityDays', None)
+        if 'UnusedAccountValidityDays' in description_kwargs['AdminCreateUserConfig']:
+            description_kwargs['Policies']['PasswordPolicy']\
+                ['TemporaryPasswordValidityDays'] = description_kwargs['AdminCreateUserConfig'].pop(
+                'UnusedAccountValidityDays', None)
         result = self.cognito_client.update_user_pool(UserPoolId=user_pool, **description_kwargs)
         if result['ResponseMetadata']['HTTPStatusCode'] != 200:
             print("Cognito:  Failed to update user pool", result)
