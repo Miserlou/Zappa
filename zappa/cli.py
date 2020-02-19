@@ -100,6 +100,7 @@ class ZappaCLI(object):
     lambda_arn = None
     lambda_name = None
     lambda_description = None
+    lambda_concurrency = None
     s3_bucket_name = None
     settings_file = None
     zip_path = None
@@ -664,7 +665,6 @@ class ZappaCLI(object):
                                             authorizer=self.authorizer,
                                             cors_options=self.cors,
                                             description=self.apigateway_description,
-                                            policy=self.apigateway_policy,
                                             endpoint_configuration=self.endpoint_configuration
                                         )
 
@@ -764,7 +764,8 @@ class ZappaCLI(object):
                 aws_environment_variables=self.aws_environment_variables,
                 aws_kms_key_arn=self.aws_kms_key_arn,
                 use_alb=self.use_alb,
-                layers=self.layers
+                layers=self.layers,
+                concurrency=self.lambda_concurrency,
             )
             if source_zip and source_zip.startswith('s3://'):
                 bucket, key_name = parse_s3_url(source_zip)
@@ -938,7 +939,8 @@ class ZappaCLI(object):
         kwargs = dict(
             bucket=self.s3_bucket_name,
             function_name=self.lambda_name,
-            num_revisions=self.num_retained_versions
+            num_revisions=self.num_retained_versions,
+            concurrency=self.lambda_concurrency,
         )
         if source_zip and source_zip.startswith('s3://'):
             bucket, key_name = parse_s3_url(source_zip)
@@ -2090,6 +2092,7 @@ class ZappaCLI(object):
         self.iam_authorization = self.stage_config.get('iam_authorization', False)
         self.cors = self.stage_config.get("cors", False)
         self.lambda_description = self.stage_config.get('lambda_description', "Zappa Deployment")
+        self.lambda_concurrency = self.stage_config.get('lambda_concurrency', None)
         self.environment_variables = self.stage_config.get('environment_variables', {})
         self.aws_environment_variables = self.stage_config.get('aws_environment_variables', {})
         self.check_environment(self.environment_variables)
@@ -2181,7 +2184,7 @@ class ZappaCLI(object):
         if ext == '.yml' or ext == '.yaml':
             with open(settings_file) as yaml_file:
                 try:
-                    self.zappa_settings = yaml.load(yaml_file)
+                    self.zappa_settings = yaml.safe_load(yaml_file)
                 except ValueError: # pragma: no cover
                     raise ValueError("Unable to load the Zappa settings YAML. It may be malformed.")
         elif ext == '.toml':

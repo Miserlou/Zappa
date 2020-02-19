@@ -130,20 +130,7 @@ class TestZappa(unittest.TestCase):
         # for zipping pre-compiled packages gets called
         mock_installed_packages = {'psycopg2': '2.6.1'}
         with mock.patch('zappa.core.Zappa.get_installed_packages', return_value=mock_installed_packages):
-            z = Zappa(runtime='python2.7')
-            path = z.create_lambda_zip(handler_file=os.path.realpath(__file__))
-            self.assertTrue(os.path.isfile(path))
-            os.remove(path)
-
-    def test_get_manylinux_python27(self):
-        z = Zappa(runtime='python2.7')
-        self.assertIsNotNone(z.get_cached_manylinux_wheel('cffi', '1.10.0'))
-        self.assertIsNone(z.get_cached_manylinux_wheel('derpderpderpderp', '0.0'))
-
-        # mock with a known manylinux wheel package so that code for downloading them gets invoked
-        mock_installed_packages = { 'cffi' : '1.10.0' }
-        with mock.patch('zappa.core.Zappa.get_installed_packages', return_value = mock_installed_packages):
-            z = Zappa(runtime='python2.7')
+            z = Zappa(runtime='python3.6')
             path = z.create_lambda_zip(handler_file=os.path.realpath(__file__))
             self.assertTrue(os.path.isfile(path))
             os.remove(path)
@@ -174,21 +161,29 @@ class TestZappa(unittest.TestCase):
             self.assertTrue(os.path.isfile(path))
             os.remove(path)
 
-    def test_should_use_lambda_packages(self):
-        z = Zappa(runtime='python2.7')
+    def test_get_manylinux_python38(self):
+        z = Zappa(runtime='python3.8')
+        self.assertIsNotNone(z.get_cached_manylinux_wheel('psycopg2-binary', '2.8.4'))
+        self.assertIsNone(z.get_cached_manylinux_wheel('derp_no_such_thing', '0.0'))
 
-        self.assertTrue(z.have_correct_lambda_package_version('psycopg2', '2.6.1'))
-        self.assertFalse(z.have_correct_lambda_package_version('psycopg2', '2.7.1'))
-        #testing case-insensitivity with lambda_package MySQL-Python
-        self.assertTrue(z.have_correct_lambda_package_version('mysql-python', '1.2.5'))
-        self.assertFalse(z.have_correct_lambda_package_version('mysql-python', '6.6.6'))
+        # mock with a known manylinux wheel package so that code for downloading them gets invoked
+        mock_installed_packages = {'psycopg2-binary': '2.8.4'}
+        with mock.patch('zappa.core.Zappa.get_installed_packages', return_value=mock_installed_packages):
+            z = Zappa(runtime='python3.8')
+            path = z.create_lambda_zip(handler_file=os.path.realpath(__file__))
+            self.assertTrue(os.path.isfile(path))
+            os.remove(path)
 
-        self.assertTrue(z.have_any_lambda_package_version('psycopg2'))
-        self.assertTrue(z.have_any_lambda_package_version('mysql-python'))
-        self.assertFalse(z.have_any_lambda_package_version('no_package'))
+        # same, but with an ABI3 package
+        mock_installed_packages = {'cryptography': '2.8'}
+        with mock.patch('zappa.core.Zappa.get_installed_packages', return_value=mock_installed_packages):
+            z = Zappa(runtime='python3.8')
+            path = z.create_lambda_zip(handler_file=os.path.realpath(__file__))
+            self.assertTrue(os.path.isfile(path))
+            os.remove(path)
 
     def test_getting_installed_packages(self, *args):
-        z = Zappa(runtime='python2.7')
+        z = Zappa(runtime='python3.6')
 
         # mock pkg_resources call to be same as what our mocked site packages dir has
         mock_package = collections.namedtuple('mock_package', ['project_name', 'version', 'location'])
@@ -201,7 +196,7 @@ class TestZappa(unittest.TestCase):
                     self.assertDictEqual(z.get_installed_packages('',''), {'super_package' : '0.1'})
 
     def test_getting_installed_packages_mixed_case_location(self, *args):
-        z = Zappa(runtime='python2.7')
+        z = Zappa(runtime='python3.6')
 
         # mock pip packages call to be same as what our mocked site packages dir has
         mock_package = collections.namedtuple('mock_package', ['project_name', 'version', 'location'])
@@ -220,7 +215,7 @@ class TestZappa(unittest.TestCase):
                 })
 
     def test_getting_installed_packages_mixed_case(self, *args):
-        z = Zappa(runtime='python2.7')
+        z = Zappa(runtime='python3.6')
 
         # mock pkg_resources call to be same as what our mocked site packages dir has
         mock_package = collections.namedtuple('mock_package', ['project_name', 'version', 'location'])
@@ -767,6 +762,12 @@ class TestZappa(unittest.TestCase):
         self.assertEqual('lmbda2', zappa_cli.stage_config['s3_bucket'])  # Second Extension
         self.assertTrue(zappa_cli.stage_config['touch'])  # First Extension
         self.assertTrue(zappa_cli.stage_config['delete_local_zip'])  # The base
+
+    def test_load_settings__lambda_concurrency_enabled(self):
+        zappa_cli = ZappaCLI()
+        zappa_cli.api_stage = 'lambda_concurrency_enabled'
+        zappa_cli.load_settings('test_settings.json')
+        self.assertEqual(6, zappa_cli.stage_config['lambda_concurrency'])
 
     def test_load_settings_yml(self):
         zappa_cli = ZappaCLI()
@@ -2185,6 +2186,73 @@ USE_TZ = True
         elbv2_stubber.activate()
         zappa_core.undeploy_lambda_alb(**kwargs)
 
+
+    @mock.patch('botocore.client')
+    def test_set_lambda_concurrency(self, client):
+        boto_mock = mock.MagicMock()
+        zappa_core = Zappa(
+            boto_session=boto_mock,
+            profile_name="test",
+            aws_region="test",
+            load_credentials=True
+        )
+        zappa_core.lambda_client.create_function.return_value = {
+            "FunctionArn": "abc",
+            "Version": 1,
+        }
+        access_logging_patch = zappa_core.create_lambda_function(
+            concurrency=5,
+        )
+        boto_mock.client().put_function_concurrency.assert_called_with(
+            FunctionName="abc",
+            ReservedConcurrentExecutions=5,
+        )
+
+    @mock.patch('botocore.client')
+    def test_update_lambda_concurrency(self, client):
+        boto_mock = mock.MagicMock()
+        zappa_core = Zappa(
+            boto_session=boto_mock,
+            profile_name="test",
+            aws_region="test",
+            load_credentials=True
+        )
+        zappa_core.lambda_client.create_function.return_value = {
+            "FunctionArn": "abc",
+            "Version": 1,
+        }
+        access_logging_patch = zappa_core.update_lambda_function(
+            bucket="test",
+            function_name="abc",
+            concurrency=5,
+        )
+        boto_mock.client().put_function_concurrency.assert_called_with(
+            FunctionName="abc",
+            ReservedConcurrentExecutions=5,
+        )
+        boto_mock.client().delete_function_concurrency.assert_not_called()
+
+    @mock.patch('botocore.client')
+    def test_delete_lambda_concurrency(self, client):
+        boto_mock = mock.MagicMock()
+        zappa_core = Zappa(
+            boto_session=boto_mock,
+            profile_name="test",
+            aws_region="test",
+            load_credentials=True
+        )
+        zappa_core.lambda_client.create_function.return_value = {
+            "FunctionArn": "abc",
+            "Version": 1,
+        }
+        access_logging_patch = zappa_core.update_lambda_function(
+            bucket="test",
+            function_name="abc",
+        )
+        boto_mock.client().put_function_concurrency.assert_not_called()
+        boto_mock.client().delete_function_concurrency.assert_called_with(
+            FunctionName="abc",
+        )
 
 if __name__ == '__main__':
     unittest.main()
