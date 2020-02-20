@@ -5,9 +5,6 @@ Zappa core library. You may also want to look at `cli.py` and `util.py`.
 ##
 # Imports
 ##
-
-from __future__ import print_function
-
 import getpass
 import glob
 import hashlib
@@ -43,10 +40,6 @@ from .utilities import (add_event_source, conflicts_with_a_neighbouring_module,
                         get_topic_name, get_venv_from_python_version,
                         human_size, remove_event_source)
 
-try:
-    unicode        # Python 2
-except NameError:
-    unicode = str  # Python 3
 
 ##
 # Logging Config
@@ -219,7 +212,7 @@ ALB_LAMBDA_ALIAS = 'current-alb-version'
 # Classes
 ##
 
-class Zappa(object):
+class Zappa:
     """
     Zappa!
 
@@ -607,7 +600,7 @@ class Zappa(object):
         try:
             package_id_file.write(dumped)
         except TypeError: # This is a Python 2/3 issue. TODO: Make pretty!
-            package_id_file.write(unicode(dumped))
+            package_id_file.write(str(dumped))
         package_id_file.close()
 
         # Then, do site site-packages..

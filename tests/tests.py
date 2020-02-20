@@ -35,8 +35,6 @@ from zappa.utilities import (
 from zappa.wsgi import create_wsgi_request, common_log
 from zappa.core import Zappa, ASSUME_POLICY, ATTACH_POLICY
 
-if sys.version_info[0] < 3:
-    from cStringIO import StringIO as OldStringIO
 
 def random_string(length):
     return ''.join(random.choice(string.printable) for _ in range(length))
@@ -960,7 +958,7 @@ class TestZappa(unittest.TestCase):
 
     # def test_cli_negative_rollback(self):
     #     zappa_cli = ZappaCLI()
-    #     argv = unicode('-s test_settings.json rollback -n -1 dev').split()
+    #     argv = '-s test_settings.json rollback -n -1 dev'.split()
     #     output = StringIO()
     #     old_stderr, sys.stderr = sys.stderr, output
     #     with self.assertRaises(SystemExit) as system_exit:
@@ -1296,8 +1294,6 @@ class TestZappa(unittest.TestCase):
         * Calls Zappa correctly for creates vs. updates.
         """
         old_stdout = sys.stderr
-        if sys.version_info[0] < 3:
-            sys.stdout = OldStringIO() # print() barfs on io.* types.
 
         try:
             zappa_cli = ZappaCLI()
@@ -1809,11 +1805,6 @@ USE_TZ = True
             with app.request_context(environ):
                 app.logger.error(u"This is a test")
                 log_output = sys.stderr.getvalue()
-                if sys.version_info[0] < 3:
-                    self.assertNotIn(
-                        "'str' object has no attribute 'write'", log_output)
-                    self.assertNotIn(
-                        "Logged from file tests.py", log_output)
         finally:
             sys.stderr = old_stderr
 

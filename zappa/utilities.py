@@ -14,10 +14,7 @@ import sys
 
 from past.builtins import basestring
 
-try:
-    from urllib.parse import urlparse
-except ImportError:
-    from urlparse import urlparse
+from urllib.parse import urlparse
 
 LOG = logging.getLogger(__name__)
 
@@ -218,11 +215,11 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
     import kappa.role
     import kappa.awsclient
 
-    class PseudoContext(object):
+    class PseudoContext:
         def __init__(self):
             return
 
-    class PseudoFunction(object):
+    class PseudoFunction:
         def __init__(self):
             return
 
@@ -230,7 +227,7 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
     class SqsEventSource(kappa.event_source.base.EventSource):
 
         def __init__(self, context, config):
-            super(SqsEventSource, self).__init__(context, config)
+            super().__init__(context, config)
             self._lambda = kappa.awsclient.create_client(
                 'lambda', context.session)
 
@@ -343,7 +340,7 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
                 kappa.event_source.sns.LOG.exception('Unable to add filters for SNS topic %s', self.arn)
 
         def add(self, function):
-            super(ExtendedSnsEventSource, self).add(function)
+            super().add(function)
             if self.filters:
                 self.add_filters(function)
 

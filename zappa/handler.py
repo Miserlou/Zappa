@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import base64
 import boto3
 import collections
@@ -34,7 +32,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 
-class LambdaHandler(object):
+class LambdaHandler:
     """
     Singleton for avoiding duplicate setup.
 
@@ -54,11 +52,8 @@ class LambdaHandler(object):
     def __new__(cls, settings_name="zappa_settings", session=None):
         """Singleton instance to avoid repeat setup"""
         if LambdaHandler.__instance is None:
-            if sys.version_info[0] < 3:
-                LambdaHandler.__instance = object.__new__(cls, settings_name, session)
-            else:
-                print("Instancing..")
-                LambdaHandler.__instance = object.__new__(cls)
+            print("Instancing..")
+            LambdaHandler.__instance = object.__new__(cls)
         return LambdaHandler.__instance
 
     def __init__(self, settings_name="zappa_settings", session=None):
