@@ -5,11 +5,6 @@ import unittest
 from zappa.wsgi import create_wsgi_request
 from zappa.middleware import ZappaWSGIMiddleware, all_casings
 
-try:
-    unicode        # Python 2
-except NameError:
-    unicode = str  # Python 3
-
 
 class TestWSGIMockMiddleWare(unittest.TestCase):
     """
@@ -44,12 +39,7 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
         self.assertEqual(x, 1)
 
     def test_wsgi_middleware_uglystring(self):
-        if sys.version_info[0] < 3:
-            ugly_string = unicode("˝ÓÔÒÚÆ☃ЗИЙКЛМФХЦЧШ차를 타고 온 펲시맨(╯°□°）╯︵ ┻━┻)"
-                                  "לֹהִים, אֵת הַשָּׁמַיִם, וְאֵת הָt͔̦h̞̲e̢̤ ͍̬̲͖f̴̘͕̣è͖ẹ̥̩l͖͔͚i͓͚̦͠n͖͍̗͓̳̮g͍ ̨ 𝕢𝕦𝕚𝕔𝕜 𝕓𝕣𝕠𝕨",
-                                  encoding='utf8')
-        else:
-            ugly_string = "˝ÓÔÒÚÆ☃ЗИЙКЛМФХЦЧШ차를 타고 온 펲시맨(╯°□°）╯︵ ┻━┻)"
+        ugly_string = "˝ÓÔÒÚÆ☃ЗИЙКЛМФХЦЧШ차를 타고 온 펲시맨(╯°□°）╯︵ ┻━┻)"
 
         # Pass some unicode through the middleware body
         def simple_app(environ, start_response):
@@ -70,7 +60,7 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
         def simple_app(environ, start_response):
             # String of weird characters
             status = '301 Moved Permanently'
-            response_headers = [('Location', 'http://zappa.com/elsewhere' + ugly_string)]
+            response_headers = [('Location', f'http://zappa.com/elsewhere{ugly_string}')]
             start_response(status, response_headers)
             return [ugly_string]
 

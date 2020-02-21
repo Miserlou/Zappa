@@ -82,4 +82,4 @@ If you want your certificates to renew automatically, use simply need to define 
 }
 ```
 
-The only caveat with this is that your functions `timeout_seconds` must be greater than `60`, as that's how long it takes the DNS to propagate. The auto-renewer will be installed whenvever you next `update` or `schedule`, though you may need to re`deploy` to up your `timeout_seconds`.
+The only caveat with this is that your functions `timeout_seconds` must be greater than `60`, as that's how long it takes the DNS to propagate. The auto-renewer will be installed whenever you next `update` or `schedule`, though you may need to re`deploy` to up your `timeout_seconds`.

@@ -1,2 +1,2 @@
-include README.md LICENSE requirements.txt test_requirements.txt
+include README.md LICENSE requirements.txt test_requirements.txt requirements.in test_requirements.in
 recursive-include zappa *.py

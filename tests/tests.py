@@ -35,8 +35,6 @@ from zappa.utilities import (
 from zappa.wsgi import create_wsgi_request, common_log
 from zappa.core import Zappa, ASSUME_POLICY, ATTACH_POLICY
 
-if sys.version_info[0] < 3:
-    from cStringIO import StringIO as OldStringIO
 
 def random_string(length):
     return ''.join(random.choice(string.printable) for _ in range(length))
@@ -130,20 +128,7 @@ class TestZappa(unittest.TestCase):
         # for zipping pre-compiled packages gets called
         mock_installed_packages = {'psycopg2': '2.6.1'}
         with mock.patch('zappa.core.Zappa.get_installed_packages', return_value=mock_installed_packages):
-            z = Zappa(runtime='python2.7')
-            path = z.create_lambda_zip(handler_file=os.path.realpath(__file__))
-            self.assertTrue(os.path.isfile(path))
-            os.remove(path)
-
-    def test_get_manylinux_python27(self):
-        z = Zappa(runtime='python2.7')
-        self.assertIsNotNone(z.get_cached_manylinux_wheel('cffi', '1.10.0'))
-        self.assertIsNone(z.get_cached_manylinux_wheel('derpderpderpderp', '0.0'))
-
-        # mock with a known manylinux wheel package so that code for downloading them gets invoked
-        mock_installed_packages = { 'cffi' : '1.10.0' }
-        with mock.patch('zappa.core.Zappa.get_installed_packages', return_value = mock_installed_packages):
-            z = Zappa(runtime='python2.7')
+            z = Zappa(runtime='python3.6')
             path = z.create_lambda_zip(handler_file=os.path.realpath(__file__))
             self.assertTrue(os.path.isfile(path))
             os.remove(path)
@@ -187,21 +172,16 @@ class TestZappa(unittest.TestCase):
             self.assertTrue(os.path.isfile(path))
             os.remove(path)
 
-    def test_should_use_lambda_packages(self):
-        z = Zappa(runtime='python2.7')
-
-        self.assertTrue(z.have_correct_lambda_package_version('psycopg2', '2.6.1'))
-        self.assertFalse(z.have_correct_lambda_package_version('psycopg2', '2.7.1'))
-        #testing case-insensitivity with lambda_package MySQL-Python
-        self.assertTrue(z.have_correct_lambda_package_version('mysql-python', '1.2.5'))
-        self.assertFalse(z.have_correct_lambda_package_version('mysql-python', '6.6.6'))
-
-        self.assertTrue(z.have_any_lambda_package_version('psycopg2'))
-        self.assertTrue(z.have_any_lambda_package_version('mysql-python'))
-        self.assertFalse(z.have_any_lambda_package_version('no_package'))
+        # same, but with an ABI3 package
+        mock_installed_packages = {'cryptography': '2.8'}
+        with mock.patch('zappa.core.Zappa.get_installed_packages', return_value=mock_installed_packages):
+            z = Zappa(runtime='python3.8')
+            path = z.create_lambda_zip(handler_file=os.path.realpath(__file__))
+            self.assertTrue(os.path.isfile(path))
+            os.remove(path)
 
     def test_getting_installed_packages(self, *args):
-        z = Zappa(runtime='python2.7')
+        z = Zappa(runtime='python3.6')
 
         # mock pkg_resources call to be same as what our mocked site packages dir has
         mock_package = collections.namedtuple('mock_package', ['project_name', 'version', 'location'])
@@ -214,7 +194,7 @@ class TestZappa(unittest.TestCase):
                     self.assertDictEqual(z.get_installed_packages('',''), {'super_package' : '0.1'})
 
     def test_getting_installed_packages_mixed_case_location(self, *args):
-        z = Zappa(runtime='python2.7')
+        z = Zappa(runtime='python3.6')
 
         # mock pip packages call to be same as what our mocked site packages dir has
         mock_package = collections.namedtuple('mock_package', ['project_name', 'version', 'location'])
@@ -233,7 +213,7 @@ class TestZappa(unittest.TestCase):
                 })
 
     def test_getting_installed_packages_mixed_case(self, *args):
-        z = Zappa(runtime='python2.7')
+        z = Zappa(runtime='python3.6')
 
         # mock pkg_resources call to be same as what our mocked site packages dir has
         mock_package = collections.namedtuple('mock_package', ['project_name', 'version', 'location'])
@@ -978,7 +958,7 @@ class TestZappa(unittest.TestCase):
 
     # def test_cli_negative_rollback(self):
     #     zappa_cli = ZappaCLI()
-    #     argv = unicode('-s test_settings.json rollback -n -1 dev').split()
+    #     argv = '-s test_settings.json rollback -n -1 dev'.split()
     #     output = StringIO()
     #     old_stderr, sys.stderr = sys.stderr, output
     #     with self.assertRaises(SystemExit) as system_exit:
@@ -1314,8 +1294,6 @@ class TestZappa(unittest.TestCase):
         * Calls Zappa correctly for creates vs. updates.
         """
         old_stdout = sys.stderr
-        if sys.version_info[0] < 3:
-            sys.stdout = OldStringIO() # print() barfs on io.* types.
 
         try:
             zappa_cli = ZappaCLI()
@@ -1827,11 +1805,6 @@ USE_TZ = True
             with app.request_context(environ):
                 app.logger.error(u"This is a test")
                 log_output = sys.stderr.getvalue()
-                if sys.version_info[0] < 3:
-                    self.assertNotIn(
-                        "'str' object has no attribute 'write'", log_output)
-                    self.assertNotIn(
-                        "Logged from file tests.py", log_output)
         finally:
             sys.stderr = old_stderr
 

@@ -88,3 +88,6 @@ zappa_settings.json
 
 README.test.md
 .vscode
+
+.mypy_cache
+.pytest_cache
