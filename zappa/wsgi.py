@@ -108,7 +108,7 @@ def create_wsgi_request(event_info,
             # Everything else is user supplied and untrustworthy.
             remote_addr = x_forwarded_for.split(', ')[-2]
         else:
-            remote_addr = '127.0.0.1'
+            remote_addr = x_forwarded_for or '127.0.0.1'
 
         environ = {
             'PATH_INFO': get_wsgi_string(path),
