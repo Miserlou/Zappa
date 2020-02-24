@@ -1496,9 +1496,9 @@ class ZappaCLI:
             event_dict = {}
             rule_name = rule['Name']
             event_dict["Event Rule Name"] = rule_name
-            event_dict["Event Rule Schedule"] = rule.get(u'ScheduleExpression', None)
-            event_dict["Event Rule State"] = rule.get(u'State', None).title()
-            event_dict["Event Rule ARN"] = rule.get(u'Arn', None)
+            event_dict["Event Rule Schedule"] = rule.get('ScheduleExpression', None)
+            event_dict["Event Rule State"] = rule.get('State', None).title()
+            event_dict["Event Rule ARN"] = rule.get('Arn', None)
             status_dict['Events'].append(event_dict)
 
         if return_json:
@@ -1566,7 +1566,7 @@ class ZappaCLI:
             raise ClickException("This project already has a " + click.style("{0!s} file".format(settings_file), fg="red", bold=True) + "!")
 
         # Explain system.
-        click.echo(click.style(u"""\n███████╗ █████╗ ██████╗ ██████╗  █████╗
+        click.echo(click.style("""\n███████╗ █████╗ ██████╗ ██████╗  █████╗
 ╚══███╔╝██╔══██╗██╔══██╗██╔══██╗██╔══██╗
   ███╔╝ ███████║██████╔╝██████╔╝███████║
  ███╔╝  ██╔══██║██╔═══╝ ██╔═══╝ ██╔══██║

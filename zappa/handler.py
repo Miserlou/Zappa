@@ -356,7 +356,7 @@ class LambdaHandler:
 
         # This is the result of a keep alive, recertify
         # or scheduled event.
-        if event.get('detail-type') == u'Scheduled Event':
+        if event.get('detail-type') == 'Scheduled Event':
 
             whole_function = event['resources'][0].split('/')[-1].split('-')[-1]
 
@@ -435,7 +435,7 @@ class LambdaHandler:
             return result
 
         # This is an API Gateway authorizer event
-        elif event.get('type') == u'TOKEN':
+        elif event.get('type') == 'TOKEN':
             whole_function = self.settings.AUTHORIZER_FUNCTION
             if whole_function:
                 app_function = self.import_module_and_get_function(whole_function)
