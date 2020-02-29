@@ -1001,6 +1001,7 @@ class Zappa:
                                 xray_tracing=False,
                                 local_zip=None,
                                 use_alb=False,
+                                layers=None,
                                 concurrency=None,
                             ):
         """
@@ -1016,6 +1017,8 @@ class Zappa:
             aws_environment_variables = {}
         if not aws_kms_key_arn:
             aws_kms_key_arn = ''
+        if not layers:
+            layers = []
 
         kwargs = dict(
             FunctionName=function_name,
@@ -1032,7 +1035,8 @@ class Zappa:
             KMSKeyArn=aws_kms_key_arn,
             TracingConfig={
                 'Mode': 'Active' if self.xray_tracing else 'PassThrough'
-            }
+            },
+            Layers=layers
         )
         if local_zip:
             kwargs['Code'] = {
@@ -1155,7 +1159,8 @@ class Zappa:
                                         vpc_config=None,
                                         runtime='python3.6',
                                         aws_environment_variables=None,
-                                        aws_kms_key_arn=None
+                                        aws_kms_key_arn=None,
+                                        layers=None
                                     ):
         """
         Given an existing function ARN, update the configuration variables.
@@ -1170,6 +1175,8 @@ class Zappa:
             aws_kms_key_arn = ''
         if not aws_environment_variables:
             aws_environment_variables = {}
+        if not layers:
+            layers = []
 
         # Check if there are any remote aws lambda env vars so they don't get trashed.
         # https://github.com/Miserlou/Zappa/issues/987,  Related: https://github.com/Miserlou/Zappa/issues/765
@@ -1194,7 +1201,8 @@ class Zappa:
             KMSKeyArn=aws_kms_key_arn,
             TracingConfig={
                 'Mode': 'Active' if self.xray_tracing else 'PassThrough'
-            }
+            },
+            Layers=layers
         )
 
         resource_arn = response['FunctionArn']
@@ -2031,6 +2039,13 @@ class Zappa:
                 description_kwargs[key] = value
         if 'LambdaConfig' not in description_kwargs:
             description_kwargs['LambdaConfig'] = LambdaConfig
+        if 'TemporaryPasswordValidityDays' in description_kwargs['Policies']['PasswordPolicy']:
+            description_kwargs['AdminCreateUserConfig'].pop(
+                'UnusedAccountValidityDays', None)
+        if 'UnusedAccountValidityDays' in description_kwargs['AdminCreateUserConfig']:
+            description_kwargs['Policies']['PasswordPolicy']\
+                ['TemporaryPasswordValidityDays'] = description_kwargs['AdminCreateUserConfig'].pop(
+                'UnusedAccountValidityDays', None)
         result = self.cognito_client.update_user_pool(UserPoolId=user_pool, **description_kwargs)
         if result['ResponseMetadata']['HTTPStatusCode'] != 200:
             print("Cognito:  Failed to update user pool", result)

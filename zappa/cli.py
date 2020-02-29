@@ -115,6 +115,7 @@ class ZappaCLI:
     aws_kms_key_arn = ''
     context_header_mappings = None
     tags = []
+    layers = None
 
     stage_name_env_pattern = re.compile('^[a-zA-Z0-9_]+$')
 
@@ -760,6 +761,7 @@ class ZappaCLI:
                 aws_environment_variables=self.aws_environment_variables,
                 aws_kms_key_arn=self.aws_kms_key_arn,
                 use_alb=self.use_alb,
+                layers=self.layers,
                 concurrency=self.lambda_concurrency,
             )
             if source_zip and source_zip.startswith('s3://'):
@@ -970,6 +972,7 @@ class ZappaCLI:
                                                         runtime=self.runtime,
                                                         aws_environment_variables=self.aws_environment_variables,
                                                         aws_kms_key_arn=self.aws_kms_key_arn,
+                                                        layers=self.layers
                                                     )
 
         # Finally, delete the local copy our zip package
@@ -2096,6 +2099,7 @@ class ZappaCLI:
         self.context_header_mappings = self.stage_config.get('context_header_mappings', {})
         self.xray_tracing = self.stage_config.get('xray_tracing', False)
         self.desired_role_arn = self.stage_config.get('role_arn')
+        self.layers = self.stage_config.get('layers', None)
 
         # Load ALB-related settings
         self.use_alb = self.stage_config.get('alb_enabled', False)
