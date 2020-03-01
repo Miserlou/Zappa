@@ -223,6 +223,9 @@ class ZappaCLI:
         group.add_argument(
             '--disable_progress', action='store_true', help='Disable progress bars.'
         )
+        group.add_argument(
+            "--no_venv", action="store_true", help="Skip venv check."
+        )
 
         ##
         # Certify
@@ -2668,6 +2671,8 @@ class ZappaCLI:
 
     def check_venv(self):
         """ Ensure we're inside a virtualenv. """
+        if self.vargs and self.vargs.get("no_venv"):
+            return
         if self.zappa:
             venv = self.zappa.get_current_venv()
         else:
