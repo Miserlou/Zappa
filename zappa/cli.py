@@ -1382,7 +1382,7 @@ class ZappaCLI:
             # UUIDs
             for token in final_string.replace('\t', ' ').split(' '):
                 try:
-                    if token.count('-') is 4 and token.replace('-', '').isalnum():
+                    if token.count('-') == 4 and token.replace('-', '').isalnum():
                         final_string = final_string.replace(
                             token,
                             click.style(token, fg='magenta')
@@ -2517,7 +2517,7 @@ class ZappaCLI:
         # IP address filter
         for token in string.replace('\t', ' ').split(' '):
             try:
-                if (token.count('.') is 3 and token.replace('.', '').isnumeric()):
+                if (token.count('.') == 3 and token.replace('.', '').isnumeric()):
                     return True
             except Exception: # pragma: no cover
                 pass
@@ -2552,14 +2552,14 @@ class ZappaCLI:
             # And UUIDs
             for token in final_string.replace('\t', ' ').split(' '):
                 try:
-                    if token.count('-') is 4 and token.replace('-', '').isalnum():
+                    if token.count('-') == 4 and token.replace('-', '').isalnum():
                         final_string = final_string.replace(token, click.style(token, fg="magenta"))
                 except Exception: # pragma: no cover
                     pass
 
                 # And IP addresses
                 try:
-                    if token.count('.') is 3 and token.replace('.', '').isnumeric():
+                    if token.count('.') == 3 and token.replace('.', '').isnumeric():
                         final_string = final_string.replace(token, click.style(token, fg="red"))
                 except Exception: # pragma: no cover
                     pass
