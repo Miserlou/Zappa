@@ -2031,7 +2031,7 @@ class Zappa:
                        'EmailConfiguration', 'SmsConfiguration', 'UserPoolTags',
                        'AdminCreateUserConfig'):
                 description_kwargs[key] = value
-            elif key is 'LambdaConfig':
+            elif key == 'LambdaConfig':
                 for lckey, lcvalue in value.items():
                     if lckey in LambdaConfig:
                         value[lckey] = LambdaConfig[lckey]
