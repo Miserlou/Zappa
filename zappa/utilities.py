@@ -14,10 +14,7 @@ import sys
 
 from past.builtins import basestring
 
-try:
-    from urllib.parse import urlparse
-except ImportError:
-    from urlparse import urlparse
+from urllib.parse import urlparse
 
 LOG = logging.getLogger(__name__)
 
@@ -177,9 +174,14 @@ def get_runtime_from_python_version():
     """
     """
     if sys.version_info[0] < 3:
-        return 'python2.7'
+        raise ValueError("Python 2.x is no longer supported.")
     else:
-        return 'python3.6'
+        if sys.version_info[1] <= 6:
+            return 'python3.6'
+        elif sys.version_info[1] <= 7:
+            return 'python3.7'
+        else:
+            return 'python3.8'
 
 ##
 # Async Tasks
@@ -213,11 +215,11 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
     import kappa.role
     import kappa.awsclient
 
-    class PseudoContext(object):
+    class PseudoContext:
         def __init__(self):
             return
 
-    class PseudoFunction(object):
+    class PseudoFunction:
         def __init__(self):
             return
 
@@ -225,7 +227,7 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
     class SqsEventSource(kappa.event_source.base.EventSource):
 
         def __init__(self, context, config):
-            super(SqsEventSource, self).__init__(context, config)
+            super().__init__(context, config)
             self._lambda = kappa.awsclient.create_client(
                 'lambda', context.session)
 
@@ -338,7 +340,7 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
                 kappa.event_source.sns.LOG.exception('Unable to add filters for SNS topic %s', self.arn)
 
         def add(self, function):
-            super(ExtendedSnsEventSource, self).add(function)
+            super().add(function)
             if self.filters:
                 self.add_filters(function)
 
@@ -445,7 +447,7 @@ def check_new_version_available(this_version):
     """
     import requests
 
-    pypi_url = 'https://pypi.python.org/pypi/Zappa/json'
+    pypi_url = 'https://pypi.org/pypi/Zappa/json'
     resp = requests.get(pypi_url, timeout=1.5)
     top_version = resp.json()['info']['version']
 
@@ -566,10 +568,9 @@ def merge_headers(event):
     """
     headers = event.get('headers') or {}
     multi_headers = (event.get('multiValueHeaders') or {}).copy()
-    for h in (set(multi_headers.keys()) | set(headers.keys())):
+    for h in set(headers.keys()):
         if h not in multi_headers:
             multi_headers[h] = [headers[h]]
-        elif h in headers:
-            multi_headers[h].append(headers[h])
+    for h in multi_headers.keys():
         multi_headers[h] = ', '.join(multi_headers[h])
     return multi_headers

@@ -1,5 +1,46 @@
 # Zappa Changelog
 
+## 0.50.0
+* Updated manylinux to support manylinux1/manylinux2010/manylinux2014 packages
+* Fixed issue with duplicated cookie headers in API Gateway
+* Various maintenance updates to the README file
+* Remove old python 2.7 code (not all yet)
+* Use pip-tools to manage dependencies (and remove pinned dependencies from the package)
+* Add option for concurrency limit
+* Use safe_load with YAML
+* Support for ABI3 binary packages (particularly cryptography)
+* Remove dependency on lambda-packages
+
+## 0.49.0
+* Added support for Python 3.8
+* Fixed boto3 reporting of long names
+* Added support for new AWS Regions
+* Minor bug and README fixes
+
+## 0.48.2
+* Last version with Python 2.7 support.
+* Fix for invalid values of HTTP_HOST and others (introduced in 0.48.0)
+
+## 0.48.1
+* Fix for an issue where you couldn't update a function if it had been deployed with a version prior to 0.48.0
+* Support for private (VPC-only) API Gateway endpoints
+
+## 0.48.0
+* Deprecation of zappa.async because async is a reserved word in 3.7, please use zappa.asynchronous
+* Support for Application Load Balancer as an alternative to API Gateway
+* Improvements in manylinux wheel downloads
+* Support for multi-value query strings
+* Python 3.7 support
+* Support for multi-value headers
+* Support for the new 256kB async limit
+* Bunch of small typos, fixes and documentation improvements
+* Use Django 2 on tests with python 3
+* Stop applying tags on buckets not created by zappa
+* Be more forgiving on 504 errors during deployment
+* Fix cleanup of DynamoDB table for async tasks
+* Detection of invalid bucket names
+* Flake8 checks added to tests
+
 ## 0.47.1
 * Handle accounts with more than 100 domains in route 53
 * Force requests upgrade to 2.20.0 for compatibility with urllib3 1.24

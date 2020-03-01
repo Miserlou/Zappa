@@ -87,3 +87,7 @@ zappa_settings.json
 *.sublime-workspace
 
 README.test.md
+.vscode
+
+.mypy_cache
+.pytest_cache
