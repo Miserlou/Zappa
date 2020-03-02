@@ -338,7 +338,7 @@ class LambdaHandler:
     def handler(self, event, context):
         """
         An AWS Lambda function which parses specific API Gateway input into a
-        WSGI request, feeds it to our WSGI app, procceses the response, and returns
+        WSGI request, feeds it to our WSGI app, processes the response, and returns
         that back to the API Gateway.
 
         """
@@ -456,6 +456,20 @@ class LambdaHandler:
                 logger.debug(result)
             else:
                 logger.error("Cannot find a function to handle cognito trigger {}".format(triggerSource))
+            return result
+
+        # This is a CloudWatch event
+        # Related: https://github.com/Miserlou/Zappa/issues/1924
+        elif event.get('awslogs', None):
+            result = None
+            whole_function = '{}.{}'.format(settings.APP_MODULE, settings.APP_FUNCTION)
+            app_function = self.import_module_and_get_function(whole_function)
+            if app_function:
+                result = self.run_function(app_function, event, context)
+                logger.debug("Result of %s:" % whole_function)
+                logger.debug(result)
+            else:
+                logger.error("Cannot find a function to process the triggered event.")
             return result
 
         # Normal web app flow

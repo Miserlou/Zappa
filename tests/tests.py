@@ -380,6 +380,21 @@ class TestZappa(unittest.TestCase):
             self.assertEqual(mock_client.update_function_configuration.call_args[1]["Environment"],
                              {"Variables": end_result_should_be})
 
+
+    def test_update_layers(self):
+        z = Zappa()
+        z.credentials_arn = object()
+
+        with mock.patch.object(z, "lambda_client") as mock_client:
+            mock_client.get_function_configuration.return_value = {}
+            z.update_lambda_configuration("test", "test", "test", layers=["Layer1", "Layer2"])
+            self.assertEqual(mock_client.update_function_configuration.call_args[1]["Layers"], ["Layer1", "Layer2"])
+        with mock.patch.object(z, "lambda_client") as mock_client:
+            mock_client.get_function_configuration.return_value = {}
+            z.update_lambda_configuration("test", "test", "test")
+            self.assertEqual(mock_client.update_function_configuration.call_args[1]["Layers"], [])
+
+
     def test_update_empty_aws_env_hash(self):
         z = Zappa()
         z.credentials_arn = object()

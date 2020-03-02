@@ -115,6 +115,7 @@ class ZappaCLI:
     aws_kms_key_arn = ''
     context_header_mappings = None
     tags = []
+    layers = None
 
     stage_name_env_pattern = re.compile('^[a-zA-Z0-9_]+$')
 
@@ -221,6 +222,9 @@ class ZappaCLI:
         # https://github.com/Miserlou/Zappa/issues/891
         group.add_argument(
             '--disable_progress', action='store_true', help='Disable progress bars.'
+        )
+        group.add_argument(
+            "--no_venv", action="store_true", help="Skip venv check."
         )
 
         ##
@@ -760,6 +764,7 @@ class ZappaCLI:
                 aws_environment_variables=self.aws_environment_variables,
                 aws_kms_key_arn=self.aws_kms_key_arn,
                 use_alb=self.use_alb,
+                layers=self.layers,
                 concurrency=self.lambda_concurrency,
             )
             if source_zip and source_zip.startswith('s3://'):
@@ -970,6 +975,7 @@ class ZappaCLI:
                                                         runtime=self.runtime,
                                                         aws_environment_variables=self.aws_environment_variables,
                                                         aws_kms_key_arn=self.aws_kms_key_arn,
+                                                        layers=self.layers
                                                     )
 
         # Finally, delete the local copy our zip package
@@ -1376,7 +1382,7 @@ class ZappaCLI:
             # UUIDs
             for token in final_string.replace('\t', ' ').split(' '):
                 try:
-                    if token.count('-') is 4 and token.replace('-', '').isalnum():
+                    if token.count('-') == 4 and token.replace('-', '').isalnum():
                         final_string = final_string.replace(
                             token,
                             click.style(token, fg='magenta')
@@ -2096,6 +2102,7 @@ class ZappaCLI:
         self.context_header_mappings = self.stage_config.get('context_header_mappings', {})
         self.xray_tracing = self.stage_config.get('xray_tracing', False)
         self.desired_role_arn = self.stage_config.get('role_arn')
+        self.layers = self.stage_config.get('layers', None)
 
         # Load ALB-related settings
         self.use_alb = self.stage_config.get('alb_enabled', False)
@@ -2510,7 +2517,7 @@ class ZappaCLI:
         # IP address filter
         for token in string.replace('\t', ' ').split(' '):
             try:
-                if (token.count('.') is 3 and token.replace('.', '').isnumeric()):
+                if (token.count('.') == 3 and token.replace('.', '').isnumeric()):
                     return True
             except Exception: # pragma: no cover
                 pass
@@ -2545,14 +2552,14 @@ class ZappaCLI:
             # And UUIDs
             for token in final_string.replace('\t', ' ').split(' '):
                 try:
-                    if token.count('-') is 4 and token.replace('-', '').isalnum():
+                    if token.count('-') == 4 and token.replace('-', '').isalnum():
                         final_string = final_string.replace(token, click.style(token, fg="magenta"))
                 except Exception: # pragma: no cover
                     pass
 
                 # And IP addresses
                 try:
-                    if token.count('.') is 3 and token.replace('.', '').isnumeric():
+                    if token.count('.') == 3 and token.replace('.', '').isnumeric():
                         final_string = final_string.replace(token, click.style(token, fg="red"))
                 except Exception: # pragma: no cover
                     pass
@@ -2664,6 +2671,8 @@ class ZappaCLI:
 
     def check_venv(self):
         """ Ensure we're inside a virtualenv. """
+        if self.vargs and self.vargs.get("no_venv"):
+            return
         if self.zappa:
             venv = self.zappa.get_current_venv()
         else:
