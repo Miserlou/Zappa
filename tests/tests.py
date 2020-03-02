@@ -1990,6 +1990,19 @@ USE_TZ = True
                 }]
             },
         )
+        elbv2_stubber.add_response("describe_load_balancers",
+            expected_params={
+                "LoadBalancerArns": [loadbalancer_arn],
+            },
+            service_response={
+                "LoadBalancers": [{
+                    "LoadBalancerArn": loadbalancer_arn,
+                    "State": {
+                        "Code": "active"
+                    }
+                }]
+            },
+        )
         elbv2_stubber.add_response("modify_load_balancer_attributes",
             expected_params={
                 "LoadBalancerArn": loadbalancer_arn,
