@@ -284,7 +284,7 @@ class Zappa:
         # AWS Lambda supports manylinux1/2010 and manylinux2014
         manylinux_suffixes = ("2014", "2010", "1")
         self.manylinux_wheel_file_match = re.compile(f'^.*{self.manylinux_suffix_start}-manylinux({"|".join(manylinux_suffixes)})_x86_64.whl$')
-        self.manylinux_wheel_abi3_file_match = re.compile('^.*cp3.-abi3-manylinux({"|".join(manylinux_suffixes)})_x86_64.whl$')
+        self.manylinux_wheel_abi3_file_match = re.compile(f'^.*cp3.-abi3-manylinux({"|".join(manylinux_suffixes)})_x86_64.whl$')
 
         self.endpoint_urls = endpoint_urls
         self.xray_tracing = xray_tracing
