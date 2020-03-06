@@ -1309,46 +1309,72 @@ class Zappa:
         """
         if not alb_vpc_config:
             raise EnvironmentError('When creating an ALB, alb_vpc_config must be filled out in zappa_settings.')
-        if 'SubnetIds' not in alb_vpc_config:
-            raise EnvironmentError('When creating an ALB, you must supply two subnets in different availability zones.')
-        if 'SecurityGroupIds' not in alb_vpc_config:
-            alb_vpc_config["SecurityGroupIds"] = []
-        if not alb_vpc_config.get('CertificateArn'):
-            raise EnvironmentError('When creating an ALB, you must supply a CertificateArn for the HTTPS listener.')
-        print("Deploying ALB infrastructure...")
+        # Use Existing ALB if specificed
+        if 'LoadBalancerArn' in alb_vpc_config:
+            if not 'alb_listener_rule_conditions' in alb_vpc_config:
+                raise EnvironmentError('When Specifing an ALB, you must supply a Listener Rule conditions for the listener.')
+            if not 'alb_listener_rule_priority' in alb_vpc_config:
+                raise EnvironmentError('When Specifing an ALB, you must supply a Listener Rule priority for the listener.')
 
-        # Create load balancer
-        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/elbv2.html#ElasticLoadBalancingv2.Client.create_load_balancer
-        kwargs = dict(
-            Name=lambda_name,
-            Subnets=alb_vpc_config["SubnetIds"],
-            SecurityGroups=alb_vpc_config["SecurityGroupIds"],
-            # TODO: Scheme can also be "internal" we need to add a new option for this.
-            Scheme="internet-facing",
-            # TODO: Tags might be a useful means of stock-keeping zappa-generated assets.
-            #Tags=[],
-            Type="application",
-            # TODO: can be ipv4 or dualstack (for ipv4 and ipv6) ipv4 is required for internal Scheme.
-            IpAddressType="ipv4"
-        )
-        response = self.elbv2_client.create_load_balancer(**kwargs)
-        if not(response["LoadBalancers"]) or len(response["LoadBalancers"]) != 1:
-            raise EnvironmentError("Failure to create application load balancer. Response was in unexpected format. Response was: {}".format(repr(response)))
-        if response["LoadBalancers"][0]['State']['Code'] == 'failed':
-            raise EnvironmentError("Failure to create application load balancer. Response reported a failed state: {}".format(response["LoadBalancers"][0]['State']['Reason']))
+            kwargs = dict(
+                LoadBalancerArns = [alb_vpc_config["LoadBalancerArn"]]
+            )
+            response = self.elbv2_client.describe_load_balancers(**kwargs)
+            if not(response["LoadBalancers"]) or len(response["LoadBalancers"]) != 1:
+                raise EnvironmentError("Failure to find provided application load balancer. Response was in unexpected format. Response was: {}".format(repr(response)))
+        else:
+            if 'SubnetIds' not in alb_vpc_config:
+                raise EnvironmentError('When creating an ALB, you must supply two subnets in different availability zones.')
+            if 'SecurityGroupIds' not in alb_vpc_config:
+                alb_vpc_config["SecurityGroupIds"] = []
+            if not alb_vpc_config.get('CertificateArn'):
+                raise EnvironmentError('When creating an ALB, you must supply a CertificateArn for the HTTPS listener.')
+
+            print("Deploying ALB infrastructure...")
+
+            # Create load balancer
+            # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/elbv2.html#ElasticLoadBalancingv2.Client.create_load_balancer
+            kwargs = dict(
+                Name=lambda_name,
+                Subnets=alb_vpc_config["SubnetIds"],
+                SecurityGroups=alb_vpc_config["SecurityGroupIds"],
+                # TODO: Scheme can also be "internal" we need to add a new option for this.
+                Scheme="internet-facing",
+                # TODO: Tags might be a useful means of stock-keeping zappa-generated assets.
+                #Tags=[],
+                Type="application",
+                # TODO: can be ipv4 or dualstack (for ipv4 and ipv6) ipv4 is required for internal Scheme.
+                IpAddressType="ipv4"
+            )
+            response = self.elbv2_client.create_load_balancer(**kwargs)
+            if not(response["LoadBalancers"]) or len(response["LoadBalancers"]) != 1:
+                raise EnvironmentError("Failure to create application load balancer. Response was in unexpected format. Response was: {}".format(repr(response)))
+            if response["LoadBalancers"][0]['State']['Code'] == 'failed':
+                raise EnvironmentError("Failure to create application load balancer. Response reported a failed state: {}".format(response["LoadBalancers"][0]['State']['Reason']))
+
         load_balancer_arn = response["LoadBalancers"][0]["LoadBalancerArn"]
         load_balancer_dns = response["LoadBalancers"][0]["DNSName"]
         load_balancer_vpc = response["LoadBalancers"][0]["VpcId"]
         waiter = self.elbv2_client.get_waiter('load_balancer_available')
 
-        # Match the lambda timeout on the load balancer.
-        self.elbv2_client.modify_load_balancer_attributes(
-            LoadBalancerArn=load_balancer_arn,
-            Attributes=[{
-                'Key': 'idle_timeout.timeout_seconds',
-                'Value': str(timeout)
-            }]
-        )
+        if not 'LoadBalancerArn' in alb_vpc_config:# Match the lambda timeout on the load balancer.
+            self.elbv2_client.modify_load_balancer_attributes(
+                LoadBalancerArn=load_balancer_arn,
+                Attributes=[{
+                    'Key': 'idle_timeout.timeout_seconds',
+                    'Value': str(timeout)
+                }]
+            )
+        else:
+            response = self.elbv2_client.describe_load_balancer_attributes(
+                LoadBalancerArn=load_balancer_arn
+            )
+            if not "Attributes" in response:
+                raise EnvironmentError("Failed to check LoadBalancer Attributes")
+            alb_timeout = next( attrib for attrib in response["Attributes"] if attrib["Key"] == "idle_timeout.timeout_seconds")
+            if alb_timeout["Value"] != str(timeout):
+                print('Warning: The Lambda and ALB timeout values do not match, you might want to check this: lambda: {} secs, ALB: {} secs'.format(timeout, alb_timeout["Value"])
+)
 
         # Create/associate target group.
         # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/elbv2.html#ElasticLoadBalancingv2.Client.create_target_group
@@ -1393,26 +1419,51 @@ class Zappa:
         )
         response = self.elbv2_client.register_targets(**kwargs)
 
-        # Bind listener to load balancer with default rule to target group.
-        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/elbv2.html#ElasticLoadBalancingv2.Client.create_listener
-        kwargs = dict(
-            # TODO: Listeners support custom ssl certificates (Certificates). For now we leave this default.
-            Certificates=[{"CertificateArn": alb_vpc_config['CertificateArn']}],
-            DefaultActions=[{
-                "Type": "forward",
-                "TargetGroupArn": target_group_arn,
-            }],
-            LoadBalancerArn=load_balancer_arn,
-            Protocol="HTTPS",
-            # TODO: Add option for custom ports
-            Port=443,
-            # TODO: Listeners support custom ssl security policy (SslPolicy). For now we leave this default.
-        )
-        response = self.elbv2_client.create_listener(**kwargs)
-        print("ALB created with DNS: {}".format(load_balancer_dns))
-        print("Note it may take several minutes for load balancer to become available.")
+        # Configure existing Listener rules if ALB has been provided to us
+        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/elbv2.html#ElasticLoadBalancingv2.Client.create_rule
+        if 'LoadBalancerArn' in alb_vpc_config:
+            kwargs = dict(
+                LoadBalancerArn=load_balancer_arn,
+            )
+            response = self.elbv2_client.describe_listeners(**kwargs)
+            if not(response["Listeners"]) or len(response["Listeners"]) != 1:
+                raise EnvironmentError("Failure to load listeners for ALB. or more than 1 found, Response was in unexpected format. Response was: {}".format(repr(response)))
 
-    def undeploy_lambda_alb(self, lambda_name):
+            kwargs = dict(
+                Actions=[{
+                    "Type": "forward",
+                    "TargetGroupArn": target_group_arn,
+                }],
+                ListenerArn=response["Listeners"][0]["ListenerArn"],
+                Conditions=alb_vpc_config['alb_listener_rule_conditions'],
+                Priority=alb_vpc_config['alb_listener_rule_priority']
+            )
+            response = self.elbv2_client.create_rule(**kwargs)
+
+            print("ALB Listener Rule have been added to ALB with DNS: {}".format(load_balancer_dns))
+
+        else:
+            # Bind listener to load balancer with default rule to target group.
+            # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/elbv2.html#ElasticLoadBalancingv2.Client.create_listener
+            kwargs = dict(
+                # TODO: Listeners support custom ssl certificates (Certificates). For now we leave this default.
+                Certificates=[{"CertificateArn": alb_vpc_config['CertificateArn']}],
+                DefaultActions=[{
+                    "Type": "forward",
+                    "TargetGroupArn": target_group_arn,
+                }],
+                LoadBalancerArn=load_balancer_arn,
+                Protocol="HTTPS",
+                # TODO: Add option for custom ports
+                Port=443,
+                # TODO: Listeners support custom ssl security policy (SslPolicy). For now we leave this default.
+            )
+            response = self.elbv2_client.create_listener(**kwargs)
+
+            print("ALB created with DNS: {}".format(load_balancer_dns))
+            print("Note it may take several minutes for load balancer to become available.")
+
+    def undeploy_lambda_alb(self, lambda_name, alb_vpc_config):
         """
         The `zappa undeploy` functionality for ALB infrastructure.
         """
@@ -1433,13 +1484,17 @@ class Zappa:
 
         # Locate and delete load balancer
         try:
-            # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/elbv2.html#ElasticLoadBalancingv2.Client.describe_load_balancers
-            response = self.elbv2_client.describe_load_balancers(
-                Names=[lambda_name]
-            )
-            if not(response["LoadBalancers"]) or len(response["LoadBalancers"]) > 1:
-                raise EnvironmentError("Failure to locate/delete ALB named [{}]. Response was: {}".format(lambda_name, repr(response)))
-            load_balancer_arn = response["LoadBalancers"][0]["LoadBalancerArn"]
+            if 'LoadBalancerArn' in alb_vpc_config:
+                load_balancer_arn = alb_vpc_config['LoadBalancerArn']
+            else:
+                # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/elbv2.html#ElasticLoadBalancingv2.Client.describe_load_balancers
+                response = self.elbv2_client.describe_load_balancers(
+                    Names=[lambda_name]
+                )
+                if not(response["LoadBalancers"]) or len(response["LoadBalancers"]) > 1:
+                    raise EnvironmentError("Failure to locate/delete ALB named [{}]. Response was: {}".format(lambda_name, repr(response)))
+                load_balancer_arn = response["LoadBalancers"][0]["LoadBalancerArn"]
+
             # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/elbv2.html#ElasticLoadBalancingv2.Client.describe_listeners
             response = self.elbv2_client.describe_listeners(LoadBalancerArn=load_balancer_arn)
             if not(response["Listeners"]):
@@ -1448,15 +1503,17 @@ class Zappa:
                 raise EnvironmentError("Failure to locate/delete listener for ALB named [{}]. Response was: {}".format(lambda_name, repr(response)))
             else:
                 listener_arn = response["Listeners"][0]["ListenerArn"]
+
+            if 'LoadBalancerArn' not in alb_vpc_config:
                 # Remove the listener. This explicit deletion of the listener seems necessary to avoid ResourceInUseExceptions when deleting target groups.
                 # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/elbv2.html#ElasticLoadBalancingv2.Client.delete_listener
                 response = self.elbv2_client.delete_listener(ListenerArn=listener_arn)
-            # Remove the load balancer and wait for completion
-            # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/elbv2.html#ElasticLoadBalancingv2.Client.delete_load_balancer
-            response = self.elbv2_client.delete_load_balancer(LoadBalancerArn=load_balancer_arn)
-            waiter = self.elbv2_client.get_waiter('load_balancers_deleted')
-            print('Waiting for load balancer [{}] to be deleted..'.format(lambda_name))
-            waiter.wait(LoadBalancerArns=[load_balancer_arn], WaiterConfig={"Delay": 3})
+                # Remove the load balancer and wait for completion
+                # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/elbv2.html#ElasticLoadBalancingv2.Client.delete_load_balancer
+                response = self.elbv2_client.delete_load_balancer(LoadBalancerArn=load_balancer_arn)
+                waiter = self.elbv2_client.get_waiter('load_balancers_deleted')
+                print('Waiting for load balancer [{}] to be deleted..'.format(lambda_name))
+                waiter.wait(LoadBalancerArns=[load_balancer_arn], WaiterConfig={"Delay": 3})
         except botocore.exceptions.ClientError as e: # pragma: no cover
             print(e.response["Error"]["Code"])
             if "LoadBalancerNotFound" in e.response["Error"]["Code"]:
@@ -1464,7 +1521,7 @@ class Zappa:
             else:
                 raise e
 
-        # Locate and delete target group
+        # Locate and delete target group and listener Rules if we arn't managing the ALB
         try:
             # Locate the lambda ARN
             # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/lambda.html#Lambda.Client.get_function
@@ -1476,6 +1533,19 @@ class Zappa:
             if not(response["TargetGroups"]) or len(response["TargetGroups"]) > 1:
                 raise EnvironmentError("Failure to locate/delete ALB target group named [{}]. Response was: {}".format(lambda_name, repr(response)))
             target_group_arn = response["TargetGroups"][0]["TargetGroupArn"]
+
+            # If the ALB is provided to us the listener rules need to be removed before the target group is deleted
+            if 'LoadBalancerArn' in alb_vpc_config:
+                # Locate and remove Listener Rule
+                response = self.elbv2_client.describe_rules(ListenerArn=listener_arn)
+                if not(response["Rules"]):
+                    print('No rules found.')
+                for rule in response['Rules']:
+                    for action in rule['Actions']:
+                        if action['Type'] == 'forward' and action['TargetGroupArn'] == target_group_arn:
+                            self.elbv2_client.delete_rule(RuleArn=rule['RuleArn'])
+                            break
+
             # Deregister targets and wait for completion
             self.elbv2_client.deregister_targets(
                 TargetGroupArn=target_group_arn,
