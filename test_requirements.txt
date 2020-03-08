@@ -51,7 +51,7 @@ toml==0.10.0
 tqdm==4.43.0
 troposphere==2.5.3
 urllib3==1.25.8           # via botocore, requests
-werkzeug==1.0.0
+werkzeug==0.16.1
 wheel==0.34.2
 wsgi-request-logger==0.4.6
 zipp==3.0.0               # via importlib-metadata
