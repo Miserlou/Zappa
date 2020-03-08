@@ -116,6 +116,7 @@ class ZappaCLI:
     aws_kms_key_arn = ''
     context_header_mappings = None
     tags = []
+    layers = None
 
     stage_name_env_pattern = re.compile('^[a-zA-Z0-9_]+$')
 
@@ -222,6 +223,9 @@ class ZappaCLI:
         # https://github.com/Miserlou/Zappa/issues/891
         group.add_argument(
             '--disable_progress', action='store_true', help='Disable progress bars.'
+        )
+        group.add_argument(
+            "--no_venv", action="store_true", help="Skip venv check."
         )
 
         ##
@@ -761,6 +765,7 @@ class ZappaCLI:
                 aws_environment_variables=self.aws_environment_variables,
                 aws_kms_key_arn=self.aws_kms_key_arn,
                 use_alb=self.use_alb,
+                layers=self.layers,
                 concurrency=self.lambda_concurrency,
             )
             if source_zip and source_zip.startswith('s3://'):
@@ -971,6 +976,7 @@ class ZappaCLI:
                                                         runtime=self.runtime,
                                                         aws_environment_variables=self.aws_environment_variables,
                                                         aws_kms_key_arn=self.aws_kms_key_arn,
+                                                        layers=self.layers
                                                     )
 
         # Finally, delete the local copy our zip package
@@ -1497,9 +1503,9 @@ class ZappaCLI:
             event_dict = {}
             rule_name = rule['Name']
             event_dict["Event Rule Name"] = rule_name
-            event_dict["Event Rule Schedule"] = rule.get(u'ScheduleExpression', None)
-            event_dict["Event Rule State"] = rule.get(u'State', None).title()
-            event_dict["Event Rule ARN"] = rule.get(u'Arn', None)
+            event_dict["Event Rule Schedule"] = rule.get('ScheduleExpression', None)
+            event_dict["Event Rule State"] = rule.get('State', None).title()
+            event_dict["Event Rule ARN"] = rule.get('Arn', None)
             status_dict['Events'].append(event_dict)
 
         if return_json:
@@ -1567,7 +1573,7 @@ class ZappaCLI:
             raise ClickException("This project already has a " + click.style("{0!s} file".format(settings_file), fg="red", bold=True) + "!")
 
         # Explain system.
-        click.echo(click.style(u"""\n███████╗ █████╗ ██████╗ ██████╗  █████╗
+        click.echo(click.style("""\n███████╗ █████╗ ██████╗ ██████╗  █████╗
 ╚══███╔╝██╔══██╗██╔══██╗██╔══██╗██╔══██╗
   ███╔╝ ███████║██████╔╝██████╔╝███████║
  ███╔╝  ██╔══██║██╔═══╝ ██╔═══╝ ██╔══██║
@@ -2097,6 +2103,7 @@ class ZappaCLI:
         self.context_header_mappings = self.stage_config.get('context_header_mappings', {})
         self.xray_tracing = self.stage_config.get('xray_tracing', False)
         self.desired_role_arn = self.stage_config.get('role_arn')
+        self.layers = self.stage_config.get('layers', None)
 
         # Load ALB-related settings
         self.use_alb = self.stage_config.get('alb_enabled', False)
@@ -2668,6 +2675,8 @@ class ZappaCLI:
 
     def check_venv(self):
         """ Ensure we're inside a virtualenv. """
+        if self.vargs and self.vargs.get("no_venv"):
+            return
         if self.zappa:
             venv = self.zappa.get_current_venv()
         else:
