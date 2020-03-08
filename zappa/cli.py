@@ -56,6 +56,7 @@ CUSTOM_SETTINGS = [
     'delete_local_zip',
     'delete_s3_zip',
     'exclude',
+    'exclude_glob',
     'extra_permissions',
     'include',
     'role_name',
@@ -2222,6 +2223,7 @@ class ZappaCLI:
                 prefix=self.lambda_name,
                 use_precompiled_packages=self.stage_config.get('use_precompiled_packages', True),
                 exclude=self.stage_config.get('exclude', []),
+                exclude_glob=self.stage_config.get('exclude_glob', []),
                 disable_progress=self.disable_progress,
                 archive_format='tarball'
             )
@@ -2236,6 +2238,7 @@ class ZappaCLI:
                 handler_file=handler_file,
                 slim_handler=True,
                 exclude=exclude,
+                exclude_glob=self.stage_config.get('exclude_glob', []),
                 output=output,
                 disable_progress=self.disable_progress
             )
@@ -2256,6 +2259,7 @@ class ZappaCLI:
                 handler_file=handler_file,
                 use_precompiled_packages=self.stage_config.get('use_precompiled_packages', True),
                 exclude=exclude,
+                exclude_glob=self.stage_config.get('exclude_glob', []),
                 output=output,
                 disable_progress=self.disable_progress
             )
