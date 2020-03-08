@@ -1,5 +1,16 @@
 # Zappa Changelog
 
+## 0.51.0
+* Lambda Layers
+* Cognito support
+* Skip venv check if --no_venv argument is passed
+* Fix for abi3 filename matching
+* Wait for the Load Balancer to become active before proceeding
+* Add option 'Scheme' for alb config
+* Allow full path exclusions while packaging
+* Workaround for werkzeug incompatibility
+* And assorted fixes
+
 ## 0.50.0
 * Updated manylinux to support manylinux1/manylinux2010/manylinux2014 packages
 * Fixed issue with duplicated cookie headers in API Gateway
