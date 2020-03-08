@@ -1340,6 +1340,8 @@ class Zappa:
         load_balancer_dns = response["LoadBalancers"][0]["DNSName"]
         load_balancer_vpc = response["LoadBalancers"][0]["VpcId"]
         waiter = self.elbv2_client.get_waiter('load_balancer_available')
+        print('Waiting for load balancer [{}] to become active..'.format(load_balancer_arn))
+        waiter.wait(LoadBalancerArns=[load_balancer_arn], WaiterConfig={"Delay": 3})
 
         # Match the lambda timeout on the load balancer.
         self.elbv2_client.modify_load_balancer_attributes(
