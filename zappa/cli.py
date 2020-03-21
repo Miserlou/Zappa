@@ -7,7 +7,6 @@ Zappa CLI
 Deploy arbitrary Python programs as serverless Zappa applications.
 
 """
-from past.builtins import basestring
 from builtins import input, bytes
 
 import argcomplete
@@ -1549,7 +1548,7 @@ class ZappaCLI:
 
         non_strings = []
         for (k,v) in environment.items():
-            if not isinstance(v, basestring):
+            if not isinstance(v, str):
                 non_strings.append(k)
         if non_strings:
             raise ValueError("The following environment variables are not strings: {}".format(", ".join(non_strings)))
