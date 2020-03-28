@@ -11,6 +11,7 @@ import hashlib
 import json
 import logging
 import os
+import pathspec
 import random
 import re
 import shutil
@@ -472,6 +473,7 @@ class Zappa:
                             minify=True,
                             exclude=None,
                             exclude_glob=None,
+                            exclude_pathspec=None,
                             use_precompiled_packages=True,
                             include=None,
                             venv=None,
@@ -506,6 +508,11 @@ class Zappa:
         else:
             archive_fname = output
         archive_path = os.path.join(cwd, archive_fname)
+
+        # Files that should be ignored based on patterns similar to
+        # .gitignore
+        if exclude_pathspec:
+            exclude_pathspec = pathspec.PathSpec.from_lines('gitignore', exclude_pathspec)
 
         # Files that should be excluded from the zip
         if exclude is None:
@@ -550,7 +557,7 @@ class Zappa:
             if minify:
                 # Related: https://github.com/Miserlou/Zappa/issues/744
                 excludes = ZIP_EXCLUDES + exclude + [split_venv[-1]]
-                copytree(cwd, temp_project_path, metadata=False, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
+                copytree(cwd, temp_project_path, metadata=False, symlinks=False, ignore=shutil.ignore_patterns(*excludes), ignore_pathspec=exclude_pathspec)
             else:
                 copytree(cwd, temp_project_path, metadata=False, symlinks=False)
             for glob_path in exclude_glob:
@@ -624,7 +631,7 @@ class Zappa:
 
         if minify:
             excludes = ZIP_EXCLUDES + exclude
-            copytree(site_packages, temp_package_path, metadata=False, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
+            copytree(site_packages, temp_package_path, metadata=False, symlinks=False, ignore=shutil.ignore_patterns(*excludes), ignore_pathspec=exclude_pathspec)
         else:
             copytree(site_packages, temp_package_path, metadata=False, symlinks=False)
 
@@ -634,7 +641,7 @@ class Zappa:
             egg_links.extend(glob.glob(os.path.join(site_packages_64, '*.egg-link')))
             if minify:
                 excludes = ZIP_EXCLUDES + exclude
-                copytree(site_packages_64, temp_package_path, metadata = False, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
+                copytree(site_packages_64, temp_package_path, metadata = False, symlinks=False, ignore=shutil.ignore_patterns(*excludes), ignore_pathspec=exclude_pathspec)
             else:
                 copytree(site_packages_64, temp_package_path, metadata = False, symlinks=False)
 
