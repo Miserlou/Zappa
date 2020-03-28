@@ -20,3 +20,4 @@ Werkzeug<1.0
 wheel
 wsgi-request-logger
 pip-tools
+pathspec>=0.7.0
