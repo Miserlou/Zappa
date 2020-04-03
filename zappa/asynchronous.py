@@ -108,6 +108,7 @@ aws_session = boto3.Session()
 
 
 def client(service):
+    """Memoize client sessions: https://github.com/Miserlou/Zappa/issues/2072"""
     global CLIENTS
     if service not in CLIENTS:
         try:
