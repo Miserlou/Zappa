@@ -102,18 +102,21 @@ try:
 except ImportError:
     ASYNC_RESPONSE_TABLE = None
 
-# Declare these here so they're kept warm.
-try:
-    aws_session = boto3.Session()
-    LAMBDA_CLIENT = aws_session.client('lambda')
-    SNS_CLIENT = aws_session.client('sns')
-    STS_CLIENT = aws_session.client('sts')
-    DYNAMODB_CLIENT = aws_session.client('dynamodb')
-except botocore.exceptions.NoRegionError as e: # pragma: no cover
-    # This can happen while testing on Travis, but it's taken care  of
-    # during class initialization.
-    pass
+# Global so they are kept warm.
+CLIENTS = {}
+aws_session = boto3.Session()
 
+
+def client(service):
+    global CLIENTS
+    if service not in CLIENTS:
+        try:
+            CLIENTS[service] = aws_session.client(service)
+        except botocore.exceptions.NoRegionError:  # pragma: no cover
+            # This can happen while testing on Travis, but it's taken care  of
+            # during class initialization.
+            pass
+    return CLIENTS[service]
 
 ##
 # Response and Exception classes
@@ -137,7 +140,7 @@ class LambdaAsyncResponse:
         if kwargs.get('boto_session'):
             self.client = kwargs.get('boto_session').client('lambda')
         else:  # pragma: no cover
-            self.client = LAMBDA_CLIENT
+            self.client = client('lambda')
 
         self.lambda_function_name = lambda_function_name
         self.aws_region = aws_region
@@ -201,7 +204,7 @@ class SnsAsyncResponse(LambdaAsyncResponse):
         if kwargs.get('boto_session'):
             self.client = kwargs.get('boto_session').client('sns')
         else: # pragma: no cover
-            self.client = SNS_CLIENT
+            self.client = client('sns')
 
 
         if kwargs.get('arn'):
@@ -210,7 +213,7 @@ class SnsAsyncResponse(LambdaAsyncResponse):
             if kwargs.get('boto_session'):
                 sts_client = kwargs.get('boto_session').client('sts')
             else:
-                sts_client = STS_CLIENT
+                sts_client = client('sts')
             AWS_ACCOUNT_ID = sts_client.get_caller_identity()['Account']
             self.arn = 'arn:aws:sns:{region}:{account}:{topic_name}'.format(
                                     region=self.aws_region,
@@ -291,7 +294,7 @@ def run_message(message):
     and a 'command' in handler.py
     """
     if message.get('capture_response', False):
-        DYNAMODB_CLIENT.put_item(
+        client('dynamodb').put_item(
             TableName=ASYNC_RESPONSE_TABLE,
             Item={
                 'id': {'S': str(message['response_id'])},
@@ -314,7 +317,7 @@ def run_message(message):
         )
 
     if message.get('capture_response', False):
-        DYNAMODB_CLIENT.update_item(
+        client('dynamodb').update_item(
             TableName=ASYNC_RESPONSE_TABLE,
             Key={'id': {'S': str(message['response_id'])}},
             UpdateExpression="SET async_response = :r, async_status = :s",
@@ -477,7 +480,7 @@ def get_async_response(response_id):
     """
     Get the response from the async table
     """
-    response = DYNAMODB_CLIENT.get_item(
+    response = client('dynamodb').get_item(
         TableName=ASYNC_RESPONSE_TABLE,
         Key={'id': {'S': str(response_id)}}
     )
