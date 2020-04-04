@@ -650,6 +650,10 @@ class Zappa:
 
             try:
                 for installed_package_name, installed_package_version in installed_packages.items():
+                    if installed_package_name in excludes:
+                        print(" - %s==%s: ignored, skipping..." % (installed_package_name, installed_package_version,))
+                        continue
+
                     cached_wheel_path = self.get_cached_manylinux_wheel(installed_package_name, installed_package_version, disable_progress)
                     if cached_wheel_path:
                         # Otherwise try to use manylinux packages from PyPi..
