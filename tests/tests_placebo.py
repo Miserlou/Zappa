@@ -403,6 +403,9 @@ class TestZappa(unittest.TestCase):
         event = {'authorizationToken': 'hubtoken1', 'methodArn': 'arn:aws:execute-api:us-west-2:1234:xxxxx/dev/GET/v1/endpoint/param', 'type': 'TOKEN'}
         self.assertEqual("AUTHORIZER_EVENT", lh.handler(event, None))
 
+        event = {'methodArn': 'arn:aws:execute-api:us-west-2:1234:xxxxx/dev/GET/v1/endpoint/param', 'type': 'REQUEST'}
+        self.assertEqual("AUTHORIZER_EVENT", lh.handler(event, None))
+
         # Ensure Zappa does return 401 if no function was defined.
         lh.settings.AUTHORIZER_FUNCTION = None
         with self.assertRaisesRegexp(Exception, 'Unauthorized'):
