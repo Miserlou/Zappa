@@ -139,8 +139,8 @@ class LambdaHandler:
                 # Flask-like app factory support
                 # https://github.com/Miserlou/Zappa/issues/1771
                 if inspect.isfunction(wsgi_app_function):
-                    args, varargs, keywords, _ = self.getargspec(wsgi_app_function)
-                    if len(args) == 0 and not varargs and not keywords:
+                    args, varargs, keywords, defaults = self.getargspec(wsgi_app_function)
+                    if len(args) - len(defaults or []) == 0 and not varargs and not keywords:
                         factory = wsgi_app_function
                         wsgi_app_function = factory()
 
