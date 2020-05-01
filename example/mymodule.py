@@ -1,6 +1,3 @@
-from __future__ import print_function
-
-
 def myfunc():
     print('Running my function in a schedule!')
 

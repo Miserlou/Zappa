@@ -9,8 +9,18 @@ try:
 except ImportError:
     from unittest.mock import patch
 
-from zappa.asynchronous import AsyncException, LambdaAsyncResponse, SnsAsyncResponse
-from zappa.asynchronous import import_and_get_task, get_func_task_path
+# NOTE: zappa.async is deprecated.
+
+# It cannot be imported normally with Python 3.7
+zappa_async = __import__('zappa.async', fromlist=[
+    'AsyncException', 'LambdaAsyncResponse', 'SnsAsyncResponse',
+    'import_and_get_task', 'get_func_task_path'
+])
+AsyncException      = zappa_async.AsyncException
+LambdaAsyncResponse = zappa_async.LambdaAsyncResponse
+SnsAsyncResponse    = zappa_async.SnsAsyncResponse
+import_and_get_task = zappa_async.import_and_get_task
+get_func_task_path  = zappa_async.get_func_task_path
 
 
 class TestZappa(unittest.TestCase):
@@ -67,7 +77,7 @@ class TestZappa(unittest.TestCase):
         async_me = import_and_get_task("tests.test_app.async_me")
         lambda_async_mock = mock.Mock()
         lambda_async_mock.return_value.send.return_value = "Running async!"
-        with mock.patch.dict('zappa.asynchronous.ASYNC_CLASSES',
+        with mock.patch.dict('zappa.async.ASYNC_CLASSES',
                              {'lambda': lambda_async_mock}):
             # First check that it still runs synchronously by default
             self.assertEqual(async_me("123"),

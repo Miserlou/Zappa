@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import base64
 import boto3
 import collections
@@ -21,11 +19,11 @@ from werkzeug.wrappers import Response
 try:
     from zappa.middleware import ZappaWSGIMiddleware
     from zappa.wsgi import create_wsgi_request, common_log
-    from zappa.utilities import parse_s3_url
+    from zappa.utilities import merge_headers, parse_s3_url
 except ImportError as e:  # pragma: no cover
     from .middleware import ZappaWSGIMiddleware
     from .wsgi import create_wsgi_request, common_log
-    from .utilities import parse_s3_url
+    from .utilities import merge_headers, parse_s3_url
 
 
 # Set up logging
@@ -34,7 +32,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 
-class LambdaHandler(object):
+class LambdaHandler:
     """
     Singleton for avoiding duplicate setup.
 
@@ -54,11 +52,8 @@ class LambdaHandler(object):
     def __new__(cls, settings_name="zappa_settings", session=None):
         """Singleton instance to avoid repeat setup"""
         if LambdaHandler.__instance is None:
-            if sys.version_info[0] < 3:
-                LambdaHandler.__instance = object.__new__(cls, settings_name, session)
-            else:
-                print("Instancing..")
-                LambdaHandler.__instance = object.__new__(cls)
+            print("Instancing..")
+            LambdaHandler.__instance = object.__new__(cls)
         return LambdaHandler.__instance
 
     def __init__(self, settings_name="zappa_settings", session=None):
@@ -114,7 +109,7 @@ class LambdaHandler(object):
                         try:
                             cdll.LoadLibrary(os.path.join(os.getcwd(), library))
                         except OSError:
-                            print ("Failed to find library...right filename?")
+                            print("Failed to find library: {}...right filename?".format(library))
                 except ImportError:
                     print ("Failed to import cytpes library")
 
@@ -358,7 +353,7 @@ class LambdaHandler(object):
     def handler(self, event, context):
         """
         An AWS Lambda function which parses specific API Gateway input into a
-        WSGI request, feeds it to our WSGI app, procceses the response, and returns
+        WSGI request, feeds it to our WSGI app, processes the response, and returns
         that back to the API Gateway.
 
         """
@@ -376,7 +371,7 @@ class LambdaHandler(object):
 
         # This is the result of a keep alive, recertify
         # or scheduled event.
-        if event.get('detail-type') == u'Scheduled Event':
+        if event.get('detail-type') == 'Scheduled Event':
 
             whole_function = event['resources'][0].split('/')[-1].split('-')[-1]
 
@@ -455,7 +450,7 @@ class LambdaHandler(object):
             return result
 
         # This is an API Gateway authorizer event
-        elif event.get('type') == u'TOKEN':
+        elif event.get('type') == 'TOKEN':
             whole_function = self.settings.AUTHORIZER_FUNCTION
             if whole_function:
                 app_function = self.import_module_and_get_function(whole_function)
@@ -478,6 +473,20 @@ class LambdaHandler(object):
                 logger.error("Cannot find a function to handle cognito trigger {}".format(triggerSource))
             return result
 
+        # This is a CloudWatch event
+        # Related: https://github.com/Miserlou/Zappa/issues/1924
+        elif event.get('awslogs', None):
+            result = None
+            whole_function = '{}.{}'.format(settings.APP_MODULE, settings.APP_FUNCTION)
+            app_function = self.import_module_and_get_function(whole_function)
+            if app_function:
+                result = self.run_function(app_function, event, context)
+                logger.debug("Result of %s:" % whole_function)
+                logger.debug(result)
+            else:
+                logger.error("Cannot find a function to process the triggered event.")
+            return result
+
         # Normal web app flow
         try:
             # Timing
@@ -485,31 +494,44 @@ class LambdaHandler(object):
 
             # This is a normal HTTP request
             if event.get('httpMethod', None):
-
                 script_name = ''
-                headers = event.get('headers')
-                if headers:
-                    host = headers.get('Host')
+                is_elb_context = False
+                headers = merge_headers(event)
+                if event.get('requestContext', None) and event['requestContext'].get('elb', None):
+                    # Related: https://github.com/Miserlou/Zappa/issues/1715
+                    # inputs/outputs for lambda loadbalancer
+                    # https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html
+                    is_elb_context = True
+                    # host is lower-case when forwarded from ELB
+                    host = headers.get('host')
+                    # TODO: pathParameters is a first-class citizen in apigateway but not available without
+                    # some parsing work for ELB (is this parameter used for anything?)
+                    event['pathParameters'] = ''
                 else:
-                    host = None
-
-                if host:
-                    if 'amazonaws.com' in host:
-                        # The path provided in th event doesn't include the
-                        # stage, so we must tell Flask to include the API
-                        # stage in the url it calculates. See https://github.com/Miserlou/Zappa/issues/1014
-                        script_name = '/' + settings.API_STAGE
-                else:
-                    # This is a test request sent from the AWS console
-                    if settings.DOMAIN:
-                        # Assume the requests received will be on the specified
-                        # domain. No special handling is required
-                        pass
+                    if headers:
+                        host = headers.get('Host')
                     else:
-                        # Assume the requests received will be to the
-                        # amazonaws.com endpoint, so tell Flask to include the
-                        # API stage
-                        script_name = '/' + settings.API_STAGE
+                        host = None
+                    logger.debug('host found: [{}]'.format(host))
+
+                    if host:
+                        if 'amazonaws.com' in host:
+                            logger.debug('amazonaws found in host')
+                            # The path provided in th event doesn't include the
+                            # stage, so we must tell Flask to include the API
+                            # stage in the url it calculates. See https://github.com/Miserlou/Zappa/issues/1014
+                            script_name = '/' + settings.API_STAGE
+                    else:
+                        # This is a test request sent from the AWS console
+                        if settings.DOMAIN:
+                            # Assume the requests received will be on the specified
+                            # domain. No special handling is required
+                            pass
+                        else:
+                            # Assume the requests received will be to the
+                            # amazonaws.com endpoint, so tell Flask to include the
+                            # API stage
+                            script_name = '/' + settings.API_STAGE
 
                 base_path = getattr(settings, 'BASE_PATH', None)
 
@@ -530,39 +552,46 @@ class LambdaHandler(object):
                 environ['lambda.event'] = event
 
                 # Execute the application
-                response = Response.from_app(self.wsgi_app, environ)
+                with Response.from_app(self.wsgi_app, environ) as response:
+                    # This is the object we're going to return.
+                    # Pack the WSGI response into our special dictionary.
+                    zappa_returndict = dict()
 
-                # This is the object we're going to return.
-                # Pack the WSGI response into our special dictionary.
-                zappa_returndict = dict()
+                    # Issue #1715: ALB support. ALB responses must always include
+                    # base64 encoding and status description
+                    if is_elb_context:
+                        zappa_returndict.setdefault('isBase64Encoded', False)
+                        zappa_returndict.setdefault('statusDescription', response.status)
 
-                if response.data:
-                    if settings.BINARY_SUPPORT:
-                        if not response.mimetype.startswith("text/") \
-                            or response.mimetype != "application/json":
-                                zappa_returndict['body'] = base64.b64encode(response.data).decode('utf-8')
-                                zappa_returndict["isBase64Encoded"] = True
+                    if response.data:
+                        if settings.BINARY_SUPPORT and \
+                                not response.mimetype.startswith("text/") \
+                                and response.mimetype != "application/json":
+                            zappa_returndict['body'] = base64.b64encode(response.data).decode('utf-8')
+                            zappa_returndict["isBase64Encoded"] = True
                         else:
-                            zappa_returndict['body'] = response.data
-                    else:
-                        zappa_returndict['body'] = response.get_data(as_text=True)
+                            zappa_returndict['body'] = response.get_data(as_text=True)
 
-                zappa_returndict['statusCode'] = response.status_code
-                zappa_returndict['headers'] = {}
-                for key, value in response.headers:
-                    zappa_returndict['headers'][key] = value
+                    zappa_returndict['statusCode'] = response.status_code
+                    if 'headers' in event:
+                        zappa_returndict['headers'] = {}
+                        for key, value in response.headers:
+                            zappa_returndict['headers'][key] = value
+                    if 'multiValueHeaders' in event:
+                        zappa_returndict['multiValueHeaders'] = {}
+                        for key, value in response.headers:
+                            zappa_returndict['multiValueHeaders'][key] = response.headers.getlist(key)
 
-                # Calculate the total response time,
-                # and log it in the Common Log format.
-                time_end = datetime.datetime.now()
-                delta = time_end - time_start
-                response_time_ms = delta.total_seconds() * 1000
-                response.content = response.data
-                common_log(environ, response, response_time=response_time_ms)
+                    # Calculate the total response time,
+                    # and log it in the Common Log format.
+                    time_end = datetime.datetime.now()
+                    delta = time_end - time_start
+                    response_time_ms = delta.total_seconds() * 1000
+                    response.content = response.data
+                    common_log(environ, response, response_time=response_time_ms)
 
-                return zappa_returndict
+                    return zappa_returndict
         except Exception as e:  # pragma: no cover
-
             # Print statements are visible in the logs either way
             print(e)
             exc_info = sys.exc_info()
