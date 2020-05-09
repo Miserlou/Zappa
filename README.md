@@ -1352,10 +1352,6 @@ Out of the box, AWS sets a limit of [1000 concurrent executions](http://docs.aws
 
 To avoid this, you can file a [service ticket](https://console.aws.amazon.com/support/home#/) with Amazon to raise your limits up to the many tens of thousands of concurrent executions which you may need. This is a fairly common practice with Amazon, designed to prevent you from accidentally creating extremely expensive bug reports. So, before raising your service limits, make sure that you don't have any rogue scripts which could accidentally create tens of thousands of parallel executions that you don't want to pay for.
 
-### Using Zappa With Docker
-
-If Docker is part of your team's CI, testing, or deployments, you may want to check out [this handy guide](https://blog.zappa.io/posts/simplified-aws-lambda-deployments-with-docker-and-zappa) on using Zappa with Docker.
-
 ### Dead Letter Queues
 
 If you want to utilise [AWS Lambda's Dead Letter Queue feature](http://docs.aws.amazon.com/lambda/latest/dg/dlq.html) simply add the key `dead_letter_arn`, with the value being the complete ARN to the corresponding SNS topic or SQS queue in your `zappa_settings.json`.
@@ -1477,8 +1473,6 @@ apigateway_resource_policy.json:
 
 ## Sites Using Zappa
 
-* [Zappa.io](https://www.zappa.io) - A simple Zappa homepage
-* [Zappatista!](https://blog.zappa.io) - The official Zappa blog!
 * [Mailchimp Signup Utility](https://github.com/sasha42/Mailchimp-utility) - A microservice for adding people to a mailing list via API.
 * [Zappa Slack Inviter](https://github.com/Miserlou/zappa-slack-inviter) - A tiny, server-less service for inviting new users to your Slack channel.
 * [Serverless Image Host](https://github.com/Miserlou/serverless-imagehost) - A thumbnailing service with Flask, Zappa and Pillow.
@@ -1539,7 +1533,7 @@ If you are adding a non-trivial amount of new code, please include a functioning
 
 Please include the GitHub issue or pull request URL that has discussion related to your changes as a comment in the code ([example](https://github.com/Miserlou/Zappa/blob/fae2925431b820eaedf088a632022e4120a29f89/zappa/zappa.py#L241-L243)). This greatly helps for project maintainability, as it allows us to trace back use cases and explain decision making. Similarly, please make sure that you meet all of the requirements listed in the [pull request template](https://raw.githubusercontent.com/Miserlou/Zappa/master/.github/PULL_REQUEST_TEMPLATE.md).
 
-Please feel free to work on any open ticket, especially any ticket marked with the "help-wanted" label. If you get stuck or want to discuss an issue further, please join [our Slack channel](https://slack.zappa.io), where you'll find a community of smart and interesting people working dilligently on hard problems.
+Please feel free to work on any open ticket, especially any ticket marked with the "help-wanted" label. If you get stuck or want to discuss an issue further, please join [our Slack channel](https://zappateam.slack.com/), where you'll find a community of smart and interesting people working dilligently on hard problems.
 
 Zappa does not intend to conform to PEP8, isolate your commits so that changes to functionality with changes made by your linter.
 
@@ -1581,13 +1575,6 @@ Zappa is currently supported by these awesome individuals and companies:
   * **Philippe Trounev**
 
 Thank you very, very much!
-
-## Merch
-
-<br />
-<p align="center">
-  <a href="https://blog.zappa.io/posts/weve-got-merch-now-introducing-zappa-tshirts"><img src="https://i.imgur.com/jYZ7aUR.png" alt="Merch!"/></a>
-</p>
 
 ## Support / Development / Training / Consulting
 
