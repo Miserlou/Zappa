@@ -73,7 +73,6 @@
   - [AWS X-Ray](#aws-x-ray)
   - [Globally Available Server-less Architectures](#globally-available-server-less-architectures)
   - [Raising AWS Service Limits](#raising-aws-service-limits)
-  - [Using Zappa With Docker](#using-zappa-with-docker)
   - [Dead Letter Queues](#dead-letter-queues)
   - [Unique Package ID](#unique-package-id)
   - [Application Load Balancer Event Source](#application-load-balancer-event-source)
@@ -87,7 +86,6 @@
 - [Contributing](#contributing)
     - [Using a Local Repo](#using-a-local-repo)
 - [Patrons](#patrons)
-- [Merch](#merch)
 - [Support / Development / Training / Consulting](#support--development--training--consulting)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
