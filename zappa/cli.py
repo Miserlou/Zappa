@@ -2224,6 +2224,7 @@ class ZappaCLI:
                 use_precompiled_packages=self.stage_config.get('use_precompiled_packages', True),
                 exclude=self.stage_config.get('exclude', []),
                 exclude_glob=self.stage_config.get('exclude_glob', []),
+                exclude_pathspec=self.stage_config.get('exclude_pathspec', []),
                 disable_progress=self.disable_progress,
                 archive_format='tarball'
             )
@@ -2239,6 +2240,7 @@ class ZappaCLI:
                 slim_handler=True,
                 exclude=exclude,
                 exclude_glob=self.stage_config.get('exclude_glob', []),
+                exclude_pathspec=self.stage_config.get('exclude_pathspec', []),
                 output=output,
                 disable_progress=self.disable_progress
             )
@@ -2260,6 +2262,7 @@ class ZappaCLI:
                 use_precompiled_packages=self.stage_config.get('use_precompiled_packages', True),
                 exclude=exclude,
                 exclude_glob=self.stage_config.get('exclude_glob', []),
+                exclude_pathspec=self.stage_config.get('exclude_pathspec', []),
                 output=output,
                 disable_progress=self.disable_progress
             )
