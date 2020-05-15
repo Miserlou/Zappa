@@ -1677,12 +1677,23 @@ USE_TZ = True
             "this.is.my.dang.function.wassup.yeah.its.long")
         self.assertTrue(len(truncated) == 64)
 
-        rule_name = zappa.get_hashed_rule_name(
+        rule_name_index0 = zappa.get_hashed_rule_name(
             event=dict(name='some-event-name'),
             function="this.is.my.dang.function.wassup.yeah.its.long",
-            lambda_name="basldfkjalsdkfjalsdkfjaslkdfjalsdkfjadlsfkjasdlfkjasdlfkjasdflkjasdf-asdfasdfasdfasdfasdf")
-        self.assertTrue(len(rule_name) <= 64)
-        self.assertTrue(rule_name.endswith("-this.is.my.dang.function.wassup.yeah.its.long"))
+            lambda_name="basldfkjalsdkfjalsdkfjaslkdfjalsdkfjadlsfkjasdlfkjasdlfkjasdflkjasdf-asdfasdfasdfasdfasdf",
+            index=0)
+        self.assertTrue(len(rule_name_index0) <= 64)
+        self.assertTrue(rule_name_index0.endswith("-this.is.my.dang.function.wassup.yeah.its.long"))
+
+        rule_name_index1 = zappa.get_hashed_rule_name(
+            event=dict(name='some-event-name'),
+            function="this.is.my.dang.function.wassup.yeah.its.long",
+            lambda_name="basldfkjalsdkfjalsdkfjaslkdfjalsdkfjadlsfkjasdlfkjasdlfkjasdflkjasdf-asdfasdfasdfasdfasdf",
+            index=1)
+        self.assertTrue(len(rule_name_index1) <= 64)
+        self.assertTrue(rule_name_index1.endswith("-this.is.my.dang.function.wassup.yeah.its.long"))
+
+        self.assertNotEqual(rule_name_index0, rule_name_index1)
 
     def test_detect_dj(self):
         # Sanity

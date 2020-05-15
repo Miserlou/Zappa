@@ -2688,7 +2688,7 @@ class Zappa:
                     # if it's possible that we truncated name, generate a unique, shortened name
                     # https://github.com/Miserlou/Zappa/issues/970
                     if len(name) >= 64:
-                        rule_name = self.get_hashed_rule_name(event, function, lambda_name)
+                        rule_name = self.get_hashed_rule_name(event, function, lambda_name, index)
                     else:
                         rule_name = name
 
@@ -2806,13 +2806,22 @@ class Zappa:
         return '{prefix:.{width}}-{postfix}'.format(prefix=lambda_name, width=max(0, 63 - len(name)), postfix=name)[:64]
 
     @staticmethod
-    def get_hashed_rule_name(event, function, lambda_name):
+    def get_hashed_rule_name(event, function, lambda_name, index=0):
         """
-        Returns an AWS-valid CloudWatch rule name using a digest of the event name, lambda name, and function.
+        Returns an AWS-valid CloudWatch rule name using a digest of the event name, lambda name, function,
+        and an index in the case of multiple scheduling expressions.
+
         This allows support for rule names that may be longer than the 64 char limit.
         """
         event_name = event.get('name', function)
-        name_hash = hashlib.sha1('{}-{}'.format(lambda_name, event_name).encode('UTF-8')).hexdigest()
+        name = '{}-{}'.format(lambda_name, event_name)
+
+        # Similarly to get_scheduled_event_name, we need unique rule names in case of multiple expressions.
+        # Related: https://github.com/Miserlou/Zappa/issues/1727
+        if index:
+            name = '{}-{}'.format(name, index)
+
+        name_hash = hashlib.sha1(name.encode('UTF-8')).hexdigest()
         return Zappa.get_event_name(name_hash, function)
 
     def delete_rule(self, rule_name):
