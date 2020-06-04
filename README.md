@@ -839,7 +839,7 @@ to change Zappa's behavior. Use these at your own risk!
         "aws_environment_variables" : {"your_key": "your_value"}, // A dictionary of environment variables that will be available to your deployed app via AWS Lambdas native environment variables. See also "environment_variables" and "remote_env" . Default {}.
         "aws_kms_key_arn": "your_aws_kms_key_arn", // Your AWS KMS Key ARN
         "aws_region": "aws-region-name", // optional, uses region set in profile or environment variables if not set here,
-        "binary_support": true, // Enable automatic MIME-type based response encoding through API Gateway. Default true.
+        "binary_support": true, // Enable automatic MIME-type based response encoding through API Gateway. Default false.
         "callbacks": { // Call custom functions during the local Zappa deployment/update process
             "settings": "my_app.settings_callback", // After loading the settings
             "zip": "my_app.zip_callback", // After creating the package
