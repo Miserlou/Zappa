@@ -312,7 +312,7 @@ class LambdaHandler:
             arn = record['s3']['bucket']['arn']
 
         if arn:
-            return self.settings.AWS_EVENT_MAPPING.get(arn, self.settings.DEFAULT_EVENT_HANDLER)
+            return self.settings.AWS_EVENT_MAPPING.get(arn, self.settings.AWS_DEFAULT_EVENT_HANDLER)
 
         return None
 
