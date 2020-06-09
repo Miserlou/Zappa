@@ -615,6 +615,18 @@ def your_recurring_function(event, context):
 
 You can find more [example event sources here](http://docs.aws.amazon.com/lambda/latest/dg/eventsources.html).
 
+You can also respond to events dynamically using the `default_event_handler` setting, which can be useful for handling events from unknown sources or sources configured at run time:
+
+```javascript
+{
+  "production": {
+    ...,
+    "default_event_handler": "your_module.your_handler_function",
+    ...
+  }
+}
+```
+
 ## Asynchronous Task Execution
 
 Zappa also now offers the ability to seamlessly execute functions asynchronously in a completely separate AWS Lambda instance!
