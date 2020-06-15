@@ -85,3 +85,9 @@ zappa_settings.json
 # Sublime Text stuff
 *.sublime-project
 *.sublime-workspace
+
+README.test.md
+.vscode
+
+.mypy_cache
+.pytest_cache

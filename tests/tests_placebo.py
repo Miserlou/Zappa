@@ -199,102 +199,102 @@ class TestZappa(unittest.TestCase):
 
         # Test scheduled event
         event = {
-                    u'account': u'72333333333',
-                    u'region': u'us-east-1',
-                    u'detail': {},
-                    u'detail-type': u'Scheduled Event',
-                    u'source': u'aws.events',
-                    u'version': u'0',
-                    u'time': u'2016-05-10T21:05:39Z',
-                    u'id': u'0d6a6db0-d5e7-4755-93a0-750a8bf49d55',
-                    u'resources': [u'arn:aws:events:us-east-1:72333333333:rule/tests.test_app.schedule_me']
+                    'account': '72333333333',
+                    'region': 'us-east-1',
+                    'detail': {},
+                    'detail-type': 'Scheduled Event',
+                    'source': 'aws.events',
+                    'version': '0',
+                    'time': '2016-05-10T21:05:39Z',
+                    'id': '0d6a6db0-d5e7-4755-93a0-750a8bf49d55',
+                    'resources': ['arn:aws:events:us-east-1:72333333333:rule/tests.test_app.schedule_me']
                 }
         lh.handler(event, None)
 
         # Test command event
         event = {
-                    u'account': u'72333333333',
-                    u'region': u'us-east-1',
-                    u'detail': {},
-                    u'command': u'test_settings.command',
-                    u'source': u'aws.events',
-                    u'version': u'0',
-                    u'time': u'2016-05-10T21:05:39Z',
-                    u'id': u'0d6a6db0-d5e7-4755-93a0-750a8bf49d55',
-                    u'resources': [u'arn:aws:events:us-east-1:72333333333:rule/tests.test_app.schedule_me']
+                    'account': '72333333333',
+                    'region': 'us-east-1',
+                    'detail': {},
+                    'command': 'test_settings.command',
+                    'source': 'aws.events',
+                    'version': '0',
+                    'time': '2016-05-10T21:05:39Z',
+                    'id': '0d6a6db0-d5e7-4755-93a0-750a8bf49d55',
+                    'resources': ['arn:aws:events:us-east-1:72333333333:rule/tests.test_app.schedule_me']
                 }
         lh.handler(event, None)
 
         # Test command for async event
         event = {
-                    u'account': u'72333333333',
-                    u'region': u'us-east-1',
-                    u'detail': {},
-                    u'command': u'zappa.async.route_lambda_task',
-                    u'task_path': u'tests.test_app.async_me',
-                    u'args': [u'xxx'],
-                    u'kwargs': {},
-                    u'source': u'aws.events',
-                    u'version': u'0',
-                    u'time': u'2016-05-10T21:05:39Z',
-                    u'id': u'0d6a6db0-d5e7-4755-93a0-750a8bf49d55',
+                    'account': '72333333333',
+                    'region': 'us-east-1',
+                    'detail': {},
+                    'command': 'zappa.asynchronous.route_lambda_task',
+                    'task_path': 'tests.test_app.async_me',
+                    'args': ['xxx'],
+                    'kwargs': {},
+                    'source': 'aws.events',
+                    'version': '0',
+                    'time': '2016-05-10T21:05:39Z',
+                    'id': '0d6a6db0-d5e7-4755-93a0-750a8bf49d55',
                 }
         self.assertEqual('run async when on lambda xxx', lh.handler(event, None))
-        event[u'kwargs'] = {'foo': 'bar'}
+        event['kwargs'] = {'foo': 'bar'}
         self.assertEqual('run async when on lambda xxxbar', lh.handler(event, None))
 
         # Test raw_command event
         event = {
-                    u'account': u'72333333333',
-                    u'region': u'us-east-1',
-                    u'detail': {},
-                    u'raw_command': u'print("check one two")',
-                    u'source': u'aws.events',
-                    u'version': u'0',
-                    u'time': u'2016-05-10T21:05:39Z',
-                    u'id': u'0d6a6db0-d5e7-4755-93a0-750a8bf49d55',
-                    u'resources': [u'arn:aws:events:us-east-1:72333333333:rule/tests.test_app.schedule_me']
+                    'account': '72333333333',
+                    'region': 'us-east-1',
+                    'detail': {},
+                    'raw_command': 'print("check one two")',
+                    'source': 'aws.events',
+                    'version': '0',
+                    'time': '2016-05-10T21:05:39Z',
+                    'id': '0d6a6db0-d5e7-4755-93a0-750a8bf49d55',
+                    'resources': ['arn:aws:events:us-east-1:72333333333:rule/tests.test_app.schedule_me']
                 }
         lh.handler(event, None)
 
         # Test AWS S3 event
         event = {
-                    u'account': u'72333333333',
-                    u'region': u'us-east-1',
-                    u'detail': {},
-                    u'Records': [{'s3': {'configurationId': 'test_project:test_settings.aws_s3_event'}}],
-                    u'source': u'aws.events',
-                    u'version': u'0',
-                    u'time': u'2016-05-10T21:05:39Z',
-                    u'id': u'0d6a6db0-d5e7-4755-93a0-750a8bf49d55',
-                    u'resources': [u'arn:aws:events:us-east-1:72333333333:rule/tests.test_app.schedule_me']
+                    'account': '72333333333',
+                    'region': 'us-east-1',
+                    'detail': {},
+                    'Records': [{'s3': {'configurationId': 'test_project:test_settings.aws_s3_event'}}],
+                    'source': 'aws.events',
+                    'version': '0',
+                    'time': '2016-05-10T21:05:39Z',
+                    'id': '0d6a6db0-d5e7-4755-93a0-750a8bf49d55',
+                    'resources': ['arn:aws:events:us-east-1:72333333333:rule/tests.test_app.schedule_me']
                 }
         self.assertEqual("AWS S3 EVENT", lh.handler(event, None))
 
         # Test AWS SNS event
         event = {
-            u'account': u'72333333333',
-            u'region': u'us-east-1',
-            u'detail': {},
-            u'Records': [
+            'account': '72333333333',
+            'region': 'us-east-1',
+            'detail': {},
+            'Records': [
                 {
-                    u'EventVersion': u'1.0',
-                    u'EventSource': u'aws:sns',
-                    u'EventSubscriptionArn': u'arn:aws:sns:EXAMPLE',
-                    u'Sns': {
-                        u'SignatureVersion': u'1',
-                        u'Timestamp': u'1970-01-01T00:00:00.000Z',
-                        u'Signature': u'EXAMPLE',
-                        u'SigningCertUrl': u'EXAMPLE',
-                        u'MessageId': u'95df01b4-ee98-5cb9-9903-4c221d41eb5e',
-                        u'Message': u'Hello from SNS!',
-                        u'Subject': u'TestInvoke',
-                        u'Type': u'Notification',
-                        u'UnsubscribeUrl': u'EXAMPLE',
-                        u'TopicArn': u'arn:aws:sns:1',
-                        u'MessageAttributes': {
-                            u'Test': {u'Type': u'String', u'Value': u'TestString'},
-                            u'TestBinary': {u'Type': u'Binary', u'Value': u'TestBinary'}
+                    'EventVersion': '1.0',
+                    'EventSource': 'aws:sns',
+                    'EventSubscriptionArn': 'arn:aws:sns:EXAMPLE',
+                    'Sns': {
+                        'SignatureVersion': '1',
+                        'Timestamp': '1970-01-01T00:00:00.000Z',
+                        'Signature': 'EXAMPLE',
+                        'SigningCertUrl': 'EXAMPLE',
+                        'MessageId': '95df01b4-ee98-5cb9-9903-4c221d41eb5e',
+                        'Message': 'Hello from SNS!',
+                        'Subject': 'TestInvoke',
+                        'Type': 'Notification',
+                        'UnsubscribeUrl': 'EXAMPLE',
+                        'TopicArn': 'arn:aws:sns:1',
+                        'MessageAttributes': {
+                            'Test': {'Type': 'String', 'Value': 'TestString'},
+                            'TestBinary': {'Type': 'Binary', 'Value': 'TestBinary'}
                         }
                     }
                 }
@@ -304,28 +304,28 @@ class TestZappa(unittest.TestCase):
 
         # Test AWS SNS event
         event = {
-            u'account': u'72333333333',
-            u'region': u'us-east-1',
-            u'detail': {},
-            u'Records': [
+            'account': '72333333333',
+            'region': 'us-east-1',
+            'detail': {},
+            'Records': [
                 {
-                    u'EventVersion': u'1.0',
-                    u'EventSource': u'aws:sns',
-                    u'EventSubscriptionArn': u'arn:aws:sns:EXAMPLE',
-                    u'Sns': {
-                        u'SignatureVersion': u'1',
-                        u'Timestamp': u'1970-01-01T00:00:00.000Z',
-                        u'Signature': u'EXAMPLE',
-                        u'SigningCertUrl': u'EXAMPLE',
-                        u'MessageId': u'95df01b4-ee98-5cb9-9903-4c221d41eb5e',
-                        u'Message': u'{"args": ["arg1", "arg2"], "command": "zappa.async.route_sns_task", '
-                                    u'"task_path": "test_settings.aws_async_sns_event", "kwargs": {"arg3": "varg3"}}',
-                        u'Subject': u'TestInvoke',
-                        u'Type': u'Notification',
-                        u'UnsubscribeUrl': u'EXAMPLE',
-                        u'MessageAttributes': {
-                            u'Test': {u'Type': u'String', u'Value': u'TestString'},
-                            u'TestBinary': {u'Type': u'Binary', u'Value': u'TestBinary'}
+                    'EventVersion': '1.0',
+                    'EventSource': 'aws:sns',
+                    'EventSubscriptionArn': 'arn:aws:sns:EXAMPLE',
+                    'Sns': {
+                        'SignatureVersion': '1',
+                        'Timestamp': '1970-01-01T00:00:00.000Z',
+                        'Signature': 'EXAMPLE',
+                        'SigningCertUrl': 'EXAMPLE',
+                        'MessageId': '95df01b4-ee98-5cb9-9903-4c221d41eb5e',
+                        'Message': '{"args": ["arg1", "arg2"], "command": "zappa.asynchronous.route_sns_task", '
+                                    '"task_path": "test_settings.aws_async_sns_event", "kwargs": {"arg3": "varg3"}}',
+                        'Subject': 'TestInvoke',
+                        'Type': 'Notification',
+                        'UnsubscribeUrl': 'EXAMPLE',
+                        'MessageAttributes': {
+                            'Test': {'Type': 'String', 'Value': 'TestString'},
+                            'TestBinary': {'Type': 'Binary', 'Value': 'TestBinary'}
                         }
                     }
                 }
@@ -335,20 +335,20 @@ class TestZappa(unittest.TestCase):
 
         # Test AWS DynamoDB event
         event = {
-            u'Records': [
+            'Records': [
                 {
-                    u'eventID': u'1',
-                    u'eventVersion': u'1.0',
-                    u'dynamodb': {
-                        u'Keys': {u'Id': {u'N': u'101'}},
-                        u'NewImage': {u'Message': {u'S': u'New item!'}, u'Id': {u'N': u'101'}},
-                        u'StreamViewType': u'NEW_AND_OLD_IMAGES',
-                        u'SequenceNumber': u'111', u'SizeBytes': 26
+                    'eventID': '1',
+                    'eventVersion': '1.0',
+                    'dynamodb': {
+                        'Keys': {'Id': {'N': '101'}},
+                        'NewImage': {'Message': {'S': 'New item!'}, 'Id': {'N': '101'}},
+                        'StreamViewType': 'NEW_AND_OLD_IMAGES',
+                        'SequenceNumber': '111', 'SizeBytes': 26
                     },
-                    u'awsRegion': u'us-west-2',
-                    u'eventName': u'INSERT',
-                    u'eventSourceARN': u'arn:aws:dynamodb:1',
-                    u'eventSource': u'aws:dynamodb'
+                    'awsRegion': 'us-west-2',
+                    'eventName': 'INSERT',
+                    'eventSourceARN': 'arn:aws:dynamodb:1',
+                    'eventSource': 'aws:dynamodb'
                 }
             ]
         }
@@ -356,28 +356,51 @@ class TestZappa(unittest.TestCase):
 
         # Test AWS kinesis event
         event = {
-            u'Records': [
+            'Records': [
                 {
-                    u'eventID': u'shardId-000000000000:49545115243490985018280067714973144582180062593244200961',
-                    u'eventVersion': u'1.0',
-                    u'kinesis': {
-                        u'partitionKey': u'partitionKey-3',
-                        u'data': u'SGVsbG8sIHRoaXMgaXMgYSB0ZXN0IDEyMy4=',
-                        u'kinesisSchemaVersion': u'1.0',
-                        u'sequenceNumber': u'49545115243490985018280067714973144582180062593244200961'
+                    'eventID': 'shardId-000000000000:49545115243490985018280067714973144582180062593244200961',
+                    'eventVersion': '1.0',
+                    'kinesis': {
+                        'partitionKey': 'partitionKey-3',
+                        'data': 'SGVsbG8sIHRoaXMgaXMgYSB0ZXN0IDEyMy4=',
+                        'kinesisSchemaVersion': '1.0',
+                        'sequenceNumber': '49545115243490985018280067714973144582180062593244200961'
                     },
-                    u'invokeIdentityArn': u'arn:aws:iam::EXAMPLE',
-                    u'eventName': u'aws:kinesis:record',
-                    u'eventSourceARN': u'arn:aws:kinesis:1',
-                    u'eventSource': u'aws:kinesis',
-                    u'awsRegion': u'us-east-1'
+                    'invokeIdentityArn': 'arn:aws:iam::EXAMPLE',
+                    'eventName': 'aws:kinesis:record',
+                    'eventSourceARN': 'arn:aws:kinesis:1',
+                    'eventSource': 'aws:kinesis',
+                    'awsRegion': 'us-east-1'
                  }
             ]
         }
         self.assertEqual("AWS KINESIS EVENT", lh.handler(event, None))
 
+        # Test AWS SQS event
+        event = {
+            "Records": [
+                {
+                    "messageId": "c80e8021-a70a-42c7-a470-796e1186f753",
+                    "receiptHandle": "AQEBJQ+/u6NsnT5t8Q/VbVxgdUl4TMKZ5FqhksRdIQvLBhwNvADoBxYSOVeCBXdnS9P+erlTtwEALHsnBXynkfPLH3BOUqmgzP25U8kl8eHzq6RAlzrSOfTO8ox9dcp6GLmW33YjO3zkq5VRYyQlJgLCiAZUpY2D4UQcE5D1Vm8RoKfbE+xtVaOctYeINjaQJ1u3mWx9T7tork3uAlOe1uyFjCWU5aPX/1OHhWCGi2EPPZj6vchNqDOJC/Y2k1gkivqCjz1CZl6FlZ7UVPOx3AMoszPuOYZ+Nuqpx2uCE2MHTtMHD8PVjlsWirt56oUr6JPp9aRGo6bitPIOmi4dX0FmuMKD6u/JnuZCp+AXtJVTmSHS8IXt/twsKU7A+fiMK01NtD5msNgVPoe9JbFtlGwvTQ==",
+                    "body": "{\"foo\":\"bar\"}",
+                    "attributes": {
+                        "ApproximateReceiveCount": "3",
+                        "SentTimestamp": "1529104986221",
+                        "SenderId": "594035263019",
+                        "ApproximateFirstReceiveTimestamp": "1529104986230"
+                        },
+                    "messageAttributes": {},
+                    "md5OfBody": "9bb58f26192e4ba00f01e2e7b136bbd8",
+                    "eventSource": "aws:sqs",
+                    "eventSourceARN": "arn:aws:sqs:1",
+                    "awsRegion": "us-east-1"
+                    }
+                ]
+            }
+        self.assertEqual("AWS SQS EVENT", lh.handler(event, None))
+
         # Test Authorizer event
-        event = {u'authorizationToken': u'hubtoken1', u'methodArn': u'arn:aws:execute-api:us-west-2:1234:xxxxx/dev/GET/v1/endpoint/param', u'type': u'TOKEN'}
+        event = {'authorizationToken': 'hubtoken1', 'methodArn': 'arn:aws:execute-api:us-west-2:1234:xxxxx/dev/GET/v1/endpoint/param', 'type': 'TOKEN'}
         self.assertEqual("AUTHORIZER_EVENT", lh.handler(event, None))
 
         # Ensure Zappa does return 401 if no function was defined.
@@ -387,17 +410,17 @@ class TestZappa(unittest.TestCase):
 
         # Unhandled event
         event = {
-            u'Records': [
+            'Records': [
                 {
-                    u'eventID': u'shardId-000000000000:49545115243490985018280067714973144582180062593244200961',
-                    u'eventVersion': u'1.0',
-                    u'kinesis': {
-                        u'partitionKey': u'partitionKey-3',
-                        u'data': u'SGVsbG8sIHRoaXMgaXMgYSB0ZXN0IDEyMy4=',
-                        u'kinesisSchemaVersion': u'1.0',
-                        u'sequenceNumber': u'49545115243490985018280067714973144582180062593244200961'
+                    'eventID': 'shardId-000000000000:49545115243490985018280067714973144582180062593244200961',
+                    'eventVersion': '1.0',
+                    'kinesis': {
+                        'partitionKey': 'partitionKey-3',
+                        'data': 'SGVsbG8sIHRoaXMgaXMgYSB0ZXN0IDEyMy4=',
+                        'kinesisSchemaVersion': '1.0',
+                        'sequenceNumber': '49545115243490985018280067714973144582180062593244200961'
                     },
-                    u'eventSourceARN': u'bad:arn:1',
+                    'eventSourceARN': 'bad:arn:1',
                 }
             ]
         }
@@ -484,7 +507,10 @@ class TestZappa(unittest.TestCase):
         zappa_cli.lambda_arn = 'arn:aws:lambda:us-east-1:12345:function:Zappa-Trigger-Test'
         zappa_cli.update_cognito_triggers()
 
-
+    @placebo_session
+    def test_cognito_trigger_existing_UnusedAccountValidityDays(self, session):
+        z = Zappa(session)
+        z.update_cognito('Zappa-Trigger-Test', 'us-east-1_9jUv74DH8', {'PreSignUp': 'test.tasks.pre_signup'}, 'arn:aws:lambda:us-east-1:12345:function:Zappa-Trigger-Test')
 
 
 if __name__ == '__main__':

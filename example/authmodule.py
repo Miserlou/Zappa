@@ -4,8 +4,6 @@ Licensed under the Apache License, Version 2.0 (the "License"). You may not use 
      http://aws.amazon.com/apache2.0/
 or in the "license" file accompanying this file. This file is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 """
-from __future__ import print_function
-
 import re
 import time
 import pprint
@@ -70,20 +68,20 @@ class HttpVerb:
     OPTIONS = "OPTIONS"
     ALL     = "*"
 
-class AuthPolicy(object):
+class AuthPolicy:
     awsAccountId = ""
     """The AWS account id the policy will be generated for. This is used to create the method ARNs."""
     principalId = ""
     """The principal used for the policy, this should be a unique identifier for the end user."""
     version = "2012-10-17"
     """The policy version used for the evaluation. This should always be '2012-10-17'"""
-    pathRegex = "^[/.a-zA-Z0-9-\*]+$"
+    pathRegex = r"^[/.a-zA-Z0-9-\*]+$"
     """The regular expression used to validate resource paths for the policy"""
 
     """these are the internal lists of allowed and denied methods. These are lists
     of objects and each object has 2 properties: A resource ARN and a nullable
     conditions statement.
-    the build method processes these lists and generates the approriate
+    the build method processes these lists and generates the appropriate
     statements for the final policy"""
     allowMethods = []
     denyMethods = []

@@ -28,10 +28,7 @@ import binascii
 import textwrap
 import requests
 
-try:
-    from urllib.request import urlopen  # Python 3
-except ImportError:
-    from urllib2 import urlopen  # Python 2
+from urllib.request import urlopen
 
 # Staging
 # Amazon doesn't accept these though.
@@ -287,7 +284,7 @@ def get_cert(zappa_instance, log=LOGGER, CA=DEFAULT_CA):
 
     # Sign
     result = sign_certificate()
-    # Encode to PEM formate
+    # Encode to PEM format
     encode_certificate(result)
 
     return True
@@ -411,7 +408,7 @@ def gettempdir():
     """
     global __tempdir
     if __tempdir is not None:
-        return __tempdir 
+        return __tempdir
     __tempdir = tempfile.mkdtemp()
     return __tempdir
 
