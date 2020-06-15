@@ -250,7 +250,8 @@ class Zappa:
             runtime='python3.6', # Detected at runtime in CLI
             tags=(),
             endpoint_urls={},
-            xray_tracing=False
+            xray_tracing=False,
+            boto_client_config={},
         ):
         """
         Instantiate this new Zappa instance, loading any custom credentials if necessary.
@@ -300,6 +301,7 @@ class Zappa:
             'connect_timeout': 5,
             'read_timeout': 300
         }
+        long_config_dict.update(boto_client_config)
         long_config = botocore.client.Config(**long_config_dict)
 
         if load_credentials:
