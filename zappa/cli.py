@@ -1022,11 +1022,14 @@ class ZappaCLI:
             # but we're also updating a few of the APIGW settings.
             endpoint_url = self.deploy_api_gateway(api_id)
 
-            if self.stage_config.get('domain', None):
-                endpoint_url = self.stage_config.get('domain')
+        if self.domain:
+            endpoint_url = self.domain
 
-        else:
-            endpoint_url = None
+        if endpoint_url:
+            if self.base_path and not endpoint_url.endswith('/' + self.base_path):
+                endpoint_url += '/' + self.base_path
+            if endpoint_url and not endpoint_url.startswith('https://'):
+                endpoint_url = 'https://' + endpoint_url
 
         self.schedule()
 
@@ -1035,12 +1038,6 @@ class ZappaCLI:
         self.update_cognito_triggers()
 
         self.callback('post')
-
-        if endpoint_url and 'https://' not in endpoint_url:
-            endpoint_url = 'https://' + endpoint_url
-
-        if self.base_path:
-            endpoint_url += '/' + self.base_path
 
         deployed_string = "Your updated Zappa deployment is " + click.style("live", fg='green', bold=True) + "!"
         if self.use_apigateway:
