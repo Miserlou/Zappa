@@ -210,9 +210,6 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
     to schedule this event, and return the event source.
 
     """
-
-    # TODO: Jerry - fix for S3
-
     import kappa.function
     import kappa.restapi
     import kappa.event_source.base
@@ -484,8 +481,6 @@ def add_event_source(event_source, lambda_arn, target_function, boto_session, dr
     Given an event_source dictionary, create the object and add the event source.
     """
 
-    # TODO: Jerry - fix for S3 - need .status and .add
-
     event_source_obj, ctx, funk = get_event_source(event_source, lambda_arn, target_function, boto_session, dry=False)
     # TODO: Detect changes in config and refine exists algorithm
     if not dry:
@@ -502,8 +497,6 @@ def remove_event_source(event_source, lambda_arn, target_function, boto_session,
     Given an event_source dictionary, create the object and remove the event source.
     """
 
-    # TODO: Jerry - fix for S3 - need .status and .remove
-
     event_source_obj, ctx, funk = get_event_source(event_source, lambda_arn, target_function, boto_session, dry=False)
 
     # This is slightly dirty, but necessary for using Kappa this way.
@@ -518,8 +511,6 @@ def get_event_source_status(event_source, lambda_arn, target_function, boto_sess
     """
     Given an event_source dictionary, create the object and get the event source status.
     """
-
-    # TODO: Jerry - fix for S3 - need .status  (actually, this method appears unused...)
 
     event_source_obj, ctx, funk = get_event_source(event_source, lambda_arn, target_function, boto_session, dry=False)
     return event_source_obj.status(funk)
