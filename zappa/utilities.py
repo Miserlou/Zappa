@@ -351,9 +351,13 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
             if self.filters:
                 self.add_filters(function)
 
-    # reimplementing this entire class rather than extending the Kappa version because only the constructor is reused
+    # This class allows for correct addition, updates, and deletes of S3 trigger events when there are multiple events
+    # on a bucket that may be tied to different stages with different filters by limiting changes only to events tied
+    # to the targeted method and stage unlike the handler in Kappa.
+    # Related: https://github.com/Miserlou/Zappa/issues/2111
+    # This entire class is reimplemented rather than extending the Kappa version because only the constructor is reused
     # and I didn't want any future usages or extentions to accidentally fall through to Kappa's object via one of the
-    # 'aliases' it sets up
+    # 'aliases' it sets up.
     class ImprovedS3EventSource(kappa.event_source.base.EventSource):
         def __init__(self, context, config):
             super(ImprovedS3EventSource, self).__init__(context, config)
@@ -405,10 +409,9 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
             LOG.debug(bucket_config)
 
             new_config = []
-            if 'LambdaFunctionConfigurations' in bucket_config:
-                for configuration in bucket_config['LambdaFunctionConfigurations']:
-                    if configuration['Id'] != self._make_notification_id(function.name):
-                        new_config.append(configuration)
+            for configuration in bucket_config.get('LambdaFunctionConfigurations', []):
+                if configuration['Id'] != self._make_notification_id(function.name):
+                    new_config.append(configuration)
             response = self._s3.call('put_bucket_notification_configuration', Bucket=self._get_bucket_name(),
                                      NotificationConfiguration={'LambdaFunctionConfigurations': new_config})
             LOG.debug(response)
@@ -417,13 +420,9 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
             LOG.debug('status for s3 notification for %s', function.name)
             bucket_config = self._s3.call('get_bucket_notification_configuration', Bucket=self._get_bucket_name())
             LOG.debug(bucket_config)
-            if 'LambdaFunctionConfigurations' in bucket_config:
-                for configuration in bucket_config['LambdaFunctionConfigurations']:
-                    if configuration['Id'] == self._make_notification_id(function.name):
-                        return {
-                            'LambdaFunctionConfiguration': configuration,
-                            'State': 'Enabled'
-                        }
+            for configuration in bucket_config.get('LambdaFunctionConfigurations', []):
+                if configuration['Id'] == self._make_notification_id(function.name):
+                    return {'LambdaFunctionConfiguration': configuration, 'State': 'Enabled'}
 
     event_source_map = {
         'dynamodb': kappa.event_source.dynamodb_stream.DynamoDBStreamEventSource,
