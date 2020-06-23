@@ -1,0 +1,27 @@
+{
+    "status_code": 200,
+    "data": {
+        "ResponseMetadata": {
+            "RequestId": "AB1396B752AF96FA",
+            "HostId": "paLR5Q18m5aW8gKTFSWY17Cw8oZWnuANlsCGFEnzTb1Vb/Ja/+vyK5GT1l+KOK0n8+ieM6MvuaM=",
+            "HTTPStatusCode": 200,
+            "HTTPHeaders": {
+                "x-amz-id-2": "paLR5Q18m5aW8gKTFSWY17Cw8oZWnuANlsCGFEnzTb1Vb/Ja/+vyK5GT1l+KOK0n8+ieM6MvuaM=",
+                "x-amz-request-id": "AB1396B752AF96FA",
+                "date": "Tue, 23 Jun 2020 14:33:58 GMT",
+                "transfer-encoding": "chunked",
+                "server": "AmazonS3"
+            },
+            "RetryAttempts": 0
+        },
+        "LambdaFunctionConfigurations": [
+            {
+                "Id": "lambda:test_settings.callback",
+                "LambdaFunctionArn": "arn:aws:lambda:lambda:lambda:lambda:lambda",
+                "Events": [
+                    "s3:ObjectCreated:*"
+                ]
+            }
+        ]
+    }
+}
