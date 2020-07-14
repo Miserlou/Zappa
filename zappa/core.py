@@ -545,7 +545,7 @@ class Zappa:
                     "to re-create your venv with a new name, or explicitly define a "
                     "'project_name', as this may cause errors."
                 )
-            to_exclude = [split_env[-1]]
+            to_exclude = [split_venv[-1]]
 
         # First, do the project..
         temp_project_path = tempfile.mkdtemp(prefix='zappa-project')    
