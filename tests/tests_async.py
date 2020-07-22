@@ -1,7 +1,9 @@
 # -*- coding: utf8 -*-
+import datetime
 import json
 
 import boto3
+import dateutil.parser
 import mock
 import os
 import unittest
@@ -11,7 +13,7 @@ try:
 except ImportError:
     from unittest.mock import patch
 
-from zappa.asynchronous import AsyncException, LambdaAsyncResponse, SnsAsyncResponse, SqsAsyncResponse
+from zappa.asynchronous import AsyncException, LambdaAsyncResponse, SnsAsyncResponse, SqsAsyncResponse, route_sqs_task
 from zappa.asynchronous import import_and_get_task, get_func_task_path
 
 
@@ -130,15 +132,63 @@ class TestZappa(unittest.TestCase):
 
         # And check the sqs client got invoked correctly
         sqs_client_mock.get_queue_url.assert_called_once_with(QueueName='MyLambda-zappa-async')
-        sqs_client_mock.send_message.assert_called_once_with(
-            QueueUrl='https://us-east-1.queue.amazonaws.com/1',
-            MessageBody=json.dumps({
-                "task_path": get_func_task_path(async_sqs_me),
-                "capture_response": False,
-                "response_id": None,
-                "args": ["qux"],
-                "kwargs": {},
-                "zappaAsyncCommand": "zappa.asynchronous.route_sqs_task"
-            }),
-            DelaySeconds=0
+        sqs_client_mock.send_message.assert_called_once()
+        call_kwargs = sqs_client_mock.send_message.call_args.kwargs
+        self.assertEqual('https://us-east-1.queue.amazonaws.com/1', call_kwargs['QueueUrl'])
+        self.assertEqual(0, call_kwargs['DelaySeconds'])
+        body = json.loads(call_kwargs['MessageBody'])
+        self.assertEqual(get_func_task_path(async_sqs_me), body['task_path'])
+        self.assertFalse(body['capture_response'])
+        self.assertIsNone(body['response_id'])
+        self.assertListEqual(["qux"], body['args'])
+        self.assertDictEqual({}, body['kwargs'])
+        async_context = body['async_context']
+        self.assertEqual('https://us-east-1.queue.amazonaws.com/1', async_context['queue_url'])
+        self.assertEqual('MyLambda', async_context['lambda_function_name'])
+        self.assertEqual('us-east-1', async_context['aws_region'])
+        self.assertAlmostEqual(
+            datetime.datetime.now(),
+            dateutil.parser.isoparse(async_context['execute_datetime']),
+            delta=datetime.timedelta(seconds=1)
         )
+
+    def test_route_sqs_task_future_execute_date(self):
+        sqs_client_mock = mock.Mock()
+        sqs_client_mock.send_message = mock.MagicMock(
+            return_value={
+                'MD5OfMessageBody': 'string',
+                'MD5OfMessageAttributes': 'string',
+                'MessageId': '1234',
+                'SequenceNumber': '1'
+            }
+        )
+
+        execute_datetime = (datetime.datetime.now() + datetime.timedelta(hours=1)).isoformat()
+        queue_url = 'https://sqs.us-east-1.amazonaws.com/0987654321/zappa-async-queue'
+        body = json.dumps({
+            'args': [],
+            'async_context': {
+                'aws_region': 'us-east-1',
+                'execute_datetime': execute_datetime,
+                'lambda_function_name': 'arn:aws:lambda:us-east-1:1234567890:function:zappa',
+                'queue_url': queue_url,
+            },
+            'capture_response': False,
+            'kwargs': {},
+            'response_id': None,
+            'task_path': 'tests.test_app.async_sqs_me',
+            'zappaAsyncCommand': 'zappa.asynchronous.route_sqs_task'
+        })
+
+        with mock.patch('zappa.asynchronous.SQS_CLIENT', sqs_client_mock, create=True):
+            route_sqs_task(event={
+                'Records': [{
+                    'body': body,
+                }]
+            }, context=None)
+
+        sqs_client_mock.send_message.assert_called_once()
+        call_kwargs = sqs_client_mock.send_message.call_args.kwargs
+        self.assertEqual(queue_url, call_kwargs['QueueUrl'])
+        self.assertDictEqual(json.loads(body), json.loads(call_kwargs['MessageBody']))
+        self.assertEqual(900, call_kwargs['DelaySeconds'])

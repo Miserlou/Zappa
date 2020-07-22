@@ -84,16 +84,19 @@ Discussion of this comes from:
    and in the current lambda function.
 
 """
-
 import boto3
 import botocore
+import datetime
+import dateutil.parser
 from functools import update_wrapper, wraps
 import importlib
 import inspect
 import json
 import os
+import math
 import uuid
 import time
+
 
 from .utilities import get_topic_name, get_queue_name
 
@@ -122,6 +125,7 @@ except botocore.exceptions.NoRegionError as e: # pragma: no cover
 
 LAMBDA_ASYNC_PAYLOAD_LIMIT = 256000
 SNS_ASYNC_PAYLOAD_LIMIT = 256000
+SQS_ASYNC_DELAY_SECONDS_LIMIT = 15 * 60  # 15 minutes max delay
 
 class AsyncException(Exception): # pragma: no cover
     """ Simple exception class for async tasks. """
@@ -272,13 +276,12 @@ class SqsAsyncResponse(LambdaAsyncResponse):
             self.client = SQS_CLIENT
 
         self.delay_seconds = kwargs.get('delay_seconds', 0)
-
+        self.execute_datetime = kwargs.get('execute_datetime', None)
 
         if kwargs.get('queue_url'):
             self.queue_url = kwargs.get('queue_url')
         else:
             self.queue_url = self.client.get_queue_url(QueueName=get_queue_name(self.lambda_function_name))['QueueUrl']
-
 
         # Issue: https://github.com/Miserlou/Zappa/issues/1209
         # TODO: Refactor
@@ -300,19 +303,43 @@ class SqsAsyncResponse(LambdaAsyncResponse):
 
         self.capture_response = capture_response
 
+    def get_message_delay_seconds(self):
+        message_delay_seconds = 0
+        if self.delay_seconds > 0:
+            message_delay_seconds = self.delay_seconds
+        elif self.execute_datetime:
+            delta_seconds = int(math.ceil((self.execute_datetime - datetime.datetime.now()).total_seconds()))
+            if delta_seconds > 0:
+                message_delay_seconds = delta_seconds
+
+        return min(message_delay_seconds, SQS_ASYNC_DELAY_SECONDS_LIMIT)
+
+    def get_execute_datetime(self):
+        execute_datetime = datetime.datetime.now()
+        if self.execute_datetime:
+            execute_datetime = self.execute_datetime
+        elif self.delay_seconds > 0:
+            execute_datetime += datetime.timedelta(seconds=self.delay_seconds)
+        return execute_datetime.isoformat()
 
     def _send(self, message):
         """
         Given a message, publish to this topic.
         """
         message['zappaAsyncCommand'] = 'zappa.asynchronous.route_sqs_task'
+        message['async_context'] = {
+            'lambda_function_name': self.lambda_function_name,
+            'aws_region': self.aws_region,
+            'queue_url': self.queue_url,
+            'execute_datetime': self.get_execute_datetime(),
+        }
         payload = json.dumps(message)
         if len(payload) > 256000: # pragma: no cover
             raise AsyncException("Payload too large for SQS")
         self.response = self.client.send_message(
                                 QueueUrl=self.queue_url,
                                 MessageBody=payload,
-                                DelaySeconds=self.delay_seconds
+                                DelaySeconds=self.get_message_delay_seconds(),
                             )
         self.sent = self.response.get('MessageId')
 
@@ -355,6 +382,17 @@ def route_sqs_task(event, context):
     """
     record = event['Records'][0]
     message = json.loads(record['body'])
+    async_context = message.get('async_context', {})
+    if 'execute_datetime' in async_context:
+        execute_datetime = dateutil.parser.isoparse(async_context['execute_datetime'])
+        if execute_datetime > datetime.datetime.now():
+            # Should not yet be executed. Send a new message into the queue.
+            async_context.update({
+                'execute_datetime': execute_datetime,
+                'capture_response': message.get('capture_response')
+            })
+            response = SqsAsyncResponse(**async_context)
+            return response.send(message['task_path'], message['args'], message['kwargs'])
     return run_message(message)
 
 

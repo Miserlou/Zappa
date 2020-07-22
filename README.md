@@ -739,13 +739,13 @@ If those task() parameters were not used, then EC2 would execute the function lo
 
 ### Delayed Invocations
 
-If you use SQS as a task source you can delay invocation of the task for up to 900 seconds (15 minutes). This allows you
-to schedule tasks to be run in the near future. Here is an example:
+If you use SQS as a task source you can delay invocation of the task. This allows you to schedule tasks to be run in the
+future. Here is an example:
 
 ```python
-@task(service='sqs', delay_seconds=600)
+@task(service='sqs', delay_seconds=1800)
 def deliver(pie):
-    """ The pie needs to cool 10 minutes after baking before wrapping """
+    """ The pie needs to cool 30 minutes after baking before wrapping """
     wrap(pie)
 ```
 
