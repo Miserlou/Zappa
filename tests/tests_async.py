@@ -90,7 +90,8 @@ class TestZappa(unittest.TestCase):
         lambda_async_mock.assert_called_once_with(aws_region='us-east-1',
                                              capture_response=False,
                                              delay_seconds=0,
-                                             lambda_function_name="MyLambda")
+                                             lambda_function_name="MyLambda",
+                                             queue_url=None)
         lambda_async_mock.return_value.send.assert_called_with(
             get_func_task_path(async_me), ("qux",), {})
 

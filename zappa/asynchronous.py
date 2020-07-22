@@ -461,12 +461,14 @@ def task(*args, **kwargs):
         lambda_function_name_arg = None
         aws_region_arg = None
         delay_seconds = 0
+        queue_url = None
 
     else:  # Arguments were passed
         service = kwargs.get('service', 'lambda')
         lambda_function_name_arg = kwargs.get('remote_aws_lambda_function_name')
         aws_region_arg = kwargs.get('remote_aws_region')
         delay_seconds = kwargs.get('delay_seconds', 0)
+        queue_url = kwargs.get('queue_url')
 
     capture_response = kwargs.get('capture_response', False)
 
@@ -497,14 +499,18 @@ def task(*args, **kwargs):
             lambda_function_name = lambda_function_name_arg or os.environ.get('AWS_LAMBDA_FUNCTION_NAME')
             aws_region = aws_region_arg or os.environ.get('AWS_REGION')
 
-            if delay_seconds > 0 and service != 'sqs':
-                raise ValueError('delay_seconds only works in combination with the sqs async service')
+            if service != 'sqs':
+                if delay_seconds > 0:
+                    raise ValueError('delay_seconds only works in combination with the sqs async service')
+                if queue_url:
+                    raise ValueError('queue_url only works in combination with the sqs async service')
 
             if (service in ASYNC_CLASSES) and (lambda_function_name):
                 send_result = ASYNC_CLASSES[service](lambda_function_name=lambda_function_name,
                                                      aws_region=aws_region,
                                                      capture_response=capture_response,
-                                                     delay_seconds=delay_seconds).send(task_path, args, kwargs)
+                                                     delay_seconds=delay_seconds,
+                                                     queue_url=queue_url).send(task_path, args, kwargs)
                 return send_result
             else:
                 return func(*args, **kwargs)
