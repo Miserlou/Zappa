@@ -128,7 +128,7 @@ class AsyncException(Exception): # pragma: no cover
     pass
 
 
-class LambdaAsyncResponse(object):
+class LambdaAsyncResponse:
     """
     Base Response Dispatcher class
     Can be used directly or subclassed if the method to send the message is changed.

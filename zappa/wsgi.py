@@ -1,19 +1,11 @@
-from __future__ import unicode_literals
-
 import base64
 import logging
 import six
 import sys
 
 from requestlogger import ApacheFormatter
-from sys import stderr
 from werkzeug import urls
-
-# The joy of version splintering.
-if sys.version_info[0] < 3:
-    from urllib import urlencode
-else:
-    from urllib.parse import urlencode
+from urllib.parse import urlencode
 
 from .utilities import merge_headers, titlecase_keys
 
@@ -116,7 +108,7 @@ def create_wsgi_request(event_info,
             # Everything else is user supplied and untrustworthy.
             remote_addr = x_forwarded_for.split(', ')[-2]
         else:
-            remote_addr = '127.0.0.1'
+            remote_addr = x_forwarded_for or '127.0.0.1'
 
         environ = {
             'PATH_INFO': get_wsgi_string(path),
@@ -130,7 +122,7 @@ def create_wsgi_request(event_info,
             'wsgi.version': (1, 0),
             'wsgi.url_scheme': headers.get('X-Forwarded-Proto', 'http'),
             'wsgi.input': body,
-            'wsgi.errors': stderr,
+            'wsgi.errors': sys.stderr,
             'wsgi.multiprocess': False,
             'wsgi.multithread': False,
             'wsgi.run_once': False,

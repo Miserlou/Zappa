@@ -35,8 +35,6 @@ from zappa.utilities import (
 from zappa.wsgi import create_wsgi_request, common_log
 from zappa.core import Zappa, ASSUME_POLICY, ATTACH_POLICY
 
-if sys.version_info[0] < 3:
-    from cStringIO import StringIO as OldStringIO
 
 def random_string(length):
     return ''.join(random.choice(string.printable) for _ in range(length))
@@ -130,20 +128,7 @@ class TestZappa(unittest.TestCase):
         # for zipping pre-compiled packages gets called
         mock_installed_packages = {'psycopg2': '2.6.1'}
         with mock.patch('zappa.core.Zappa.get_installed_packages', return_value=mock_installed_packages):
-            z = Zappa(runtime='python2.7')
-            path = z.create_lambda_zip(handler_file=os.path.realpath(__file__))
-            self.assertTrue(os.path.isfile(path))
-            os.remove(path)
-
-    def test_get_manylinux_python27(self):
-        z = Zappa(runtime='python2.7')
-        self.assertIsNotNone(z.get_cached_manylinux_wheel('cffi', '1.10.0'))
-        self.assertIsNone(z.get_cached_manylinux_wheel('derpderpderpderp', '0.0'))
-
-        # mock with a known manylinux wheel package so that code for downloading them gets invoked
-        mock_installed_packages = { 'cffi' : '1.10.0' }
-        with mock.patch('zappa.core.Zappa.get_installed_packages', return_value = mock_installed_packages):
-            z = Zappa(runtime='python2.7')
+            z = Zappa(runtime='python3.6')
             path = z.create_lambda_zip(handler_file=os.path.realpath(__file__))
             self.assertTrue(os.path.isfile(path))
             os.remove(path)
@@ -174,21 +159,29 @@ class TestZappa(unittest.TestCase):
             self.assertTrue(os.path.isfile(path))
             os.remove(path)
 
-    def test_should_use_lambda_packages(self):
-        z = Zappa(runtime='python2.7')
+    def test_get_manylinux_python38(self):
+        z = Zappa(runtime='python3.8')
+        self.assertIsNotNone(z.get_cached_manylinux_wheel('psycopg2-binary', '2.8.4'))
+        self.assertIsNone(z.get_cached_manylinux_wheel('derp_no_such_thing', '0.0'))
 
-        self.assertTrue(z.have_correct_lambda_package_version('psycopg2', '2.6.1'))
-        self.assertFalse(z.have_correct_lambda_package_version('psycopg2', '2.7.1'))
-        #testing case-insensitivity with lambda_package MySQL-Python
-        self.assertTrue(z.have_correct_lambda_package_version('mysql-python', '1.2.5'))
-        self.assertFalse(z.have_correct_lambda_package_version('mysql-python', '6.6.6'))
+        # mock with a known manylinux wheel package so that code for downloading them gets invoked
+        mock_installed_packages = {'psycopg2-binary': '2.8.4'}
+        with mock.patch('zappa.core.Zappa.get_installed_packages', return_value=mock_installed_packages):
+            z = Zappa(runtime='python3.8')
+            path = z.create_lambda_zip(handler_file=os.path.realpath(__file__))
+            self.assertTrue(os.path.isfile(path))
+            os.remove(path)
 
-        self.assertTrue(z.have_any_lambda_package_version('psycopg2'))
-        self.assertTrue(z.have_any_lambda_package_version('mysql-python'))
-        self.assertFalse(z.have_any_lambda_package_version('no_package'))
+        # same, but with an ABI3 package
+        mock_installed_packages = {'cryptography': '2.8'}
+        with mock.patch('zappa.core.Zappa.get_installed_packages', return_value=mock_installed_packages):
+            z = Zappa(runtime='python3.8')
+            path = z.create_lambda_zip(handler_file=os.path.realpath(__file__))
+            self.assertTrue(os.path.isfile(path))
+            os.remove(path)
 
     def test_getting_installed_packages(self, *args):
-        z = Zappa(runtime='python2.7')
+        z = Zappa(runtime='python3.6')
 
         # mock pkg_resources call to be same as what our mocked site packages dir has
         mock_package = collections.namedtuple('mock_package', ['project_name', 'version', 'location'])
@@ -201,7 +194,7 @@ class TestZappa(unittest.TestCase):
                     self.assertDictEqual(z.get_installed_packages('',''), {'super_package' : '0.1'})
 
     def test_getting_installed_packages_mixed_case_location(self, *args):
-        z = Zappa(runtime='python2.7')
+        z = Zappa(runtime='python3.6')
 
         # mock pip packages call to be same as what our mocked site packages dir has
         mock_package = collections.namedtuple('mock_package', ['project_name', 'version', 'location'])
@@ -220,7 +213,7 @@ class TestZappa(unittest.TestCase):
                 })
 
     def test_getting_installed_packages_mixed_case(self, *args):
-        z = Zappa(runtime='python2.7')
+        z = Zappa(runtime='python3.6')
 
         # mock pkg_resources call to be same as what our mocked site packages dir has
         mock_package = collections.namedtuple('mock_package', ['project_name', 'version', 'location'])
@@ -387,6 +380,21 @@ class TestZappa(unittest.TestCase):
             self.assertEqual(mock_client.update_function_configuration.call_args[1]["Environment"],
                              {"Variables": end_result_should_be})
 
+
+    def test_update_layers(self):
+        z = Zappa()
+        z.credentials_arn = object()
+
+        with mock.patch.object(z, "lambda_client") as mock_client:
+            mock_client.get_function_configuration.return_value = {}
+            z.update_lambda_configuration("test", "test", "test", layers=["Layer1", "Layer2"])
+            self.assertEqual(mock_client.update_function_configuration.call_args[1]["Layers"], ["Layer1", "Layer2"])
+        with mock.patch.object(z, "lambda_client") as mock_client:
+            mock_client.get_function_configuration.return_value = {}
+            z.update_lambda_configuration("test", "test", "test")
+            self.assertEqual(mock_client.update_function_configuration.call_args[1]["Layers"], [])
+
+
     def test_update_empty_aws_env_hash(self):
         z = Zappa()
         z.credentials_arn = object()
@@ -484,54 +492,54 @@ class TestZappa(unittest.TestCase):
         # }
 
         event = {
-            u'body': None,
-            u'resource': u'/',
-            u'requestContext': {
-                u'resourceId': u'6cqjw9qu0b',
-                u'apiId': u'9itr2lba55',
-                u'resourcePath': u'/',
-                u'httpMethod': u'GET',
-                u'requestId': u'c17cb1bf-867c-11e6-b938-ed697406e3b5',
-                u'accountId': u'724336686645',
-                u'identity': {
-                    u'apiKey': None,
-                    u'userArn': None,
-                    u'cognitoAuthenticationType': None,
-                    u'caller': None,
-                    u'userAgent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:48.0) Gecko/20100101 Firefox/48.0',
-                    u'user': None,
-                    u'cognitoIdentityPoolId': None,
-                    u'cognitoIdentityId': None,
-                    u'cognitoAuthenticationProvider': None,
-                    u'sourceIp': u'50.191.225.98',
-                    u'accountId': None,
+            'body': None,
+            'resource': '/',
+            'requestContext': {
+                'resourceId': '6cqjw9qu0b',
+                'apiId': '9itr2lba55',
+                'resourcePath': '/',
+                'httpMethod': 'GET',
+                'requestId': 'c17cb1bf-867c-11e6-b938-ed697406e3b5',
+                'accountId': '724336686645',
+                'identity': {
+                    'apiKey': None,
+                    'userArn': None,
+                    'cognitoAuthenticationType': None,
+                    'caller': None,
+                    'userAgent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:48.0) Gecko/20100101 Firefox/48.0',
+                    'user': None,
+                    'cognitoIdentityPoolId': None,
+                    'cognitoIdentityId': None,
+                    'cognitoAuthenticationProvider': None,
+                    'sourceIp': '50.191.225.98',
+                    'accountId': None,
                     },
-                u'stage': u'devorr',
+                'stage': 'devorr',
                 },
-            u'queryStringParameters': None,
-            u'httpMethod': u'GET',
-            u'pathParameters': None,
-            u'headers': {
-                u'Via': u'1.1 6801928d54163af944bf854db8d5520e.cloudfront.net (CloudFront)',
-                u'Accept-Language': u'en-US,en;q=0.5',
-                u'Accept-Encoding': u'gzip, deflate, br',
-                u'CloudFront-Is-SmartTV-Viewer': u'false',
-                u'CloudFront-Forwarded-Proto': u'https',
-                u'X-Forwarded-For': u'50.191.225.98, 204.246.168.101',
-                u'CloudFront-Viewer-Country': u'US',
-                u'Accept': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                u'Upgrade-Insecure-Requests': u'1',
-                u'Host': u'9itr2lba55.execute-api.us-east-1.amazonaws.com',
-                u'X-Forwarded-Proto': u'https',
-                u'X-Amz-Cf-Id': u'qgNdqKT0_3RMttu5KjUdnvHI3OKm1BWF8mGD2lX8_rVrJQhhp-MLDw==',
-                u'CloudFront-Is-Tablet-Viewer': u'false',
-                u'X-Forwarded-Port': u'443',
-                u'User-Agent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:48.0) Gecko/20100101 Firefox/48.0',
-                u'CloudFront-Is-Mobile-Viewer': u'false',
-                u'CloudFront-Is-Desktop-Viewer': u'true',
+            'queryStringParameters': None,
+            'httpMethod': 'GET',
+            'pathParameters': None,
+            'headers': {
+                'Via': '1.1 6801928d54163af944bf854db8d5520e.cloudfront.net (CloudFront)',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'CloudFront-Is-SmartTV-Viewer': 'false',
+                'CloudFront-Forwarded-Proto': 'https',
+                'X-Forwarded-For': '50.191.225.98, 204.246.168.101',
+                'CloudFront-Viewer-Country': 'US',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Upgrade-Insecure-Requests': '1',
+                'Host': '9itr2lba55.execute-api.us-east-1.amazonaws.com',
+                'X-Forwarded-Proto': 'https',
+                'X-Amz-Cf-Id': 'qgNdqKT0_3RMttu5KjUdnvHI3OKm1BWF8mGD2lX8_rVrJQhhp-MLDw==',
+                'CloudFront-Is-Tablet-Viewer': 'false',
+                'X-Forwarded-Port': '443',
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:48.0) Gecko/20100101 Firefox/48.0',
+                'CloudFront-Is-Mobile-Viewer': 'false',
+                'CloudFront-Is-Desktop-Viewer': 'true',
                 },
-            u'stageVariables': None,
-            u'path': u'/',
+            'stageVariables': None,
+            'path': '/',
             }
 
         request = create_wsgi_request(event)
@@ -577,7 +585,7 @@ class TestZappa(unittest.TestCase):
         #     "query": {}
         # }
 
-        event = {u'body': None, u'resource': u'/{proxy+}', u'requestContext': {u'resourceId': u'dg451y', u'apiId': u'79gqbxq31c', u'resourcePath': u'/{proxy+}', u'httpMethod': u'GET', u'requestId': u'766df67f-8991-11e6-b2c4-d120fedb94e5', u'accountId': u'724336686645', u'identity': {u'apiKey': None, u'userArn': None, u'cognitoAuthenticationType': None, u'caller': None, u'userAgent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:49.0) Gecko/20100101 Firefox/49.0', u'user': None, u'cognitoIdentityPoolId': None, u'cognitoIdentityId': None, u'cognitoAuthenticationProvider': None, u'sourceIp': u'96.90.37.59', u'accountId': None}, u'stage': u'devorr'}, u'queryStringParameters': None, u'httpMethod': u'GET', u'pathParameters': {u'proxy': u'asdf1/asdf2'}, u'headers': {u'Via': u'1.1 b2aeb492548a8a2d4036401355f928dd.cloudfront.net (CloudFront)', u'Accept-Language': u'en-US,en;q=0.5', u'Accept-Encoding': u'gzip, deflate, br', u'X-Forwarded-Port': u'443', u'X-Forwarded-For': u'96.90.37.59, 54.240.144.50', u'CloudFront-Viewer-Country': u'US', u'Accept': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', u'Upgrade-Insecure-Requests': u'1', u'Host': u'79gqbxq31c.execute-api.us-east-1.amazonaws.com', u'X-Forwarded-Proto': u'https', u'X-Amz-Cf-Id': u'BBFP-RhGDrQGOzoCqjnfB2I_YzWt_dac9S5vBcSAEaoM4NfYhAQy7Q==', u'User-Agent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:49.0) Gecko/20100101 Firefox/49.0', u'CloudFront-Forwarded-Proto': u'https'}, u'stageVariables': None, u'path': u'/asdf1/asdf2'}
+        event = {'body': None, 'resource': '/{proxy+}', 'requestContext': {'resourceId': 'dg451y', 'apiId': '79gqbxq31c', 'resourcePath': '/{proxy+}', 'httpMethod': 'GET', 'requestId': '766df67f-8991-11e6-b2c4-d120fedb94e5', 'accountId': '724336686645', 'identity': {'apiKey': None, 'userArn': None, 'cognitoAuthenticationType': None, 'caller': None, 'userAgent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:49.0) Gecko/20100101 Firefox/49.0', 'user': None, 'cognitoIdentityPoolId': None, 'cognitoIdentityId': None, 'cognitoAuthenticationProvider': None, 'sourceIp': '96.90.37.59', 'accountId': None}, 'stage': 'devorr'}, 'queryStringParameters': None, 'httpMethod': 'GET', 'pathParameters': {'proxy': 'asdf1/asdf2'}, 'headers': {'Via': '1.1 b2aeb492548a8a2d4036401355f928dd.cloudfront.net (CloudFront)', 'Accept-Language': 'en-US,en;q=0.5', 'Accept-Encoding': 'gzip, deflate, br', 'X-Forwarded-Port': '443', 'X-Forwarded-For': '96.90.37.59, 54.240.144.50', 'CloudFront-Viewer-Country': 'US', 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 'Upgrade-Insecure-Requests': '1', 'Host': '79gqbxq31c.execute-api.us-east-1.amazonaws.com', 'X-Forwarded-Proto': 'https', 'X-Amz-Cf-Id': 'BBFP-RhGDrQGOzoCqjnfB2I_YzWt_dac9S5vBcSAEaoM4NfYhAQy7Q==', 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:49.0) Gecko/20100101 Firefox/49.0', 'CloudFront-Forwarded-Proto': 'https'}, 'stageVariables': None, 'path': '/asdf1/asdf2'}
 
         environ = create_wsgi_request(event, trailing_slash=False)
         response_tuple = collections.namedtuple('Response', ['status_code', 'content'])
@@ -586,39 +594,39 @@ class TestZappa(unittest.TestCase):
         le = common_log(environ, response, response_time=False)
 
     def test_wsgi_multipart(self):
-        #event = {u'body': u'LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS03Njk1MjI4NDg0Njc4MTc2NTgwNjMwOTYxDQpDb250ZW50LURpc3Bvc2l0aW9uOiBmb3JtLWRhdGE7IG5hbWU9Im15c3RyaW5nIg0KDQpkZGQNCi0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tNzY5NTIyODQ4NDY3ODE3NjU4MDYzMDk2MS0tDQo=', u'headers': {u'Content-Type': u'multipart/form-data; boundary=---------------------------7695228484678176580630961', u'Via': u'1.1 38205a04d96d60185e88658d3185ccee.cloudfront.net (CloudFront)', u'Accept-Language': u'en-US,en;q=0.5', u'Accept-Encoding': u'gzip, deflate, br', u'CloudFront-Is-SmartTV-Viewer': u'false', u'CloudFront-Forwarded-Proto': u'https', u'X-Forwarded-For': u'71.231.27.57, 104.246.180.51', u'CloudFront-Viewer-Country': u'US', u'Accept': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', u'User-Agent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:45.0) Gecko/20100101 Firefox/45.0', u'Host': u'xo2z7zafjh.execute-api.us-east-1.amazonaws.com', u'X-Forwarded-Proto': u'https', u'Cookie': u'zappa=AQ4', u'CloudFront-Is-Tablet-Viewer': u'false', u'X-Forwarded-Port': u'443', u'Referer': u'https://xo8z7zafjh.execute-api.us-east-1.amazonaws.com/former/post', u'CloudFront-Is-Mobile-Viewer': u'false', u'X-Amz-Cf-Id': u'31zxcUcVyUxBOMk320yh5NOhihn5knqrlYQYpGGyOngKKwJb0J0BAQ==', u'CloudFront-Is-Desktop-Viewer': u'true'}, u'params': {u'parameter_1': u'post'}, u'method': u'POST', u'query': {}}
+        #event = {'body': 'LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS03Njk1MjI4NDg0Njc4MTc2NTgwNjMwOTYxDQpDb250ZW50LURpc3Bvc2l0aW9uOiBmb3JtLWRhdGE7IG5hbWU9Im15c3RyaW5nIg0KDQpkZGQNCi0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tNzY5NTIyODQ4NDY3ODE3NjU4MDYzMDk2MS0tDQo=', 'headers': {'Content-Type': 'multipart/form-data; boundary=---------------------------7695228484678176580630961', 'Via': '1.1 38205a04d96d60185e88658d3185ccee.cloudfront.net (CloudFront)', 'Accept-Language': 'en-US,en;q=0.5', 'Accept-Encoding': 'gzip, deflate, br', 'CloudFront-Is-SmartTV-Viewer': 'false', 'CloudFront-Forwarded-Proto': 'https', 'X-Forwarded-For': '71.231.27.57, 104.246.180.51', 'CloudFront-Viewer-Country': 'US', 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:45.0) Gecko/20100101 Firefox/45.0', 'Host': 'xo2z7zafjh.execute-api.us-east-1.amazonaws.com', 'X-Forwarded-Proto': 'https', 'Cookie': 'zappa=AQ4', 'CloudFront-Is-Tablet-Viewer': 'false', 'X-Forwarded-Port': '443', 'Referer': 'https://xo8z7zafjh.execute-api.us-east-1.amazonaws.com/former/post', 'CloudFront-Is-Mobile-Viewer': 'false', 'X-Amz-Cf-Id': '31zxcUcVyUxBOMk320yh5NOhihn5knqrlYQYpGGyOngKKwJb0J0BAQ==', 'CloudFront-Is-Desktop-Viewer': 'true'}, 'params': {'parameter_1': 'post'}, 'method': 'POST', 'query': {}}
 
         event = {
-            u'body': u'LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS03Njk1MjI4NDg0Njc4MTc2NTgwNjMwOTYxDQpDb250ZW50LURpc3Bvc2l0aW9uOiBmb3JtLWRhdGE7IG5hbWU9Im15c3RyaW5nIg0KDQpkZGQNCi0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tNzY5NTIyODQ4NDY3ODE3NjU4MDYzMDk2MS0tDQo=',
-            u'resource': u'/',
-            u'requestContext': {
-                u'resourceId': u'6cqjw9qu0b',
-                u'apiId': u'9itr2lba55',
-                u'resourcePath': u'/',
-                u'httpMethod': u'POST',
-                u'requestId': u'c17cb1bf-867c-11e6-b938-ed697406e3b5',
-                u'accountId': u'724336686645',
-                u'identity': {
-                    u'apiKey': None,
-                    u'userArn': None,
-                    u'cognitoAuthenticationType': None,
-                    u'caller': None,
-                    u'userAgent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:48.0) Gecko/20100101 Firefox/48.0',
-                    u'user': None,
-                    u'cognitoIdentityPoolId': None,
-                    u'cognitoIdentityId': None,
-                    u'cognitoAuthenticationProvider': None,
-                    u'sourceIp': u'50.191.225.98',
-                    u'accountId': None,
+            'body': 'LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS03Njk1MjI4NDg0Njc4MTc2NTgwNjMwOTYxDQpDb250ZW50LURpc3Bvc2l0aW9uOiBmb3JtLWRhdGE7IG5hbWU9Im15c3RyaW5nIg0KDQpkZGQNCi0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tNzY5NTIyODQ4NDY3ODE3NjU4MDYzMDk2MS0tDQo=',
+            'resource': '/',
+            'requestContext': {
+                'resourceId': '6cqjw9qu0b',
+                'apiId': '9itr2lba55',
+                'resourcePath': '/',
+                'httpMethod': 'POST',
+                'requestId': 'c17cb1bf-867c-11e6-b938-ed697406e3b5',
+                'accountId': '724336686645',
+                'identity': {
+                    'apiKey': None,
+                    'userArn': None,
+                    'cognitoAuthenticationType': None,
+                    'caller': None,
+                    'userAgent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:48.0) Gecko/20100101 Firefox/48.0',
+                    'user': None,
+                    'cognitoIdentityPoolId': None,
+                    'cognitoIdentityId': None,
+                    'cognitoAuthenticationProvider': None,
+                    'sourceIp': '50.191.225.98',
+                    'accountId': None,
                     },
-                u'stage': u'devorr',
+                'stage': 'devorr',
                 },
-            u'queryStringParameters': None,
-            u'httpMethod': u'POST',
-            u'pathParameters': None,
-            u'headers': {u'Content-Type': u'multipart/form-data; boundary=---------------------------7695228484678176580630961', u'Via': u'1.1 38205a04d96d60185e88658d3185ccee.cloudfront.net (CloudFront)', u'Accept-Language': u'en-US,en;q=0.5', u'Accept-Encoding': u'gzip, deflate, br', u'CloudFront-Is-SmartTV-Viewer': u'false', u'CloudFront-Forwarded-Proto': u'https', u'X-Forwarded-For': u'71.231.27.57, 104.246.180.51', u'CloudFront-Viewer-Country': u'US', u'Accept': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', u'User-Agent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:45.0) Gecko/20100101 Firefox/45.0', u'Host': u'xo2z7zafjh.execute-api.us-east-1.amazonaws.com', u'X-Forwarded-Proto': u'https', u'Cookie': u'zappa=AQ4', u'CloudFront-Is-Tablet-Viewer': u'false', u'X-Forwarded-Port': u'443', u'Referer': u'https://xo8z7zafjh.execute-api.us-east-1.amazonaws.com/former/post', u'CloudFront-Is-Mobile-Viewer': u'false', u'X-Amz-Cf-Id': u'31zxcUcVyUxBOMk320yh5NOhihn5knqrlYQYpGGyOngKKwJb0J0BAQ==', u'CloudFront-Is-Desktop-Viewer': u'true'},
-            u'stageVariables': None,
-            u'path': u'/',
+            'queryStringParameters': None,
+            'httpMethod': 'POST',
+            'pathParameters': None,
+            'headers': {'Content-Type': 'multipart/form-data; boundary=---------------------------7695228484678176580630961', 'Via': '1.1 38205a04d96d60185e88658d3185ccee.cloudfront.net (CloudFront)', 'Accept-Language': 'en-US,en;q=0.5', 'Accept-Encoding': 'gzip, deflate, br', 'CloudFront-Is-SmartTV-Viewer': 'false', 'CloudFront-Forwarded-Proto': 'https', 'X-Forwarded-For': '71.231.27.57, 104.246.180.51', 'CloudFront-Viewer-Country': 'US', 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:45.0) Gecko/20100101 Firefox/45.0', 'Host': 'xo2z7zafjh.execute-api.us-east-1.amazonaws.com', 'X-Forwarded-Proto': 'https', 'Cookie': 'zappa=AQ4', 'CloudFront-Is-Tablet-Viewer': 'false', 'X-Forwarded-Port': '443', 'Referer': 'https://xo8z7zafjh.execute-api.us-east-1.amazonaws.com/former/post', 'CloudFront-Is-Mobile-Viewer': 'false', 'X-Amz-Cf-Id': '31zxcUcVyUxBOMk320yh5NOhihn5knqrlYQYpGGyOngKKwJb0J0BAQ==', 'CloudFront-Is-Desktop-Viewer': 'true'},
+            'stageVariables': None,
+            'path': '/',
             }
 
         environ = create_wsgi_request(event, trailing_slash=False)
@@ -628,37 +636,37 @@ class TestZappa(unittest.TestCase):
 
     def test_wsgi_without_body(self):
         event = {
-            u'body': None,
-            u'resource': u'/',
-            u'requestContext': {
-                u'resourceId': u'6cqjw9qu0b',
-                u'apiId': u'9itr2lba55',
-                u'resourcePath': u'/',
-                u'httpMethod': u'POST',
-                u'requestId': u'c17cb1bf-867c-11e6-b938-ed697406e3b5',
-                u'accountId': u'724336686645',
-                u'identity': {
-                    u'apiKey': None,
-                    u'userArn': None,
-                    u'cognitoAuthenticationType': None,
-                    u'caller': None,
-                    u'userAgent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:48.0) Gecko/20100101 Firefox/48.0',
-                    u'user': None,
-                    u'cognitoIdentityPoolId': None,
-                    u'cognitoIdentityId': None,
-                    u'cognitoAuthenticationProvider': None,
-                    u'sourceIp': u'50.191.225.98',
-                    u'accountId': None,
+            'body': None,
+            'resource': '/',
+            'requestContext': {
+                'resourceId': '6cqjw9qu0b',
+                'apiId': '9itr2lba55',
+                'resourcePath': '/',
+                'httpMethod': 'POST',
+                'requestId': 'c17cb1bf-867c-11e6-b938-ed697406e3b5',
+                'accountId': '724336686645',
+                'identity': {
+                    'apiKey': None,
+                    'userArn': None,
+                    'cognitoAuthenticationType': None,
+                    'caller': None,
+                    'userAgent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:48.0) Gecko/20100101 Firefox/48.0',
+                    'user': None,
+                    'cognitoIdentityPoolId': None,
+                    'cognitoIdentityId': None,
+                    'cognitoAuthenticationProvider': None,
+                    'sourceIp': '50.191.225.98',
+                    'accountId': None,
                     },
-                u'stage': u'devorr',
+                'stage': 'devorr',
                 },
-            u'queryStringParameters': None,
-            u'httpMethod': u'POST',
-            u'pathParameters': None,
-            u'headers': {u'Via': u'1.1 38205a04d96d60185e88658d3185ccee.cloudfront.net (CloudFront)', u'Accept-Language': u'en-US,en;q=0.5', u'Accept-Encoding': u'gzip, deflate, br', u'CloudFront-Is-SmartTV-Viewer': u'false', u'CloudFront-Forwarded-Proto': u'https', u'X-Forwarded-For': u'71.231.27.57, 104.246.180.51', u'CloudFront-Viewer-Country': u'US', u'Accept': u'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', u'User-Agent': u'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:45.0) Gecko/20100101 Firefox/45.0', u'Host': u'xo2z7zafjh.execute-api.us-east-1.amazonaws.com', u'X-Forwarded-Proto': u'https', u'Cookie': u'zappa=AQ4', u'CloudFront-Is-Tablet-Viewer': u'false', u'X-Forwarded-Port': u'443', u'Referer': u'https://xo8z7zafjh.execute-api.us-east-1.amazonaws.com/former/post', u'CloudFront-Is-Mobile-Viewer': u'false', u'X-Amz-Cf-Id': u'31zxcUcVyUxBOMk320yh5NOhihn5knqrlYQYpGGyOngKKwJb0J0BAQ==', u'CloudFront-Is-Desktop-Viewer': u'true'},
-            u'stageVariables': None,
-            u'path': u'/',
-            u'isBase64Encoded': True
+            'queryStringParameters': None,
+            'httpMethod': 'POST',
+            'pathParameters': None,
+            'headers': {'Via': '1.1 38205a04d96d60185e88658d3185ccee.cloudfront.net (CloudFront)', 'Accept-Language': 'en-US,en;q=0.5', 'Accept-Encoding': 'gzip, deflate, br', 'CloudFront-Is-SmartTV-Viewer': 'false', 'CloudFront-Forwarded-Proto': 'https', 'X-Forwarded-For': '71.231.27.57, 104.246.180.51', 'CloudFront-Viewer-Country': 'US', 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:45.0) Gecko/20100101 Firefox/45.0', 'Host': 'xo2z7zafjh.execute-api.us-east-1.amazonaws.com', 'X-Forwarded-Proto': 'https', 'Cookie': 'zappa=AQ4', 'CloudFront-Is-Tablet-Viewer': 'false', 'X-Forwarded-Port': '443', 'Referer': 'https://xo8z7zafjh.execute-api.us-east-1.amazonaws.com/former/post', 'CloudFront-Is-Mobile-Viewer': 'false', 'X-Amz-Cf-Id': '31zxcUcVyUxBOMk320yh5NOhihn5knqrlYQYpGGyOngKKwJb0J0BAQ==', 'CloudFront-Is-Desktop-Viewer': 'true'},
+            'stageVariables': None,
+            'path': '/',
+            'isBase64Encoded': True
             }
 
         environ = create_wsgi_request(event, trailing_slash=False)
@@ -752,6 +760,12 @@ class TestZappa(unittest.TestCase):
         self.assertEqual('lmbda2', zappa_cli.stage_config['s3_bucket'])  # Second Extension
         self.assertTrue(zappa_cli.stage_config['touch'])  # First Extension
         self.assertTrue(zappa_cli.stage_config['delete_local_zip'])  # The base
+
+    def test_load_settings__lambda_concurrency_enabled(self):
+        zappa_cli = ZappaCLI()
+        zappa_cli.api_stage = 'lambda_concurrency_enabled'
+        zappa_cli.load_settings('test_settings.json')
+        self.assertEqual(6, zappa_cli.stage_config['lambda_concurrency'])
 
     def test_load_settings_yml(self):
         zappa_cli = ZappaCLI()
@@ -959,7 +973,7 @@ class TestZappa(unittest.TestCase):
 
     # def test_cli_negative_rollback(self):
     #     zappa_cli = ZappaCLI()
-    #     argv = unicode('-s test_settings.json rollback -n -1 dev').split()
+    #     argv = '-s test_settings.json rollback -n -1 dev'.split()
     #     output = StringIO()
     #     old_stderr, sys.stderr = sys.stderr, output
     #     with self.assertRaises(SystemExit) as system_exit:
@@ -1295,8 +1309,6 @@ class TestZappa(unittest.TestCase):
         * Calls Zappa correctly for creates vs. updates.
         """
         old_stdout = sys.stderr
-        if sys.version_info[0] < 3:
-            sys.stdout = OldStringIO() # print() barfs on io.* types.
 
         try:
             zappa_cli = ZappaCLI()
@@ -1806,13 +1818,8 @@ USE_TZ = True
             environ = create_wsgi_request(event)
             app = flask.Flask(__name__)
             with app.request_context(environ):
-                app.logger.error(u"This is a test")
+                app.logger.error("This is a test")
                 log_output = sys.stderr.getvalue()
-                if sys.version_info[0] < 3:
-                    self.assertNotIn(
-                        "'str' object has no attribute 'write'", log_output)
-                    self.assertNotIn(
-                        "Logged from file tests.py", log_output)
         finally:
             sys.stderr = old_stderr
 
@@ -1998,6 +2005,19 @@ USE_TZ = True
                 }]
             },
         )
+        elbv2_stubber.add_response("describe_load_balancers",
+            expected_params={
+                "LoadBalancerArns": [loadbalancer_arn],
+            },
+            service_response={
+                "LoadBalancers": [{
+                    "LoadBalancerArn": loadbalancer_arn,
+                    "State": {
+                        "Code": "active"
+                    }
+                }]
+            },
+        )
         elbv2_stubber.add_response("modify_load_balancer_attributes",
             expected_params={
                 "LoadBalancerArn": loadbalancer_arn,
@@ -2170,6 +2190,73 @@ USE_TZ = True
         elbv2_stubber.activate()
         zappa_core.undeploy_lambda_alb(**kwargs)
 
+
+    @mock.patch('botocore.client')
+    def test_set_lambda_concurrency(self, client):
+        boto_mock = mock.MagicMock()
+        zappa_core = Zappa(
+            boto_session=boto_mock,
+            profile_name="test",
+            aws_region="test",
+            load_credentials=True
+        )
+        zappa_core.lambda_client.create_function.return_value = {
+            "FunctionArn": "abc",
+            "Version": 1,
+        }
+        access_logging_patch = zappa_core.create_lambda_function(
+            concurrency=5,
+        )
+        boto_mock.client().put_function_concurrency.assert_called_with(
+            FunctionName="abc",
+            ReservedConcurrentExecutions=5,
+        )
+
+    @mock.patch('botocore.client')
+    def test_update_lambda_concurrency(self, client):
+        boto_mock = mock.MagicMock()
+        zappa_core = Zappa(
+            boto_session=boto_mock,
+            profile_name="test",
+            aws_region="test",
+            load_credentials=True
+        )
+        zappa_core.lambda_client.create_function.return_value = {
+            "FunctionArn": "abc",
+            "Version": 1,
+        }
+        access_logging_patch = zappa_core.update_lambda_function(
+            bucket="test",
+            function_name="abc",
+            concurrency=5,
+        )
+        boto_mock.client().put_function_concurrency.assert_called_with(
+            FunctionName="abc",
+            ReservedConcurrentExecutions=5,
+        )
+        boto_mock.client().delete_function_concurrency.assert_not_called()
+
+    @mock.patch('botocore.client')
+    def test_delete_lambda_concurrency(self, client):
+        boto_mock = mock.MagicMock()
+        zappa_core = Zappa(
+            boto_session=boto_mock,
+            profile_name="test",
+            aws_region="test",
+            load_credentials=True
+        )
+        zappa_core.lambda_client.create_function.return_value = {
+            "FunctionArn": "abc",
+            "Version": 1,
+        }
+        access_logging_patch = zappa_core.update_lambda_function(
+            bucket="test",
+            function_name="abc",
+        )
+        boto_mock.client().put_function_concurrency.assert_not_called()
+        boto_mock.client().delete_function_concurrency.assert_called_with(
+            FunctionName="abc",
+        )
 
 if __name__ == '__main__':
     unittest.main()

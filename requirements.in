@@ -1,0 +1,22 @@
+argcomplete
+boto3
+durationpy
+hjson
+jmespath
+kappa==0.6.0
+pip>=9.0.1
+python-dateutil
+python-slugify
+PyYAML
+future
+# previous version don't work with urllib3 1.24
+requests>=2.20.0
+six
+toml
+tqdm
+troposphere
+# See https://github.com/Miserlou/Zappa/issues/2036
+Werkzeug<1.0
+wheel
+wsgi-request-logger
+pip-tools

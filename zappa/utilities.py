@@ -14,10 +14,7 @@ import sys
 
 from past.builtins import basestring
 
-try:
-    from urllib.parse import urlparse
-except ImportError:
-    from urlparse import urlparse
+from urllib.parse import urlparse
 
 LOG = logging.getLogger(__name__)
 
@@ -34,17 +31,7 @@ def copytree(src, dst, metadata=True, symlinks=False, ignore=None):
     times are not copied.
     """
 
-    if not os.path.exists(dst):
-        os.makedirs(dst)
-        if metadata:
-            shutil.copystat(src, dst)
-    lst = os.listdir(src)
-
-    if ignore:
-        excl = ignore(src, lst)
-        lst = [x for x in lst if x not in excl]
-
-    for item in lst:
+    def copy_file(src, dst, item):
         s = os.path.join(src, item)
         d = os.path.join(dst, item)
 
@@ -63,6 +50,23 @@ def copytree(src, dst, metadata=True, symlinks=False, ignore=None):
             copytree(s, d, metadata, symlinks, ignore)
         else:
             shutil.copy2(s, d) if metadata else shutil.copy(s, d)
+    try:
+        lst = os.listdir(src)
+        if not os.path.exists(dst):
+            os.makedirs(dst)
+            if metadata:
+                shutil.copystat(src, dst)
+    except NotADirectoryError:  # egg-link files
+        copy_file(os.path.dirname(src), os.path.dirname(dst), os.path.basename(src))
+        return
+
+    if ignore:
+        excl = ignore(src, lst)
+        lst = [x for x in lst if x not in excl]
+
+    for item in lst:
+        copy_file(src, dst, item)
+
 
 def parse_s3_url(url):
     """
@@ -177,12 +181,14 @@ def get_runtime_from_python_version():
     """
     """
     if sys.version_info[0] < 3:
-        return 'python2.7'
+        raise ValueError("Python 2.x is no longer supported.")
     else:
         if sys.version_info[1] <= 6:
             return 'python3.6'
-        else:
+        elif sys.version_info[1] <= 7:
             return 'python3.7'
+        else:
+            return 'python3.8'
 
 ##
 # Async Tasks
@@ -221,11 +227,11 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
     import kappa.role
     import kappa.awsclient
 
-    class PseudoContext(object):
+    class PseudoContext:
         def __init__(self):
             return
 
-    class PseudoFunction(object):
+    class PseudoFunction:
         def __init__(self):
             return
 
@@ -233,7 +239,7 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
     class SqsEventSource(kappa.event_source.base.EventSource):
 
         def __init__(self, context, config):
-            super(SqsEventSource, self).__init__(context, config)
+            super().__init__(context, config)
             self._lambda = kappa.awsclient.create_client(
                 'lambda', context.session)
 
@@ -346,7 +352,7 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
                 kappa.event_source.sns.LOG.exception('Unable to add filters for SNS topic %s', self.arn)
 
         def add(self, function):
-            super(ExtendedSnsEventSource, self).add(function)
+            super().add(function)
             if self.filters:
                 self.add_filters(function)
 
@@ -453,7 +459,7 @@ def check_new_version_available(this_version):
     """
     import requests
 
-    pypi_url = 'https://pypi.python.org/pypi/Zappa/json'
+    pypi_url = 'https://pypi.org/pypi/Zappa/json'
     resp = requests.get(pypi_url, timeout=1.5)
     top_version = resp.json()['info']['version']
 

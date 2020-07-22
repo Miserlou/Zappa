@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import base64
 import boto3
 import collections
@@ -34,7 +32,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 
-class LambdaHandler(object):
+class LambdaHandler:
     """
     Singleton for avoiding duplicate setup.
 
@@ -54,11 +52,8 @@ class LambdaHandler(object):
     def __new__(cls, settings_name="zappa_settings", session=None):
         """Singleton instance to avoid repeat setup"""
         if LambdaHandler.__instance is None:
-            if sys.version_info[0] < 3:
-                LambdaHandler.__instance = object.__new__(cls, settings_name, session)
-            else:
-                print("Instancing..")
-                LambdaHandler.__instance = object.__new__(cls)
+            print("Instancing..")
+            LambdaHandler.__instance = object.__new__(cls)
         return LambdaHandler.__instance
 
     def __init__(self, settings_name="zappa_settings", session=None):
@@ -114,7 +109,7 @@ class LambdaHandler(object):
                         try:
                             cdll.LoadLibrary(os.path.join(os.getcwd(), library))
                         except OSError:
-                            print ("Failed to find library...right filename?")
+                            print("Failed to find library: {}...right filename?".format(library))
                 except ImportError:
                     print ("Failed to import cytpes library")
 
@@ -349,7 +344,7 @@ class LambdaHandler(object):
     def handler(self, event, context):
         """
         An AWS Lambda function which parses specific API Gateway input into a
-        WSGI request, feeds it to our WSGI app, procceses the response, and returns
+        WSGI request, feeds it to our WSGI app, processes the response, and returns
         that back to the API Gateway.
 
         """
@@ -367,7 +362,7 @@ class LambdaHandler(object):
 
         # This is the result of a keep alive, recertify
         # or scheduled event.
-        if event.get('detail-type') == u'Scheduled Event':
+        if event.get('detail-type') == 'Scheduled Event':
 
             whole_function = event['resources'][0].split('/')[-1].split('-')[-1]
 
@@ -446,7 +441,7 @@ class LambdaHandler(object):
             return result
 
         # This is an API Gateway authorizer event
-        elif event.get('type') == u'TOKEN':
+        elif event.get('type') == 'TOKEN':
             whole_function = self.settings.AUTHORIZER_FUNCTION
             if whole_function:
                 app_function = self.import_module_and_get_function(whole_function)
@@ -467,6 +462,20 @@ class LambdaHandler(object):
                 logger.debug(result)
             else:
                 logger.error("Cannot find a function to handle cognito trigger {}".format(triggerSource))
+            return result
+
+        # This is a CloudWatch event
+        # Related: https://github.com/Miserlou/Zappa/issues/1924
+        elif event.get('awslogs', None):
+            result = None
+            whole_function = '{}.{}'.format(settings.APP_MODULE, settings.APP_FUNCTION)
+            app_function = self.import_module_and_get_function(whole_function)
+            if app_function:
+                result = self.run_function(app_function, event, context)
+                logger.debug("Result of %s:" % whole_function)
+                logger.debug(result)
+            else:
+                logger.error("Cannot find a function to process the triggered event.")
             return result
 
         # Normal web app flow
@@ -546,13 +555,11 @@ class LambdaHandler(object):
                         zappa_returndict.setdefault('statusDescription', response.status)
 
                     if response.data:
-                        if settings.BINARY_SUPPORT:
-                            if not response.mimetype.startswith("text/") \
-                                or response.mimetype != "application/json":
-                                    zappa_returndict['body'] = base64.b64encode(response.data).decode('utf-8')
-                                    zappa_returndict["isBase64Encoded"] = True
-                            else:
-                                zappa_returndict['body'] = response.data
+                        if settings.BINARY_SUPPORT and \
+                                not response.mimetype.startswith("text/") \
+                                and response.mimetype != "application/json":
+                            zappa_returndict['body'] = base64.b64encode(response.data).decode('utf-8')
+                            zappa_returndict["isBase64Encoded"] = True
                         else:
                             zappa_returndict['body'] = response.get_data(as_text=True)
 
