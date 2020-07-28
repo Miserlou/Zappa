@@ -1,5 +1,8 @@
 # Zappa Changelog
 
+## next
+* Removed references to zappa.io
+
 ## 0.51.0
 * Lambda Layers
 * Cognito support
