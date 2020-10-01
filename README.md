@@ -99,7 +99,7 @@
   <i>In a hurry? Click to see <a href="https://htmlpreview.github.io/?https://raw.githubusercontent.com/Miserlou/Talks/master/serverless-sf/big.quickstart.html">(now slightly out-dated) slides from Serverless SF</a>!</i>
 </p>
 
-**Zappa** makes it super easy to build and deploy server-less, event-driven Python applications (including, but not limited to, WSGI web apps) on AWS Lambda + API Gateway. Think of it as "serverless" web hosting for your Python apps. That means **infinite scaling**, **zero downtime**, **zero maintenance** - and at a fraction of the cost of your current deployments!
+**Zappa** makes it super easy to build and deploy server-less, event-driven Python applications (including, but not limited to, WSGI web apps) on AWS Lambda + API Gateway. Think of it as "serverless" web hosting for your Python apps. That means infinite scaling, zero downtime, zero maintenance - and at a fraction of the cost of your current deployments!
 
 If you've got a Python web app (including Django and Flask apps), it's as easy as:
 
@@ -113,11 +113,11 @@ and now you're server-less! _Wow!_
 
 > What do you mean "serverless"?
 
-Okay, so there still is a server - but it only has a _40 millisecond_ life cycle! Serverless in this case means **"without any permanent infrastructure."**
+Okay, so there still is a server - but it only has a 40-millisecond life cycle! Serverless, in this case, means **"without any permanent infrastructure."**
 
-With a traditional HTTP server, the server is online 24/7, processing requests one by one as they come in. If the queue of incoming requests grows too large, some requests will time out. With Zappa, **each request is given its own virtual HTTP "server"** by Amazon API Gateway. AWS handles the horizontal scaling automatically, so no requests ever time out. Each request then calls your application from a memory cache in AWS Lambda and returns the response via Python's WSGI interface. After your app returns, the "server" dies.
+With a traditional HTTP server, the server is online 24/7. Processing requests one by one as they come in. If the queue of incoming requests grows too large, some requests will time out. With Zappa, **each request is given its own virtual HTTP "server"** by Amazon API Gateway. AWS handles the horizontal scaling automatically, so no requests ever time out. Each request then calls your application from a memory cache in AWS Lambda and returns the response via Python's WSGI interface. After your app returns, the "server" dies..
 
-Better still, with Zappa you only pay for the milliseconds of server time that you use, so it's many **orders of magnitude cheaper** than VPS/PaaS hosts like Linode or Heroku - and in most cases, it's completely free. Plus, there's no need to worry about load balancing or keeping servers online ever again.
+Better still, with Zappa, you only pay for the milliseconds of server time that you use, so it's many **orders of magnitude cheaper** than VPS/PaaS hosts like Linode or Heroku - and in most cases, it's completely free. Plus, there's no need to worry about load balancing or keeping servers online ever again.
 
 It's great for deploying serverless microservices with frameworks like Flask and Bottle, and for hosting larger web apps and CMSes with Django. Or, you can use any WSGI-compatible app you like! You **probably don't need to change your existing applications** to use it, and you're not locked into using it.
 
@@ -133,13 +133,13 @@ __Awesome!__
 
 ## Installation and Configuration
 
-_Before you begin, make sure you are running Python 3.6/3.7/3.8 and you have a valid AWS account and your [AWS credentials file](https://blogs.aws.amazon.com/security/post/Tx3D6U6WSFGOK2H/A-New-and-Standardized-Way-to-Manage-Credentials-in-the-AWS-SDKs) is properly installed._
+_Before you begin, make sure you are running Python 3.6/3.7/3.8, and you have a valid AWS account, and your [AWS credentials file](https://blogs.aws.amazon.com/security/post/Tx3D6U6WSFGOK2H/A-New-and-Standardized-Way-to-Manage-Credentials-in-the-AWS-SDKs) is installed correctly._
 
 **Zappa** can easily be installed through pip, like so:
 
     $ pip install zappa
 
-Please note that Zappa _**must**_ be installed into your project's [virtual environment](http://docs.python-guide.org/en/latest/dev/virtualenvs/). The virtual environment name should not be the same as the Zappa project name, as this may cause errors.
+Please note that Zappa _**must**_ be installed into your project's [virtual environment](http://docs.python-guide.org/en/latest/dev/virtualenvs/). he virtual environment name should not be the same as the Zappa project name, as this may cause errors.
 
 _(If you use [pyenv](https://github.com/yyuu/pyenv) and love to manage virtualenvs with **pyenv-virtualenv**, you just have to call `pyenv local [your_venv_name]` and it's ready. [Conda](http://conda.pydata.org/docs/) users should comment [here](https://github.com/Miserlou/Zappa/pull/108).)_
 
@@ -151,7 +151,7 @@ Next, you'll need to define your local and server-side settings.
 
     $ zappa init
 
-This will automatically detect your application type (Flask/Django - Pyramid users [see here](https://github.com/Miserlou/Zappa/issues/278#issuecomment-241917956)) and help you define your deployment configuration settings. Once you finish initialization, you'll have a file named *zappa_settings.json* in your project directory defining your basic deployment settings. It will probably look something like this for most WSGI apps:
+This will automatically detect your application type (Flask/Django - Pyramid users [see here](https://github.com/Miserlou/Zappa/issues/278#issuecomment-241917956)) and help you define your deployment configuration settings. Once you finish the initialization, you'll have a file named *zappa_settings.json* in your project directory describing your basic deployment settings. It will probably look something like this for most WSGI apps:
 
 ```javascript
 {
@@ -203,7 +203,7 @@ And now your app is **live!** How cool is that?!
 To explain what's going on, when you call `deploy`, Zappa will automatically package up your application and local virtual environment into a Lambda-compatible archive, replace any dependencies with versions [precompiled for Lambda](https://github.com/Miserlou/lambda-packages), set up the function handler and necessary WSGI Middleware, upload the archive to S3, create and manage the necessary Amazon IAM policies and roles, register it as a new Lambda function, create a new API Gateway resource, create WSGI-compatible routes for it, link it to the new Lambda function, and finally delete the archive from your S3 bucket. Handy!
 
 Be aware that the default IAM role and policy created for executing Lambda applies a liberal set of permissions.
-These are most likely not appropriate for production deployment of important applications.  See the section
+These are most likely not appropriate for the production deployment of essential applications.  See the section
 [Custom AWS IAM Roles and Policies for Execution](#custom-aws-iam-roles-and-policies-for-execution) for more detail.
 
 ### Updates
@@ -224,7 +224,7 @@ You can also `rollback` the deployed code to a previous version by supplying the
 
 ### Scheduling
 
-Zappa can be used to easily schedule functions to occur on regular intervals. This provides a much nicer, maintenance-free alternative to Celery!
+Zappa can be used to quickly schedule functions to occur at regular intervals. This provides a much more superior, maintenance-free alternative to Celery!
 These functions will be packaged and deployed along with your `app_function` and called from the handler automatically.
 Just list your functions and the expression to schedule them using [cron or rate syntax](http://docs.aws.amazon.com/lambda/latest/dg/tutorial-scheduled-events-schedule-expressions.html) in your *zappa_settings.json* file:
 
