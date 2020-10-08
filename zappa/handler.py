@@ -444,6 +444,14 @@ class LambdaHandler:
             else:
                 logger.error("Cannot find a function to process the authorization request.")
                 raise Exception('Unauthorized')
+        # https://github.com/Miserlou/Zappa/issues/695
+        elif not self.settings.USE_APIGATEWAY:
+            app_module = importlib.import_module(self.settings.APP_MODULE)
+            app_function = getattr(app_module, self.settings.APP_FUNCTION)
+            result = self.run_function(app_function, event, context)
+            print("Result of %s:" % self.settings.APP_FUNCTION)
+            print(result)
+            return result
 
         # This is an AWS Cognito Trigger Event
         elif event.get('triggerSource', None):

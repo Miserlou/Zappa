@@ -176,6 +176,29 @@ class TestZappa(unittest.TestCase):
     ##
 
     @placebo_session
+    def test_no_api_gw(self, session):
+        lh = LambdaHandler('test_settings', session=session)
+        lh.settings.USE_APIGATEWAY = False
+        lh.settings.APP_FUNCTION = 'no_api_gw'
+
+        # Test with disabled API GW (https://github.com/Miserlou/Zappa/issues/695)
+        event = {
+            u'account': u'72333333333',
+            u'region': u'us-east-1',
+            u'detail': {},
+            u'detail-type': u'No API GW',
+            u'source': u'aws.events',
+            u'version': u'0',
+            u'time': u'2016-05-10T21:05:39Z',
+            u'id': u'0d6a6db0-d5e7-4755-93a0-750a8bf49d55',
+            u'resources': [u'arn:aws:events:us-east-1:72333333333:rule/tests.test_app.schedule_me']
+        }
+        ret = lh.handler(event, 'context')
+        self.assertEquals(u'72333333333', ret[0][u'account'])
+        self.assertEquals(u'No API GW', ret[0][u'detail-type'])
+        self.assertEquals('context', ret[1])
+
+    @placebo_session
     def test_handler(self, session):
         # Init will test load_remote_settings
         lh = LambdaHandler('test_settings', session=session)

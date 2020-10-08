@@ -23,6 +23,10 @@ def hello_world(environ, start_response):
 '''.format(**{'subject': subject})]
 
 
+def no_api_gw(event, context):
+    return event, context
+
+
 def schedule_me():
     return "Hello!"
 

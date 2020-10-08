@@ -825,7 +825,7 @@ to change Zappa's behavior. Use these at your own risk!
         },
         "api_key_required": false, // enable securing API Gateway endpoints with x-api-key header (default False)
         "api_key": "your_api_key_id", // optional, use an existing API key. The option "api_key_required" must be true to apply
-        "apigateway_enabled": true, // Set to false if you don't want to create an API Gateway resource. Default true.
+        "apigateway_enabled": true, // Set to false if you don't want to create an API Gateway resource. Default true. When disabled the app_function is called directly with parameters event and context.
         "apigateway_description": "My funky application!", // Define a custom description for the API Gateway console. Default None.
         "assume_policy": "my_assume_policy.json", // optional, IAM assume policy JSON file
         "attach_policy": "my_attach_policy.json", // optional, IAM attach policy JSON file

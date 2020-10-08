@@ -2299,6 +2299,11 @@ class ZappaCLI:
 
             settings_s = settings_s + "LOG_LEVEL='{0!s}'\n".format((self.log_level))
 
+            if self.use_apigateway:
+                settings_s = settings_s + "USE_APIGATEWAY=True\n"
+            else:
+                settings_s = settings_s + "USE_APIGATEWAY=False\n"
+
             if self.binary_support:
                 settings_s = settings_s + "BINARY_SUPPORT=True\n"
             else:

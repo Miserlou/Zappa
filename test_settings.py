@@ -7,6 +7,7 @@ SCRIPT_NAME = 'hello_world'
 DOMAIN = None
 API_STAGE = 'ttt888'
 PROJECT_NAME = 'ttt888'
+USE_APIGATEWAY = True
 
 REMOTE_ENV='s3://lmbda/test_env.json'
 ## test_env.json
