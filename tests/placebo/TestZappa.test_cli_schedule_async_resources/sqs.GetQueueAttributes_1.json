@@ -1,0 +1,31 @@
+{
+    "status_code": 200,
+    "data": {
+        "Attributes": {
+            "QueueArn": "arn:aws:sqs:eu-west-1:687300752731:test",
+            "ApproximateNumberOfMessages": "0",
+            "ApproximateNumberOfMessagesNotVisible": "0",
+            "ApproximateNumberOfMessagesDelayed": "0",
+            "CreatedTimestamp": "1539275483",
+            "LastModifiedTimestamp": "1539275483",
+            "VisibilityTimeout": "30",
+            "MaximumMessageSize": "262144",
+            "MessageRetentionPeriod": "345600",
+            "DelaySeconds": "0",
+            "ReceiveMessageWaitTimeSeconds": "0"
+        },
+        "ResponseMetadata": {
+            "RequestId": "d27ee2ca-9b41-54c4-a637-b6f3e457b3b4",
+            "HTTPStatusCode": 200,
+            "HTTPHeaders": {
+                "server": "Server",
+                "date": "Thu, 11 Oct 2018 16:39:50 GMT",
+                "content-type": "text/xml",
+                "content-length": "1158",
+                "connection": "keep-alive",
+                "x-amzn-requestid": "d27ee2ca-9b41-54c4-a637-b6f3e457b3b4"
+            },
+            "RetryAttempts": 0
+        }
+    }
+}

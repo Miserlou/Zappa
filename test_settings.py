@@ -59,6 +59,10 @@ def aws_sqs_event(event, content):
     return "AWS SQS EVENT"
 
 
+def aws_async_sqs_event(arg1, arg2, arg3):
+    return "AWS ASYNC SQS EVENT"
+
+
 def authorizer_event(event, content):
     return "AUTHORIZER_EVENT"
 

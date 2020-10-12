@@ -198,6 +198,11 @@ def get_topic_name(lambda_name):
     """ Topic name generation """
     return '%s-zappa-async' % lambda_name
 
+
+def get_queue_name(lambda_name):
+    """ Queue name generation """
+    return get_topic_name(lambda_name)
+
 ##
 # Event sources / Kappa
 ##

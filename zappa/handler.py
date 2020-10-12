@@ -307,6 +307,12 @@ class LambdaHandler:
         elif 'dynamodb' in record or 'kinesis' in record:
             arn = record.get('eventSourceARN')
         elif 'eventSource' in record and record.get('eventSource') == 'aws:sqs':
+            try:
+                message = json.loads(record['body'])
+                if message.get('zappaAsyncCommand'):
+                    return message['zappaAsyncCommand']
+            except ValueError:
+                pass
             arn = record.get('eventSourceARN')
         elif 's3' in record:
             arn = record['s3']['bucket']['arn']

@@ -120,5 +120,10 @@
     "lambda_concurrency_enabled": {
         "extends": "ttt888",
         "lambda_concurrency": 6
-     }
+     },
+    "schedule_async_resources_sqs": {
+      "keep_warm": false,
+      "async_source": "sqs",
+      "async_resources": true
+    }
 }

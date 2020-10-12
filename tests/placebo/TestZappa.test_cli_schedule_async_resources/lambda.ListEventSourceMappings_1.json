@@ -1,0 +1,18 @@
+{
+    "status_code": 200,
+    "data": {
+        "ResponseMetadata": {
+            "RequestId": "c0e1bd60-cd74-11e8-962d-b3e8d3c07110",
+            "HTTPStatusCode": 200,
+            "HTTPHeaders": {
+                "date": "Thu, 11 Oct 2018 16:43:17 GMT",
+                "content-type": "application/json",
+                "content-length": "44",
+                "connection": "keep-alive",
+                "x-amzn-requestid": "c0e1bd60-cd74-11e8-962d-b3e8d3c07110"
+            },
+            "RetryAttempts": 0
+        },
+        "EventSourceMappings": []
+    }
+}

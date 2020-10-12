@@ -265,6 +265,7 @@ class TestZappa(unittest.TestCase):
 
         self.assertEqual(response['response']['autoConfirmUser'], False)
 
+
     def test_bot_triggered_event(self):
         """
         Ensure that bot triggered events are handled as in the settings

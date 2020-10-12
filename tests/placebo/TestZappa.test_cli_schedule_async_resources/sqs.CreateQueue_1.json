@@ -1,0 +1,19 @@
+{
+    "status_code": 200,
+    "data": {
+        "QueueUrl": "https://eu-west-1.queue.amazonaws.com/687300752731/test",
+        "ResponseMetadata": {
+            "RequestId": "a086231f-9792-5ea8-bbd5-7726e924c75f",
+            "HTTPStatusCode": 200,
+            "HTTPHeaders": {
+                "server": "Server",
+                "date": "Thu, 11 Oct 2018 16:38:14 GMT",
+                "content-type": "text/xml",
+                "content-length": "326",
+                "connection": "keep-alive",
+                "x-amzn-requestid": "a086231f-9792-5ea8-bbd5-7726e924c75f"
+            },
+            "RetryAttempts": 0
+        }
+    }
+}
