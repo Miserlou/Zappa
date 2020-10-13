@@ -389,7 +389,7 @@ You can execute any function in your application directly at any time by using t
 
 For instance, suppose you have a basic application in a file called "my_app.py", and you want to invoke a function in it called "my_function". Once your application is deployed, you can invoke that function at any time by calling:
 
-    $ zappa invoke production 'my_app.my_function'
+    $ zappa invoke production my_app.my_function
 
 Any remote print statements made and the value the function returned will then be printed to your local console. **Nifty!**
 
