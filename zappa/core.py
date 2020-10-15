@@ -38,7 +38,7 @@ from tqdm import tqdm
 from .utilities import (add_event_source, conflicts_with_a_neighbouring_module,
                         contains_python_files_or_subdirs, copytree,
                         get_topic_name, get_venv_from_python_version,
-                        human_size, remove_event_source)
+                        human_size, remove_event_source, first_line)
 
 
 ##
@@ -418,7 +418,15 @@ class Zappa:
         # Copy zappa* to the new virtualenv
         zappa_things = [z for z in os.listdir(current_site_packages_dir) if z.lower()[:5] == 'zappa']
         for z in zappa_things:
-            copytree(os.path.join(current_site_packages_dir, z), os.path.join(venv_site_packages_dir, z))
+            if z.endswith('.egg-link'):
+                egg_link_file = os.path.join(current_site_packages_dir, z)
+                src = first_line(egg_link_file)
+                z = os.path.splitext(z)[0]
+            else:
+                src = os.path.join(current_site_packages_dir, z)
+
+            des = os.path.join(venv_site_packages_dir, z)
+            copytree(src, des)
 
         # Use pip to download zappa's dependencies. Copying from current venv causes issues with things like PyYAML that installs as yaml
         zappa_deps = self.get_deps_list('zappa')
@@ -1762,6 +1770,7 @@ class Zappa:
                             cache_cluster_size='0.5',
                             variables=None,
                             cloudwatch_log_level='OFF',
+                            cloudwatch_log_role_arn=None,
                             cloudwatch_data_trace=False,
                             cloudwatch_metrics_enabled=False,
                             cache_cluster_ttl=300,
@@ -1786,6 +1795,13 @@ class Zappa:
 
         if cloudwatch_log_level not in self.cloudwatch_log_levels:
             cloudwatch_log_level = 'OFF'
+
+        if cloudwatch_log_role_arn:
+            self.apigateway_client.update_account(
+                patchOperations=[
+                    {'op': 'replace', 'path': '/cloudwatchRoleArn', 'value': cloudwatch_log_role_arn}
+                ]
+            )
 
         self.apigateway_client.update_stage(
             restApiId=api_id,

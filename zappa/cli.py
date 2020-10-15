@@ -2666,6 +2666,7 @@ class ZappaCLI:
             cache_cluster_enabled=cache_cluster_enabled,
             cache_cluster_size=cache_cluster_size,
             cloudwatch_log_level=self.stage_config.get('cloudwatch_log_level', 'OFF'),
+            cloudwatch_log_role_arn=self.stage_config.get('cloudwatch_log_role_arn', None),
             cloudwatch_data_trace=self.stage_config.get('cloudwatch_data_trace', False),
             cloudwatch_metrics_enabled=self.stage_config.get('cloudwatch_metrics_enabled', False),
             cache_cluster_ttl=self.stage_config.get('cache_cluster_ttl', 300),
