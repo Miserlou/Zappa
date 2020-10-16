@@ -859,7 +859,7 @@ to change Zappa's behavior. Use these at your own risk!
         "cognito": { // for Cognito event triggers
             "user_pool": "user-pool-id", // User pool ID from AWS Cognito
             "triggers": [{
-                "source": "PreSignUp_SignUp", // triggerSource from http://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-identity-pools-working-with-aws-lambda-triggers.html#cognito-user-pools-lambda-trigger-syntax-pre-signup
+                "source": "PreSignUp_SignUp", // triggerSource from https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools-lambda-trigger-syntax-shared.html
                 "function": "my_app.pre_signup_function"
             }]
         },

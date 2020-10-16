@@ -1156,7 +1156,7 @@ class ZappaCLI:
             triggers = self.cognito.get('triggers', [])
             lambda_configs = set()
             for trigger in triggers:
-                lambda_configs.add(trigger['source'].split('_')[0])
+                lambda_configs.add(trigger['source'].split('_')[0].replace('TokenGeneration', 'PreTokenGeneration'))
             self.zappa.update_cognito(self.lambda_name, user_pool, lambda_configs, self.lambda_arn)
 
     def schedule(self):
