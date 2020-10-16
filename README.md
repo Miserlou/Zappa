@@ -477,8 +477,20 @@ In your *zappa_settings.json* file, define your [event sources](http://docs.aws.
             "function": "your_module.process_upload_function",
             "event_source": {
                   "arn":  "arn:aws:s3:::my-bucket",
+                  "key_filters": [  // optional
+                    {
+                      "type": "prefix",
+                      "value": "my-prefix"
+                    },
+                    {
+                      "type": "sufix",
+                      "value": ".jpg"
+                    }
+                  ],
                   "events": [
-                    "s3:ObjectCreated:*" // Supported event types: http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html#supported-notification-event-types
+                    "s3:ObjectCreated:*" 
+                    // Supported event types:
+                    // http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html#supported-notification-event-types
                   ]
                }
             }],
