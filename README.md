@@ -868,6 +868,7 @@ to change Zappa's behavior. Use these at your own risk!
         "dead_letter_arn": "arn:aws:<sns/sqs>:::my-topic/queue", // Optional Dead Letter configuration for when Lambda async invoke fails thrice
         "debug": true, // Print Zappa configuration errors tracebacks in the 500. Default true.
         "delete_local_zip": true, // Delete the local zip archive after code updates. Default true.
+        "delete_s3_bucket": false, // Delete the s3 bucket after code updates. Default false.
         "delete_s3_zip": true, // Delete the s3 zip archive. Default true.
         "django_settings": "your_project.production_settings", // The modular path to your Django project's settings. For Django projects only.
         "domain": "yourapp.yourdomain.com", // Required if you're using a domain
