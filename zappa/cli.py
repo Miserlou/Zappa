@@ -2389,6 +2389,9 @@ class ZappaCLI:
                     event_mapping[arn] = function
             settings_s = settings_s + "AWS_EVENT_MAPPING={0!s}\n".format(event_mapping)
 
+            default_event_handler = self.stage_config.get('default_event_handler')
+            settings_s = settings_s + "AWS_DEFAULT_EVENT_HANDLER={0!r}\n".format(default_event_handler)
+
             # Map Lext bot events
             bot_events = self.stage_config.get('bot_events', [])
             bot_events_mapping = {}
