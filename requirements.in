@@ -5,7 +5,7 @@ hjson
 jmespath
 kappa==0.6.0
 pip>=9.0.1
-python-dateutil<2.7.0
+python-dateutil
 python-slugify
 PyYAML
 future

@@ -1,6 +1,9 @@
 # Zappa Changelog
 
-## next
+## 0.52.0
+* Remove dateutil version restriction
+* Fix failed downloads of wheel packages with non-alphanumeric characters
+* Last release from Miserlou/Zappa
 * Removed references to zappa.io
 
 ## 0.51.0
