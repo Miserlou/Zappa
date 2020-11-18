@@ -559,7 +559,7 @@ Optionally you can add [SNS message filters](http://docs.aws.amazon.com/sns/late
                     "batch_size": 50, // Max: 1000
                     "enabled": true, // Default is false
                     "retry_attempts": 10 // default is -1, which is infinite number
-                    "split_batch_on_error": True // Default is false
+                    "split_batch_on_error": true // Default is false
                     "concurrent_batches_per_shard": 2, // Default is 1
                     "maximum_age_of_record": 3600 // Default is -1, which is an infinitely old record
                     "destination_config": {  // Allows failures to be sent to SNS or SQS ARN
