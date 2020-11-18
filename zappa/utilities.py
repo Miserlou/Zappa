@@ -351,9 +351,75 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
             if self.filters:
                 self.add_filters(function)
 
+    class ExtendedKinesisEventSource(kappa.event_source.kinesis.KinesisEventSource):
+        @property
+        def batch_window(self):
+            return self._config.get('batch_window', 0)
+
+        @property
+        def retry_attempts(self):
+            return self._config.get('retry_attempts', -1)
+
+        @property
+        def split_batch_on_error(self):
+            return self._config.get('split_batch_on_error', False)
+
+        @property
+        def concurrent_batches_per_shard(self):
+            return self._config.get('concurrent_batches_per_shard', 1)
+
+        @property
+        def maximum_age_of_record(self):
+            return self._config.get('maximum_age_of_record', -1)
+
+        @property
+        def destination_config(self):
+            return self._config.get('destination_config', {})
+
+        def add(self, function):
+            try:
+                response = self._lambda.call(
+                    'create_event_source_mapping',
+                    FunctionName=function.name,
+                    EventSourceArn=self.arn,
+                    BatchSize=self.batch_size,
+                    MaximumBatchingWindowInSeconds=self.batch_window,
+                    StartingPosition=self.starting_position,
+                    Enabled=self.enabled,
+                    MaximumRetryAttempts=self.retry_attempts,
+                    BisectBatchOnFunctionError=self.split_batch_on_error,
+                    MaximumRecordAgeInSeconds=self.maximum_age_of_record,
+                    ParallelizationFactor=self.concurrent_batches_per_shard,
+                    DestinationConfig=self.destination_config
+                )
+                LOG.debug(response)
+            except Exception:
+                LOG.exception('Unable to add event source')
+
+        def update(self, function):
+            response = None
+            uuid = self._get_uuid(function)
+            if uuid:
+                try:
+                    response = self._lambda.call(
+                        'update_event_source_mapping',
+                        BatchSize=self.batch_size,
+                        MaximumBatchingWindowInSeconds=self.batch_window,
+                        Enabled=self.enabled,
+                        FunctionName=function.arn,
+                        MaximumRetryAttempts=self.retry_attempts,
+                        BisectBatchOnFunctionError=self.split_batch_on_error,
+                        MaximumRecordAgeInSeconds=self.maximum_age_of_record,
+                        ParallelizationFactor=self.concurrent_batches_per_shard,
+                        DestinationConfig=self.destination_config
+                    )
+                    LOG.debug(response)
+                except Exception:
+                    LOG.exception('Unable to update event source')
+
     event_source_map = {
         'dynamodb': kappa.event_source.dynamodb_stream.DynamoDBStreamEventSource,
-        'kinesis': kappa.event_source.kinesis.KinesisEventSource,
+        'kinesis': ExtendedKinesisEventSource,
         's3': kappa.event_source.s3.S3EventSource,
         'sns': ExtendedSnsEventSource,
         'sqs': SqsEventSource,
