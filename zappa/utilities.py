@@ -358,7 +358,9 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
 
         @property
         def retry_attempts(self):
-            return self._config.get('retry_attempts', -1)
+            # default is 10,000 according to
+            # https://aws.amazon.com/blogs/compute/new-aws-lambda-controls-for-stream-processing-and-asynchronous-invocations/
+            return self._config.get('retry_attempts', 10000)
 
         @property
         def split_batch_on_error(self):
@@ -370,7 +372,8 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
 
         @property
         def maximum_age_of_record(self):
-            return self._config.get('maximum_age_of_record', -1)
+            # default maximum age is a week, the limit of kinesis
+            return self._config.get('maximum_age_of_record', 604,800)
 
         @property
         def destination_config(self):
