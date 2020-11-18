@@ -557,7 +557,16 @@ Optionally you can add [SNS message filters](http://docs.aws.amazon.com/sns/late
                     "arn":  "arn:aws:dynamodb:us-east-1:1234554:table/YourTable/stream/2016-05-11T00:00:00.000",
                     "starting_position": "TRIM_HORIZON", // Supported values: TRIM_HORIZON, LATEST
                     "batch_size": 50, // Max: 1000
-                    "enabled": true // Default is false
+                    "enabled": true, // Default is false
+                    "retry_attempts": 10 // default is -1, which is infinite number
+                    "split_batch_on_error": True // Default is false
+                    "concurrent_batches_per_shard": 2, // Default is 1
+                    "maximum_age_of_record": 3600 // Default is -1, which is an infinitely old record
+                    "destination_config": {  // Allows failures to be sent to SNS or SQS ARN
+                        "OnFailure": {
+                            "Destination": "arn:aws:sns:us-east-2:123:my-sns"
+                        }
+                    } 
                }
            }
        ]
