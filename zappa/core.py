@@ -437,7 +437,9 @@ class Zappa:
         pip_return_code = pip_process.returncode
 
         if pip_return_code:
-          raise EnvironmentError("Pypi lookup failed")
+            raise EnvironmentError(
+                "Pypi lookup failed\n{}".format(pip_process.stdout.decode('utf-8'))
+            )
 
         return ve_path
 
