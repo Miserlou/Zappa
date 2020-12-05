@@ -2780,6 +2780,7 @@ class Zappa:
                 elif rule_response == 'dryrun':
                     print("Dryrun for creating {} event schedule for {}!!".format(svc, function))
             else:
+                name = self.get_scheduled_event_name(event, function, lambda_name)
                 print("Could not create event {} - Please define either an expression or an event source".format(name))
 
 
