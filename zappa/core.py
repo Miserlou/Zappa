@@ -426,7 +426,7 @@ class Zappa:
 
         # Need to manually add setuptools
         pkg_list.append('setuptools')
-        command = ["pip", "install", "--quiet", "--target", venv_site_packages_dir] + pkg_list
+        command = ["pip", "install", "--no-cache-dir", "--quiet", "--target", venv_site_packages_dir] + pkg_list
 
         # This is the recommended method for installing packages if you don't
         # to depend on `setuptools`
