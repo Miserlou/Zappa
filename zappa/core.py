@@ -1022,6 +1022,7 @@ class Zappa:
                                 use_alb=False,
                                 layers=None,
                                 concurrency=None,
+                                docker_image_uri=None,
                             ):
         """
         Given a bucket and key (or a local path) of a valid Lambda-zip, a function name and a handler, register that Lambda function.
@@ -1041,9 +1042,7 @@ class Zappa:
 
         kwargs = dict(
             FunctionName=function_name,
-            Runtime=runtime,
             Role=self.credentials_arn,
-            Handler=handler,
             Description=description,
             Timeout=timeout,
             MemorySize=memory_size,
@@ -1057,7 +1056,22 @@ class Zappa:
             },
             Layers=layers
         )
-        if local_zip:
+        if not docker_image_uri:
+            kwargs['Runtime'] = runtime
+            kwargs['Handler'] = handler
+            kwargs['PackageType'] = 'Zip'
+
+        if docker_image_uri:
+            kwargs['Code'] = {
+                'ImageUri': docker_image_uri
+            }
+            # default is ZIP. override to Image for container support
+            kwargs['PackageType'] = 'Image'
+            # The create function operation times out when this is '' (the default)
+            # So just remove it from the kwargs if it is not specified
+            if aws_kms_key_arn == '':
+                kwargs.pop('KMSKeyArn')
+        elif local_zip:
             kwargs['Code'] = {
                 'ZipFile': local_zip
             }
@@ -1066,7 +1080,6 @@ class Zappa:
                 'S3Bucket': bucket,
                 'S3Key': s3_key
             }
-
         response = self.lambda_client.create_function(**kwargs)
         resource_arn = response['FunctionArn']
         version = response['Version']
@@ -1276,6 +1289,35 @@ class Zappa:
         response = self.lambda_client.update_function_code(FunctionName=function_name, ZipFile=response.content, Publish=publish)  # pragma: no cover
 
         return response['FunctionArn']
+
+    def is_lambda_function_active(self, function_name):
+        """
+        Checks if a lambda function is active, given a name.
+        """
+        response = self.lambda_client.get_function(
+                FunctionName=function_name)
+        return response['Configuration']['State'] == 'Active'
+
+    def wait_until_lambda_function_is_active(self, function_name):
+        """
+        Continuously check if a lambda function is active. 
+
+        For functions deployed with a docker image instead of a
+        ZIP package, the function can take a few seconds longer
+        to be created, so we must wait before running any status
+        checks against the function.
+        """
+        show_waiting_message = True
+        while True:
+            if self.is_lambda_function_active(function_name):
+                break
+
+            if show_waiting_message:
+                print("Waiting until lambda function is active.")
+                show_waiting_message = False
+
+            time.sleep(1)
+
 
     def get_lambda_function(self, function_name):
         """

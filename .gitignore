@@ -91,3 +91,4 @@ README.test.md
 
 .mypy_cache
 .pytest_cache
+pyproject.toml

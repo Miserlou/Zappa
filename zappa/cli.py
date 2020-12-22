@@ -3,9 +3,7 @@
 
 """
 Zappa CLI
-
 Deploy arbitrary Python programs as serverless Zappa applications.
-
 """
 from past.builtins import basestring
 from builtins import input, bytes
@@ -254,6 +252,9 @@ class ZappaCLI:
         deploy_parser.add_argument(
             '-z', '--zip', help='Deploy Lambda with specific local or S3 hosted zip package'
         )
+        deploy_parser.add_argument(
+            '-d', '--docker-image-uri', help='Deploy Lambda with a specific docker image hosted in AWS Elastic Container Registry'
+        )
 
         ##
         # Init
@@ -437,6 +438,22 @@ class ZappaCLI:
             'shell', parents=[env_parser], help='A debug shell with a loaded Zappa object.'
         )
 
+        ##
+        # Python Settings File
+        ##
+        settings_parser = subparsers.add_parser(
+            'save-python-settings-file', parents=[env_parser],
+            help='Generate & save the Zappa settings Python file for docker deployments'
+        )
+        settings_parser.add_argument(
+            '-o', '--output_path', help=(
+                'The path to save the Zappa settings Python file. '
+                'File must be named zappa_settings.py and should be saved '
+                'in the same directory as the Zappa handler.py'
+            )
+        )
+
+
         argcomplete.autocomplete(parser)
         args = parser.parse_args(argv)
         self.vargs = vars(args)
@@ -546,7 +563,7 @@ class ZappaCLI:
 
         # Hand it off
         if command == 'deploy': # pragma: no cover
-            self.deploy(self.vargs['zip'])
+            self.deploy(self.vargs['zip'], self.vargs['docker_image_uri'])
         if command == 'package': # pragma: no cover
             self.package(self.vargs['output'])
         if command == 'template': # pragma: no cover
@@ -621,10 +638,21 @@ class ZappaCLI:
             )
         elif command == 'shell': # pragma: no cover
             self.shell()
+        elif command == 'save-python-settings-file':  # pragma: no cover
+            self.save_python_settings_file(self.vargs['output_path'])
 
     ##
     # The Commands
     ##
+
+    def save_python_settings_file(self, output_path=None):
+        settings_path = output_path or 'zappa_settings.py'
+        print('Generating Zappa settings Python file and saving to {}'.format(settings_path))
+        if not settings_path.endswith('zappa_settings.py'):
+            raise Exception('Settings file must be named zappa_settings.py')
+        zappa_settings_s = self.get_zappa_settings_string()
+        with open(settings_path, 'w') as f_out:
+            f_out.write(zappa_settings_s)
 
     def package(self, output=None):
         """
@@ -682,27 +710,13 @@ class ZappaCLI:
             with open(template_file, 'r') as out:
                 print(out.read())
 
-    def deploy(self, source_zip=None):
+    def deploy(self, source_zip=None, docker_image_uri=None):
         """
         Package your project, upload it to S3, register the Lambda function
         and create the API Gateway routes.
-
         """
 
-        if not source_zip:
-            # Make sure we're in a venv.
-            self.check_venv()
-
-            # Execute the prebuild script
-            if self.prebuild_script:
-                self.execute_prebuild_script()
-
-            # Make sure this isn't already deployed.
-            deployed_versions = self.zappa.get_lambda_function_versions(self.lambda_name)
-            if len(deployed_versions) > 0:
-                raise ClickException("This application is " + click.style("already deployed", fg="red") +
-                                     " - did you mean to call " + click.style("update", bold=True) + "?")
-
+        if not source_zip or docker_image_uri:
             # Make sure the necessary IAM execution roles are available
             if self.manage_roles:
                 try:
@@ -718,6 +732,20 @@ class ZappaCLI:
                             "https://github.com/Miserlou/Zappa#custom-aws-iam-roles-and-policies-for-deployment",
                             bold=True)
                         + '\n')
+
+        if not source_zip and not docker_image_uri:
+            # Make sure we're in a venv.
+            self.check_venv()
+
+            # Execute the prebuild script
+            if self.prebuild_script:
+                self.execute_prebuild_script()
+
+            # Make sure this isn't already deployed.
+            deployed_versions = self.zappa.get_lambda_function_versions(self.lambda_name)
+            if len(deployed_versions) > 0:
+                raise ClickException("This application is " + click.style("already deployed", fg="red") +
+                                     " - did you mean to call " + click.style("update", bold=True) + "?")
 
             # Create the Lambda Zip
             self.create_package()
@@ -768,18 +796,18 @@ class ZappaCLI:
                 layers=self.layers,
                 concurrency=self.lambda_concurrency,
             )
-            if source_zip and source_zip.startswith('s3://'):
+            kwargs['function_name'] = self.lambda_name
+            if docker_image_uri:
+                kwargs['docker_image_uri'] = docker_image_uri
+            elif source_zip and source_zip.startswith('s3://'):
                 bucket, key_name = parse_s3_url(source_zip)
-                kwargs['function_name'] = self.lambda_name
                 kwargs['bucket'] = bucket
                 kwargs['s3_key'] = key_name
             elif source_zip and not source_zip.startswith('s3://'):
                 with open(source_zip, mode='rb') as fh:
                     byte_stream = fh.read()
-                kwargs['function_name'] = self.lambda_name
                 kwargs['local_zip'] = byte_stream
             else:
-                kwargs['function_name'] = self.lambda_name
                 kwargs['bucket'] = self.s3_bucket_name
                 kwargs['s3_key'] = handler_file
 
@@ -845,21 +873,23 @@ class ZappaCLI:
                     self.zappa.add_api_stage_to_api_key(api_key=self.api_key, api_id=api_id, stage_name=self.api_stage)
 
             if self.stage_config.get('touch', True):
+                self.zappa.wait_until_lambda_function_is_active(function_name=self.lambda_name)
                 self.touch_endpoint(endpoint_url)
 
         # Finally, delete the local copy our zip package
-        if not source_zip:
+        if not source_zip and not docker_image_uri:
             if self.stage_config.get('delete_local_zip', True):
                 self.remove_local_zip()
 
         # Remove the project zip from S3.
-        if not source_zip:
+        if not source_zip and not docker_image_uri:
             self.remove_uploaded_zip()
 
         self.callback('post')
 
         click.echo(deployment_string)
 
+    # TODO: update here...
     def update(self, source_zip=None, no_upload=False):
         """
         Repackage and update the function code.
@@ -2278,156 +2308,7 @@ class ZappaCLI:
 
         with zipfile.ZipFile(handler_zip, 'a') as lambda_zip:
 
-            settings_s = "# Generated by Zappa\n"
-
-            if self.app_function:
-                if '.' not in self.app_function: # pragma: no cover
-                    raise ClickException("Your " + click.style("app_function", fg='red', bold=True) + " value is not a modular path." +
-                        " It needs to be in the format `" + click.style("your_module.your_app_object", bold=True) + "`.")
-                app_module, app_function = self.app_function.rsplit('.', 1)
-                settings_s = settings_s + "APP_MODULE='{0!s}'\nAPP_FUNCTION='{1!s}'\n".format(app_module, app_function)
-
-            if self.exception_handler:
-                settings_s += "EXCEPTION_HANDLER='{0!s}'\n".format(self.exception_handler)
-            else:
-                settings_s += "EXCEPTION_HANDLER=None\n"
-
-            if self.debug:
-                settings_s = settings_s + "DEBUG=True\n"
-            else:
-                settings_s = settings_s + "DEBUG=False\n"
-
-            settings_s = settings_s + "LOG_LEVEL='{0!s}'\n".format((self.log_level))
-
-            if self.binary_support:
-                settings_s = settings_s + "BINARY_SUPPORT=True\n"
-            else:
-                settings_s = settings_s + "BINARY_SUPPORT=False\n"
-
-            head_map_dict = {}
-            head_map_dict.update(dict(self.context_header_mappings))
-            settings_s = settings_s + "CONTEXT_HEADER_MAPPINGS={0}\n".format(
-                head_map_dict
-            )
-
-            # If we're on a domain, we don't need to define the /<<env>> in
-            # the WSGI PATH
-            if self.domain:
-                settings_s = settings_s + "DOMAIN='{0!s}'\n".format((self.domain))
-            else:
-                settings_s = settings_s + "DOMAIN=None\n"
-
-            if self.base_path:
-                settings_s = settings_s + "BASE_PATH='{0!s}'\n".format((self.base_path))
-            else:
-                settings_s = settings_s + "BASE_PATH=None\n"
-
-            # Pass through remote config bucket and path
-            if self.remote_env:
-                settings_s = settings_s + "REMOTE_ENV='{0!s}'\n".format(
-                    self.remote_env
-                )
-            # DEPRECATED. use remove_env instead
-            elif self.remote_env_bucket and self.remote_env_file:
-                settings_s = settings_s + "REMOTE_ENV='s3://{0!s}/{1!s}'\n".format(
-                    self.remote_env_bucket, self.remote_env_file
-                )
-
-            # Local envs
-            env_dict = {}
-            if self.aws_region:
-                env_dict['AWS_REGION'] = self.aws_region
-            env_dict.update(dict(self.environment_variables))
-
-            # Environment variable keys must be ascii
-            # https://github.com/Miserlou/Zappa/issues/604
-            # https://github.com/Miserlou/Zappa/issues/998
-            try:
-                env_dict = dict((k.encode('ascii').decode('ascii'), v) for (k, v) in env_dict.items())
-            except Exception:
-                raise ValueError("Environment variable keys must be ascii.")
-
-            settings_s = settings_s + "ENVIRONMENT_VARIABLES={0}\n".format(
-                    env_dict
-                )
-
-            # We can be environment-aware
-            settings_s = settings_s + "API_STAGE='{0!s}'\n".format((self.api_stage))
-            settings_s = settings_s + "PROJECT_NAME='{0!s}'\n".format((self.project_name))
-
-            if self.settings_file:
-                settings_s = settings_s + "SETTINGS_FILE='{0!s}'\n".format((self.settings_file))
-            else:
-                settings_s = settings_s + "SETTINGS_FILE=None\n"
-
-            if self.django_settings:
-                settings_s = settings_s + "DJANGO_SETTINGS='{0!s}'\n".format((self.django_settings))
-            else:
-                settings_s = settings_s + "DJANGO_SETTINGS=None\n"
-
-            # If slim handler, path to project zip
-            if self.stage_config.get('slim_handler', False):
-                settings_s += "ARCHIVE_PATH='s3://{0!s}/{1!s}_{2!s}_current_project.tar.gz'\n".format(
-                    self.s3_bucket_name, self.api_stage, self.project_name)
-
-                # since includes are for slim handler add the setting here by joining arbitrary list from zappa_settings file
-                # and tell the handler we are the slim_handler
-                # https://github.com/Miserlou/Zappa/issues/776
-                settings_s += "SLIM_HANDLER=True\n"
-
-                include = self.stage_config.get('include', [])
-                if len(include) >= 1:
-                    settings_s += "INCLUDE=" + str(include) + '\n'
-
-            # AWS Events function mapping
-            event_mapping = {}
-            events = self.stage_config.get('events', [])
-            for event in events:
-                arn = event.get('event_source', {}).get('arn')
-                function = event.get('function')
-                if arn and function:
-                    event_mapping[arn] = function
-            settings_s = settings_s + "AWS_EVENT_MAPPING={0!s}\n".format(event_mapping)
-
-            # Map Lext bot events
-            bot_events = self.stage_config.get('bot_events', [])
-            bot_events_mapping = {}
-            for bot_event in bot_events:
-                event_source = bot_event.get('event_source', {})
-                intent = event_source.get('intent')
-                invocation_source = event_source.get('invocation_source')
-                function = bot_event.get('function')
-                if intent and invocation_source and function:
-                    bot_events_mapping[str(intent) + ':' + str(invocation_source)] = function
-
-            settings_s = settings_s + "AWS_BOT_EVENT_MAPPING={0!s}\n".format(bot_events_mapping)
-
-            # Map cognito triggers
-            cognito_trigger_mapping = {}
-            cognito_config = self.stage_config.get('cognito', {})
-            triggers = cognito_config.get('triggers', [])
-            for trigger in triggers:
-                source = trigger.get('source')
-                function = trigger.get('function')
-                if source and function:
-                    cognito_trigger_mapping[source] = function
-            settings_s = settings_s + "COGNITO_TRIGGER_MAPPING={0!s}\n".format(cognito_trigger_mapping)
-
-            # Authorizer config
-            authorizer_function = self.authorizer.get('function', None)
-            if authorizer_function:
-                settings_s += "AUTHORIZER_FUNCTION='{0!s}'\n".format(authorizer_function)
-
-            # Copy our Django app into root of our package.
-            # It doesn't work otherwise.
-            if self.django_settings:
-                base = __file__.rsplit(os.sep, 1)[0]
-                django_py = ''.join(os.path.join(base, 'ext', 'django_zappa.py'))
-                lambda_zip.write(django_py, 'django_zappa_app.py')
-
-            # async response
-            async_response_table = self.stage_config.get('async_response_table', '')
-            settings_s += "ASYNC_RESPONSE_TABLE='{0!s}'\n".format(async_response_table)
+            settings_s = self.get_zappa_settings_string()
 
             # Lambda requires a specific chmod
             temp_settings = tempfile.NamedTemporaryFile(delete=False)
@@ -2436,6 +2317,159 @@ class ZappaCLI:
             temp_settings.close()
             lambda_zip.write(temp_settings.name, 'zappa_settings.py')
             os.unlink(temp_settings.name)
+
+    def get_zappa_settings_string(self):
+        settings_s = "# Generated by Zappa\n"
+
+        if self.app_function:
+            if '.' not in self.app_function: # pragma: no cover
+                raise ClickException("Your " + click.style("app_function", fg='red', bold=True) + " value is not a modular path." +
+                    " It needs to be in the format `" + click.style("your_module.your_app_object", bold=True) + "`.")
+            app_module, app_function = self.app_function.rsplit('.', 1)
+            settings_s = settings_s + "APP_MODULE='{0!s}'\nAPP_FUNCTION='{1!s}'\n".format(app_module, app_function)
+
+        if self.exception_handler:
+            settings_s += "EXCEPTION_HANDLER='{0!s}'\n".format(self.exception_handler)
+        else:
+            settings_s += "EXCEPTION_HANDLER=None\n"
+
+        if self.debug:
+            settings_s = settings_s + "DEBUG=True\n"
+        else:
+            settings_s = settings_s + "DEBUG=False\n"
+
+        settings_s = settings_s + "LOG_LEVEL='{0!s}'\n".format((self.log_level))
+
+        if self.binary_support:
+            settings_s = settings_s + "BINARY_SUPPORT=True\n"
+        else:
+            settings_s = settings_s + "BINARY_SUPPORT=False\n"
+
+        head_map_dict = {}
+        head_map_dict.update(dict(self.context_header_mappings))
+        settings_s = settings_s + "CONTEXT_HEADER_MAPPINGS={0}\n".format(
+            head_map_dict
+        )
+
+        # If we're on a domain, we don't need to define the /<<env>> in
+        # the WSGI PATH
+        if self.domain:
+            settings_s = settings_s + "DOMAIN='{0!s}'\n".format((self.domain))
+        else:
+            settings_s = settings_s + "DOMAIN=None\n"
+
+        if self.base_path:
+            settings_s = settings_s + "BASE_PATH='{0!s}'\n".format((self.base_path))
+        else:
+            settings_s = settings_s + "BASE_PATH=None\n"
+
+        # Pass through remote config bucket and path
+        if self.remote_env:
+            settings_s = settings_s + "REMOTE_ENV='{0!s}'\n".format(
+                self.remote_env
+            )
+        # DEPRECATED. use remove_env instead
+        elif self.remote_env_bucket and self.remote_env_file:
+            settings_s = settings_s + "REMOTE_ENV='s3://{0!s}/{1!s}'\n".format(
+                self.remote_env_bucket, self.remote_env_file
+            )
+
+        # Local envs
+        env_dict = {}
+        if self.aws_region:
+            env_dict['AWS_REGION'] = self.aws_region
+        env_dict.update(dict(self.environment_variables))
+
+        # Environment variable keys must be ascii
+        # https://github.com/Miserlou/Zappa/issues/604
+        # https://github.com/Miserlou/Zappa/issues/998
+        try:
+            env_dict = dict((k.encode('ascii').decode('ascii'), v) for (k, v) in env_dict.items())
+        except Exception:
+            raise ValueError("Environment variable keys must be ascii.")
+
+        settings_s = settings_s + "ENVIRONMENT_VARIABLES={0}\n".format(
+                env_dict
+            )
+
+        # We can be environment-aware
+        settings_s = settings_s + "API_STAGE='{0!s}'\n".format((self.api_stage))
+        settings_s = settings_s + "PROJECT_NAME='{0!s}'\n".format((self.project_name))
+
+        if self.settings_file:
+            settings_s = settings_s + "SETTINGS_FILE='{0!s}'\n".format((self.settings_file))
+        else:
+            settings_s = settings_s + "SETTINGS_FILE=None\n"
+
+        if self.django_settings:
+            settings_s = settings_s + "DJANGO_SETTINGS='{0!s}'\n".format((self.django_settings))
+        else:
+            settings_s = settings_s + "DJANGO_SETTINGS=None\n"
+
+        # If slim handler, path to project zip
+        if self.stage_config.get('slim_handler', False):
+            settings_s += "ARCHIVE_PATH='s3://{0!s}/{1!s}_{2!s}_current_project.tar.gz'\n".format(
+                self.s3_bucket_name, self.api_stage, self.project_name)
+
+            # since includes are for slim handler add the setting here by joining arbitrary list from zappa_settings file
+            # and tell the handler we are the slim_handler
+            # https://github.com/Miserlou/Zappa/issues/776
+            settings_s += "SLIM_HANDLER=True\n"
+
+            include = self.stage_config.get('include', [])
+            if len(include) >= 1:
+                settings_s += "INCLUDE=" + str(include) + '\n'
+
+        # AWS Events function mapping
+        event_mapping = {}
+        events = self.stage_config.get('events', [])
+        for event in events:
+            arn = event.get('event_source', {}).get('arn')
+            function = event.get('function')
+            if arn and function:
+                event_mapping[arn] = function
+        settings_s = settings_s + "AWS_EVENT_MAPPING={0!s}\n".format(event_mapping)
+
+        # Map Lext bot events
+        bot_events = self.stage_config.get('bot_events', [])
+        bot_events_mapping = {}
+        for bot_event in bot_events:
+            event_source = bot_event.get('event_source', {})
+            intent = event_source.get('intent')
+            invocation_source = event_source.get('invocation_source')
+            function = bot_event.get('function')
+            if intent and invocation_source and function:
+                bot_events_mapping[str(intent) + ':' + str(invocation_source)] = function
+
+        settings_s = settings_s + "AWS_BOT_EVENT_MAPPING={0!s}\n".format(bot_events_mapping)
+
+        # Map cognito triggers
+        cognito_trigger_mapping = {}
+        cognito_config = self.stage_config.get('cognito', {})
+        triggers = cognito_config.get('triggers', [])
+        for trigger in triggers:
+            source = trigger.get('source')
+            function = trigger.get('function')
+            if source and function:
+                cognito_trigger_mapping[source] = function
+        settings_s = settings_s + "COGNITO_TRIGGER_MAPPING={0!s}\n".format(cognito_trigger_mapping)
+
+        # Authorizer config
+        authorizer_function = self.authorizer.get('function', None)
+        if authorizer_function:
+            settings_s += "AUTHORIZER_FUNCTION='{0!s}'\n".format(authorizer_function)
+
+        # Copy our Django app into root of our package.
+        # It doesn't work otherwise.
+        if self.django_settings:
+            base = __file__.rsplit(os.sep, 1)[0]
+            django_py = ''.join(os.path.join(base, 'ext', 'django_zappa.py'))
+            lambda_zip.write(django_py, 'django_zappa_app.py')
+
+        # async response
+        async_response_table = self.stage_config.get('async_response_table', '')
+        settings_s += "ASYNC_RESPONSE_TABLE='{0!s}'\n".format(async_response_table)
+        return settings_s
 
     def remove_local_zip(self):
         """
@@ -2716,6 +2750,7 @@ class ZappaCLI:
             return
 
         touch_path = self.stage_config.get('touch_path', '/')
+
         req = requests.get(endpoint_url + touch_path)
 
         # Sometimes on really large packages, it can take 60-90 secs to be

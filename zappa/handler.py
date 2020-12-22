@@ -606,6 +606,8 @@ class LambdaHandler:
 
 
 def lambda_handler(event, context):  # pragma: no cover
+    print(event)
+    print(context)
     return LambdaHandler.lambda_handler(event, context)
 
 
