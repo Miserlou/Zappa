@@ -2641,7 +2641,7 @@ class Zappa:
             logger.debug("policy already exists? {}".format(policy_exists))
             if policy_exists:
                 return None
-        except botocore.errorfactory.ResourceNotFoundException:
+        except botocore.exceptions.ClientError:
             pass
 
         permission_response = self.lambda_client.add_permission(
