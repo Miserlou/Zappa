@@ -2628,17 +2628,22 @@ class Zappa:
         Related: http://docs.aws.amazon.com/lambda/latest/dg/with-s3-example-configure-event-source.html
         """
         logger.debug('Adding new permission to invoke Lambda function: {}'.format(lambda_name))
-        policy = self.lambda_client.get_policy(FunctionName=lambda_name)['Policy']
-        policy = json.loads(policy)
         policy_exists = False
-        for stmt in policy['Statement']:
-            if stmt['Action'] == 'lambda:InvokeFunction' and \
-                    principal == stmt['Principal']['Service'] and \
-                    source_arn == stmt['Condition']['ArnLike']['AWS:SourceArn']:
-                policy_exists = True
-        logger.debug("policy already exists? {}".format(policy_exists))
-        if policy_exists:
-            return None
+        try:
+            policy = self.lambda_client.get_policy(FunctionName=lambda_name)['Policy']
+            policy = json.loads(policy)
+
+            for stmt in policy['Statement']:
+                if stmt['Action'] == 'lambda:InvokeFunction' and \
+                        principal == stmt['Principal']['Service'] and \
+                        source_arn == stmt['Condition']['ArnLike']['AWS:SourceArn']:
+                    policy_exists = True
+            logger.debug("policy already exists? {}".format(policy_exists))
+            if policy_exists:
+                return None
+        except botocore.errorfactory.ResourceNotFoundException:
+            pass
+
         permission_response = self.lambda_client.add_permission(
             FunctionName=lambda_name,
             StatementId=''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8)),
