@@ -430,6 +430,9 @@ class ZappaCLI:
         update_parser.add_argument(
             '-n', '--no-upload', help="Update configuration where appropriate, but don't upload new code"
         )
+        update_parser.add_argument(
+            '-d', '--docker-image-uri', help='Update Lambda with a specific docker image hosted in AWS Elastic Container Registry'
+        )
 
         ##
         # Debug
@@ -573,7 +576,7 @@ class ZappaCLI:
                                 json=self.vargs['json']
                             )
         elif command == 'update': # pragma: no cover
-            self.update(self.vargs['zip'], self.vargs['no_upload'])
+            self.update(self.vargs['zip'], self.vargs['no_upload'], self.vargs['docker_image_uri'])
         elif command == 'rollback': # pragma: no cover
             self.rollback(self.vargs['num_rollback'])
         elif command == 'invoke': # pragma: no cover
@@ -873,7 +876,7 @@ class ZappaCLI:
                     self.zappa.add_api_stage_to_api_key(api_key=self.api_key, api_id=api_id, stage_name=self.api_stage)
 
             if self.stage_config.get('touch', True):
-                self.zappa.wait_until_lambda_function_is_active(function_name=self.lambda_name)
+                self.zappa.wait_until_lambda_function_is_ready(function_name=self.lambda_name)
                 self.touch_endpoint(endpoint_url)
 
         # Finally, delete the local copy our zip package
@@ -889,13 +892,12 @@ class ZappaCLI:
 
         click.echo(deployment_string)
 
-    # TODO: update here...
-    def update(self, source_zip=None, no_upload=False):
+    def update(self, source_zip=None, no_upload=False, docker_image_uri=None):
         """
         Repackage and update the function code.
         """
 
-        if not source_zip:
+        if not source_zip and not docker_image_uri:
             # Make sure we're in a venv.
             self.check_venv()
 
@@ -973,7 +975,11 @@ class ZappaCLI:
             num_revisions=self.num_retained_versions,
             concurrency=self.lambda_concurrency,
         )
-        if source_zip and source_zip.startswith('s3://'):
+        if docker_image_uri:
+            kwargs['docker_image_uri'] = docker_image_uri
+            self.lambda_arn = self.zappa.update_lambda_function(**kwargs)
+            self.zappa.wait_until_lambda_function_is_ready(function_name=self.lambda_name)
+        elif source_zip and source_zip.startswith('s3://'):
             bucket, key_name = parse_s3_url(source_zip)
             kwargs.update(dict(
                 bucket=bucket,
@@ -991,7 +997,7 @@ class ZappaCLI:
                 self.lambda_arn = self.zappa.update_lambda_function(**kwargs)
 
         # Remove the uploaded zip from S3, because it is now registered..
-        if not source_zip and not no_upload:
+        if not source_zip and not no_upload and not docker_image_uri:
             self.remove_uploaded_zip()
 
         # Update the configuration, in case there are changes.
@@ -1010,7 +1016,7 @@ class ZappaCLI:
                                                     )
 
         # Finally, delete the local copy our zip package
-        if not source_zip and not no_upload:
+        if not source_zip and not no_upload and not docker_image_uri:
             if self.stage_config.get('delete_local_zip', True):
                 self.remove_local_zip()
 
@@ -1086,6 +1092,7 @@ class ZappaCLI:
                     deployed_string = deployed_string + " (" + api_url + ")"
 
             if self.stage_config.get('touch', True):
+                self.zappa.wait_until_lambda_function_is_ready(function_name=self.lambda_name)
                 if api_url:
                     self.touch_endpoint(api_url)
                 elif endpoint_url:
@@ -1452,13 +1459,15 @@ class ZappaCLI:
         status_dict["Lambda Name"] = self.lambda_name
         status_dict["Lambda ARN"] = self.lambda_arn
         status_dict["Lambda Role ARN"] = conf['Role']
-        status_dict["Lambda Handler"] = conf['Handler']
         status_dict["Lambda Code Size"] = conf['CodeSize']
         status_dict["Lambda Version"] = conf['Version']
         status_dict["Lambda Last Modified"] = conf['LastModified']
         status_dict["Lambda Memory Size"] = conf['MemorySize']
         status_dict["Lambda Timeout"] = conf['Timeout']
-        status_dict["Lambda Runtime"] = conf['Runtime']
+        # Handler & Runtime won't be present for lambda Docker deployments
+        # https://github.com/Miserlou/Zappa/issues/2188
+        status_dict["Lambda Handler"] = conf.get('Handler', '')
+        status_dict["Lambda Runtime"] = conf.get('Runtime', '')
         if 'VpcConfig' in conf.keys():
             status_dict["Lambda VPC ID"] = conf.get('VpcConfig', {}).get('VpcId', 'Not assigned')
         else:
@@ -2310,6 +2319,13 @@ class ZappaCLI:
 
             settings_s = self.get_zappa_settings_string()
 
+            # Copy our Django app into root of our package.
+            # It doesn't work otherwise.
+            if self.django_settings:
+                base = __file__.rsplit(os.sep, 1)[0]
+                django_py = ''.join(os.path.join(base, 'ext', 'django_zappa.py'))
+                lambda_zip.write(django_py, 'django_zappa_app.py')
+
             # Lambda requires a specific chmod
             temp_settings = tempfile.NamedTemporaryFile(delete=False)
             os.chmod(temp_settings.name, 0o644)
@@ -2458,13 +2474,6 @@ class ZappaCLI:
         authorizer_function = self.authorizer.get('function', None)
         if authorizer_function:
             settings_s += "AUTHORIZER_FUNCTION='{0!s}'\n".format(authorizer_function)
-
-        # Copy our Django app into root of our package.
-        # It doesn't work otherwise.
-        if self.django_settings:
-            base = __file__.rsplit(os.sep, 1)[0]
-            django_py = ''.join(os.path.join(base, 'ext', 'django_zappa.py'))
-            lambda_zip.write(django_py, 'django_zappa_app.py')
 
         # async response
         async_response_table = self.stage_config.get('async_response_table', '')
@@ -2750,7 +2759,6 @@ class ZappaCLI:
             return
 
         touch_path = self.stage_config.get('touch_path', '/')
-
         req = requests.get(endpoint_url + touch_path)
 
         # Sometimes on really large packages, it can take 60-90 secs to be

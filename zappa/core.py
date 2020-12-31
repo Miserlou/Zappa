@@ -1107,7 +1107,7 @@ class Zappa:
 
         return resource_arn
 
-    def update_lambda_function(self, bucket, function_name, s3_key=None, publish=True, local_zip=None, num_revisions=None, concurrency=None):
+    def update_lambda_function(self, bucket, function_name, s3_key=None, publish=True, local_zip=None, num_revisions=None, concurrency=None, docker_image_uri=None):
         """
         Given a bucket and key (or a local path) of a valid Lambda-zip, a function name and a handler, update that Lambda function's code.
         Optionally, delete previous versions if they exceed the optional limit.
@@ -1118,7 +1118,9 @@ class Zappa:
             FunctionName=function_name,
             Publish=publish
         )
-        if local_zip:
+        if docker_image_uri:
+            kwargs['ImageUri'] = docker_image_uri
+        elif local_zip:
             kwargs['ZipFile'] = local_zip
         else:
             kwargs['S3Bucket'] = bucket
@@ -1213,6 +1215,7 @@ class Zappa:
         # Check if there are any remote aws lambda env vars so they don't get trashed.
         # https://github.com/Miserlou/Zappa/issues/987,  Related: https://github.com/Miserlou/Zappa/issues/765
         lambda_aws_config = self.lambda_client.get_function_configuration(FunctionName=function_name)
+        is_docker_deployment = lambda_aws_config['PackageType'] == 'Image'
         if "Environment" in lambda_aws_config:
             lambda_aws_environment_variables = lambda_aws_config["Environment"].get("Variables", {})
             # Append keys that are remote but not in settings file
@@ -1220,22 +1223,26 @@ class Zappa:
                 if key not in aws_environment_variables:
                     aws_environment_variables[key] = value
 
-        response = self.lambda_client.update_function_configuration(
-            FunctionName=function_name,
-            Runtime=runtime,
-            Role=self.credentials_arn,
-            Handler=handler,
-            Description=description,
-            Timeout=timeout,
-            MemorySize=memory_size,
-            VpcConfig=vpc_config,
-            Environment={'Variables': aws_environment_variables},
-            KMSKeyArn=aws_kms_key_arn,
-            TracingConfig={
+        kwargs = {
+            'FunctionName': function_name,
+            'Role': self.credentials_arn,
+            'Description': description,
+            'Timeout': timeout,
+            'MemorySize': memory_size,
+            'VpcConfig':vpc_config,
+            'Environment':{'Variables': aws_environment_variables},
+            'KMSKeyArn': aws_kms_key_arn,
+            'TracingConfig': {
                 'Mode': 'Active' if self.xray_tracing else 'PassThrough'
             },
-            Layers=layers
-        )
+        }
+
+        if not is_docker_deployment:
+            kwargs['Handler'] = handler
+            kwargs['Runtime'] = runtime
+            kwargs['Layers'] = layers
+
+        response = self.lambda_client.update_function_configuration(**kwargs)
 
         resource_arn = response['FunctionArn']
 
@@ -1271,6 +1278,12 @@ class Zappa:
         """
         response = self.lambda_client.list_versions_by_function(FunctionName=function_name)
 
+        # https://github.com/Miserlou/Zappa/pull/2192
+        if response['Versions'][-1]["PackageType"] == "Image":
+            raise NotImplementedError(
+                "Zappa's rollback functionality is not available for Docker based deployments"
+            )
+
         # Take into account $LATEST
         if len(response['Versions']) < versions_back + 1:
             print("We do not have {} revisions. Aborting".format(str(versions_back)))
@@ -1290,30 +1303,32 @@ class Zappa:
 
         return response['FunctionArn']
 
-    def is_lambda_function_active(self, function_name):
+    def is_lambda_function_ready(self, function_name):
         """
-        Checks if a lambda function is active, given a name.
+        Checks if a lambda function is active and no updates are in progress.
         """
-        response = self.lambda_client.get_function(
-                FunctionName=function_name)
-        return response['Configuration']['State'] == 'Active'
+        response = self.lambda_client.get_function(FunctionName=function_name)
+        return (
+            response['Configuration']['State'] == 'Active' 
+            and response['Configuration']['LastUpdateStatus'] != 'InProgress'
+        )
 
-    def wait_until_lambda_function_is_active(self, function_name):
+    def wait_until_lambda_function_is_ready(self, function_name):
         """
         Continuously check if a lambda function is active. 
 
         For functions deployed with a docker image instead of a
         ZIP package, the function can take a few seconds longer
-        to be created, so we must wait before running any status
+        to be created or update, so we must wait before running any status
         checks against the function.
         """
         show_waiting_message = True
         while True:
-            if self.is_lambda_function_active(function_name):
+            if self.is_lambda_function_ready(function_name):
                 break
 
             if show_waiting_message:
-                print("Waiting until lambda function is active.")
+                print("Waiting until lambda function is ready.")
                 show_waiting_message = False
 
             time.sleep(1)
