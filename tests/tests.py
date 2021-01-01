@@ -366,7 +366,10 @@ class TestZappa(unittest.TestCase):
 
         with mock.patch.object(z, "lambda_client") as mock_client:
             # Simulate already having some AWS env vars remotely
-            mock_client.get_function_configuration.return_value = {"Environment": {"Variables": {"REMOTE_ONLY": "AAA", "CHANGED_REMOTE" : "BBB"}}}
+            mock_client.get_function_configuration.return_value = {
+                "PackageType": "Zip", 
+                "Environment": {"Variables": {"REMOTE_ONLY": "AAA", "CHANGED_REMOTE" : "BBB"}}
+            }
             z.update_lambda_configuration("test", "test", "test", aws_environment_variables={"CHANGED_REMOTE" : "ZZ", "LOCAL_ONLY" : "YY"})
             end_result_should_be = {"REMOTE_ONLY": "AAA", "CHANGED_REMOTE" : "ZZ", "LOCAL_ONLY" : "YY"}
             self.assertEqual(mock_client.update_function_configuration.call_args[1]["Environment"], { "Variables": end_result_should_be})
@@ -374,7 +377,9 @@ class TestZappa(unittest.TestCase):
         with mock.patch.object(z, "lambda_client") as mock_client:
             # Simulate already having some AWS env vars remotely but none set in aws_environment_variables
             mock_client.get_function_configuration.return_value = {
-                "Environment": {"Variables": {"REMOTE_ONLY_1": "AAA", "REMOTE_ONLY_2": "BBB"}}}
+                "PackageType": "Zip",
+                "Environment": {"Variables": {"REMOTE_ONLY_1": "AAA", "REMOTE_ONLY_2": "BBB"}}
+            }
             z.update_lambda_configuration("test", "test", "test")
             end_result_should_be = {"REMOTE_ONLY_1": "AAA", "REMOTE_ONLY_2": "BBB"}
             self.assertEqual(mock_client.update_function_configuration.call_args[1]["Environment"],
@@ -386,11 +391,11 @@ class TestZappa(unittest.TestCase):
         z.credentials_arn = object()
 
         with mock.patch.object(z, "lambda_client") as mock_client:
-            mock_client.get_function_configuration.return_value = {}
+            mock_client.get_function_configuration.return_value = {"PackageType": "Zip"}
             z.update_lambda_configuration("test", "test", "test", layers=["Layer1", "Layer2"])
             self.assertEqual(mock_client.update_function_configuration.call_args[1]["Layers"], ["Layer1", "Layer2"])
         with mock.patch.object(z, "lambda_client") as mock_client:
-            mock_client.get_function_configuration.return_value = {}
+            mock_client.get_function_configuration.return_value = {"PackageType": "Zip"}
             z.update_lambda_configuration("test", "test", "test")
             self.assertEqual(mock_client.update_function_configuration.call_args[1]["Layers"], [])
 
@@ -401,7 +406,7 @@ class TestZappa(unittest.TestCase):
 
         with mock.patch.object(z, "lambda_client") as mock_client:
             # Simulate having no AWS env vars remotely
-            mock_client.get_function_configuration.return_value = {}
+            mock_client.get_function_configuration.return_value = {"PackageType": "Zip"}
             z.update_lambda_configuration("test", "test", "test", aws_environment_variables={"LOCAL_ONLY" : "LZ", "SHOW_AND_TELL" : "SHA"})
             end_result_should_be = {"LOCAL_ONLY" : "LZ", "SHOW_AND_TELL" : "SHA"}
             self.assertEqual(mock_client.update_function_configuration.call_args[1]["Environment"], { "Variables": end_result_should_be})
@@ -931,6 +936,23 @@ class TestZappa(unittest.TestCase):
 
         colorized_string = zappa_cli.colorize_invoke_command(plain_string)
         self.assertEqual(final_string, colorized_string)
+
+    def test_cli_save_python_settings_file(self):
+        zappa_cli = ZappaCLI()
+        zappa_cli.api_stage = 'ttt888'
+        zappa_cli.load_settings('test_settings.json')
+
+
+        temp_dir = tempfile.mkdtemp()
+        good_output_path = os.path.join(temp_dir, 'zappa_settings.py')
+        assert not os.path.exists(good_output_path)
+        zappa_cli.save_python_settings_file(good_output_path)
+        assert os.path.exists(good_output_path)
+
+        bad_output_path = os.path.join(temp_dir, 'settings.py')
+        with self.assertRaises(ValueError):
+            zappa_cli.save_python_settings_file(bad_output_path)
+
 
     # def test_cli_args(self):
     #     zappa_cli = ZappaCLI()

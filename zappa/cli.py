@@ -652,7 +652,7 @@ class ZappaCLI:
         settings_path = output_path or 'zappa_settings.py'
         print('Generating Zappa settings Python file and saving to {}'.format(settings_path))
         if not settings_path.endswith('zappa_settings.py'):
-            raise Exception('Settings file must be named zappa_settings.py')
+            raise ValueError('Settings file must be named zappa_settings.py')
         zappa_settings_s = self.get_zappa_settings_string()
         with open(settings_path, 'w') as f_out:
             f_out.write(zappa_settings_s)
@@ -736,6 +736,12 @@ class ZappaCLI:
                             bold=True)
                         + '\n')
 
+        # Make sure this isn't already deployed.
+        deployed_versions = self.zappa.get_lambda_function_versions(self.lambda_name)
+        if len(deployed_versions) > 0:
+            raise ClickException("This application is " + click.style("already deployed", fg="red") +
+                                    " - did you mean to call " + click.style("update", bold=True) + "?")
+
         if not source_zip and not docker_image_uri:
             # Make sure we're in a venv.
             self.check_venv()
@@ -744,11 +750,6 @@ class ZappaCLI:
             if self.prebuild_script:
                 self.execute_prebuild_script()
 
-            # Make sure this isn't already deployed.
-            deployed_versions = self.zappa.get_lambda_function_versions(self.lambda_name)
-            if len(deployed_versions) > 0:
-                raise ClickException("This application is " + click.style("already deployed", fg="red") +
-                                     " - did you mean to call " + click.style("update", bold=True) + "?")
 
             # Create the Lambda Zip
             self.create_package()

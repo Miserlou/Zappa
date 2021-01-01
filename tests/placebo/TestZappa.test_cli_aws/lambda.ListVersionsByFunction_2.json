@@ -18,7 +18,8 @@
                 "Timeout": 30, 
                 "LastModified": "2016-06-02T19:24:32.878+0000", 
                 "Runtime": "python2.7", 
-                "Description": "Zappa Deployment"
+                "Description": "Zappa Deployment",
+                "PackageType": "Zip"
             }, 
             {
                 "Version": "1", 
@@ -32,7 +33,8 @@
                 "Timeout": 30, 
                 "LastModified": "2016-06-02T19:23:48.902+0000", 
                 "Runtime": "python2.7", 
-                "Description": "Zappa Deployment"
+                "Description": "Zappa Deployment",
+                "PackageType": "Zip"
             }, 
             {
                 "Version": "2", 
@@ -46,7 +48,8 @@
                 "Timeout": 30, 
                 "LastModified": "2016-06-02T19:24:32.878+0000", 
                 "Runtime": "python2.7", 
-                "Description": "Zappa Deployment"
+                "Description": "Zappa Deployment",
+                "PackageType": "Zip"
             }
         ]
     }
