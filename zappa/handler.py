@@ -565,6 +565,10 @@ class LambdaHandler:
                                 zappa_returndict["body"] = response.get_data(as_text=True)
                             except UnicodeDecodeError:
                                 # If data can't be decoded as utf-8, try processing as binary
+                                logger.warning(
+                                    "UnicodeDecodeError on response.get_data(as_text=True), "
+                                    "unable to decode response.data as 'utf8': encoding as base64 isBase64Encoded=True"
+                                )
                                 zappa_returndict["body"] = base64.b64encode(response.data).decode("utf8")
                                 zappa_returndict["isBase64Encoded"] = True
 
