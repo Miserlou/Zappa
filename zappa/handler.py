@@ -552,10 +552,21 @@ class LambdaHandler:
                         content_encoding = response.headers.get("Content-Encoding", None)
                         binary_encodings = ("gzip", "compress", "deflate", "br")
                         if settings.BINARY_SUPPORT and content_encoding in binary_encodings:
-                            zappa_returndict['body'] = base64.b64encode(response.data).decode('utf-8')
-                            zappa_returndict["isBase64Encoded"] = True
+                            try:
+                                zappa_returndict["body"] = base64.b64encode(response.data).decode("utf8")
+                                zappa_returndict["isBase64Encoded"] = True
+                            except UnicodeDecodeError as e:
+                                logger.exception(e)
+                                logger.error(f"Unable to decode resulting base64 encoded response.data as 'utf8': response.data={response.data}")
+                                logger.warning("Using response.get_data(as_text=True)")
+                                zappa_returndict["body"] = response.get_data(as_text=True)
                         else:
-                            zappa_returndict['body'] = response.get_data(as_text=True)
+                            try:
+                                zappa_returndict["body"] = response.get_data(as_text=True)
+                            except UnicodeDecodeError:
+                                # If data can't be decoded as utf-8, try processing as binary
+                                zappa_returndict["body"] = base64.b64encode(response.data).decode("utf8")
+                                zappa_returndict["isBase64Encoded"] = True
 
                     zappa_returndict['statusCode'] = response.status_code
                     if 'headers' in event:
