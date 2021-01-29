@@ -949,7 +949,7 @@ to change Zappa's behavior. Use these at your own risk!
 
 #### YAML Settings
 
-If you prefer YAML over JSON, you can also use a `zappa_settings.yml`, like so:
+If you prefer YAML over JSON, you can also use `zappa_settings.yml` or `zappa_settings.yaml`, like so:
 
 ```yaml
 ---
