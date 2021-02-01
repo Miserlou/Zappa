@@ -70,6 +70,7 @@
   - [Using Custom AWS IAM Roles and Policies](#using-custom-aws-iam-roles-and-policies)
     - [Custom AWS IAM Roles and Policies for Deployment](#custom-aws-iam-roles-and-policies-for-deployment)
     - [Custom AWS IAM Roles and Policies for Execution](#custom-aws-iam-roles-and-policies-for-execution)
+  - [AWS S3 Server Side Encryption](#aws-s3-server-side-encryption)
   - [AWS X-Ray](#aws-x-ray)
   - [Globally Available Server-less Architectures](#globally-available-server-less-architectures)
   - [Raising AWS Service Limits](#raising-aws-service-limits)
