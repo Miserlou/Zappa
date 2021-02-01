@@ -232,6 +232,7 @@ class Zappa:
     apigateway_policy = None
     cloudwatch_log_levels = ['OFF', 'ERROR', 'INFO']
     xray_tracing = False
+    s3_upload_args = None
 
     ##
     # Credentials
@@ -248,6 +249,7 @@ class Zappa:
             desired_role_name=None,
             desired_role_arn=None,
             runtime='python3.6', # Detected at runtime in CLI
+            s3_upload_args=None,
             tags=(),
             endpoint_urls={},
             xray_tracing=False
@@ -288,6 +290,7 @@ class Zappa:
 
         self.endpoint_urls = endpoint_urls
         self.xray_tracing = xray_tracing
+        self.s3_upload_args = s3_upload_args
 
         # Some common invocations, such as DB migrations,
         # can take longer than the default.
@@ -888,7 +891,7 @@ class Zappa:
     # S3
     ##
 
-    def upload_to_s3(self, source_path, bucket_name, disable_progress=False):
+    def upload_to_s3(self, source_path, bucket_name, disable_progress=False, upload_args=None):
         r"""
         Given a file, upload it to S3.
         Credentials should be stored in environment variables or ~/.aws/credentials (%USERPROFILE%\.aws\credentials on Windows).
@@ -935,10 +938,10 @@ class Zappa:
             try:
                 self.s3_client.upload_file(
                     source_path, bucket_name, dest_path,
-                    Callback=progress.update
+                    Callback=progress.update, ExtraArgs=upload_args
                 )
             except Exception as e:  # pragma: no cover
-                self.s3_client.upload_file(source_path, bucket_name, dest_path)
+                self.s3_client.upload_file(source_path, bucket_name, dest_path, ExtraArgs=upload_args)
 
             progress.close()
         except (KeyboardInterrupt, SystemExit):  # pragma: no cover
@@ -2161,7 +2164,7 @@ class Zappa:
         with open(template, 'wb') as out:
             out.write(bytes(self.cf_template.to_json(indent=None, separators=(',',':')), "utf-8"))
 
-        self.upload_to_s3(template, working_bucket, disable_progress=disable_progress)
+        self.upload_to_s3(template, working_bucket, disable_progress=disable_progress, upload_args=self.s3_upload_args)
         if self.boto_session.region_name == "us-gov-west-1":
             url = 'https://s3-us-gov-west-1.amazonaws.com/{0}/{1}'.format(working_bucket, template)
         else:

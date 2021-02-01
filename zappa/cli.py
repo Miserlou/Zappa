@@ -100,6 +100,7 @@ class ZappaCLI:
     lambda_description = None
     lambda_concurrency = None
     s3_bucket_name = None
+    s3_upload_args = None
     settings_file = None
     zip_path = None
     handler_path = None
@@ -725,14 +726,14 @@ class ZappaCLI:
 
             # Upload it to S3
             success = self.zappa.upload_to_s3(
-                    self.zip_path, self.s3_bucket_name, disable_progress=self.disable_progress)
+                    self.zip_path, self.s3_bucket_name, disable_progress=self.disable_progress, upload_args=self.s3_upload_args)
             if not success: # pragma: no cover
                 raise ClickException("Unable to upload to S3. Quitting.")
 
             # If using a slim handler, upload it to S3 and tell lambda to use this slim handler zip
             if self.stage_config.get('slim_handler', False):
                 # https://github.com/Miserlou/Zappa/issues/510
-                success = self.zappa.upload_to_s3(self.handler_path, self.s3_bucket_name, disable_progress=self.disable_progress)
+                success = self.zappa.upload_to_s3(self.handler_path, self.s3_bucket_name, disable_progress=self.disable_progress, upload_args=self.s3_upload_args)
                 if not success:  # pragma: no cover
                     raise ClickException("Unable to upload handler to S3. Quitting.")
 
@@ -913,14 +914,14 @@ class ZappaCLI:
 
             # Upload it to S3
             if not no_upload:
-                success = self.zappa.upload_to_s3(self.zip_path, self.s3_bucket_name, disable_progress=self.disable_progress)
+                success = self.zappa.upload_to_s3(self.zip_path, self.s3_bucket_name, disable_progress=self.disable_progress, upload_args=self.s3_upload_args)
                 if not success:  # pragma: no cover
                     raise ClickException("Unable to upload project to S3. Quitting.")
 
                 # If using a slim handler, upload it to S3 and tell lambda to use this slim handler zip
                 if self.stage_config.get('slim_handler', False):
                     # https://github.com/Miserlou/Zappa/issues/510
-                    success = self.zappa.upload_to_s3(self.handler_path, self.s3_bucket_name, disable_progress=self.disable_progress)
+                    success = self.zappa.upload_to_s3(self.handler_path, self.s3_bucket_name, disable_progress=self.disable_progress, upload_args=self.s3_upload_args)
                     if not success:  # pragma: no cover
                         raise ClickException("Unable to upload handler to S3. Quitting.")
 
@@ -2047,6 +2048,7 @@ class ZappaCLI:
 
         # Load stage-specific settings
         self.s3_bucket_name = self.stage_config.get('s3_bucket', "zappa-" + ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(9)))
+        self.s3_upload_args = self.stage_config.get('s3_upload_args', None)
         self.vpc_config = self.stage_config.get('vpc_config', {})
         self.memory_size = self.stage_config.get('memory_size', 512)
         self.app_function = self.stage_config.get('app_function', None)
@@ -2122,7 +2124,8 @@ class ZappaCLI:
                             runtime=self.runtime,
                             tags=self.tags,
                             endpoint_urls=self.stage_config.get('aws_endpoint_urls',{}),
-                            xray_tracing=self.xray_tracing
+                            xray_tracing=self.xray_tracing,
+                            s3_upload_args=self.s3_upload_args
                         )
 
         for setting in CUSTOM_SETTINGS:

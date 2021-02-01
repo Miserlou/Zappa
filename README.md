@@ -70,6 +70,7 @@
   - [Using Custom AWS IAM Roles and Policies](#using-custom-aws-iam-roles-and-policies)
     - [Custom AWS IAM Roles and Policies for Deployment](#custom-aws-iam-roles-and-policies-for-deployment)
     - [Custom AWS IAM Roles and Policies for Execution](#custom-aws-iam-roles-and-policies-for-execution)
+  - [AWS S3 Server Side Encryption](#aws-s3-server-side-encryption)
   - [AWS X-Ray](#aws-x-ray)
   - [Globally Available Server-less Architectures](#globally-available-server-less-architectures)
   - [Raising AWS Service Limits](#raising-aws-service-limits)
@@ -928,6 +929,9 @@ to change Zappa's behavior. Use these at your own risk!
         "route53_enabled": true, // Have Zappa update your Route53 Hosted Zones when certifying with a custom domain. Default true.
         "runtime": "python3.6", // Python runtime to use on Lambda. Can be one of "python3.6", "python3.7" or "python3.8". Defaults to whatever the current Python being used is.
         "s3_bucket": "dev-bucket", // Zappa zip bucket,
+        "s3_upload_args": { // Arguments to pass to the s3 client when uploading
+            "ServerSideEncryption": "AES256"  // Add server side encryption to the upload request
+        },
         "slim_handler": false, // Useful if project >50M. Set true to just upload a small handler to Lambda and load actual project from S3 at runtime. Default false.
         "settings_file": "~/Projects/MyApp/settings/dev_settings.py", // Server side settings file location,
         "tags": { // Attach additional tags to AWS Resources
@@ -1291,6 +1295,27 @@ To add permissions to the default Zappa execution policy, use the `extra_permiss
             "Action": ["rekognition:*"], // AWS Service ARN
             "Resource": "*"
         }]
+    },
+    ...
+}
+```
+
+### AWS S3 Server Side Encryption
+
+Zappa can upload artifacts to an S3 bucket which requires server side encryption.
+This is useful for environments that have strict compliance on PUT requests into
+S3 Buckets.
+
+*An important note*: Zappa can deploy into buckets that already exist. This
+feature is useful if your deployment buckets are managed outside of Zappa.
+
+```javascript
+{
+    "dev": {
+        ...
+        "s3_upload_args": {
+            "ServerSideEncryption": "AES256"
+        }
     },
     ...
 }
