@@ -257,7 +257,7 @@ See the [example](example/) for more details.
 
 #### Advanced Scheduling
 
-Sometimes a function needs multiple expressions to describe its schedule. To set multiple expressions, simply list your functions, and the list of expressions to schedule them using [cron or rate syntax](http://docs.aws.amazon.com/lambda/latest/dg/tutorial-scheduled-events-schedule-expressions.html) in your *zappa_settings.json* file:
+Sometimes a function needs multiple expressions to describe its schedule. To set multiple expressions, simply list your functions, and the list of expressions to schedule them using [cron or rate syntax](http://docs.aws.amazon.com/lambda/latest/dg/tutorial-scheduled-events-schedule-expressions.html) in your *zappa_settings.json* file. (Note that Amazon's `cron()` syntax is non-standard and requires one of the day-of-month or day-of-week values to be a question mark (?)):
 
 ```javascript
 {
