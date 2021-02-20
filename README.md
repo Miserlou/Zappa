@@ -4,8 +4,8 @@
 
 ## Zappa - Serverless Python
 
-[![Build Status](https://travis-ci.org/Miserlou/Zappa.svg)](https://travis-ci.org/Miserlou/Zappa)
-[![Coverage](https://img.shields.io/coveralls/Miserlou/Zappa.svg)](https://coveralls.io/github/Miserlou/Zappa)
+[![Build Status](https://travis-ci.org/zappa/Zappa.svg)](https://travis-ci.org/zappa/Zappa)
+[![Coverage](https://img.shields.io/coveralls/zappa/Zappa.svg)](https://coveralls.io/github/zappa/Zappa)
 [![PyPI](https://img.shields.io/pypi/v/Zappa.svg)](https://pypi.python.org/pypi/zappa)
 [![Slack](https://img.shields.io/badge/chat-slack-ff69b4.svg)](https://zappateam.slack.com/)
 [![Gun.io](https://img.shields.io/badge/made%20by-gun.io-blue.svg)](https://gun.io/)
@@ -200,7 +200,7 @@ Once your settings are configured, you can package and deploy your application t
 
 And now your app is **live!** How cool is that?!
 
-To explain what's going on, when you call `deploy`, Zappa will automatically package up your application and local virtual environment into a Lambda-compatible archive, replace any dependencies with versions [precompiled for Lambda](https://github.com/Miserlou/lambda-packages), set up the function handler and necessary WSGI Middleware, upload the archive to S3, create and manage the necessary Amazon IAM policies and roles, register it as a new Lambda function, create a new API Gateway resource, create WSGI-compatible routes for it, link it to the new Lambda function, and finally delete the archive from your S3 bucket. Handy!
+To explain what's going on, when you call `deploy`, Zappa will automatically package up your application and local virtual environment into a Lambda-compatible archive, replace any dependencies with versions with wheels compatible with lambda, set up the function handler and necessary WSGI Middleware, upload the archive to S3, create and manage the necessary Amazon IAM policies and roles, register it as a new Lambda function, create a new API Gateway resource, create WSGI-compatible routes for it, link it to the new Lambda function, and finally delete the archive from your S3 bucket. Handy!
 
 Be aware that the default IAM role and policy created for executing Lambda applies a liberal set of permissions.
 These are most likely not appropriate for production deployment of important applications.  See the section
@@ -319,7 +319,6 @@ During this process, it will replace any local dependencies with AWS Lambda comp
 
   * Lambda-compatible `manylinux` wheels from a local cache
   * Lambda-compatible `manylinux` wheels from PyPI
-  * Lambda-specific versions from [lambda-package](https://github.com/Miserlou/lambda-packages)
   * Packages from the active virtual environment
   * Packages from the local project directory
 
@@ -446,11 +445,11 @@ Amazon provides their own free alternative to Let's Encrypt called [AWS Certific
 
 #### Deploying to a Domain With a Let's Encrypt Certificate (DNS Auth)
 
-If you want to use Zappa on a domain with a free Let's Encrypt certificate using automatic Route 53 based DNS Authentication, you can follow [this handy guide](https://github.com/Miserlou/Zappa/blob/master/docs/domain_with_free_ssl_dns.md).
+If you want to use Zappa on a domain with a free Let's Encrypt certificate using automatic Route 53 based DNS Authentication, you can follow [this handy guide](https://github.com/zappa/Zappa/blob/master/docs/domain_with_free_ssl_dns.md).
 
 #### Deploying to a Domain With a Let's Encrypt Certificate (HTTP Auth)
 
-If you want to use Zappa on a domain with a free Let's Encrypt certificate using HTTP Authentication, you can follow [this guide](https://github.com/Miserlou/Zappa/blob/master/docs/domain_with_free_ssl_http.md).
+If you want to use Zappa on a domain with a free Let's Encrypt certificate using HTTP Authentication, you can follow [this guide](https://github.com/zappa/Zappa/blob/master/docs/domain_with_free_ssl_http.md).
 
 However, it's now far easier to use Route 53-based DNS authentication, which will allow you to use a Let's Encrypt certificate with a single `$ zappa certify` command.
 
@@ -645,7 +644,7 @@ And that's it! Your API response will return immediately, while the `make_pie` f
 
 When calls to @task decorated functions or the zappa.asynchronous.run command occur outside of Lambda, such as your local dev environment,
 the functions will execute immediately and locally. The zappa asynchronous functionality only works
-when in the Lambda environment or when specifying [Remote Invocations](https://github.com/Miserlou/zappa#remote-invocations).
+when in the Lambda environment or when specifying [Remote Invocations](https://github.com/zappa/zappa#remote-invocations).
 
 ### Catching Exceptions
 Putting a try..except block on an asynchronous task like this:
@@ -1486,7 +1485,6 @@ Are you using Zappa? Let us know and we'll list your site here!
 
 ## Related Projects
 
-* [lambda-packages](http://github.com/Miserlou/lambda-packages) - Precompiled C-extension packages for AWS Lambda. Used automatically by Zappa.
 * [Mackenzie](http://github.com/Miserlou/Mackenzie) - AWS Lambda Infection Toolkit
 * [NoDB](https://github.com/Miserlou/NoDB) - A simple, server-less, Pythonic object store based on S3.
 * [zappa-cms](http://github.com/Miserlou/zappa-cms) - A tiny server-less CMS for busy hackers. Work in progress.
@@ -1527,9 +1525,9 @@ This project is still young, so there is still plenty to be done. Contributions 
 
 Please file tickets for discussion before submitting patches. Pull requests should target `master` and should leave Zappa in a "shippable" state if merged.
 
-If you are adding a non-trivial amount of new code, please include a functioning test in your PR. For AWS calls, we use the `placebo` library, which you can learn to use [in their README](https://github.com/garnaat/placebo#usage-as-a-decorator). The test suite will be run by [Travis CI](https://travis-ci.org/Miserlou/Zappa) once you open a pull request.
+If you are adding a non-trivial amount of new code, please include a functioning test in your PR. For AWS calls, we use the `placebo` library, which you can learn to use [in their README](https://github.com/garnaat/placebo#usage-as-a-decorator). The test suite will be run by [Travis CI](https://travis-ci.org/zappa/Zappa) once you open a pull request.
 
-Please include the GitHub issue or pull request URL that has discussion related to your changes as a comment in the code ([example](https://github.com/Miserlou/Zappa/blob/fae2925431b820eaedf088a632022e4120a29f89/zappa/zappa.py#L241-L243)). This greatly helps for project maintainability, as it allows us to trace back use cases and explain decision making. Similarly, please make sure that you meet all of the requirements listed in the [pull request template](https://raw.githubusercontent.com/Miserlou/Zappa/master/.github/PULL_REQUEST_TEMPLATE.md).
+Please include the GitHub issue or pull request URL that has discussion related to your changes as a comment in the code ([example](https://github.com/zappa/Zappa/blob/fae2925431b820eaedf088a632022e4120a29f89/zappa/zappa.py#L241-L243)). This greatly helps for project maintainability, as it allows us to trace back use cases and explain decision making. Similarly, please make sure that you meet all of the requirements listed in the [pull request template](https://raw.githubusercontent.com/zappa/Zappa/master/.github/PULL_REQUEST_TEMPLATE.md).
 
 Please feel free to work on any open ticket, especially any ticket marked with the "help-wanted" label. If you get stuck or want to discuss an issue further, please join [our Slack channel](https://zappateam.slack.com/), where you'll find a community of smart and interesting people working dilligently on hard problems.
 
