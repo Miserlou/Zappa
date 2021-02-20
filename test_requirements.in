@@ -6,4 +6,5 @@ mock
 nose
 nose-timer
 placebo
+isort
 

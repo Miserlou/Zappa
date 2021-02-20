@@ -85,15 +85,16 @@ Discussion of this comes from:
 
 """
 
-import boto3
-import botocore
-from functools import update_wrapper, wraps
 import importlib
 import inspect
 import json
 import os
-import uuid
 import time
+import uuid
+from functools import update_wrapper, wraps
+
+import boto3
+import botocore
 
 from .utilities import get_topic_name
 

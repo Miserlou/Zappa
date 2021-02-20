@@ -1,11 +1,11 @@
 import base64
 import logging
-import six
 import sys
+from urllib.parse import urlencode
 
+import six
 from requestlogger import ApacheFormatter
 from werkzeug import urls
-from urllib.parse import urlencode
 
 from .utilities import merge_headers, titlecase_keys
 

@@ -12,23 +12,22 @@ openssl genrsa 2048 > account.key # Keep it secret, keep safe!
 
 import atexit
 import base64
-import copy
-import json
-import hashlib
-import logging
-import re
-import subprocess
-import os
-import shutil
-import sys
-import time
-import tempfile
-
 import binascii
+import copy
+import hashlib
+import json
+import logging
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
 import textwrap
-import requests
-
+import time
 from urllib.request import urlopen
+
+import requests
 
 # Staging
 # Amazon doesn't accept these though.
