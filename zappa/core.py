@@ -250,7 +250,8 @@ class Zappa:
             runtime='python3.6', # Detected at runtime in CLI
             tags=(),
             endpoint_urls={},
-            xray_tracing=False
+            xray_tracing=False,
+            no_venv=False
         ):
         """
         Instantiate this new Zappa instance, loading any custom credentials if necessary.
@@ -289,6 +290,7 @@ class Zappa:
         self.endpoint_urls = endpoint_urls
         self.xray_tracing = xray_tracing
 
+        self.no_venv = no_venv
         # Some common invocations, such as DB migrations,
         # can take longer than the default.
 
@@ -522,34 +524,37 @@ class Zappa:
         if not 'concurrent' in exclude:
             exclude.append('concurrent')
 
-        def splitpath(path):
-            parts = []
-            (path, tail) = os.path.split(path)
-            while path and tail:
-                parts.append(tail)
+        to_exclude = []
+        if not self.no_venv:
+            def splitpath(path):
+                parts = []
                 (path, tail) = os.path.split(path)
-            parts.append(os.path.join(path, tail))
-            return list(map(os.path.normpath, parts))[::-1]
-        split_venv = splitpath(venv)
-        split_cwd = splitpath(cwd)
+                while path and tail:
+                    parts.append(tail)
+                    (path, tail) = os.path.split(path)
+                parts.append(os.path.join(path, tail))
+                return list(map(os.path.normpath, parts))[::-1]
+            split_venv = splitpath(venv)
+            split_cwd = splitpath(cwd)
 
-        # Ideally this should be avoided automatically,
-        # but this serves as an okay stop-gap measure.
-        if split_venv[-1] == split_cwd[-1]:  # pragma: no cover
-            print(
-                "Warning! Your project and virtualenv have the same name! You may want "
-                "to re-create your venv with a new name, or explicitly define a "
-                "'project_name', as this may cause errors."
-            )
+            # Ideally this should be avoided automatically,
+            # but this serves as an okay stop-gap measure.
+            if split_venv[-1] == split_cwd[-1]:  # pragma: no cover
+                print(
+                    "Warning! Your project and virtualenv have the same name! You may want "
+                    "to re-create your venv with a new name, or explicitly define a "
+                    "'project_name', as this may cause errors."
+                )
+            to_exclude = [split_venv[-1]]
 
         # First, do the project..
-        temp_project_path = tempfile.mkdtemp(prefix='zappa-project')
+        temp_project_path = tempfile.mkdtemp(prefix='zappa-project')    
 
         if not slim_handler:
             # Slim handler does not take the project files.
             if minify:
                 # Related: https://github.com/Miserlou/Zappa/issues/744
-                excludes = ZIP_EXCLUDES + exclude + [split_venv[-1]]
+                excludes = ZIP_EXCLUDES + exclude + to_exclude
                 copytree(cwd, temp_project_path, metadata=False, symlinks=False, ignore=shutil.ignore_patterns(*excludes))
             else:
                 copytree(cwd, temp_project_path, metadata=False, symlinks=False)
