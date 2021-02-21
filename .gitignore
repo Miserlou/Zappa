@@ -86,6 +86,9 @@ zappa_settings.json
 *.sublime-project
 *.sublime-workspace
 
+# VS Code stuff
+.vscode/
+
 README.test.md
 .vscode
 
