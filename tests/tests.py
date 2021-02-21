@@ -557,6 +557,19 @@ class TestZappa(unittest.TestCase):
         request = create_wsgi_request(event, trailing_slash=True)
         self.assertEqual("/path:1", request['PATH_INFO'])
 
+    def test_wsgi_query_string_unquoted(self):
+        event = {
+            "body": {},
+            "headers": {},
+            "pathParameters": {},
+            "path": '/path/path1',
+            "httpMethod": "GET",
+            "queryStringParameters": {"a": "A,B", "b": "C#D"},
+            "requestContext": {}
+        }
+        request = create_wsgi_request(event)
+        self.assertEqual(request['QUERY_STRING'], "a=A,B&b=C#D")
+
     def test_wsgi_latin1(self):
         event = {
             "body": {},
