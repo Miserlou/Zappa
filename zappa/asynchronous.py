@@ -350,10 +350,15 @@ def run(func, args=[], kwargs={}, service='lambda', capture_response=False,
     aws_region = remote_aws_region or os.environ.get('AWS_REGION')
 
     task_path = get_func_task_path(func)
-    return ASYNC_CLASSES[service](lambda_function_name=lambda_function_name,
-                                  aws_region=aws_region,
-                                  capture_response=capture_response,
-                                  **task_kwargs).send(task_path, args, kwargs)
+    # This conditional is used to allow function execution in local
+    # Related: https://github.com/Miserlou/Zappa/issues/1774
+    if (service in ASYNC_CLASSES) and (lambda_function_name):
+        send_result = ASYNC_CLASSES[service](lambda_function_name=lambda_function_name,
+                                             aws_region=aws_region,
+                                             capture_response=capture_response).send(task_path, args, kwargs)
+        return send_result
+    else: #  For local execution
+        return func(*args, **kwargs)
 
 
 # Handy:
