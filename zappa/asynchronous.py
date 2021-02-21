@@ -179,8 +179,11 @@ class LambdaAsyncResponse:
         """
         message['command'] = 'zappa.asynchronous.route_lambda_task'
         payload = json.dumps(message).encode('utf-8')
-        if len(payload) > LAMBDA_ASYNC_PAYLOAD_LIMIT: # pragma: no cover
-            raise AsyncException("Payload too large for async Lambda call")
+        try:
+            if len(payload) >= LAMBDA_ASYNC_PAYLOAD_LIMIT: # pragma: no cover
+                raise AsyncException("Payload too large for async Lambda call")
+        except Exception as e:
+            return None
         self.response = self.client.invoke(
                                     FunctionName=self.lambda_function_name,
                                     InvocationType='Event', #makes the call async
@@ -245,8 +248,11 @@ class SnsAsyncResponse(LambdaAsyncResponse):
         """
         message['command'] = 'zappa.asynchronous.route_sns_task'
         payload = json.dumps(message).encode('utf-8')
-        if len(payload) > LAMBDA_ASYNC_PAYLOAD_LIMIT: # pragma: no cover
-            raise AsyncException("Payload too large for SNS")
+        try:
+            if len(payload) > LAMBDA_ASYNC_PAYLOAD_LIMIT: # pragma: no cover
+                raise AsyncException("Payload too large for SNS")
+        except Exception as e:
+            return None
         self.response = self.client.publish(
                                 TargetArn=self.arn,
                                 Message=payload
@@ -457,8 +463,12 @@ def import_and_get_task(task_path):
     """
     module, function = task_path.rsplit('.', 1)
     app_module = importlib.import_module(module)
-    app_function = getattr(app_module, function)
+    app_function = getattr(*arg, **kwarg)
+    if hasattr(app_module, function):
+        app_function = getattr(app_module, function)
     return app_function
+
+
 
 
 def get_func_task_path(func):
