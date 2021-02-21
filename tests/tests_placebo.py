@@ -481,11 +481,9 @@ class TestZappa(unittest.TestCase):
         except ValueError:
             pass
 
-        event_source = {'arn': 's3:s3:s3:s3', 'events': [
-                    "s3:ObjectCreated:*"
-                  ]}
-        add_event_source(event_source, 'lambda:lambda:lambda:lambda', 'test_settings.callback', session, dry=True)
-        remove_event_source(event_source, 'lambda:lambda:lambda:lambda', 'test_settings.callback', session, dry=True)
+        event_source = {'arn': 's3:s3:s3:s3', 'events': ["s3:ObjectCreated:*"], 'key_filters': [{'type': 'prefix', 'value': 'value'}]}
+        add_event_source(event_source, 'lambda:lambda:lambda:lambda', 'test_settings.callback', session, dry=False)
+        remove_event_source(event_source, 'lambda:lambda:lambda:lambda', 'test_settings.callback', session, dry=False)
         # get_event_source_status(event_source, 'lambda:lambda:lambda:lambda', 'test_settings.callback', session, dry=True)
 
     @placebo_session
