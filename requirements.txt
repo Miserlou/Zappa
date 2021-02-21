@@ -13,7 +13,6 @@ chardet==3.0.4            # via requests
 click==7.1.2              # via cfn-flip, kappa, pip-tools
 docutils==0.15.2          # via botocore
 durationpy==0.5           # via -r requirements.in (line 3)
-future==0.18.2            # via -r requirements.in (line 11)
 hjson==3.0.1              # via -r requirements.in (line 4)
 idna==2.9                 # via requests
 jmespath==0.10.0          # via -r requirements.in (line 5), boto3, botocore

@@ -8,7 +8,6 @@ pip>=9.0.1
 python-dateutil
 python-slugify
 PyYAML
-future
 # previous version don't work with urllib3 1.24
 requests>=2.20.0
 six
