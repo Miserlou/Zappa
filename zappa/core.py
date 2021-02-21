@@ -724,7 +724,12 @@ class Zappa:
                     with open(os.path.join(root, filename), 'rb') as f:
                         archivef.writestr(zipi, f.read(), compression_method)
                 elif archive_format == 'tarball':
-                    tarinfo = tarfile.TarInfo(os.path.join(root.replace(temp_project_path, '').lstrip(os.sep), filename))
+                    tarinfo = tarfile.TarInfo(
+                        # Replace Windows path separators \ with posix separators /
+                        # Related: https://github.com/Miserlou/Zappa/issues/1358
+                        # Related: https://github.com/Miserlou/Zappa/pull/1570
+                        os.path.join(root.replace(temp_project_path, '').lstrip(os.sep).replace('\\', '/'), filename)
+                    )
                     tarinfo.mode = 0o755
 
                     stat = os.stat(os.path.join(root, filename))
@@ -859,7 +864,10 @@ class Zappa:
         # version of the package.
         # Related: https://github.com/Miserlou/Zappa/issues/899
         json_file = '{0!s}-{1!s}.json'.format(package_name, package_version)
-        json_file_path = os.path.join(cached_pypi_info_dir, json_file)
+        # Replace Windows path separators \ with posix separators /
+        # Related: https://github.com/Miserlou/Zappa/issues/1358
+        # Related: https://github.com/Miserlou/Zappa/pull/1570
+        json_file_path = os.path.join(cached_pypi_info_dir, json_file).replace('\\', '/')
         if os.path.exists(json_file_path):
             with open(json_file_path, 'rb') as metafile:
                 data = json.load(metafile)
