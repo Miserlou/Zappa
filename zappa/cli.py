@@ -1022,11 +1022,14 @@ class ZappaCLI:
             # but we're also updating a few of the APIGW settings.
             endpoint_url = self.deploy_api_gateway(api_id)
 
-            if self.stage_config.get('domain', None):
-                endpoint_url = self.stage_config.get('domain')
+        if self.domain:
+            endpoint_url = self.domain
 
-        else:
-            endpoint_url = None
+        if endpoint_url:
+            if self.base_path and not endpoint_url.endswith('/' + self.base_path):
+                endpoint_url += '/' + self.base_path
+            if endpoint_url and not endpoint_url.startswith('https://'):
+                endpoint_url = 'https://' + endpoint_url
 
         self.schedule()
 
@@ -1036,17 +1039,13 @@ class ZappaCLI:
 
         self.callback('post')
 
-        if endpoint_url and 'https://' not in endpoint_url:
-            endpoint_url = 'https://' + endpoint_url
-
-        if self.base_path:
-            endpoint_url += '/' + self.base_path
-
         deployed_string = "Your updated Zappa deployment is " + click.style("live", fg='green', bold=True) + "!"
-        if self.use_apigateway:
+
+        if endpoint_url:
             deployed_string = deployed_string + ": " + click.style("{}".format(endpoint_url), bold=True)
 
-            api_url = None
+        api_url = None
+        if self.use_apigateway:
             if endpoint_url and 'amazonaws.com' not in endpoint_url:
                 api_url = self.zappa.get_api_url(
                     self.lambda_name,
@@ -1055,11 +1054,8 @@ class ZappaCLI:
                 if endpoint_url != api_url:
                     deployed_string = deployed_string + " (" + api_url + ")"
 
-            if self.stage_config.get('touch', True):
-                if api_url:
-                    self.touch_endpoint(api_url)
-                elif endpoint_url:
-                    self.touch_endpoint(endpoint_url)
+        if self.stage_config.get('touch', True) and (api_url or endpoint_url):
+            self.touch_endpoint(api_url or endpoint_url)
 
         click.echo(deployed_string)
 
