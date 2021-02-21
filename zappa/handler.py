@@ -7,6 +7,7 @@ import inspect
 import json
 import logging
 import os
+import shlex
 import sys
 import traceback
 import tarfile
@@ -405,7 +406,7 @@ class LambdaHandler:
 
             # Couldn't figure out how to get the value into stdout with StringIO..
             # Read the log for now. :[]
-            management.call_command(*event['manage'].split(' '))
+            management.call_command(*shlex.split(event['manage']))
             return {}
 
         # This is an AWS-event triggered invocation.
