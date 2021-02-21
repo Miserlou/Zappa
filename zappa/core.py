@@ -361,14 +361,14 @@ class Zappa:
     # Packaging
     ##
 
-    def copy_editable_packages(self, egg_links, temp_package_path):
+    def copy_editable_packages(self, egg_links, temp_package_path, ignore=None):
         """ """
         for egg_link in egg_links:
             with open(egg_link, 'rb') as df:
                 egg_path = df.read().decode('utf-8').splitlines()[0].strip()
                 pkgs = set([x.split(".")[0] for x in find_packages(egg_path, exclude=['test', 'tests'])])
                 for pkg in pkgs:
-                    copytree(os.path.join(egg_path, pkg), os.path.join(temp_package_path, pkg), metadata=False, symlinks=False)
+                    copytree(os.path.join(egg_path, pkg), os.path.join(temp_package_path, pkg), metadata=False, symlinks=False, ignore=ignore)
 
         if temp_package_path:
             # now remove any egg-links as they will cause issues if they still exist
@@ -639,7 +639,7 @@ class Zappa:
                 copytree(site_packages_64, temp_package_path, metadata = False, symlinks=False)
 
         if egg_links:
-            self.copy_editable_packages(egg_links, temp_package_path)
+            self.copy_editable_packages(egg_links, temp_package_path, ignore=shutil.ignore_patterns(*excludes))
 
         copy_tree(temp_package_path, temp_project_path, update=True)
 
