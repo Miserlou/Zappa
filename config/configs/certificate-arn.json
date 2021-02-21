@@ -1,0 +1,5 @@
+{
+  "id": "certificate_arn",
+  "default": "",
+  "summary": "AWS certificate arn"
+}
