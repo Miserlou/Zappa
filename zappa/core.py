@@ -199,7 +199,7 @@ LAMBDA_REGIONS = ['us-east-1', 'us-east-2',
 # Related: https://github.com/Miserlou/Zappa/pull/581
 ZIP_EXCLUDES = [
     '*.exe', '*.DS_Store', '*.Python', '*.git', '.git/*', '*.zip', '*.tar.gz',
-    '*.hg', 'pip', 'docutils*', 'setuputils*', '__pycache__/*'
+    '*.hg', 'pip', 'setuputils*', '__pycache__/*'
 ]
 
 # When using ALB as an event source for Lambdas, we need to create an alias
