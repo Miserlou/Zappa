@@ -1,4 +1,5 @@
 #! /bin/bash
+set -e
 nosetests --with-coverage --cover-package=zappa
 
 # For a specific test:
