@@ -1353,6 +1353,17 @@ class Zappa:
             # TODO: can be ipv4 or dualstack (for ipv4 and ipv6) ipv4 is required for internal Scheme.
             IpAddressType="ipv4"
         )
+
+        if self.tags:
+            kwargs["Tags"] = [
+                {
+                    "Key": tag_key,
+                    "Value": tag_value
+                }
+                for tag_key, tag_value
+                in self.tags.items()
+            ]
+
         response = self.elbv2_client.create_load_balancer(**kwargs)
         if not(response["LoadBalancers"]) or len(response["LoadBalancers"]) != 1:
             raise EnvironmentError("Failure to create application load balancer. Response was in unexpected format. Response was: {}".format(repr(response)))
@@ -1798,6 +1809,16 @@ class Zappa:
                 self.get_patch_op('caching/dataEncrypted', cache_cluster_encrypted)
             ]
         )
+
+        if self.tags:
+            self.apigateway_client.tag_resource(
+                resourceArn="arn:aws:apigateway:{region}::/restapis/{rest_api_id}/stages/{stage_name}".format(
+                    region=self.aws_region,
+                    rest_api_id=api_id,
+                    stage_name=stage_name
+                ),
+                tags=self.tags
+            )
 
         return "https://{}.execute-api.{}.amazonaws.com/{}".format(api_id, self.boto_session.region_name, stage_name)
 
