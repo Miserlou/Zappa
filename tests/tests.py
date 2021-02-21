@@ -331,6 +331,13 @@ class TestZappa(unittest.TestCase):
         self.assertEqual(z.credentials_arn, parsable_template["Resources"]["Authorizer"]["Properties"]["AuthorizerCredentials"])
         self.assertEqual("xxx", parsable_template["Resources"]["Authorizer"]["Properties"]["IdentityValidationExpression"])
 
+        # explicit TOKEN type authorizer
+        explicit_authorizer = authorizer.copy()
+        explicit_authorizer.update({"type": "TOKEN"})
+        z.create_stack_template(lambda_arn, 'helloworld', False, False, authorizer)
+        explicit_authorizer_parsable_template = json.loads(z.cf_template.to_json())
+        self.assertDictEqual(parsable_template, explicit_authorizer_parsable_template)
+
         # Authorizer without validation expression
         authorizer.pop('validation_expression', None)
         z.create_stack_template(lambda_arn, 'helloworld', False, False, authorizer)
@@ -340,6 +347,25 @@ class TestZappa(unittest.TestCase):
         self.assertEqual("TOKEN", parsable_template["Resources"]["Authorizer"]["Properties"]["Type"])
         with self.assertRaises(KeyError):
             parsable_template["Resources"]["Authorizer"]["Properties"]["IdentityValidationExpression"]
+        
+        # REQUEST authorizer
+        authorizer = {
+            "function": "runapi.authorization.gateway_authorizer.evaluate_token",
+            "result_ttl": 300,
+            "type": "REQUEST",
+            "validation_expression": "xxx"
+        }
+        invocations_uri = 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/' + lambda_arn + '/invocations'
+        z.create_stack_template(lambda_arn, 'helloworld', False, False, authorizer)
+        parsable_template = json.loads(z.cf_template.to_json())
+        self.assertEqual("CUSTOM", parsable_template["Resources"]["GET0"]["Properties"]["AuthorizationType"])
+        self.assertEqual("CUSTOM", parsable_template["Resources"]["GET1"]["Properties"]["AuthorizationType"])
+        self.assertEqual("REQUEST", parsable_template["Resources"]["Authorizer"]["Properties"]["Type"])
+        self.assertEqual("ZappaAuthorizer", parsable_template["Resources"]["Authorizer"]["Properties"]["Name"])
+        self.assertEqual(300, parsable_template["Resources"]["Authorizer"]["Properties"]["AuthorizerResultTtlInSeconds"])
+        self.assertEqual(invocations_uri, parsable_template["Resources"]["Authorizer"]["Properties"]["AuthorizerUri"])
+        self.assertEqual(z.credentials_arn, parsable_template["Resources"]["Authorizer"]["Properties"]["AuthorizerCredentials"])
+        self.assertEqual("xxx", parsable_template["Resources"]["Authorizer"]["Properties"]["IdentityValidationExpression"])
 
         # Authorizer with arn
         authorizer = {

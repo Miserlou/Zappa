@@ -1636,7 +1636,7 @@ class Zappa:
         if identity_validation_expression:
             authorizer_resource.IdentityValidationExpression = identity_validation_expression
 
-        if authorizer_type == 'TOKEN':
+        if authorizer_type in ['TOKEN', 'REQUEST']:
             if not self.credentials_arn:
                 self.get_credentials_arn()
             authorizer_resource.AuthorizerResultTtlInSeconds = authorizer.get('result_ttl', 300)
@@ -2131,7 +2131,9 @@ class Zappa:
         elif iam_authorization:
             auth_type = "AWS_IAM"
         elif authorizer:
-            auth_type = authorizer.get("type", "CUSTOM")
+            auth_type = authorizer.get("type", "TOKEN").upper()
+            if auth_type in ["TOKEN", "REQUEST"]:
+                auth_type = "CUSTOM"
 
         # build a fresh template
         self.cf_template = troposphere.Template()
