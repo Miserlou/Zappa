@@ -2122,7 +2122,8 @@ class ZappaCLI:
                             runtime=self.runtime,
                             tags=self.tags,
                             endpoint_urls=self.stage_config.get('aws_endpoint_urls',{}),
-                            xray_tracing=self.xray_tracing
+                            xray_tracing=self.xray_tracing,
+                            no_venv=self.vargs.get("no_venv") if self.vargs else None
                         )
 
         for setting in CUSTOM_SETTINGS:
