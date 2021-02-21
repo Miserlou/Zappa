@@ -1363,7 +1363,7 @@ class Zappa:
         load_balancer_vpc = response["LoadBalancers"][0]["VpcId"]
         waiter = self.elbv2_client.get_waiter('load_balancer_available')
         print('Waiting for load balancer [{}] to become active..'.format(load_balancer_arn))
-        waiter.wait(LoadBalancerArns=[load_balancer_arn], WaiterConfig={"Delay": 3})
+        waiter.wait(LoadBalancerArns=[load_balancer_arn], WaiterConfig={"Delay": 30})
 
         # Match the lambda timeout on the load balancer.
         self.elbv2_client.modify_load_balancer_attributes(
@@ -1480,7 +1480,7 @@ class Zappa:
             response = self.elbv2_client.delete_load_balancer(LoadBalancerArn=load_balancer_arn)
             waiter = self.elbv2_client.get_waiter('load_balancers_deleted')
             print('Waiting for load balancer [{}] to be deleted..'.format(lambda_name))
-            waiter.wait(LoadBalancerArns=[load_balancer_arn], WaiterConfig={"Delay": 3})
+            waiter.wait(LoadBalancerArns=[load_balancer_arn], WaiterConfig={"Delay": 30})
         except botocore.exceptions.ClientError as e: # pragma: no cover
             print(e.response["Error"]["Code"])
             if "LoadBalancerNotFound" in e.response["Error"]["Code"]:
@@ -1510,7 +1510,7 @@ class Zappa:
             waiter.wait(
                 TargetGroupArn=target_group_arn,
                 Targets=[{"Id": lambda_arn}],
-                WaiterConfig={"Delay": 3}
+                WaiterConfig={"Delay": 30}
             )
             # Remove the target group
             # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/elbv2.html#ElasticLoadBalancingv2.Client.delete_target_group
