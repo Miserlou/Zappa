@@ -422,7 +422,10 @@ class Zappa:
 
         # Use pip to download zappa's dependencies. Copying from current venv causes issues with things like PyYAML that installs as yaml
         zappa_deps = self.get_deps_list('zappa')
-        pkg_list = ['{0!s}=={1!s}'.format(dep, version) for dep, version in zappa_deps]
+        pkg_list = ['{0!s}=={1!s}'.format(dep, version) for dep, version in zappa_deps if dep != 'zappa']
+        
+        # add private zappa dependency
+        pkg_list.append("git+https://github.com/wangsha/Zappa.git")
 
         # Need to manually add setuptools
         pkg_list.append('setuptools')
