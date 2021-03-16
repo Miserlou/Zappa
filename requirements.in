@@ -1,5 +1,5 @@
 argcomplete
-boto3
+boto3>=1.17.28
 durationpy
 hjson
 jmespath
