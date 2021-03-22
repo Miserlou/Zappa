@@ -715,7 +715,7 @@ class ZappaCLI:
                         click.style("Exception reported by AWS:", bold=True) + format(ce) + '\n' +
                         "To fix this, see here: " +
                         click.style(
-                            "https://github.com/Miserlou/Zappa#custom-aws-iam-roles-and-policies-for-deployment",
+                            "https://github.com/Zappa/Zappa#custom-aws-iam-roles-and-policies-for-deployment",
                             bold=True)
                         + '\n')
 
@@ -902,7 +902,7 @@ class ZappaCLI:
                     click.echo("You may " + click.style("lack the necessary AWS permissions", bold=True) +
                                " to automatically manage a Zappa execution role.")
                     click.echo("To fix this, see here: " +
-                               click.style("https://github.com/Miserlou/Zappa#custom-aws-iam-roles-and-policies-for-deployment",
+                               click.style("https://github.com/Zappa/Zappa#custom-aws-iam-roles-and-policies-for-deployment",
                                            bold=True))
                     sys.exit(-1)
 
@@ -1797,7 +1797,7 @@ class ZappaCLI:
             click.echo(click.style("\t$ zappa update %s" % env, bold=True))
 
         click.echo("\nTo learn more, check out our project page on " + click.style("GitHub", bold=True) +
-                   " here: " + click.style("https://github.com/Miserlou/Zappa", fg="cyan", bold=True))
+                   " here: " + click.style("https://github.com/Zappa/Zappa", fg="cyan", bold=True))
         click.echo("and stop by our " + click.style("Slack", bold=True) + " channel here: " +
                    click.style("https://zappateam.slack.com", fg="cyan", bold=True))
         click.echo("\nEnjoy!,")
@@ -1997,7 +1997,7 @@ class ZappaCLI:
                            " A new version of " + click.style("Zappa", bold=True) + " is available!")
                 click.echo("Upgrade with: " + click.style("pip install zappa --upgrade", bold=True))
                 click.echo("Visit the project page on GitHub to see the latest changes: " +
-                           click.style("https://github.com/Miserlou/Zappa", bold=True))
+                           click.style("https://github.com/Zappa/Zappa", bold=True))
         except Exception as e: # pragma: no cover
             print(e)
             return
@@ -2749,7 +2749,7 @@ def shamelessly_promote():
                "? Found a " + click.style("bug", fg='green', bold=True) +
                "? Let us " + click.style("know", fg='green', bold=True) + "! :D")
     click.echo("File bug reports on " + click.style("GitHub", bold=True) + " here: "
-               + click.style("https://github.com/Miserlou/Zappa", fg='cyan', bold=True))
+               + click.style("https://github.com/Zappa/Zappa", fg='cyan', bold=True))
     click.echo("And join our " + click.style("Slack", bold=True) + " channel here: "
                + click.style("https://zappateam.slack.com", fg='cyan', bold=True))
     click.echo("Love!,")
