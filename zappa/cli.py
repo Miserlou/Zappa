@@ -7,46 +7,46 @@ Zappa CLI
 Deploy arbitrary Python programs as serverless Zappa applications.
 
 """
-from past.builtins import basestring
-from builtins import input, bytes
-
-import argcomplete
 import argparse
 import base64
-import pkgutil
-import botocore
-import click
 import collections
-import hjson as json
-import inspect
 import importlib
+import inspect
 import logging
 import os
-import pkg_resources
+import pkgutil
 import random
 import re
-import requests
-import slugify
 import string
 import sys
 import tempfile
 import time
+import zipfile
+from builtins import bytes, input
+from datetime import datetime, timedelta
+
+import argcomplete
+import botocore
+import click
+import hjson as json
+import pkg_resources
+import requests
+import slugify
 import toml
 import yaml
-import zipfile
-
-from click import Context, BaseCommand
+from click import BaseCommand, Context
 from click.exceptions import ClickException
 from click.globals import push_context
 from dateutil import parser
-from datetime import datetime, timedelta
+from past.builtins import basestring
 
-from .core import Zappa, logger, API_GATEWAY_REGIONS
-from .utilities import (check_new_version_available, detect_django_settings,
-                  detect_flask_apps, parse_s3_url, human_size,
-                  validate_name, InvalidAwsLambdaName, get_venv_from_python_version,
-                  get_runtime_from_python_version, string_to_timestamp, is_valid_bucket_name)
-
+from .core import API_GATEWAY_REGIONS, Zappa, logger
+from .utilities import (InvalidAwsLambdaName, check_new_version_available,
+                        detect_django_settings, detect_flask_apps,
+                        get_runtime_from_python_version,
+                        get_venv_from_python_version, human_size,
+                        is_valid_bucket_name, parse_s3_url,
+                        string_to_timestamp, validate_name)
 
 CUSTOM_SETTINGS = [
     'apigateway_policy',
@@ -1768,7 +1768,7 @@ class ZappaCLI:
                 }
                 zappa_settings.update(g_env)
 
-        import json as json # hjson is fine for loading, not fine for writing.
+        import json as json  # hjson is fine for loading, not fine for writing.
         zappa_settings_json = json.dumps(zappa_settings, sort_keys=True, indent=4)
 
         click.echo("\nOkay, here's your " + click.style("zappa_settings.json", bold=True) + ":\n")

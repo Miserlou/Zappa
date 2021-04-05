@@ -1,5 +1,4 @@
 import base64
-import boto3
 import collections
 import datetime
 import importlib
@@ -8,22 +7,23 @@ import json
 import logging
 import os
 import sys
-import traceback
 import tarfile
-
+import traceback
 from builtins import str
+
+import boto3
 from werkzeug.wrappers import Response
 
 # This file may be copied into a project's root,
 # so handle both scenarios.
 try:
     from zappa.middleware import ZappaWSGIMiddleware
-    from zappa.wsgi import create_wsgi_request, common_log
     from zappa.utilities import merge_headers, parse_s3_url
+    from zappa.wsgi import common_log, create_wsgi_request
 except ImportError as e:  # pragma: no cover
     from .middleware import ZappaWSGIMiddleware
-    from .wsgi import create_wsgi_request, common_log
     from .utilities import merge_headers, parse_s3_url
+    from .wsgi import common_log, create_wsgi_request
 
 
 # Set up logging
@@ -123,7 +123,9 @@ class LambdaHandler:
             elif hasattr(self.settings, 'APP_MODULE'):
                 if self.settings.DJANGO_SETTINGS:
                     sys.path.append('/var/task')
-                    from django.conf import ENVIRONMENT_VARIABLE as SETTINGS_ENVIRONMENT_VARIABLE
+                    from django.conf import \
+                        ENVIRONMENT_VARIABLE as SETTINGS_ENVIRONMENT_VARIABLE
+
                     # add the Lambda root path into the sys.path
                     self.trailing_slash = True
                     os.environ[SETTINGS_ENVIRONMENT_VARIABLE] = self.settings.DJANGO_SETTINGS

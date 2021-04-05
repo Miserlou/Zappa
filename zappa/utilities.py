@@ -1,7 +1,5 @@
-import botocore
 import calendar
 import datetime
-import durationpy
 import fnmatch
 import io
 import json
@@ -11,10 +9,11 @@ import re
 import shutil
 import stat
 import sys
-
-from past.builtins import basestring
-
 from urllib.parse import urlparse
+
+import botocore
+import durationpy
+from past.builtins import basestring
 
 LOG = logging.getLogger(__name__)
 
@@ -210,17 +209,17 @@ def get_event_source(event_source, lambda_arn, target_function, boto_session, dr
     to schedule this event, and return the event source.
 
     """
-    import kappa.function
-    import kappa.restapi
+    import kappa.awsclient
     import kappa.event_source.base
+    import kappa.event_source.cloudwatch
     import kappa.event_source.dynamodb_stream
     import kappa.event_source.kinesis
     import kappa.event_source.s3
     import kappa.event_source.sns
-    import kappa.event_source.cloudwatch
+    import kappa.function
     import kappa.policy
+    import kappa.restapi
     import kappa.role
-    import kappa.awsclient
 
     class PseudoContext:
         def __init__(self):
