@@ -15,6 +15,6 @@
         "Timeout": 30, 
         "LastModified": "2016-03-04T16:28:06.633+0000", 
         "Description": "Zappa Deployment",
-        "PackageType": "Docker"
+        "PackageType": "Image"
     }
 }
