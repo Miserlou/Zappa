@@ -27,6 +27,7 @@
         "Version": "$LATEST",
         "Environment": {
             "Variables": {}
-        }
+        },
+        "PackageType": "Zip"
     }
 }
