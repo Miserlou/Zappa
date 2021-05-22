@@ -45,8 +45,8 @@ isort:
 	isort --recursive . 
 
 flake:
-	flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-	flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+	flake8 zappa --count --select=E9,F63,F7,F82 --show-source --statistics
+	flake8 zappa --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
 test-docs:
 	nosetests tests/tests_docs.py --with-coverage --cover-package=zappa --with-timer
