@@ -10,7 +10,7 @@ try:
 except NameError:  # builtin 'file' was removed in Python 3
     from io import IOBase as file
 
-PLACEBO_DIR = os.path.join(os.path.dirname(__file__), 'placebo')
+PLACEBO_DIR = os.path.join(os.path.dirname(__file__), "placebo")
 
 
 def placebo_session(function):
@@ -29,16 +29,16 @@ def placebo_session(function):
     @functools.wraps(function)
     def wrapper(*args, **kwargs):
         session_kwargs = {
-            'region_name': os.environ.get('AWS_DEFAULT_REGION', 'us-east-1')
+            "region_name": os.environ.get("AWS_DEFAULT_REGION", "us-east-1")
         }
-        profile_name = os.environ.get('PLACEBO_PROFILE', None)
+        profile_name = os.environ.get("PLACEBO_PROFILE", None)
         if profile_name:
-            session_kwargs['profile_name'] = profile_name
+            session_kwargs["profile_name"] = profile_name
 
         session = boto3.Session(**session_kwargs)
 
         self = args[0]
-        prefix = self.__class__.__name__ + '.' + function.__name__
+        prefix = self.__class__.__name__ + "." + function.__name__
         record_dir = os.path.join(PLACEBO_DIR, prefix)
 
         if not os.path.exists(record_dir):
@@ -46,12 +46,12 @@ def placebo_session(function):
 
         pill = placebo.attach(session, data_path=record_dir)
 
-        if os.environ.get('PLACEBO_MODE') == 'record':
+        if os.environ.get("PLACEBO_MODE") == "record":
             pill.record()
         else:
             pill.playback()
 
-        kwargs['session'] = session
+        kwargs["session"] = session
 
         return function(*args, **kwargs)
 
@@ -71,5 +71,5 @@ def patch_open():
         mock_open(*args, **kwargs)
         yield mock_file
 
-    with patch('__builtin__.open', stub_open):
+    with patch("__builtin__.open", stub_open):
         yield mock_open, mock_file
