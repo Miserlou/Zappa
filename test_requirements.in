@@ -1,10 +1,13 @@
+black
+boto3-stubs
 coveralls
 Django
+django-stubs
 flake8
 Flask
 mock
+mypy
 nose
 nose-timer
 placebo
 isort
-
