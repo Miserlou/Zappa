@@ -13,7 +13,7 @@ cache:
   - pip
 install:
   - make requirements
-  - python setup.py install"
+  - python setup.py install
 
 jobs:
   include:
