@@ -4,6 +4,10 @@ python:
   - "3.7"
   - "3.8"
 dist: xenial
+addons:
+  apt:
+    packages:
+    - cmake
 # command to install dependencies
 cache:
   - pip
@@ -18,12 +22,9 @@ env:
   - TESTCASE=tests/tests_async.py
   - TESTCASE=tests/tests.py
 before_script:
-  # stop the build if there are Python syntax errors or undefined names
-  - flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-  # exit-zero treats all errors as warnings.  The GitHub editor is 127 chars wide
-  - flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+  - make flake
 script:
-  - nosetests $TESTCASE --with-coverage --cover-package=zappa --with-timer
+  - make test-case
     #  - coverage combine --append
 after_success:
   coveralls
