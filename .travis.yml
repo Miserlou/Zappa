@@ -15,16 +15,14 @@ install:
   - make requirements
   - python setup.py install
 
-jobs:
-  include:
-    - stage: lint
-      script: make flake
-    - script: make test-docs
-    - script: make test-handler
-    - script: make test-middleware
-    - script: make test-placebo
-    - script: make test-async
-    - script: make test-general
+script:
+  - make flake
+  - make test-docs
+  - make test-handler
+  - make test-middleware
+  - make test-placebo
+  - make test-async
+  - make test-general
 
 after_success:
   coveralls
