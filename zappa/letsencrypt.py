@@ -34,7 +34,7 @@ import requests
 # DEFAULT_CA = "https://acme-staging.api.letsencrypt.org"
 
 # Production
-DEFAULT_CA = "https://acme-v01.api.letsencrypt.org"
+DEFAULT_CA = "https://acme-v02.api.letsencrypt.org"
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())
