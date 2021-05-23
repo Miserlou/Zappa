@@ -19,8 +19,6 @@ jobs:
   include:
     - stage: lint
       script: make flake
-    - stage: lint
-      script: make black-check
     - script: make test-docs
     - script: make test-handler
     - script: make test-middleware
