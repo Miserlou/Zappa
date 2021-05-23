@@ -12,20 +12,22 @@ addons:
 cache:
   - pip
 install:
-  - "pip install --upgrade pip; pip install --upgrade setuptools; pip install -r test_requirements.txt; pip install -e git+https://github.com/django/django-contrib-comments.git#egg=django-contrib-comments; python setup.py install"
-# command to run tests
-env:
-  - TESTCASE=tests/tests_docs.py
-  - TESTCASE=tests/test_handler.py
-  - TESTCASE=tests/tests_middleware.py
-  - TESTCASE=tests/tests_placebo.py
-  - TESTCASE=tests/tests_async.py
-  - TESTCASE=tests/tests.py
-before_script:
-  - make flake
-script:
-  - make test-case
-    #  - coverage combine --append
+  - make requirements
+  - python setup.py install"
+
+jobs:
+  include:
+    - stage: lint
+      script: make flake
+    - stage: lint
+      script: make black-check
+    - script: make test-docs
+    - script: make test-handler
+    - script: make test-middleware
+    - script: make test-placebo
+    - script: make test-async
+    - script: make test-general
+
 after_success:
   coveralls
 notifications:
