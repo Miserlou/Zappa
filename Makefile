@@ -41,6 +41,9 @@ mypy:
 black:
 	black zappa tests
 
+black-check:
+	black zappa tests --check
+
 isort:
 	isort --recursive . 
 
@@ -65,5 +68,8 @@ test-async:
 
 test-general:
 	nosetests tests/tests.py --with-coverage --cover-package=zappa --with-timer
+
+test-case:
+	nosetests ${TESTCASE} --with-coverage --cover-package=zappa --with-timer
 
 tests: clean test-docs test-handler test-middleware test-placebo test-async test-general
