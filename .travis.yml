@@ -17,6 +17,7 @@ install:
 
 script:
   - make flake
+  - make black-check
   - make test-docs
   - make test-handler
   - make test-middleware
