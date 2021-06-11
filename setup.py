@@ -25,7 +25,7 @@ setup(
     description='Server-less Python Web Services for AWS Lambda and API Gateway',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    url='https://github.com/Miserlou/Zappa',
+    url='https://github.com/zappa/Zappa',
     author='Rich Jones',
     author_email='rich@openwatch.net',
     entry_points={
