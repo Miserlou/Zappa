@@ -161,7 +161,9 @@ class TestWSGIMockMiddleWare(unittest.TestCase):
             "body": {},
             "headers": {"Content-Type": "application/json"},
             "pathParameters": {"proxy": "v1/runs"},
-            "requestContext": {"authorizer": {"principalId": "user1"},},
+            "requestContext": {
+                "authorizer": {"principalId": "user1"},
+            },
             "query": {},
         }
 

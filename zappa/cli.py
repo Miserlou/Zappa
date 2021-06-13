@@ -678,7 +678,9 @@ class ZappaCLI:
                 command = command_tail[0]  # ex: zappa manage dev showmigrations admin
 
             self.invoke(
-                command, command="manage", no_color=self.vargs["no_color"],
+                command,
+                command="manage",
+                no_color=self.vargs["no_color"],
             )
 
         elif command == "tail":  # pragma: no cover
@@ -1499,7 +1501,9 @@ class ZappaCLI:
 
         print("Unscheduling..")
         self.zappa.unschedule_events(
-            lambda_name=self.lambda_name, lambda_arn=function_arn, events=events,
+            lambda_name=self.lambda_name,
+            lambda_arn=function_arn,
+            events=events,
         )
 
         # Remove async task SNS
@@ -1528,7 +1532,9 @@ class ZappaCLI:
         import json as json
 
         response = self.zappa.invoke_lambda_function(
-            self.lambda_name, json.dumps(command), invocation_type="RequestResponse",
+            self.lambda_name,
+            json.dumps(command),
+            invocation_type="RequestResponse",
         )
 
         if "LogResult" in response:
@@ -2912,8 +2918,10 @@ class ZappaCLI:
 
         # If slim handler, path to project zip
         if self.stage_config.get("slim_handler", False):
-            settings_s += "ARCHIVE_PATH='s3://{0!s}/{1!s}_{2!s}_current_project.tar.gz'\n".format(
-                self.s3_bucket_name, self.api_stage, self.project_name
+            settings_s += (
+                "ARCHIVE_PATH='s3://{0!s}/{1!s}_{2!s}_current_project.tar.gz'\n".format(
+                    self.s3_bucket_name, self.api_stage, self.project_name
+                )
             )
 
             # since includes are for slim handler add the setting here by joining arbitrary list from zappa_settings file

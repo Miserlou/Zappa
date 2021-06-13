@@ -41,7 +41,11 @@ LOGGER.addHandler(logging.StreamHandler())
 
 
 def get_cert_and_update_domain(
-    zappa_instance, lambda_name, api_stage, domain=None, manual=False,
+    zappa_instance,
+    lambda_name,
+    api_stage,
+    domain=None,
+    manual=False,
 ):
     """
     Main cert installer path.
@@ -260,7 +264,10 @@ def get_cert(zappa_instance, log=LOGGER, CA=DEFAULT_CA):
         # get new challenge
         code, result = _send_signed_request(
             CA + "/acme/new-authz",
-            {"resource": "new-authz", "identifier": {"type": "dns", "value": domain},},
+            {
+                "resource": "new-authz",
+                "identifier": {"type": "dns", "value": domain},
+            },
         )
         if code != 201:
             raise ValueError(
@@ -357,7 +364,11 @@ def sign_certificate():
     devnull = open(os.devnull, "wb")
     csr_der = subprocess.check_output(cmd, stderr=devnull)
     code, result = _send_signed_request(
-        DEFAULT_CA + "/acme/new-cert", {"resource": "new-cert", "csr": _b64(csr_der),},
+        DEFAULT_CA + "/acme/new-cert",
+        {
+            "resource": "new-cert",
+            "csr": _b64(csr_der),
+        },
     )
     if code != 201:
         raise ValueError("Error signing certificate: {0} {1}".format(code, result))
@@ -370,8 +381,10 @@ def encode_certificate(result):
     """
     Encode cert bytes to PEM encoded cert file.
     """
-    cert_body = """-----BEGIN CERTIFICATE-----\n{0}\n-----END CERTIFICATE-----\n""".format(
-        "\n".join(textwrap.wrap(base64.b64encode(result).decode("utf8"), 64))
+    cert_body = (
+        """-----BEGIN CERTIFICATE-----\n{0}\n-----END CERTIFICATE-----\n""".format(
+            "\n".join(textwrap.wrap(base64.b64encode(result).decode("utf8"), 64))
+        )
     )
     signed_crt = open("{}/signed.crt".format(gettempdir()), "w")
     signed_crt.write(cert_body)
