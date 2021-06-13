@@ -105,11 +105,11 @@ except ImportError:
 # Declare these here so they're kept warm.
 try:
     aws_session = boto3.Session()
-    LAMBDA_CLIENT = aws_session.client('lambda')
-    SNS_CLIENT = aws_session.client('sns')
-    STS_CLIENT = aws_session.client('sts')
-    DYNAMODB_CLIENT = aws_session.client('dynamodb')
-except botocore.exceptions.NoRegionError as e: # pragma: no cover
+    LAMBDA_CLIENT = aws_session.client("lambda")
+    SNS_CLIENT = aws_session.client("sns")
+    STS_CLIENT = aws_session.client("sts")
+    DYNAMODB_CLIENT = aws_session.client("dynamodb")
+except botocore.exceptions.NoRegionError as e:  # pragma: no cover
     # This can happen while testing on Travis, but it's taken care  of
     # during class initialization.
     pass
@@ -122,8 +122,10 @@ except botocore.exceptions.NoRegionError as e: # pragma: no cover
 LAMBDA_ASYNC_PAYLOAD_LIMIT = 256000
 SNS_ASYNC_PAYLOAD_LIMIT = 256000
 
-class AsyncException(Exception): # pragma: no cover
+
+class AsyncException(Exception):  # pragma: no cover
     """ Simple exception class for async tasks. """
+
     pass
 
 
@@ -132,10 +134,17 @@ class LambdaAsyncResponse:
     Base Response Dispatcher class
     Can be used directly or subclassed if the method to send the message is changed.
     """
-    def __init__(self, lambda_function_name=None, aws_region=None, capture_response=False, **kwargs):
+
+    def __init__(
+        self,
+        lambda_function_name=None,
+        aws_region=None,
+        capture_response=False,
+        **kwargs
+    ):
         """ """
-        if kwargs.get('boto_session'):
-            self.client = kwargs.get('boto_session').client('lambda')
+        if kwargs.get("boto_session"):
+            self.client = kwargs.get("boto_session").client("lambda")
         else:  # pragma: no cover
             self.client = LAMBDA_CLIENT
 
@@ -158,18 +167,17 @@ class LambdaAsyncResponse:
 
         self.capture_response = capture_response
 
-
     def send(self, task_path, args, kwargs):
         """
         Create the message object and pass it to the actual sender.
         """
         message = {
-                'task_path': task_path,
-                'capture_response': self.capture_response,
-                'response_id': self.response_id,
-                'args': args,
-                'kwargs': kwargs
-            }
+            "task_path": task_path,
+            "capture_response": self.capture_response,
+            "response_id": self.response_id,
+            "args": args,
+            "kwargs": kwargs,
+        }
         self._send(message)
         return self
 
@@ -177,46 +185,53 @@ class LambdaAsyncResponse:
         """
         Given a message, directly invoke the lamdba function for this task.
         """
-        message['command'] = 'zappa.asynchronous.route_lambda_task'
-        payload = json.dumps(message).encode('utf-8')
-        if len(payload) > LAMBDA_ASYNC_PAYLOAD_LIMIT: # pragma: no cover
+        message["command"] = "zappa.asynchronous.route_lambda_task"
+        payload = json.dumps(message).encode("utf-8")
+        if len(payload) > LAMBDA_ASYNC_PAYLOAD_LIMIT:  # pragma: no cover
             raise AsyncException("Payload too large for async Lambda call")
         self.response = self.client.invoke(
-                                    FunctionName=self.lambda_function_name,
-                                    InvocationType='Event', #makes the call async
-                                    Payload=payload
-                                )
-        self.sent = (self.response.get('StatusCode', 0) == 202)
+            FunctionName=self.lambda_function_name,
+            InvocationType="Event",  # makes the call async
+            Payload=payload,
+        )
+        self.sent = self.response.get("StatusCode", 0) == 202
+
 
 class SnsAsyncResponse(LambdaAsyncResponse):
     """
     Send a SNS message to a specified SNS topic
     Serialise the func path and arguments
     """
-    def __init__(self, lambda_function_name=None, aws_region=None, capture_response=False, **kwargs):
+
+    def __init__(
+        self,
+        lambda_function_name=None,
+        aws_region=None,
+        capture_response=False,
+        **kwargs
+    ):
 
         self.lambda_function_name = lambda_function_name
         self.aws_region = aws_region
 
-        if kwargs.get('boto_session'):
-            self.client = kwargs.get('boto_session').client('sns')
-        else: # pragma: no cover
+        if kwargs.get("boto_session"):
+            self.client = kwargs.get("boto_session").client("sns")
+        else:  # pragma: no cover
             self.client = SNS_CLIENT
 
-
-        if kwargs.get('arn'):
-            self.arn = kwargs.get('arn')
+        if kwargs.get("arn"):
+            self.arn = kwargs.get("arn")
         else:
-            if kwargs.get('boto_session'):
-                sts_client = kwargs.get('boto_session').client('sts')
+            if kwargs.get("boto_session"):
+                sts_client = kwargs.get("boto_session").client("sts")
             else:
                 sts_client = STS_CLIENT
-            AWS_ACCOUNT_ID = sts_client.get_caller_identity()['Account']
-            self.arn = 'arn:aws:sns:{region}:{account}:{topic_name}'.format(
-                                    region=self.aws_region,
-                                    account=AWS_ACCOUNT_ID,
-                                    topic_name=get_topic_name(self.lambda_function_name)
-                                )
+            AWS_ACCOUNT_ID = sts_client.get_caller_identity()["Account"]
+            self.arn = "arn:aws:sns:{region}:{account}:{topic_name}".format(
+                region=self.aws_region,
+                account=AWS_ACCOUNT_ID,
+                topic_name=get_topic_name(self.lambda_function_name),
+            )
 
         # Issue: https://github.com/Miserlou/Zappa/issues/1209
         # TODO: Refactor
@@ -238,28 +253,25 @@ class SnsAsyncResponse(LambdaAsyncResponse):
 
         self.capture_response = capture_response
 
-
     def _send(self, message):
         """
         Given a message, publish to this topic.
         """
-        message['command'] = 'zappa.asynchronous.route_sns_task'
-        payload = json.dumps(message).encode('utf-8')
-        if len(payload) > LAMBDA_ASYNC_PAYLOAD_LIMIT: # pragma: no cover
+        message["command"] = "zappa.asynchronous.route_sns_task"
+        payload = json.dumps(message).encode("utf-8")
+        if len(payload) > LAMBDA_ASYNC_PAYLOAD_LIMIT:  # pragma: no cover
             raise AsyncException("Payload too large for SNS")
-        self.response = self.client.publish(
-                                TargetArn=self.arn,
-                                Message=payload
-                            )
-        self.sent = self.response.get('MessageId')
+        self.response = self.client.publish(TargetArn=self.arn, Message=payload)
+        self.sent = self.response.get("MessageId")
+
 
 ##
 # Aync Routers
 ##
 
 ASYNC_CLASSES = {
-    'lambda': LambdaAsyncResponse,
-    'sns': SnsAsyncResponse,
+    "lambda": LambdaAsyncResponse,
+    "sns": SnsAsyncResponse,
 }
 
 
@@ -277,10 +289,8 @@ def route_sns_task(event, context):
     Gets SNS Message, deserialises the message,
     imports the function, calls the function with args
     """
-    record = event['Records'][0]
-    message = json.loads(
-            record['Sns']['Message']
-        )
+    record = event["Records"][0]
+    message = json.loads(record["Sns"]["Message"])
     return run_message(message)
 
 
@@ -290,49 +300,52 @@ def run_message(message):
     'task_path', 'args', and 'kwargs' used by lambda routing
     and a 'command' in handler.py
     """
-    if message.get('capture_response', False):
+    if message.get("capture_response", False):
         DYNAMODB_CLIENT.put_item(
             TableName=ASYNC_RESPONSE_TABLE,
             Item={
-                'id': {'S': str(message['response_id'])},
-                'ttl': {'N': str(int(time.time()+600))},
-                'async_status': {'S': 'in progress'},
-                'async_response': {'S': str(json.dumps('N/A'))},
-            }
+                "id": {"S": str(message["response_id"])},
+                "ttl": {"N": str(int(time.time() + 600))},
+                "async_status": {"S": "in progress"},
+                "async_response": {"S": str(json.dumps("N/A"))},
+            },
         )
 
-    func = import_and_get_task(message['task_path'])
-    if hasattr(func, 'sync'):
-        response = func.sync(
-            *message['args'],
-            **message['kwargs']
-        )
+    func = import_and_get_task(message["task_path"])
+    if hasattr(func, "sync"):
+        response = func.sync(*message["args"], **message["kwargs"])
     else:
-        response = func(
-            *message['args'],
-            **message['kwargs']
-        )
+        response = func(*message["args"], **message["kwargs"])
 
-    if message.get('capture_response', False):
+    if message.get("capture_response", False):
         DYNAMODB_CLIENT.update_item(
             TableName=ASYNC_RESPONSE_TABLE,
-            Key={'id': {'S': str(message['response_id'])}},
+            Key={"id": {"S": str(message["response_id"])}},
             UpdateExpression="SET async_response = :r, async_status = :s",
             ExpressionAttributeValues={
-                ':r': {'S': str(json.dumps(response))},
-                ':s': {'S': 'complete'},
+                ":r": {"S": str(json.dumps(response))},
+                ":s": {"S": "complete"},
             },
         )
 
     return response
+
 
 ##
 # Execution interfaces and classes
 ##
 
 
-def run(func, args=[], kwargs={}, service='lambda', capture_response=False,
-        remote_aws_lambda_function_name=None, remote_aws_region=None, **task_kwargs):
+def run(
+    func,
+    args=[],
+    kwargs={},
+    service="lambda",
+    capture_response=False,
+    remote_aws_lambda_function_name=None,
+    remote_aws_region=None,
+    **task_kwargs
+):
     """
     Instead of decorating a function with @task, you can just run it directly.
     If you were going to do func(*args, **kwargs), then you will call this:
@@ -346,14 +359,18 @@ def run(func, args=[], kwargs={}, service='lambda', capture_response=False,
 
     and other arguments are similar to @task
     """
-    lambda_function_name = remote_aws_lambda_function_name or os.environ.get('AWS_LAMBDA_FUNCTION_NAME')
-    aws_region = remote_aws_region or os.environ.get('AWS_REGION')
+    lambda_function_name = remote_aws_lambda_function_name or os.environ.get(
+        "AWS_LAMBDA_FUNCTION_NAME"
+    )
+    aws_region = remote_aws_region or os.environ.get("AWS_REGION")
 
     task_path = get_func_task_path(func)
-    return ASYNC_CLASSES[service](lambda_function_name=lambda_function_name,
-                                  aws_region=aws_region,
-                                  capture_response=capture_response,
-                                  **task_kwargs).send(task_path, args, kwargs)
+    return ASYNC_CLASSES[service](
+        lambda_function_name=lambda_function_name,
+        aws_region=aws_region,
+        capture_response=capture_response,
+        **task_kwargs
+    ).send(task_path, args, kwargs)
 
 
 # Handy:
@@ -383,16 +400,16 @@ def task(*args, **kwargs):
         func = args[0]
 
     if not kwargs:  # Default Values
-        service = 'lambda'
+        service = "lambda"
         lambda_function_name_arg = None
         aws_region_arg = None
 
     else:  # Arguments were passed
-        service = kwargs.get('service', 'lambda')
-        lambda_function_name_arg = kwargs.get('remote_aws_lambda_function_name')
-        aws_region_arg = kwargs.get('remote_aws_region')
+        service = kwargs.get("service", "lambda")
+        lambda_function_name_arg = kwargs.get("remote_aws_lambda_function_name")
+        aws_region_arg = kwargs.get("remote_aws_region")
 
-    capture_response = kwargs.get('capture_response', False)
+    capture_response = kwargs.get("capture_response", False)
 
     def func_wrapper(func):
 
@@ -418,13 +435,17 @@ def task(*args, **kwargs):
                 When outside of Lambda, the func passed to @task is run and we
                 return the actual value.
             """
-            lambda_function_name = lambda_function_name_arg or os.environ.get('AWS_LAMBDA_FUNCTION_NAME')
-            aws_region = aws_region_arg or os.environ.get('AWS_REGION')
+            lambda_function_name = lambda_function_name_arg or os.environ.get(
+                "AWS_LAMBDA_FUNCTION_NAME"
+            )
+            aws_region = aws_region_arg or os.environ.get("AWS_REGION")
 
             if (service in ASYNC_CLASSES) and (lambda_function_name):
-                send_result = ASYNC_CLASSES[service](lambda_function_name=lambda_function_name,
-                                                     aws_region=aws_region,
-                                                     capture_response=capture_response).send(task_path, args, kwargs)
+                send_result = ASYNC_CLASSES[service](
+                    lambda_function_name=lambda_function_name,
+                    aws_region=aws_region,
+                    capture_response=capture_response,
+                ).send(task_path, args, kwargs)
                 return send_result
             else:
                 return func(*args, **kwargs)
@@ -443,19 +464,20 @@ def task_sns(func):
     """
     SNS-based task dispatcher. Functions the same way as task()
     """
-    return task(func, service='sns')
+    return task(func, service="sns")
 
 
 ##
 # Utility Functions
 ##
 
+
 def import_and_get_task(task_path):
     """
     Given a modular path to a function, import that module
     and return the function.
     """
-    module, function = task_path.rsplit('.', 1)
+    module, function = task_path.rsplit(".", 1)
     app_module = importlib.import_module(module)
     app_function = getattr(app_module, function)
     return app_function
@@ -466,10 +488,9 @@ def get_func_task_path(func):
     Format the modular task path for a function via inspection.
     """
     module_path = inspect.getmodule(func).__name__
-    task_path = '{module_path}.{func_name}'.format(
-                                        module_path=module_path,
-                                        func_name=func.__name__
-                                    )
+    task_path = "{module_path}.{func_name}".format(
+        module_path=module_path, func_name=func.__name__
+    )
     return task_path
 
 
@@ -478,13 +499,12 @@ def get_async_response(response_id):
     Get the response from the async table
     """
     response = DYNAMODB_CLIENT.get_item(
-        TableName=ASYNC_RESPONSE_TABLE,
-        Key={'id': {'S': str(response_id)}}
+        TableName=ASYNC_RESPONSE_TABLE, Key={"id": {"S": str(response_id)}}
     )
-    if 'Item' not in response:
+    if "Item" not in response:
         return None
 
     return {
-        'status': response['Item']['async_status']['S'],
-        'response': json.loads(response['Item']['async_response']['S']),
+        "status": response["Item"]["async_status"]["S"],
+        "response": json.loads(response["Item"]["async_response"]["S"]),
     }

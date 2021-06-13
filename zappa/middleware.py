@@ -27,6 +27,7 @@ class ZappaWSGIMiddleware:
 
     Most hacks have now been remove except for Set-Cookie permutation.
     """
+
     def __init__(self, application):
         self.application = application
 
@@ -43,10 +44,16 @@ class ZappaWSGIMiddleware:
             Related: https://github.com/Miserlou/Zappa/issues/1965
             """
 
-            new_headers = [header for header in headers
-                           if ((type(header[0]) != str) or (header[0].lower() != 'set-cookie'))]
-            cookie_headers = [(header[0].lower(), header[1]) for header in headers
-                              if ((type(header[0]) == str) and (header[0].lower() == "set-cookie"))]
+            new_headers = [
+                header
+                for header in headers
+                if ((type(header[0]) != str) or (header[0].lower() != "set-cookie"))
+            ]
+            cookie_headers = [
+                (header[0].lower(), header[1])
+                for header in headers
+                if ((type(header[0]) == str) and (header[0].lower() == "set-cookie"))
+            ]
             new_headers = new_headers + cookie_headers
 
             return start_response(status, new_headers, exc_info)
