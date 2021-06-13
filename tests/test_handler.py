@@ -82,9 +82,7 @@ class TestZappa(unittest.TestCase):
             "resource": "/{proxy+}",
             "requestContext": {},
             "queryStringParameters": {},
-            "headers": {
-                "Host": "1234567890.execute-api.us-east-1.amazonaws.com",
-            },
+            "headers": {"Host": "1234567890.execute-api.us-east-1.amazonaws.com",},
             "pathParameters": {"proxy": "return/request/url"},
             "httpMethod": "GET",
             "stageVariables": {},
@@ -110,9 +108,7 @@ class TestZappa(unittest.TestCase):
             "resource": "/{proxy+}",
             "requestContext": {},
             "queryStringParameters": {},
-            "headers": {
-                "Host": "example.com",
-            },
+            "headers": {"Host": "example.com",},
             "pathParameters": {"proxy": "return/request/url"},
             "httpMethod": "GET",
             "stageVariables": {},
@@ -135,9 +131,7 @@ class TestZappa(unittest.TestCase):
             "resource": "/{proxy+}",
             "requestContext": {},
             "queryStringParameters": {},
-            "multiValueHeaders": {
-                "Host": ["example.com"],
-            },
+            "multiValueHeaders": {"Host": ["example.com"],},
             "pathParameters": {"proxy": "return/request/url"},
             "httpMethod": "GET",
             "stageVariables": {},
@@ -158,9 +152,7 @@ class TestZappa(unittest.TestCase):
             "resource": "/{proxy+}",
             "requestContext": {},
             "multiValueQueryStringParameters": {"multi": ["value", "qs"]},
-            "multiValueHeaders": {
-                "Host": ["example.com"],
-            },
+            "multiValueHeaders": {"Host": ["example.com"],},
             "pathParameters": {"proxy": "return/request/url"},
             "httpMethod": "GET",
             "stageVariables": {},
@@ -208,9 +200,7 @@ class TestZappa(unittest.TestCase):
             "resource": "/{proxy+}",
             "requestContext": {},
             "queryStringParameters": {},
-            "headers": {
-                "Host": "1234567890.execute-api.us-east-1.amazonaws.com",
-            },
+            "headers": {"Host": "1234567890.execute-api.us-east-1.amazonaws.com",},
             "pathParameters": {"proxy": "return/request/url"},
             "httpMethod": "GET",
             "stageVariables": {},
@@ -264,10 +254,7 @@ class TestZappa(unittest.TestCase):
             "messageVersion": "1.0",
             "invocationSource": "DialogCodeHook",
             "userId": "user-id specified in the POST request to Amazon Lex.",
-            "sessionAttributes": {
-                "key1": "value1",
-                "key2": "value2",
-            },
+            "sessionAttributes": {"key1": "value1", "key2": "value2",},
             "bot": {"name": "bot-name", "alias": "bot-alias", "version": "bot-version"},
             "outputDialogMode": "Text or Voice, based on ContentType request header in runtime API request",
             "currentIntent": {
@@ -295,10 +282,7 @@ class TestZappa(unittest.TestCase):
             "messageVersion": "1.0",
             "invocationSource": "DialogCodeHook",
             "userId": "user-id specified in the POST request to Amazon Lex.",
-            "sessionAttributes": {
-                "key1": "value1",
-                "key2": "value2",
-            },
+            "sessionAttributes": {"key1": "value1", "key2": "value2",},
             "bot": {"name": "bot-name", "alias": "bot-alias", "version": "bot-version"},
             "outputDialogMode": "Text or Voice, based on ContentType request header in runtime API request",
             "currentIntent": {

@@ -49,8 +49,7 @@ class TestZappa(unittest.TestCase):
 
         # will throw ClientError with 404 if object doesn't exist
         s3.meta.client.head_object(
-            Bucket=bucket_name,
-            Key=zip_path,
+            Bucket=bucket_name, Key=zip_path,
         )
         res = z.remove_from_s3(zip_path, bucket_name)
         self.assertTrue(res)
@@ -78,8 +77,7 @@ class TestZappa(unittest.TestCase):
 
         # will throw ClientError with 404 if object doesn't exist
         s3.meta.client.head_object(
-            Bucket=bucket_name,
-            Key=zip_path,
+            Bucket=bucket_name, Key=zip_path,
         )
         zp = "copy_" + zip_path
         res = z.copy_on_s3(zip_path, zp, bucket_name)
@@ -104,9 +102,7 @@ class TestZappa(unittest.TestCase):
         )
 
         arn = z.update_lambda_function(
-            bucket=bucket_name,
-            s3_key=zip_path,
-            function_name="test_lmbda_function55",
+            bucket=bucket_name, s3_key=zip_path, function_name="test_lmbda_function55",
         )
 
     @placebo_session
@@ -188,10 +184,7 @@ class TestZappa(unittest.TestCase):
         event = {
             "body": {},
             "headers": {},
-            "params": {
-                "parameter_1": "asdf1",
-                "parameter_2": "asdf2",
-            },
+            "params": {"parameter_1": "asdf1", "parameter_2": "asdf2",},
             "method": "GET",
             "query": {},
         }

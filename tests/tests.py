@@ -270,10 +270,7 @@ class TestZappa(unittest.TestCase):
                         z.get_installed_packages(
                             "/venv/Site-packages", "/venv/site-packages64"
                         ),
-                        {
-                            "superpackage": "0.1",
-                            "superpackage64": "0.1",
-                        },
+                        {"superpackage": "0.1", "superpackage64": "0.1",},
                     )
 
     def test_getting_installed_packages_mixed_case(self, *args):
@@ -1773,9 +1770,7 @@ class TestZappa(unittest.TestCase):
 
             # Test creating domain without Route53
             zappa_cli.zappa_settings["stage"].update(
-                {
-                    "route53_enabled": False,
-                }
+                {"route53_enabled": False,}
             )
             zappa_cli.zappa.reset_mock()
             zappa_cli.zappa.domain_names["test.example.com"] = ""
@@ -1869,10 +1864,7 @@ class TestZappa(unittest.TestCase):
 
         zones = zappa_core.get_all_zones()
         zappa_core.route53.list_hosted_zones.assert_has_calls(
-            [
-                mock.call(MaxItems="100"),
-                mock.call(MaxItems="100", Marker="101"),
-            ]
+            [mock.call(MaxItems="100"), mock.call(MaxItems="100", Marker="101"),]
         )
         self.assertListEqual(zones["HostedZones"], [{"Id": "zone1"}, {"Id": "zone2"}])
 
@@ -2367,9 +2359,7 @@ USE_TZ = True
         )
         elbv2_stubber.add_response(
             "describe_load_balancers",
-            expected_params={
-                "LoadBalancerArns": [loadbalancer_arn],
-            },
+            expected_params={"LoadBalancerArns": [loadbalancer_arn],},
             service_response={
                 "LoadBalancers": [
                     {"LoadBalancerArn": loadbalancer_arn, "State": {"Code": "active"}}
@@ -2393,17 +2383,8 @@ USE_TZ = True
 
         elbv2_stubber.add_response(
             "create_target_group",
-            expected_params={
-                "Name": kwargs["lambda_name"],
-                "TargetType": "lambda",
-            },
-            service_response={
-                "TargetGroups": [
-                    {
-                        "TargetGroupArn": targetgroup_arn,
-                    }
-                ]
-            },
+            expected_params={"Name": kwargs["lambda_name"], "TargetType": "lambda",},
+            service_response={"TargetGroups": [{"TargetGroupArn": targetgroup_arn,}]},
         )
         elbv2_stubber.add_response(
             "modify_target_group_attributes",
@@ -2445,15 +2426,10 @@ USE_TZ = True
             "create_listener",
             expected_params={
                 "Certificates": [
-                    {
-                        "CertificateArn": kwargs["alb_vpc_config"]["CertificateArn"],
-                    }
+                    {"CertificateArn": kwargs["alb_vpc_config"]["CertificateArn"],}
                 ],
                 "DefaultActions": [
-                    {
-                        "Type": "forward",
-                        "TargetGroupArn": targetgroup_arn,
-                    }
+                    {"Type": "forward", "TargetGroupArn": targetgroup_arn,}
                 ],
                 "LoadBalancerArn": loadbalancer_arn,
                 "Protocol": "HTTPS",
@@ -2498,77 +2474,48 @@ USE_TZ = True
         )
         elbv2_stubber.add_response(
             "describe_load_balancers",
-            expected_params={
-                "Names": [kwargs["lambda_name"]],
-            },
+            expected_params={"Names": [kwargs["lambda_name"]],},
             service_response={
-                "LoadBalancers": [
-                    {
-                        "LoadBalancerArn": loadbalancer_arn,
-                    }
-                ]
+                "LoadBalancers": [{"LoadBalancerArn": loadbalancer_arn,}]
             },
         )
         elbv2_stubber.add_response(
             "describe_listeners",
-            expected_params={
-                "LoadBalancerArn": loadbalancer_arn,
-            },
-            service_response={
-                "Listeners": [
-                    {
-                        "ListenerArn": listener_arn,
-                    }
-                ]
-            },
+            expected_params={"LoadBalancerArn": loadbalancer_arn,},
+            service_response={"Listeners": [{"ListenerArn": listener_arn,}]},
         )
         elbv2_stubber.add_response(
             "delete_listener",
-            expected_params={
-                "ListenerArn": listener_arn,
-            },
+            expected_params={"ListenerArn": listener_arn,},
             service_response={},
         )
         elbv2_stubber.add_response(
             "delete_load_balancer",
-            expected_params={
-                "LoadBalancerArn": loadbalancer_arn,
-            },
+            expected_params={"LoadBalancerArn": loadbalancer_arn,},
             service_response={},
         )
         elbv2_stubber.add_client_error(
-            "describe_load_balancers",
-            service_error_code="LoadBalancerNotFound",
+            "describe_load_balancers", service_error_code="LoadBalancerNotFound",
         )
         lambda_stubber.add_response(
             "get_function",
-            expected_params={
-                "FunctionName": kwargs["lambda_name"],
-            },
+            expected_params={"FunctionName": kwargs["lambda_name"],},
             service_response={"Configuration": {"FunctionArn": function_arn}},
         )
         elbv2_stubber.add_response(
             "describe_target_groups",
-            expected_params={
-                "Names": [kwargs["lambda_name"]],
-            },
-            service_response={
-                "TargetGroups": [{"TargetGroupArn": targetgroup_arn}],
-            },
+            expected_params={"Names": [kwargs["lambda_name"]],},
+            service_response={"TargetGroups": [{"TargetGroupArn": targetgroup_arn}],},
         )
         elbv2_stubber.add_response(
-            "deregister_targets",
-            service_response={},
+            "deregister_targets", service_response={},
         )
         elbv2_stubber.add_client_error(
-            "describe_target_health",
-            service_error_code="InvalidTarget",
+            "describe_target_health", service_error_code="InvalidTarget",
         )
         elbv2_stubber.add_response(
             "delete_target_group",
-            expected_params={
-                "TargetGroupArn": targetgroup_arn,
-            },
+            expected_params={"TargetGroupArn": targetgroup_arn,},
             service_response={},
         )
         lambda_stubber.activate()
@@ -2588,12 +2535,9 @@ USE_TZ = True
             "FunctionArn": "abc",
             "Version": 1,
         }
-        access_logging_patch = zappa_core.create_lambda_function(
-            concurrency=5,
-        )
+        access_logging_patch = zappa_core.create_lambda_function(concurrency=5,)
         boto_mock.client().put_function_concurrency.assert_called_with(
-            FunctionName="abc",
-            ReservedConcurrentExecutions=5,
+            FunctionName="abc", ReservedConcurrentExecutions=5,
         )
 
     @mock.patch("botocore.client")
@@ -2610,13 +2554,10 @@ USE_TZ = True
             "Version": 1,
         }
         access_logging_patch = zappa_core.update_lambda_function(
-            bucket="test",
-            function_name="abc",
-            concurrency=5,
+            bucket="test", function_name="abc", concurrency=5,
         )
         boto_mock.client().put_function_concurrency.assert_called_with(
-            FunctionName="abc",
-            ReservedConcurrentExecutions=5,
+            FunctionName="abc", ReservedConcurrentExecutions=5,
         )
         boto_mock.client().delete_function_concurrency.assert_not_called()
 
@@ -2634,8 +2575,7 @@ USE_TZ = True
             "Version": 1,
         }
         access_logging_patch = zappa_core.update_lambda_function(
-            bucket="test",
-            function_name="abc",
+            bucket="test", function_name="abc",
         )
         boto_mock.client().put_function_concurrency.assert_not_called()
         boto_mock.client().delete_function_concurrency.assert_called_with(

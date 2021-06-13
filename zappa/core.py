@@ -1059,9 +1059,7 @@ class Zappa:
             # it's actually "US Standard", or something.
             # More here: https://github.com/boto/boto3/issues/125
             if self.aws_region == "us-east-1":
-                self.s3_client.create_bucket(
-                    Bucket=bucket_name,
-                )
+                self.s3_client.create_bucket(Bucket=bucket_name,)
             else:
                 self.s3_client.create_bucket(
                     Bucket=bucket_name,
@@ -1243,8 +1241,7 @@ class Zappa:
 
         if concurrency is not None:
             self.lambda_client.put_function_concurrency(
-                FunctionName=resource_arn,
-                ReservedConcurrentExecutions=concurrency,
+                FunctionName=resource_arn, ReservedConcurrentExecutions=concurrency,
             )
 
         return resource_arn
@@ -1284,8 +1281,7 @@ class Zappa:
         #          https://github.com/Miserlou/Zappa/issues/1823
         try:
             response = self.lambda_client.get_alias(
-                FunctionName=function_name,
-                Name=ALB_LAMBDA_ALIAS,
+                FunctionName=function_name, Name=ALB_LAMBDA_ALIAS,
             )
             alias_exists = True
         except botocore.exceptions.ClientError as e:  # pragma: no cover
@@ -1302,8 +1298,7 @@ class Zappa:
 
         if concurrency is not None:
             self.lambda_client.put_function_concurrency(
-                FunctionName=function_name,
-                ReservedConcurrentExecutions=concurrency,
+                FunctionName=function_name, ReservedConcurrentExecutions=concurrency,
             )
         else:
             self.lambda_client.delete_function_concurrency(FunctionName=function_name)
@@ -1495,9 +1490,7 @@ class Zappa:
         """
         print("Deleting Lambda function..")
 
-        return self.lambda_client.delete_function(
-            FunctionName=function_name,
-        )
+        return self.lambda_client.delete_function(FunctionName=function_name,)
 
     ##
     # Application load balancer
@@ -1619,12 +1612,7 @@ class Zappa:
         kwargs = dict(
             # TODO: Listeners support custom ssl certificates (Certificates). For now we leave this default.
             Certificates=[{"CertificateArn": alb_vpc_config["CertificateArn"]}],
-            DefaultActions=[
-                {
-                    "Type": "forward",
-                    "TargetGroupArn": target_group_arn,
-                }
-            ],
+            DefaultActions=[{"Type": "forward", "TargetGroupArn": target_group_arn,}],
             LoadBalancerArn=load_balancer_arn,
             Protocol="HTTPS",
             # TODO: Add option for custom ports
@@ -2121,12 +2109,7 @@ class Zappa:
         """
         self.apigateway_client.update_rest_api(
             restApiId=api_id,
-            patchOperations=[
-                {
-                    "op": "replace",
-                    "path": "/minimumCompressionSize",
-                }
-            ],
+            patchOperations=[{"op": "replace", "path": "/minimumCompressionSize",}],
         )
 
     def get_api_keys(self, api_id, stage_name):
@@ -3326,9 +3309,7 @@ class Zappa:
             dynamodb_table = self.dynamodb_client.create_table(
                 AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
                 TableName=table_name,
-                KeySchema=[
-                    {"AttributeName": "id", "KeyType": "HASH"},
-                ],
+                KeySchema=[{"AttributeName": "id", "KeyType": "HASH"},],
                 ProvisionedThroughput={
                     "ReadCapacityUnits": read_capacity,
                     "WriteCapacityUnits": write_capacity,
