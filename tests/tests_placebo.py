@@ -133,6 +133,28 @@ class TestZappa(unittest.TestCase):
         )
 
     @placebo_session
+    def test_create_lambda_function_docker(self, session):
+        bucket_name = "lmbda"
+        docker_image_uri = "docker_image_uri"
+
+        z = Zappa(session)
+        z.aws_region = "us-east-1"
+        z.load_credentials(session)
+        z.credentials_arn = "arn:aws:iam::12345:role/ZappaLambdaExecution"
+
+        arn = z.create_lambda_function(
+            bucket=bucket_name,
+            docker_image_uri=docker_image_uri,
+            function_name="test_lmbda_function55",
+        )
+
+        arn = z.update_lambda_function(
+            bucket=bucket_name,
+            docker_image_uri=docker_image_uri,
+            function_name="test_lmbda_function55",
+        )
+
+    @placebo_session
     def test_rollback_lambda_function_version(self, session):
         z = Zappa(session)
         z.credentials_arn = "arn:aws:iam::724336686645:role/ZappaLambdaExecution"
@@ -142,6 +164,23 @@ class TestZappa(unittest.TestCase):
         self.assertFalse(too_many_versions)
 
         function_arn = z.rollback_lambda_function_version(function_name, 1)
+
+    @placebo_session
+    def test_rollback_lambda_function_version_docker(self, session):
+        z = Zappa(session)
+        z.credentials_arn = "arn:aws:iam::724336686645:role/ZappaLambdaExecution"
+
+        function_name = "django-helloworld-unicode"
+
+        with self.assertRaises(NotImplementedError):
+            z.rollback_lambda_function_version(function_name)
+
+    @placebo_session
+    def test_is_lambda_function_ready(self, session):
+        z = Zappa(session)
+        z.credentials_arn = "arn:aws:iam::724336686645:role/ZappaLambdaExecution"
+        function_name = "django-helloworld-unicode"
+        z.is_lambda_function_ready(function_name)
 
     @placebo_session
     def test_invoke_lambda_function(self, session):

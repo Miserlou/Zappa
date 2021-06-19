@@ -3,7 +3,7 @@
     "data": {
         "ResponseMetadata": {
             "HTTPStatusCode": 200, 
-            "RequestId": "78c11231-e22e-11e5-bb00-6935e1456f05"
+            "RequestId": "786c144e-e22e-11e5-86f4-4528d3e5269b"
         }, 
         "Versions": [
             {
@@ -13,13 +13,11 @@
                 "MemorySize": 512, 
                 "CodeSize": 12154778, 
                 "FunctionArn": "arn:aws:lambda:us-east-1:724336686645:function:django-helloworld-unicode:$LATEST", 
-                "Handler": "handler.lambda_handler", 
                 "Role": "arn:aws:iam::724336686645:role/ZappaLambdaExecution", 
                 "Timeout": 30, 
                 "LastModified": "2016-03-01T00:55:35.845+0000", 
-                "Runtime": "python2.7", 
                 "Description": "Zappa Deployment",
-                "PackageType": "Zip"
+                "PackageType": "Image"
             }, 
             {
                 "Version": "1", 
@@ -28,13 +26,11 @@
                 "MemorySize": 512, 
                 "CodeSize": 12102921, 
                 "FunctionArn": "arn:aws:lambda:us-east-1:724336686645:function:django-helloworld-unicode:1", 
-                "Handler": "handler.lambda_handler", 
                 "Role": "arn:aws:iam::724336686645:role/ZappaLambdaExecution", 
                 "Timeout": 30, 
                 "LastModified": "2016-02-29T14:39:31.557+0000", 
-                "Runtime": "python2.7", 
                 "Description": "Zappa Deployment",
-                "PackageType": "Zip"
+                "PackageType": "Image"
             }, 
             {
                 "Version": "2", 
@@ -43,13 +39,11 @@
                 "MemorySize": 512, 
                 "CodeSize": 12152312, 
                 "FunctionArn": "arn:aws:lambda:us-east-1:724336686645:function:django-helloworld-unicode:2", 
-                "Handler": "handler.lambda_handler", 
                 "Role": "arn:aws:iam::724336686645:role/ZappaLambdaExecution", 
                 "Timeout": 30, 
                 "LastModified": "2016-02-29T14:47:04.499+0000", 
-                "Runtime": "python2.7", 
                 "Description": "Zappa Deployment",
-                "PackageType": "Zip"
+                "PackageType": "Image"
             }, 
             {
                 "Version": "3", 
@@ -58,13 +52,11 @@
                 "MemorySize": 512, 
                 "CodeSize": 12152182, 
                 "FunctionArn": "arn:aws:lambda:us-east-1:724336686645:function:django-helloworld-unicode:3", 
-                "Handler": "handler.lambda_handler", 
                 "Role": "arn:aws:iam::724336686645:role/ZappaLambdaExecution", 
                 "Timeout": 30, 
                 "LastModified": "2016-02-29T14:58:08.443+0000", 
-                "Runtime": "python2.7", 
                 "Description": "Zappa Deployment",
-                "PackageType": "Zip"
+                "PackageType": "Image"
             }, 
             {
                 "Version": "4", 
@@ -73,13 +65,11 @@
                 "MemorySize": 512, 
                 "CodeSize": 12154467, 
                 "FunctionArn": "arn:aws:lambda:us-east-1:724336686645:function:django-helloworld-unicode:4", 
-                "Handler": "handler.lambda_handler", 
                 "Role": "arn:aws:iam::724336686645:role/ZappaLambdaExecution", 
                 "Timeout": 30, 
                 "LastModified": "2016-02-29T16:25:49.425+0000", 
-                "Runtime": "python2.7", 
                 "Description": "Zappa Deployment",
-                "PackageType": "Zip"
+                "PackageType": "Image"
             }, 
             {
                 "Version": "5", 
@@ -88,13 +78,11 @@
                 "MemorySize": 512, 
                 "CodeSize": 12154507, 
                 "FunctionArn": "arn:aws:lambda:us-east-1:724336686645:function:django-helloworld-unicode:5", 
-                "Handler": "handler.lambda_handler", 
                 "Role": "arn:aws:iam::724336686645:role/ZappaLambdaExecution", 
                 "Timeout": 30, 
                 "LastModified": "2016-02-29T16:34:47.988+0000", 
-                "Runtime": "python2.7", 
                 "Description": "Zappa Deployment",
-                "PackageType": "Zip"
+                "PackageType": "Image"
             }, 
             {
                 "Version": "6", 
@@ -103,13 +91,11 @@
                 "MemorySize": 512, 
                 "CodeSize": 12154780, 
                 "FunctionArn": "arn:aws:lambda:us-east-1:724336686645:function:django-helloworld-unicode:6", 
-                "Handler": "handler.lambda_handler", 
                 "Role": "arn:aws:iam::724336686645:role/ZappaLambdaExecution", 
                 "Timeout": 30, 
                 "LastModified": "2016-03-01T00:12:28.708+0000", 
-                "Runtime": "python2.7", 
                 "Description": "Zappa Deployment",
-                "PackageType": "Zip"
+                "PackageType": "Image"
             }, 
             {
                 "Version": "7", 
@@ -118,13 +104,11 @@
                 "MemorySize": 512, 
                 "CodeSize": 12154784, 
                 "FunctionArn": "arn:aws:lambda:us-east-1:724336686645:function:django-helloworld-unicode:7", 
-                "Handler": "handler.lambda_handler", 
                 "Role": "arn:aws:iam::724336686645:role/ZappaLambdaExecution", 
                 "Timeout": 30, 
                 "LastModified": "2016-03-01T00:24:01.446+0000", 
-                "Runtime": "python2.7", 
                 "Description": "Zappa Deployment",
-                "PackageType": "Zip"
+                "PackageType": "Image"
             }, 
             {
                 "Version": "8", 
@@ -133,13 +117,11 @@
                 "MemorySize": 512, 
                 "CodeSize": 12154778, 
                 "FunctionArn": "arn:aws:lambda:us-east-1:724336686645:function:django-helloworld-unicode:8", 
-                "Handler": "handler.lambda_handler", 
                 "Role": "arn:aws:iam::724336686645:role/ZappaLambdaExecution", 
                 "Timeout": 30, 
                 "LastModified": "2016-03-01T00:55:35.845+0000", 
-                "Runtime": "python2.7", 
                 "Description": "Zappa Deployment",
-                "PackageType": "Zip"
+                "PackageType": "Image"
             }
         ]
     }
