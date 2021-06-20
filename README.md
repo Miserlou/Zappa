@@ -21,6 +21,7 @@
 - [Basic Usage](#basic-usage)
   - [Initial Deployments](#initial-deployments)
   - [Updates](#updates)
+    - [Docker Workflows](#docker-workflows)
   - [Rollback](#rollback)
   - [Scheduling](#scheduling)
     - [Advanced Scheduling](#advanced-scheduling)
@@ -215,6 +216,10 @@ If your application has already been deployed and you only need to upload new Py
     Your application is now live at: https://7k6anj0k99.execute-api.us-east-1.amazonaws.com/production
 
 This creates a new archive, uploads it to S3 and updates the Lambda function to use the new code, but doesn't touch the API Gateway routes.
+
+#### Docker Workflows
+
+In [version 0.53.0](https://github.com/zappa/Zappa/blob/master/CHANGELOG.md), support was added to deploy & update Lambda functions using Docker. Refer to [the blog post](https://ianwhitestone.work/zappa-serverless-docker/) for more details about how to leverage this functionality, and when you may want to.
 
 ### Rollback
 
