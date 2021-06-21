@@ -1,5 +1,14 @@
 # Zappa Changelog
 
+## 0.53.0
+
+* Deprecated ACME v1 for Lets Encrypt
+* Global black formatting
+* Update & deploy using a docker container
+  * See [blog post](https://ianwhitestone.work/zappa-serverless-docker/) for more details on the current functionality and how it works
+  * See [PR](https://github.com/zappa/Zappa/pull/967) or [original issue](https://github.com/Miserlou/Zappa/issues/2188) for discussion around what is currently supported & next steps
+
+
 ## 0.52.0
 * Remove dateutil version restriction
 * Fix failed downloads of wheel packages with non-alphanumeric characters
