@@ -437,7 +437,12 @@ class Zappa:
         pip_return_code = pip_process.returncode
 
         if pip_return_code:
-          raise EnvironmentError("Pypi lookup failed")
+            output = pip_process.stdout
+            if hasattr(output, 'decode'):
+                output = output.decode('utf-8')
+            raise EnvironmentError(
+                "Pypi lookup failed\n{}".format(output)
+            )
 
         return ve_path
 
@@ -2135,7 +2140,7 @@ class Zappa:
 
         # build a fresh template
         self.cf_template = troposphere.Template()
-        self.cf_template.add_description('Automatically generated with Zappa')
+        self.cf_template.set_description('Automatically generated with Zappa')
         self.cf_api_resources = []
         self.cf_parameters = {}
 
