@@ -1,3 +1,6 @@
+
+Project moved to https://github.com/zappa/Zappa. Versions after 0.52.0 are published from there. Thank you Rich Jones for all your work on creating Zappa and maintaining it for years!
+
 <p align="center">
   <img src="http://i.imgur.com/oePnHJn.jpg" alt="Zappa Rocks!"/>
 </p>
@@ -1590,3 +1593,4 @@ Good news! We're currently available for remote and on-site consulting for small
 <p align="center">
   <a href="https://gun.io"><img src="http://i.imgur.com/M7wJipR.png" alt="Made by Gun.io"/></a>
 </p>
+
