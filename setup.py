@@ -4,8 +4,9 @@ from setuptools import setup
 from io import open
 from zappa import __version__
 
-with open('README.md') as readme_file:
-    long_description = readme_file.read()
+#with open('README.md') as readme_file:
+#    long_description = readme_file.read()
+long_description = ""
 
 with open(os.path.join(os.path.dirname(__file__), 'requirements.in')) as f:
     required = f.read().splitlines()
@@ -42,6 +43,7 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
         'Framework :: Django',
         'Framework :: Django :: 1.11',
         'Framework :: Django :: 2.0',

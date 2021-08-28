@@ -1,0 +1,19 @@
+{
+  "status_code": 200,
+  "data": {
+    "ResponseMetadata": {
+      "RequestId": "29c6bc2a-8365-41f6-93be-653a5dcade19",
+      "HTTPStatusCode": 200,
+      "HTTPHeaders": {
+        "date": "Wed, 23 Dec 2020 10:12:01 GMT",
+        "content-type": "application/json",
+        "content-length": "472",
+        "connection": "keep-alive",
+        "x-amzn-requestid": "29c6bc2a-8365-41f6-93be-653a5dcade19"
+      },
+      "RetryAttempts": 1
+    },
+    "Policy": "{\"Version\":\"2012-10-17\",\"Id\":\"default\",\"Statement\":[]}",
+    "RevisionId": "4e6248aa-b035-480e-b154-23cc9dfc5de6"
+  }
+}
