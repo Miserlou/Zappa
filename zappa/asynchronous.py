@@ -88,6 +88,7 @@ Discussion of this comes from:
 import boto3
 import botocore
 from functools import update_wrapper, wraps
+from future.utils import PY3
 import importlib
 import inspect
 import json
@@ -178,7 +179,9 @@ class LambdaAsyncResponse:
         Given a message, directly invoke the lamdba function for this task.
         """
         message['command'] = 'zappa.asynchronous.route_lambda_task'
-        payload = json.dumps(message).encode('utf-8')
+        payload = json.dumps(message)
+        if not PY3:
+            payload = payload.encode('utf-8')
         if len(payload) > LAMBDA_ASYNC_PAYLOAD_LIMIT: # pragma: no cover
             raise AsyncException("Payload too large for async Lambda call")
         self.response = self.client.invoke(
@@ -244,7 +247,9 @@ class SnsAsyncResponse(LambdaAsyncResponse):
         Given a message, publish to this topic.
         """
         message['command'] = 'zappa.asynchronous.route_sns_task'
-        payload = json.dumps(message).encode('utf-8')
+        payload = json.dumps(message)
+        if not PY3:
+            payload = payload.encode('utf-8')
         if len(payload) > LAMBDA_ASYNC_PAYLOAD_LIMIT: # pragma: no cover
             raise AsyncException("Payload too large for SNS")
         self.response = self.client.publish(
@@ -296,6 +301,7 @@ def run_message(message):
             Item={
                 'id': {'S': str(message['response_id'])},
                 'ttl': {'N': str(int(time.time()+600))},
+                'message': {'S': json.dumps(message)},
                 'async_status': {'S': 'in progress'},
                 'async_response': {'S': str(json.dumps('N/A'))},
             }
