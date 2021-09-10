@@ -2414,7 +2414,7 @@ class Zappa:
 
         # build a fresh template
         self.cf_template = troposphere.Template()
-        self.cf_template.add_description("Automatically generated with Zappa")
+        self.cf_template.set_description("Automatically generated with Zappa")
         self.cf_api_resources = []
         self.cf_parameters = {}
 
