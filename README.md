@@ -1,5 +1,6 @@
-## DEPRECATED - This project is no longer maintained
-The maintainers do not have the time to keep this alive. Feel free to fork and have a go at it if you have the time and inclination.
+<p align="center">
+  <img src="http://i.imgur.com/oePnHJn.jpg" alt="Zappa Rocks!"/>
+</p>
 
 ## Zappa - Serverless Python
 
