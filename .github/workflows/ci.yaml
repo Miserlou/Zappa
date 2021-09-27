@@ -22,9 +22,11 @@ jobs:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip${{ matrix.python }}-${{ hashFiles('requirements.txt') }}
           restore-keys: ${{ runner.os }}-pip${{ matrix.python }}-
+      - name: Setup Virtualenv
+        run: python -m venv .venv
       - name: Install
-        run: make requirements && python setup.py install
+        run: source .venv/bin/activate && make requirements && python setup.py install
       - name: Lint
-        run: make flake black-check
+        run: source .venv/bin/activate && make flake black-check
       - name: Test
-        run: make tests
+        run: source .venv/bin/activate && make tests
