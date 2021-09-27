@@ -1,0 +1,30 @@
+name: CI
+
+on:  # yamllint disable-line rule:truthy
+  pull_request:
+    branches: ["master"]
+
+jobs:
+  test:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        python: [3.6, 3.7, 3.8]
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip${{ matrix.python }}-${{ hashFiles('requirements.txt') }}
+          restore-keys: ${{ runner.os }}-pip${{ matrix.python }}-
+      - name: Install
+        run: make requirements && python setup.py install
+      - name: Lint
+        run: make flake black-check
+      - name: Test
+        run: make tests
