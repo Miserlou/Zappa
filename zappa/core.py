@@ -1247,6 +1247,9 @@ class Zappa:
                 ReservedConcurrentExecutions=concurrency,
             )
 
+        # Wait for lambda to become active, otherwise many operations will fail
+        self.wait_until_lambda_function_is_active(function_name)
+
         return resource_arn
 
     def update_lambda_function(
@@ -1333,6 +1336,8 @@ class Zappa:
                     FunctionName=function_name, Qualifier=version
                 )
 
+        self.wait_until_lambda_function_is_updated(function_name)
+
         return resource_arn
 
     def update_lambda_configuration(
@@ -1349,6 +1354,7 @@ class Zappa:
         aws_environment_variables=None,
         aws_kms_key_arn=None,
         layers=None,
+        wait=True,
     ):
         """
         Given an existing function ARN, update the configuration variables.
@@ -1365,6 +1371,10 @@ class Zappa:
             aws_environment_variables = {}
         if not layers:
             layers = []
+
+        if wait:
+            # Wait until function is ready, otherwise expected keys will be missing from 'lambda_aws_config'.
+            self.wait_until_lambda_function_is_updated(function_name)
 
         # Check if there are any remote aws lambda env vars so they don't get trashed.
         # https://github.com/Miserlou/Zappa/issues/987,  Related: https://github.com/Miserlou/Zappa/issues/765
@@ -1483,34 +1493,23 @@ class Zappa:
 
         return response["FunctionArn"]
 
-    def is_lambda_function_ready(self, function_name):
+    def wait_until_lambda_function_is_active(self, function_name):
         """
-        Checks if a lambda function is active and no updates are in progress.
+        Wait until lambda State=Active
         """
-        response = self.lambda_client.get_function(FunctionName=function_name)
-        return (
-            response["Configuration"]["State"] == "Active"
-            and response["Configuration"]["LastUpdateStatus"] != "InProgress"
-        )
+        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/lambda.html#waiters
+        waiter = self.lambda_client.get_waiter("function_active")
+        print(f"Waiting for lambda function [{function_name}] to become active...")
+        waiter.wait(FunctionName=function_name)
 
-    def wait_until_lambda_function_is_ready(self, function_name):
+    def wait_until_lambda_function_is_updated(self, function_name):
         """
-        Continuously check if a lambda function is active.
-        For functions deployed with a docker image instead of a
-        ZIP package, the function can take a few seconds longer
-        to be created or update, so we must wait before running any status
-        checks against the function.
+        Wait until lambda LastUpdateStatus=Successful
         """
-        show_waiting_message = True
-        while True:
-            if self.is_lambda_function_ready(function_name):
-                break
-
-            if show_waiting_message:
-                print("Waiting until lambda function is ready.")
-                show_waiting_message = False
-
-            time.sleep(1)
+        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/lambda.html#waiters
+        waiter = self.lambda_client.get_waiter("function_updated")
+        print(f"Waiting for lambda function [{function_name}] to be updated...")
+        waiter.wait(FunctionName=function_name)
 
     def get_lambda_function(self, function_name):
         """
