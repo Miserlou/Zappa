@@ -596,7 +596,7 @@ class ZappaCLI:
         Given a command to execute and stage,
         execute that command.
         """
-
+        self.check_stage_name(stage)
         self.api_stage = stage
 
         if command not in ["status", "manage"]:
@@ -1789,9 +1789,15 @@ class ZappaCLI:
         calling the CreateDeployment operation: Stage name only allows
         a-zA-Z0-9_" if the pattern does not match)
         """
+        if not self.use_apigateway:
+            return True
         if self.stage_name_env_pattern.match(stage_name):
             return True
-        raise ValueError("AWS requires stage name to match a-zA-Z0-9_")
+        raise ValueError(
+            "API stage names must match a-zA-Z0-9_ ; '{0!s}' does not.".format(
+                stage_name
+            )
+        )
 
     def check_environment(self, environment):
         """
@@ -2482,17 +2488,6 @@ class ZappaCLI:
 
         # Load up file
         self.load_settings_file(settings_file)
-
-        # Make sure that the stages are valid names:
-        for stage_name in self.zappa_settings.keys():
-            try:
-                self.check_stage_name(stage_name)
-            except ValueError:
-                raise ValueError(
-                    "API stage names must match a-zA-Z0-9_ ; '{0!s}' does not.".format(
-                        stage_name
-                    )
-                )
 
         # Make sure that this stage is our settings
         if self.api_stage not in self.zappa_settings.keys():

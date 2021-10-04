@@ -1424,11 +1424,9 @@ class TestZappa(unittest.TestCase):
 
     def test_bad_stage_name_catch(self):
         zappa_cli = ZappaCLI()
-        self.assertRaises(
-            ValueError,
-            zappa_cli.load_settings,
-            "tests/test_bad_stage_name_settings.json",
-        )
+        zappa_cli.api_stage = "ttt-888"
+        zappa_cli.load_settings("tests/test_bad_stage_name_settings.json")
+        self.assertRaises(ValueError, zappa_cli.dispatch_command, "deploy", "ttt-888")
 
     def test_bad_environment_vars_catch(self):
         zappa_cli = ZappaCLI()
