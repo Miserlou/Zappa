@@ -1,6 +1,6 @@
 import sys
 
-SUPPORTED_VERSIONS = [(3, 6), (3, 7), (3, 8)]
+SUPPORTED_VERSIONS = [(3, 6), (3, 7), (3, 8), (3, 9)]
 
 if sys.version_info[:2] not in SUPPORTED_VERSIONS:
     formatted_supported_versions = [

@@ -4,6 +4,7 @@
 * Pin troposphere version and update to 3.x (#1029)
 * Relax stage name restrictions when not using apigateway (#993)
 * Wait for lambda to become active during deploy/update (#992)
+* add support for Python 3.9 (#1026)
 
 ## 0.53.0
 * Deprecated ACME v1 for Lets Encrypt
