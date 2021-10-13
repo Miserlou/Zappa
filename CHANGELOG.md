@@ -1,13 +1,16 @@
 # Zappa Changelog
 
-## 0.53.0
+## 0.54.0
+* Pin troposphere version and update to 3.x (#1029)
+* Relax stage name restrictions when not using apigateway (#993)
+* Wait for lambda to become active during deploy/update (#992)
 
+## 0.53.0
 * Deprecated ACME v1 for Lets Encrypt
 * Global black formatting
 * Update & deploy using a docker container
   * See [blog post](https://ianwhitestone.work/zappa-serverless-docker/) for more details on the current functionality and how it works
   * See [PR](https://github.com/zappa/Zappa/pull/967) or [original issue](https://github.com/Miserlou/Zappa/issues/2188) for discussion around what is currently supported & next steps
-
 
 ## 0.52.0
 * Remove dateutil version restriction
