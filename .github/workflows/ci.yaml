@@ -3,6 +3,8 @@ name: CI
 on:  # yamllint disable-line rule:truthy
   pull_request:
     branches: ["master"]
+  push:
+    branches: ["master"]
 
 jobs:
   test:
@@ -30,3 +32,20 @@ jobs:
         run: source .venv/bin/activate && make flake black-check
       - name: Test
         run: source .venv/bin/activate && make tests
+      - name: Upload Coverage
+        run: .venv/bin/coveralls --service=github
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COVERALLS_FLAG_NAME: py${{ matrix.python }}
+          COVERALLS_PARALLEL: true
+
+  coverage:
+    needs: test
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v2
+      - name: Finalise Coverage
+        run: pip3 install --upgrade coveralls && coveralls --service=github --finish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -4,7 +4,7 @@
 
 ## Zappa - Serverless Python
 
-[![Build Status](https://travis-ci.org/zappa/Zappa.svg)](https://travis-ci.org/zappa/Zappa)
+[![CI](https://github.com/zappa/Zappa/actions/workflows/ci.yaml/badge.svg?branch=master&event=push)](https://github.com/zappa/Zappa/actions/workflows/ci.yaml)
 [![Coverage](https://img.shields.io/coveralls/zappa/Zappa.svg)](https://coveralls.io/github/zappa/Zappa)
 [![PyPI](https://img.shields.io/pypi/v/Zappa.svg)](https://pypi.python.org/pypi/zappa)
 [![Slack](https://img.shields.io/badge/chat-slack-ff69b4.svg)](https://zappateam.slack.com/)
