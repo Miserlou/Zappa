@@ -420,8 +420,6 @@ Commands which require direct user input, such as `createsuperuser`, should be [
 
 For more Django integration, take a look at the [zappa-django-utils](https://github.com/Miserlou/zappa-django-utils) project.
 
-_(Please note that commands which take over 30 seconds to execute may time-out preventing output from being returned - but the command may continue to run. See [this related issue](https://github.com/Miserlou/Zappa/issues/205#issuecomment-236391248) for a work-around.)_
-
 ### SSL Certification
 
 Zappa can be deployed to custom domain names and subdomains with custom SSL certificates, Let's Encrypt certificates, and [AWS Certificate Manager](https://aws.amazon.com/certificate-manager/) (ACM) certificates.

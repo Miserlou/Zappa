@@ -331,13 +331,14 @@ class Zappa:
         # Some common invocations, such as DB migrations,
         # can take longer than the default.
 
-        # Note that this is set to 300s, but if connected to
-        # APIGW, Lambda will max out at 30s.
+        # Config used for direct invocations of Lambda functions from the Zappa CLI.
+        # Note that the maximum configurable Lambda function execution time (15 minutes)
+        # is longer than the maximum timeout configurable in API Gateway (30 seconds).
         # Related: https://github.com/Miserlou/Zappa/issues/205
         long_config_dict = {
             "region_name": aws_region,
             "connect_timeout": 5,
-            "read_timeout": 300,
+            "read_timeout": 900,
         }
         long_config = botocore.client.Config(**long_config_dict)
 
