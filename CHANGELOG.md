@@ -1,5 +1,9 @@
 # Zappa Changelog
 
+## 0.54.1
+* Increase Lambda client read timeout to 15m (#1065)
+* Unpin `Werkzeug` from `v0.x` (#1067)
+
 ## 0.54.0
 * Pin troposphere version and update to 3.x (#1029)
 * Relax stage name restrictions when not using apigateway (#993)
