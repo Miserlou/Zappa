@@ -1,6 +1,8 @@
-from mock import Mock
 import sys
 import unittest
+
+from mock import Mock
+
 from zappa.handler import LambdaHandler
 from zappa.utilities import merge_headers
 

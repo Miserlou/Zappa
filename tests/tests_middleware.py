@@ -2,8 +2,8 @@
 import sys
 import unittest
 
-from zappa.wsgi import create_wsgi_request
 from zappa.middleware import ZappaWSGIMiddleware, all_casings
+from zappa.wsgi import create_wsgi_request
 
 
 class TestWSGIMockMiddleWare(unittest.TestCase):

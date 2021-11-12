@@ -46,7 +46,10 @@ black-check:
 	@echo "If this fails, simply run: make black"
 
 isort:
-	isort --recursive . 
+	isort . --profile=black
+
+isort-check:
+	isort --check . --profile=black
 
 flake:
 	flake8 zappa --count --select=E9,F63,F7,F82 --show-source --statistics

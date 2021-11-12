@@ -1,58 +1,56 @@
 # -*- coding: utf8 -*-
 import collections
 import json
-
+import os
+import random
+import shutil
+import string
+import sys
+import tempfile
+import unittest
+import uuid
+import zipfile
 from io import BytesIO
+
 import botocore
 import botocore.stub
 import flask
 import mock
-import os
-import random
-import string
-import zipfile
-import unittest
-import shutil
-import sys
-import tempfile
-import uuid
-
-from click.globals import resolve_color_default
 from click.exceptions import ClickException
+from click.globals import resolve_color_default
 
-from zappa.cli import ZappaCLI, shamelessly_promote, disable_click_colors
-from zappa.core import ALB_LAMBDA_ALIAS
+from zappa.cli import ZappaCLI, disable_click_colors, shamelessly_promote
+from zappa.core import ALB_LAMBDA_ALIAS, ASSUME_POLICY, ATTACH_POLICY, Zappa
 from zappa.ext.django_zappa import get_django_wsgi
 from zappa.letsencrypt import (
-    get_cert_and_update_domain,
-    create_domain_key,
-    create_domain_csr,
-    create_chained_certificate,
     cleanup,
+    create_chained_certificate,
+    create_domain_csr,
+    create_domain_key,
+    encode_certificate,
+    get_cert_and_update_domain,
+    gettempdir,
     parse_account_key,
     parse_csr,
-    sign_certificate,
-    encode_certificate,
     register_account,
+    sign_certificate,
     verify_challenge,
-    gettempdir,
 )
 from zappa.utilities import (
+    InvalidAwsLambdaName,
     conflicts_with_a_neighbouring_module,
     contains_python_files_or_subdirs,
     detect_django_settings,
     detect_flask_apps,
     get_venv_from_python_version,
     human_size,
-    InvalidAwsLambdaName,
+    is_valid_bucket_name,
     parse_s3_url,
     string_to_timestamp,
     titlecase_keys,
-    is_valid_bucket_name,
     validate_name,
 )
-from zappa.wsgi import create_wsgi_request, common_log
-from zappa.core import Zappa, ASSUME_POLICY, ATTACH_POLICY
+from zappa.wsgi import common_log, create_wsgi_request
 
 
 def random_string(length):

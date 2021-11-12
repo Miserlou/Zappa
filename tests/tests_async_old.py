@@ -1,8 +1,9 @@
 # -*- coding: utf8 -*-
-import boto3
-import mock
 import os
 import unittest
+
+import boto3
+import mock
 
 try:
     from mock import patch

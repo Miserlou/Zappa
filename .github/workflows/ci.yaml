@@ -29,7 +29,7 @@ jobs:
       - name: Install
         run: source .venv/bin/activate && make requirements && python setup.py install
       - name: Lint
-        run: source .venv/bin/activate && make flake black-check
+        run: source .venv/bin/activate && make flake black-check isort-check
       - name: Test
         run: source .venv/bin/activate && make tests
       - name: Upload Coverage
