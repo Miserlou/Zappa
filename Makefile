@@ -39,10 +39,10 @@ mypy:
 	mypy --show-error-codes --pretty --ignore-missing-imports --strict zappa tests
 
 black:
-	black zappa tests
+	black .
 
 black-check:
-	black zappa tests --check
+	black . --check
 	@echo "If this fails, simply run: make black"
 
 isort:

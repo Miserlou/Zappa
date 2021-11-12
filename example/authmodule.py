@@ -11,8 +11,8 @@ import json
 
 
 def lambda_handler(event, context):
-    print("Client token: " + event['authorizationToken'])
-    print("Method ARN: " + event['methodArn'])
+    print("Client token: " + event["authorizationToken"])
+    print("Method ARN: " + event["methodArn"])
     """validate the incoming token"""
     """and produce the principal user identifier associated with the token"""
 
@@ -38,8 +38,8 @@ def lambda_handler(event, context):
     """made with the same token"""
 
     """the example policy below denies access to all resources in the RestApi"""
-    tmp = event['methodArn'].split(':')
-    apiGatewayArnTmp = tmp[5].split('/')
+    tmp = event["methodArn"].split(":")
+    apiGatewayArnTmp = tmp[5].split("/")
     awsAccountId = tmp[4]
 
     policy = AuthPolicy(principalId, awsAccountId)
@@ -58,15 +58,17 @@ def lambda_handler(event, context):
     """finally, build the policy and exit the function using return"""
     return policy.build()
 
+
 class HttpVerb:
-    GET     = "GET"
-    POST    = "POST"
-    PUT     = "PUT"
-    PATCH   = "PATCH"
-    HEAD    = "HEAD"
-    DELETE  = "DELETE"
+    GET = "GET"
+    POST = "POST"
+    PUT = "PUT"
+    PATCH = "PATCH"
+    HEAD = "HEAD"
+    DELETE = "DELETE"
     OPTIONS = "OPTIONS"
-    ALL     = "*"
+    ALL = "*"
+
 
 class AuthPolicy:
     awsAccountId = ""
@@ -104,40 +106,52 @@ class AuthPolicy:
         the internal list contains a resource ARN and a condition statement. The condition
         statement can be null."""
         if verb != "*" and not hasattr(HttpVerb, verb):
-            raise NameError("Invalid HTTP verb " + verb + ". Allowed verbs in HttpVerb class")
+            raise NameError(
+                "Invalid HTTP verb " + verb + ". Allowed verbs in HttpVerb class"
+            )
         resourcePattern = re.compile(self.pathRegex)
         if not resourcePattern.match(resource):
-            raise NameError("Invalid resource path: " + resource + ". Path should match " + self.pathRegex)
+            raise NameError(
+                "Invalid resource path: "
+                + resource
+                + ". Path should match "
+                + self.pathRegex
+            )
 
         if resource[:1] == "/":
             resource = resource[1:]
 
-        resourceArn = ("arn:aws:execute-api:" +
-            self.region + ":" +
-            self.awsAccountId + ":" +
-            self.restApiId + "/" +
-            self.stage + "/" +
-            verb + "/" +
-            resource)
+        resourceArn = (
+            "arn:aws:execute-api:"
+            + self.region
+            + ":"
+            + self.awsAccountId
+            + ":"
+            + self.restApiId
+            + "/"
+            + self.stage
+            + "/"
+            + verb
+            + "/"
+            + resource
+        )
 
         if effect.lower() == "allow":
-            self.allowMethods.append({
-                'resourceArn' : resourceArn,
-                'conditions' : conditions
-            })
+            self.allowMethods.append(
+                {"resourceArn": resourceArn, "conditions": conditions}
+            )
         elif effect.lower() == "deny":
-            self.denyMethods.append({
-                'resourceArn' : resourceArn,
-                'conditions' : conditions
-            })
+            self.denyMethods.append(
+                {"resourceArn": resourceArn, "conditions": conditions}
+            )
 
     def _getEmptyStatement(self, effect):
         """Returns an empty statement object prepopulated with the correct action and the
         desired effect."""
         statement = {
-            'Action': 'execute-api:Invoke',
-            'Effect': effect[:1].upper() + effect[1:].lower(),
-            'Resource': []
+            "Action": "execute-api:Invoke",
+            "Effect": effect[:1].upper() + effect[1:].lower(),
+            "Resource": [],
         }
 
         return statement
@@ -151,12 +165,12 @@ class AuthPolicy:
             statement = self._getEmptyStatement(effect)
 
             for curMethod in methods:
-                if curMethod['conditions'] is None or len(curMethod['conditions']) == 0:
-                    statement['Resource'].append(curMethod['resourceArn'])
+                if curMethod["conditions"] is None or len(curMethod["conditions"]) == 0:
+                    statement["Resource"].append(curMethod["resourceArn"])
                 else:
                     conditionalStatement = self._getEmptyStatement(effect)
-                    conditionalStatement['Resource'].append(curMethod['resourceArn'])
-                    conditionalStatement['Condition'] = curMethod['conditions']
+                    conditionalStatement["Resource"].append(curMethod["resourceArn"])
+                    conditionalStatement["Condition"] = curMethod["conditions"]
                     statements.append(conditionalStatement)
 
             statements.append(statement)
@@ -198,19 +212,21 @@ class AuthPolicy:
         conditions. This will generate a policy with two main statements for the effect:
         one statement for Allow and one statement for Deny.
         Methods that includes conditions will have their own statement in the policy."""
-        if ((self.allowMethods is None or len(self.allowMethods) == 0) and
-            (self.denyMethods is None or len(self.denyMethods) == 0)):
+        if (self.allowMethods is None or len(self.allowMethods) == 0) and (
+            self.denyMethods is None or len(self.denyMethods) == 0
+        ):
             raise NameError("No statements defined for the policy")
 
         policy = {
-            'principalId' : self.principalId,
-            'policyDocument' : {
-                'Version' : self.version,
-                'Statement' : []
-            }
+            "principalId": self.principalId,
+            "policyDocument": {"Version": self.version, "Statement": []},
         }
 
-        policy['policyDocument']['Statement'].extend(self._getStatementForEffect("Allow", self.allowMethods))
-        policy['policyDocument']['Statement'].extend(self._getStatementForEffect("Deny", self.denyMethods))
+        policy["policyDocument"]["Statement"].extend(
+            self._getStatementForEffect("Allow", self.allowMethods)
+        )
+        policy["policyDocument"]["Statement"].extend(
+            self._getStatementForEffect("Deny", self.denyMethods)
+        )
 
         return policy
