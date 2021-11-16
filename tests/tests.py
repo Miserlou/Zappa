@@ -1,5 +1,6 @@
 # -*- coding: utf8 -*-
 import collections
+import hashlib
 import json
 import os
 import random
@@ -2048,22 +2049,80 @@ USE_TZ = True
         self.assertTrue(len(truncated) <= 64)
         self.assertEqual(truncated, "a-b")
 
-    def test_hashed_rule_name(self):
+    def test_get_scheduled_event_name(self):
         zappa = Zappa()
-        truncated = zappa.get_event_name(
-            "basldfkjalsdkfjalsdkfjaslkdfjalsdkfjadlsfkjasdlfkjasdlfkjasdflkjasdf-asdfasdfasdfasdfasdf",
-            "this.is.my.dang.function.wassup.yeah.its.long",
+        event = {}
+        function = "foo"
+        lambda_name = "bar"
+        self.assertEqual(
+            zappa.get_scheduled_event_name(event, function, lambda_name),
+            f"{lambda_name}-{function}",
         )
-        self.assertTrue(len(truncated) == 64)
 
-        rule_name = zappa.get_hashed_rule_name(
-            event=dict(name="some-event-name"),
-            function="this.is.my.dang.function.wassup.yeah.its.long",
-            lambda_name="basldfkjalsdkfjalsdkfjaslkdfjalsdkfjadlsfkjasdlfkjasdlfkjasdflkjasdf-asdfasdfasdfasdfasdf",
+    def test_get_scheduled_event_name__has_name(self):
+        zappa = Zappa()
+        event = {"name": "my_event"}
+        function = "foo"
+        lambda_name = "bar"
+        self.assertEqual(
+            zappa.get_scheduled_event_name(event, function, lambda_name),
+            f"{lambda_name}-{event['name']}-{function}",
         )
-        self.assertTrue(len(rule_name) <= 64)
-        self.assertTrue(
-            rule_name.endswith("-this.is.my.dang.function.wassup.yeah.its.long")
+
+    def test_get_scheduled_event_name__has_index(self):
+        zappa = Zappa()
+        event = {}
+        function = "foo"
+        lambda_name = "bar"
+        index = 1
+        self.assertEqual(
+            zappa.get_scheduled_event_name(event, function, lambda_name, index),
+            f"{lambda_name}-{index}-{function}",
+        )
+
+    def test_get_scheduled_event_name__has_name__has_index(self):
+        zappa = Zappa()
+        event = {"name": "my_event"}
+        function = "foo"
+        lambda_name = "bar"
+        index = 1
+        self.assertEqual(
+            zappa.get_scheduled_event_name(event, function, lambda_name, index),
+            f"{lambda_name}-{index}-{event['name']}-{function}",
+        )
+
+    def test_get_scheduled_event_name__truncated(self):
+        zappa = Zappa()
+        event = {}
+        function = "foo"
+        lambda_name = "bar" * 100
+        hashed_lambda_name = hashlib.sha1(lambda_name.encode()).hexdigest()
+        self.assertEqual(
+            zappa.get_scheduled_event_name(event, function, lambda_name),
+            f"{hashed_lambda_name}-{function}",
+        )
+
+    def test_get_scheduled_event_name__truncated__has_name(self):
+        zappa = Zappa()
+        event = {"name": "my_event"}
+        function = "foo"
+        lambda_name = "bar" * 100
+        hashed_lambda_name = hashlib.sha1(lambda_name.encode()).hexdigest()
+        self.assertEqual(
+            zappa.get_scheduled_event_name(event, function, lambda_name),
+            f"{hashed_lambda_name}-{event['name']}-{function}",
+        )
+
+    def test_get_scheduled_event_name__truncated__has_name__has_index(self):
+        zappa = Zappa()
+        event = {"name": "my_event"}
+        function = "foo"
+        lambda_name = "bar" * 100
+        index = 1
+        hashed_lambda_name = hashlib.sha1(lambda_name.encode()).hexdigest()
+        self.assertEqual(
+            zappa.get_scheduled_event_name(event, function, lambda_name, index),
+            f"{hashed_lambda_name}-{index}-{event['name']}-{function}",
         )
 
     def test_detect_dj(self):
