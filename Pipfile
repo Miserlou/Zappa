@@ -1,0 +1,48 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+black = "*"
+boto3-stubs = "*"
+coveralls = "*"
+Django = "<4"
+django-stubs = "*"
+flake8 = "*"
+Flask = "*"
+isort = "*"
+mock = "*"
+mypy = "*"
+nose = "*"
+nose-timer = "*"
+pipenv = "==2021.11.09"
+
+[packages]
+argcomplete = "*"
+boto3 = ">=1.17.28"
+durationpy = "*"
+future = "*"
+hjson = "*"
+jmespath = "*"
+kappa = "==0.6.0"
+pip = ">=9.0.1"
+# Workaround until tests are updated to work with 'placebo' 0.10
+# Move to 'dev-packages' when unpinned
+placebo = "<0.10"
+python-dateutil = "*"
+python-slugify = "*"
+PyYAML = "*"
+# previous versions don't work with urllib3 1.24
+requests = ">=2.20.0"
+six = "*"
+toml = "*"
+tqdm = "*"
+troposphere = ">=3.0"
+Werkzeug = "*"
+wheel = "*"
+wsgi-request-logger = "*"
+
+[pipenv]
+# Required for 'black' since all of its release tags contain 'b'
+allow_prereleases = true
