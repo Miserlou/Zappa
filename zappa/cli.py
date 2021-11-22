@@ -1535,16 +1535,7 @@ class ZappaCLI:
             invocation_type="RequestResponse",
         )
 
-        if "LogResult" in response:
-            if no_color:
-                print(base64.b64decode(response["LogResult"]))
-            else:
-                decoded = base64.b64decode(response["LogResult"]).decode()
-                formatted = self.format_invoke_command(decoded)
-                colorized = self.colorize_invoke_command(formatted)
-                print(colorized)
-        else:
-            print(response)
+        print(self.format_lambda_response(response, not no_color))
 
         # For a successful request FunctionError is not in response.
         # https://github.com/Miserlou/Zappa/pull/1254/
@@ -1554,6 +1545,22 @@ class ZappaCLI:
                     response["FunctionError"]
                 )
             )
+
+    def format_lambda_response(self, response, colorize=True):
+        if "LogResult" in response:
+            logresult_bytes = base64.b64decode(response["LogResult"])
+            try:
+                decoded = logresult_bytes.decode()
+            except UnicodeDecodeError:
+                return logresult_bytes
+            else:
+                if colorize and sys.stdout.isatty():
+                    formatted = self.format_invoke_command(decoded)
+                    return self.colorize_invoke_command(formatted)
+                else:
+                    return decoded
+        else:
+            return response
 
     def format_invoke_command(self, string):
         """

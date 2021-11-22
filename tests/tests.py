@@ -1,4 +1,5 @@
 # -*- coding: utf8 -*-
+import base64
 import collections
 import hashlib
 import json
@@ -1283,6 +1284,54 @@ class TestZappa(unittest.TestCase):
 
         colorized_string = zappa_cli.colorize_invoke_command(plain_string)
         self.assertEqual(final_string, colorized_string)
+
+    @mock.patch("zappa.cli.ZappaCLI.colorize_invoke_command")
+    @mock.patch("zappa.cli.ZappaCLI.format_invoke_command")
+    def test_cli_format_lambda_response(self, mock_format, mock_colorize):
+        format_msg = "formatted string"
+        colorize_msg = "colorized string"
+        mock_format.return_value = format_msg
+        mock_colorize.return_value = colorize_msg
+        zappa_cli = ZappaCLI()
+
+        response_without_logresult = {"StatusCode": 200, "FunctionError": "some_err"}
+        self.assertEqual(
+            zappa_cli.format_lambda_response(response_without_logresult),
+            response_without_logresult,
+        )
+
+        bad_utf8 = b"\xfc\xfc\xfc"
+        bad_utf8_logresult = {
+            "StatusCode": 200,
+            "LogResult": base64.b64encode(bad_utf8),
+        }
+        self.assertEqual(zappa_cli.format_lambda_response(bad_utf8_logresult), bad_utf8)
+
+        log_msg = "Function output logs go here"
+        regular_logresult = {
+            "StatusCode": 200,
+            "LogResult": base64.b64encode(log_msg.encode()),
+        }
+        with mock.patch.object(sys.stdout, "isatty") as mock_isatty:
+            mock_isatty.return_value = True
+            formatted = zappa_cli.format_lambda_response(regular_logresult, True)
+        mock_format.assert_called_once_with(log_msg)
+        mock_colorize.assert_called_once_with(format_msg)
+        self.assertEqual(formatted, colorize_msg)
+        mock_format.reset_mock()
+        mock_colorize.reset_mock()
+
+        with mock.patch.object(sys.stdout, "isatty") as mock_isatty:
+            mock_isatty.return_value = False
+            formatted = zappa_cli.format_lambda_response(regular_logresult, True)
+        mock_format.assert_not_called()
+        mock_colorize.assert_not_called()
+        self.assertEqual(formatted, log_msg)
+
+        formatted = zappa_cli.format_lambda_response(regular_logresult, False)
+        mock_format.assert_not_called()
+        mock_colorize.assert_not_called()
+        self.assertEqual(formatted, log_msg)
 
     def test_cli_save_python_settings_file(self):
         zappa_cli = ZappaCLI()
