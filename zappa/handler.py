@@ -248,7 +248,8 @@ class LambdaHandler:
 
     @classmethod
     def lambda_handler(cls, event, context):  # pragma: no cover
-        handler = cls()
+        if not os.environ.get("INSTANTIATE_LAMBDA_HANDLER_ON_IMPORT"):
+            handler = cls()
         exception_handler = handler.settings.EXCEPTION_HANDLER
         try:
             return handler.handler(event, context)
@@ -663,3 +664,7 @@ def keep_warm_callback(event, context):
         event={}, context=context
     )  # overriding event with an empty one so that web app initialization will
     # be triggered.
+
+
+if os.environ.get("INSTANTIATE_LAMBDA_HANDLER_ON_IMPORT"):
+    handler = LambdaHandler()

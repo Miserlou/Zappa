@@ -79,6 +79,7 @@
   - [Application Load Balancer Event Source](#application-load-balancer-event-source)
   - [Endpoint Configuration](#endpoint-configuration)
     - [Example Private API Gateway configuration](#example-private-api-gateway-configuration)
+  - [Cold Starts (Experimental)](#cold-starts-experimental)
 - [Zappa Guides](#zappa-guides)
 - [Zappa in the Press](#zappa-in-the-press)
 - [Sites Using Zappa](#sites-using-zappa)
@@ -1442,6 +1443,10 @@ apigateway_resource_policy.json:
     ]
 }
 ```
+
+### Cold Starts (Experimental)
+
+Lambda may provide additional resources than provisioned during cold start initialization. Set `INSTANTIATE_LAMBDA_HANDLER_ON_IMPORT=True` to instantiate the lambda handler on import. This is an experimental feature - if startup time is critical, look into using Provisioned Concurrency.
 
 ## Zappa Guides
 
