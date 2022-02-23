@@ -2,7 +2,7 @@
 
 Before you submit this PR, please make sure that you meet these criteria:
 
-* Did you read the [contributing guide](https://github.com/Miserlou/Zappa/#contributing)?
+* Did you read the [contributing guide](https://github.com/zappa/Zappa/#contributing)?
 
 * If this is a non-trivial commit, did you **open a ticket** for discussion?
 
@@ -20,7 +20,7 @@ Before you submit this PR, please make sure that you meet these criteria:
 
 * Did you **make sure this code actually works on Lambda**, as well as locally?
 
-* Did you test this code with both **Python 2.7** and **Python 3.6**? 
+* Did you test this code with all of **Python 3.6**, **Python 3.7** and **Python 3.8** ? 
 
 * Does this commit ONLY relate to the issue at hand and have your linter shit all over the code?
 

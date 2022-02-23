@@ -1,6 +1,58 @@
 # Zappa Changelog
 
+## 0.54.1
+* Increase Lambda client read timeout to 15m (#1065)
+* Unpin `Werkzeug` from `v0.x` (#1067)
+
+## 0.54.0
+* Pin troposphere version and update to 3.x (#1029)
+* Relax stage name restrictions when not using apigateway (#993)
+* Wait for lambda to become active during deploy/update (#992)
+* add support for Python 3.9 (#1026)
+
+## 0.53.0
+* Deprecated ACME v1 for Lets Encrypt
+* Global black formatting
+* Update & deploy using a docker container
+  * See [blog post](https://ianwhitestone.work/zappa-serverless-docker/) for more details on the current functionality and how it works
+  * See [PR](https://github.com/zappa/Zappa/pull/967) or [original issue](https://github.com/Miserlou/Zappa/issues/2188) for discussion around what is currently supported & next steps
+
+## 0.52.0
+* Remove dateutil version restriction
+* Fix failed downloads of wheel packages with non-alphanumeric characters
+* Last release from Miserlou/Zappa
+* Removed references to zappa.io
+
+## 0.51.0
+* Lambda Layers
+* Cognito support
+* Skip venv check if --no_venv argument is passed
+* Fix for abi3 filename matching
+* Wait for the Load Balancer to become active before proceeding
+* Add option 'Scheme' for alb config
+* Allow full path exclusions while packaging
+* Workaround for werkzeug incompatibility
+* And assorted fixes
+
+## 0.50.0
+* Updated manylinux to support manylinux1/manylinux2010/manylinux2014 packages
+* Fixed issue with duplicated cookie headers in API Gateway
+* Various maintenance updates to the README file
+* Remove old python 2.7 code (not all yet)
+* Use pip-tools to manage dependencies (and remove pinned dependencies from the package)
+* Add option for concurrency limit
+* Use safe_load with YAML
+* Support for ABI3 binary packages (particularly cryptography)
+* Remove dependency on lambda-packages
+
+## 0.49.0
+* Added support for Python 3.8
+* Fixed boto3 reporting of long names
+* Added support for new AWS Regions
+* Minor bug and README fixes
+
 ## 0.48.2
+* Last version with Python 2.7 support.
 * Fix for invalid values of HTTP_HOST and others (introduced in 0.48.0)
 
 ## 0.48.1

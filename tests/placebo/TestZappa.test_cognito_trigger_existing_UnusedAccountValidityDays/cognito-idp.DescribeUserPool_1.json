@@ -1,0 +1,283 @@
+{
+    "status_code": 200,
+    "data": {
+        "UserPool": {
+            "Id": "us-east-1_9jUv74DH8",
+            "Name": "Zappa-Test",
+            "Policies": {
+                "PasswordPolicy": {
+                    "MinimumLength": 8,
+                    "RequireUppercase": true,
+                    "RequireLowercase": true,
+                    "RequireNumbers": true,
+                    "RequireSymbols": true,
+                    "TemporaryPasswordValidityDays": 7
+                }
+            },
+            "LambdaConfig": {
+                "PreSignUp": "arn:aws:lambda:us-east-1:12345:function:Zappa-Trigger-Test"
+            },
+            "LastModifiedDate": {
+                "__class__": "datetime",
+                "year": 2017,
+                "month": 11,
+                "day": 27,
+                "hour": 11,
+                "minute": 23,
+                "second": 34,
+                "microsecond": 969000
+            },
+            "CreationDate": {
+                "__class__": "datetime",
+                "year": 2017,
+                "month": 11,
+                "day": 27,
+                "hour": 11,
+                "minute": 15,
+                "second": 36,
+                "microsecond": 195000
+            },
+            "SchemaAttributes": [
+                {
+                    "Name": "sub",
+                    "AttributeDataType": "String",
+                    "DeveloperOnlyAttribute": false,
+                    "Mutable": false,
+                    "Required": true,
+                    "StringAttributeConstraints": {
+                        "MinLength": "1",
+                        "MaxLength": "2048"
+                    }
+                },
+                {
+                    "Name": "name",
+                    "AttributeDataType": "String",
+                    "DeveloperOnlyAttribute": false,
+                    "Mutable": true,
+                    "Required": false,
+                    "StringAttributeConstraints": {
+                        "MinLength": "0",
+                        "MaxLength": "2048"
+                    }
+                },
+                {
+                    "Name": "given_name",
+                    "AttributeDataType": "String",
+                    "DeveloperOnlyAttribute": false,
+                    "Mutable": true,
+                    "Required": false,
+                    "StringAttributeConstraints": {
+                        "MinLength": "0",
+                        "MaxLength": "2048"
+                    }
+                },
+                {
+                    "Name": "family_name",
+                    "AttributeDataType": "String",
+                    "DeveloperOnlyAttribute": false,
+                    "Mutable": true,
+                    "Required": false,
+                    "StringAttributeConstraints": {
+                        "MinLength": "0",
+                        "MaxLength": "2048"
+                    }
+                },
+                {
+                    "Name": "middle_name",
+                    "AttributeDataType": "String",
+                    "DeveloperOnlyAttribute": false,
+                    "Mutable": true,
+                    "Required": false,
+                    "StringAttributeConstraints": {
+                        "MinLength": "0",
+                        "MaxLength": "2048"
+                    }
+                },
+                {
+                    "Name": "nickname",
+                    "AttributeDataType": "String",
+                    "DeveloperOnlyAttribute": false,
+                    "Mutable": true,
+                    "Required": false,
+                    "StringAttributeConstraints": {
+                        "MinLength": "0",
+                        "MaxLength": "2048"
+                    }
+                },
+                {
+                    "Name": "preferred_username",
+                    "AttributeDataType": "String",
+                    "DeveloperOnlyAttribute": false,
+                    "Mutable": true,
+                    "Required": false,
+                    "StringAttributeConstraints": {
+                        "MinLength": "0",
+                        "MaxLength": "2048"
+                    }
+                },
+                {
+                    "Name": "profile",
+                    "AttributeDataType": "String",
+                    "DeveloperOnlyAttribute": false,
+                    "Mutable": true,
+                    "Required": false,
+                    "StringAttributeConstraints": {
+                        "MinLength": "0",
+                        "MaxLength": "2048"
+                    }
+                },
+                {
+                    "Name": "picture",
+                    "AttributeDataType": "String",
+                    "DeveloperOnlyAttribute": false,
+                    "Mutable": true,
+                    "Required": false,
+                    "StringAttributeConstraints": {
+                        "MinLength": "0",
+                        "MaxLength": "2048"
+                    }
+                },
+                {
+                    "Name": "website",
+                    "AttributeDataType": "String",
+                    "DeveloperOnlyAttribute": false,
+                    "Mutable": true,
+                    "Required": false,
+                    "StringAttributeConstraints": {
+                        "MinLength": "0",
+                        "MaxLength": "2048"
+                    }
+                },
+                {
+                    "Name": "email",
+                    "AttributeDataType": "String",
+                    "DeveloperOnlyAttribute": false,
+                    "Mutable": true,
+                    "Required": true,
+                    "StringAttributeConstraints": {
+                        "MinLength": "0",
+                        "MaxLength": "2048"
+                    }
+                },
+                {
+                    "Name": "email_verified",
+                    "AttributeDataType": "Boolean",
+                    "DeveloperOnlyAttribute": false,
+                    "Mutable": true,
+                    "Required": false
+                },
+                {
+                    "Name": "gender",
+                    "AttributeDataType": "String",
+                    "DeveloperOnlyAttribute": false,
+                    "Mutable": true,
+                    "Required": false,
+                    "StringAttributeConstraints": {
+                        "MinLength": "0",
+                        "MaxLength": "2048"
+                    }
+                },
+                {
+                    "Name": "birthdate",
+                    "AttributeDataType": "String",
+                    "DeveloperOnlyAttribute": false,
+                    "Mutable": true,
+                    "Required": false,
+                    "StringAttributeConstraints": {
+                        "MinLength": "10",
+                        "MaxLength": "10"
+                    }
+                },
+                {
+                    "Name": "zoneinfo",
+                    "AttributeDataType": "String",
+                    "DeveloperOnlyAttribute": false,
+                    "Mutable": true,
+                    "Required": false,
+                    "StringAttributeConstraints": {
+                        "MinLength": "0",
+                        "MaxLength": "2048"
+                    }
+                },
+                {
+                    "Name": "locale",
+                    "AttributeDataType": "String",
+                    "DeveloperOnlyAttribute": false,
+                    "Mutable": true,
+                    "Required": false,
+                    "StringAttributeConstraints": {
+                        "MinLength": "0",
+                        "MaxLength": "2048"
+                    }
+                },
+                {
+                    "Name": "phone_number",
+                    "AttributeDataType": "String",
+                    "DeveloperOnlyAttribute": false,
+                    "Mutable": true,
+                    "Required": false,
+                    "StringAttributeConstraints": {
+                        "MinLength": "0",
+                        "MaxLength": "2048"
+                    }
+                },
+                {
+                    "Name": "phone_number_verified",
+                    "AttributeDataType": "Boolean",
+                    "DeveloperOnlyAttribute": false,
+                    "Mutable": true,
+                    "Required": false
+                },
+                {
+                    "Name": "address",
+                    "AttributeDataType": "String",
+                    "DeveloperOnlyAttribute": false,
+                    "Mutable": true,
+                    "Required": false,
+                    "StringAttributeConstraints": {
+                        "MinLength": "0",
+                        "MaxLength": "2048"
+                    }
+                },
+                {
+                    "Name": "updated_at",
+                    "AttributeDataType": "Number",
+                    "DeveloperOnlyAttribute": false,
+                    "Mutable": true,
+                    "Required": false,
+                    "NumberAttributeConstraints": {
+                        "MinValue": "0"
+                    }
+                }
+            ],
+            "AutoVerifiedAttributes": [
+                "email"
+            ],
+            "VerificationMessageTemplate": {
+                "DefaultEmailOption": "CONFIRM_WITH_CODE"
+            },
+            "MfaConfiguration": "OFF",
+            "EstimatedNumberOfUsers": 0,
+            "EmailConfiguration": {},
+            "UserPoolTags": {},
+            "AdminCreateUserConfig": {
+                "AllowAdminCreateUserOnly": false
+            },
+            "LambdaConfig": {
+		"PreSignUp": "arn:aws:lambda:us-east-1:12345:function:Zappa-Trigger-Test"
+	    }
+        },
+        "ResponseMetadata": {
+            "RequestId": "ada5049e-d365-11e7-9a5a-2b0966933efa",
+            "HTTPStatusCode": 200,
+            "HTTPHeaders": {
+                "content-type": "application/x-amz-json-1.1",
+                "date": "Mon, 27 Nov 2017 11:25:31 GMT",
+                "x-amzn-requestid": "ada5049e-d365-11e7-9a5a-2b0966933efa",
+                "content-length": "4132",
+                "connection": "keep-alive"
+            },
+            "RetryAttempts": 0
+        }
+    }
+}

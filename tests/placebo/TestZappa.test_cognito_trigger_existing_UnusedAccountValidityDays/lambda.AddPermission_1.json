@@ -1,0 +1,18 @@
+{
+    "status_code": 201,
+    "data": {
+        "ResponseMetadata": {
+            "RequestId": "ae983eab-d365-11e7-ba13-8135763ed363",
+            "HTTPStatusCode": 201,
+            "HTTPHeaders": {
+                "date": "Mon, 27 Nov 2017 11:25:33 GMT",
+                "content-type": "application/json",
+                "content-length": "361",
+                "connection": "keep-alive",
+                "x-amzn-requestid": "ae983eab-d365-11e7-ba13-8135763ed363"
+            },
+            "RetryAttempts": 0
+        },
+        "Statement": "{\"Sid\":\"9UFS02MW\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"cognito-idp.amazonaws.com\"},\"Action\":\"lambda:InvokeFunction\",\"Resource\":\"arn:aws:lambda:us-east-1:12345:function:Zappa-Trigger-Test\",\"Condition\":{\"ArnLike\":{\"AWS:SourceArn\":\"arn:aws:cognito-idp:us-east-1:12345:userpool/us-east-1_9jUv74DH8\"}}}"
+    }
+}

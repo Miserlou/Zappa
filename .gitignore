@@ -24,6 +24,7 @@ parts/
 sdist/
 var/
 *.egg-info/
+venv/
 .installed.cfg
 *.egg
 
@@ -88,3 +89,6 @@ zappa_settings.json
 
 README.test.md
 .vscode
+
+.mypy_cache
+.pytest_cache

@@ -1,5 +1,6 @@
 {
     "ttt-888": {
+       "apigateway_enabled": true,
        "touch": false,
        "s3_bucket": "lmbda",
        "app_function": "tests.test_app.hello_world",
@@ -29,6 +30,7 @@
        ]
     },
     "devor": {
+       "apigateway_enabled": true,
        "s3_bucket": "lmbda",
        "app_function": "tests.test_app.hello_world",
        "callbacks": {

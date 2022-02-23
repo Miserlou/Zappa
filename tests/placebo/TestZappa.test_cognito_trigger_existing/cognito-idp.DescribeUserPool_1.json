@@ -263,9 +263,9 @@
                 "AllowAdminCreateUserOnly": false,
                 "UnusedAccountValidityDays": 7
             },
-            "LambdaConfig": [
-                {"PreSignUp": "arn:aws:lambda:us-east-1:12345:function:Zappa-Trigger-Test"}
-            ]
+            "LambdaConfig": {
+		"PreSignUp": "arn:aws:lambda:us-east-1:12345:function:Zappa-Trigger-Test"
+	    }
         },
         "ResponseMetadata": {
             "RequestId": "ada5049e-d365-11e7-9a5a-2b0966933efa",
