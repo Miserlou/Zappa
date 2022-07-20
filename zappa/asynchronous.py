@@ -175,7 +175,7 @@ class LambdaAsyncResponse:
 
     def _send(self, message):
         """
-        Given a message, directly invoke the lamdba function for this task.
+        Given a message, directly invoke the lambda function for this task.
         """
         message['command'] = 'zappa.asynchronous.route_lambda_task'
         payload = json.dumps(message).encode('utf-8')
@@ -265,7 +265,7 @@ ASYNC_CLASSES = {
 
 def route_lambda_task(event, context):
     """
-    Deserialises the message from event passed to zappa.handler.run_function
+    Deserialize the message from event passed to zappa.handler.run_function
     imports the function, calls the function with args
     """
     message = event
@@ -274,7 +274,7 @@ def route_lambda_task(event, context):
 
 def route_sns_task(event, context):
     """
-    Gets SNS Message, deserialises the message,
+    Gets SNS Message, deserialize the message,
     imports the function, calls the function with args
     """
     record = event['Records'][0]
